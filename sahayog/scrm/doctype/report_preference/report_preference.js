@@ -65,7 +65,15 @@ frappe.ui.form.on("Report Preference", {
 
     let regions = (frm.doc.region || []).map(d => d.region).filter(Boolean);
     if (!regions.length && pref && pref.regions && frm.is_new() && (!frm.state || !frm.state.user)) regions = pref.regions;
-    regions = regions.map(r => (r && (r.toUpperCase() === "HO" || r.toLowerCase().includes("head office"))) ? "HEAD OFFICE" : r);
+    let _norm = s => {
+      let v = String(s || "").trim().toUpperCase();
+      return (v === "HO" || v.includes("HEAD OFFICE")) ? "HEAD OFFICE" : v;
+    };
+    let _canon = {};
+    ((frm.meta_data && frm.meta_data.all_branches) || []).forEach(b => {
+      if (b.region) _canon[_norm(b.region)] = (_norm(b.region) === "HEAD OFFICE") ? "HEAD OFFICE" : b.region;
+    });
+    regions = regions.map(r => _canon[_norm(r)] || r);
     frm.state.regions = new Set(regions);
 
     let districts = (frm.doc.district || []).map(d => d.district).filter(Boolean);

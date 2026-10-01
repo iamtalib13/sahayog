@@ -3047,6 +3047,17 @@ function apply_branch_scorecard_access(){
         callback:function(r){
             let access = r.message || {};
 
+            console.log("========== BRANCH SCORECARD ACCESS DEBUG ==========");
+            console.log("Logged-in User:", frappe.session.user);
+            console.log("Full Backend Access Response:", access);
+            console.log("Is Editor:", access.is_editor);
+            console.log("Has Access:", access.has_access);
+            console.log("Access Type:", access.access_type);
+            console.log("Has SOL Access:", access.has_sol_access);
+            console.log("Has Zone Access:", access.has_zone_access);
+            console.log("Has Region Access:", access.has_region_access);
+            console.log("==================================================");
+
             if(access.is_editor){
                 load_sahayog_branches();
                 return;
@@ -3055,7 +3066,7 @@ function apply_branch_scorecard_access(){
             if(!access.has_access){
                 frappe.msgprint({
                     title:"No Access",
-                    message:"You have no access to view Branch Scorecard. Please coordinate with Manager 😟",
+                    message:"Access Restricted 🔒 — Please Contact the Manager.",
                     indicator:"red"
                 });
 
@@ -4056,6 +4067,24 @@ all_records.filter(
 record=>
 is_valid_sahayog_branch(record)
 );
+
+all_sahayog_branches.sort(
+(a, b) =>
+Number(
+String(
+a.sol_id||
+a.name||
+""
+).trim()
+) -
+Number(
+String(
+b.sol_id||
+b.name||
+""
+).trim()
+)
+);
 console.log(
 "Total Sahayog Branch records loaded:",
 all_records.length
@@ -4135,7 +4164,7 @@ is_valid_sahayog_branch(record)
 if(!valid_branches.length){
     frappe.msgprint({
         title: __("No Access"),
-        message: __("You have no access to view Branch Scorecard. Please coordinate with Manager 😟"),
+        message: __("Access Restricted 🔒 — Please Contact the Manager."),
         indicator: "red"
     });
     return;

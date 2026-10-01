@@ -195,6 +195,13 @@ def _is_zonal_branch(branch_type):
     )
 
 
+def _norm_region(value):
+    v = str(value or "").strip().upper()
+    if v in ("HO", "HEAD OFFICE"):
+        return "HEAD OFFICE"
+    return v
+
+
 def _get_branch_zone_map():
     """
     Returns:
@@ -402,7 +409,7 @@ def _get_branch_records():
         }
 
         allowed_regions = {
-            str(row.region).strip()
+            _norm_region(row.region)
             for row in report_preference.region
             if row.region
         }
@@ -475,7 +482,7 @@ def _get_branch_records():
             if allowed_zones and zone not in allowed_zones:
                 continue
 
-            if allowed_regions and region not in allowed_regions:
+            if allowed_regions and _norm_region(region) not in allowed_regions:
                 continue
 
             if allowed_districts and district not in allowed_districts:

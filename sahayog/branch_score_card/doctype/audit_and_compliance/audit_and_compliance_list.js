@@ -237,8 +237,9 @@ frappe.listview_settings['Audit and Compliance'] = {
 
 function apply_excel_btn_custom_style() {
     let style = `
-        <style id="excel-btn-custom-style">
-            /* Main Excel Upload Dropdown Button */
+        <style>/* CSS_COMMENTED_BY_PURVI
+
+
             .page-actions .btn-group .btn,
             .page-actions .inner-group-button .btn {
                 background-color: #0d5c75 !important;
@@ -258,7 +259,7 @@ function apply_excel_btn_custom_style() {
                 border-top-color: #ffffff !important;
             }
 
-            /* Dropdown Menu Options Styling */
+
             .page-actions .dropdown-menu .dropdown-item,
             .page-actions .dropdown-menu li a {
                 color: #0d5c75 !important;
@@ -271,7 +272,7 @@ function apply_excel_btn_custom_style() {
                 color: #084357 !important;
             }
 
-            /* Dialog Modal - Process File Primary Button */
+
             .modal-dialog .btn-primary,
             .modal-dialog button[data-btn-type="primary"] {
                 background-color: #0d5c75 !important;
@@ -284,7 +285,8 @@ function apply_excel_btn_custom_style() {
                 background-color: #084357 !important;
                 border-color: #084357 !important;
             }
-        </style>
+
+CSS_COMMENTED_BY_PURVI */</style>
     `;
 
     if ($('#excel-btn-custom-style').length === 0) {

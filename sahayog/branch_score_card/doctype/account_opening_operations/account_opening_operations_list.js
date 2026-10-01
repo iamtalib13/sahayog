@@ -22,9 +22,9 @@ frappe.listview_settings['Account Opening Operations'] = {
                             <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <b>Required Excel Columns for FTR/FTNR:</b><br>
-                                    <span style="color: #555;">Sol ID, Date, Status</span>
+                                    <span style="/* CSS_COMMENTED_BY_PURVI color: #555; */">Sol ID, Date, Status</span>
                                 </div>
-                                <button class="btn btn-xs btn-default btn-download-ftr-template" style="margin-left: 10px; border-color: #0d5c75; color: #0d5c75;">
+                                <button class="btn btn-xs btn-default btn-download-ftr-template" style="/* CSS_COMMENTED_BY_PURVI margin-left: 10px; border-color: #0d5c75; color: #0d5c75; */">
                                     <i class="fa fa-download"></i> Download Template
                                 </button>
                             </div>
@@ -114,9 +114,9 @@ frappe.listview_settings['Account Opening Operations'] = {
                             <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <b>Required Excel Columns for Zero IP Funding:</b><br>
-                                    <span style="color: #555;">SOL ID, A/C Opening Date, Scheme Code</span>
+                                    <span style="/* CSS_COMMENTED_BY_PURVI color: #555; */">SOL ID, A/C Opening Date, Scheme Code</span>
                                 </div>
-                                <button class="btn btn-xs btn-default btn-download-zero-ip-template" style="margin-left: 10px; border-color: #0d5c75; color: #0d5c75;">
+                                <button class="btn btn-xs btn-default btn-download-zero-ip-template" style="/* CSS_COMMENTED_BY_PURVI margin-left: 10px; border-color: #0d5c75; color: #0d5c75; */">
                                     <i class="fa fa-download"></i> Download Template
                                 </button>
                             </div>
@@ -195,6 +195,7 @@ frappe.listview_settings['Account Opening Operations'] = {
                 actions_btn = listview.page.wrapper.find('button:contains("Excel Upload")');
             }
 
+            /*
             actions_btn.css({
                 'background-color': '#0d5c75',
                 'border-color': '#0d5c75',
@@ -212,6 +213,7 @@ frappe.listview_settings['Account Opening Operations'] = {
                 'color': '#0d5c75',
                 'font-weight': '500'
             });
+            */
         }, 200);
     }
 };

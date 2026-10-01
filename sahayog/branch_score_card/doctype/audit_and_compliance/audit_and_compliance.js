@@ -4,7 +4,7 @@ frappe.ui.form.on("Audit and Compliance", {
         if (frm.fields_dict['audit_closure_table']?.grid) {
             frm.fields_dict['audit_closure_table'].grid.add_custom_formatter('delay_in_closure', function(value, doc) {
                 if (!doc.recived_date && (!value || value === "0" || value === 0)) {
-                    return `<span style="color: #6c757d;">Awaiting Receive Date</span>`;
+                    return `<span style="/* CSS_COMMENTED_BY_PURVI color: #6c757d; */">Awaiting Receive Date</span>`;
                 }
                 return value;
             });
@@ -13,7 +13,7 @@ frappe.ui.form.on("Audit and Compliance", {
         if (frm.fields_dict['com_visit_compliance']?.grid) {
             frm.fields_dict['com_visit_compliance'].grid.add_custom_formatter('turnaround_time_days', function(value, doc) {
                 if (!doc.date_of_closure && (!value || value === "0" || value === 0)) {
-                    return `<span style="color: #6c757d;">Awaiting date of closure</span>`;
+                    return `<span style="/* CSS_COMMENTED_BY_PURVI color: #6c757d; */">Awaiting date of closure</span>`;
                 }
                 return value;
             });
@@ -22,7 +22,8 @@ frappe.ui.form.on("Audit and Compliance", {
 
     refresh(frm) {
         // Inject Custom CSS Styles
-        frappe.dom.set_style(`
+        frappe.dom.set_style(`/* CSS_COMMENTED_BY_PURVI
+
             .form-grid {
                 border: 1px solid #cbd5e1 !important;
                 border-radius: 8px !important;
@@ -71,10 +72,10 @@ frappe.ui.form.on("Audit and Compliance", {
                 background-color: #f1f5f9 !important;
             }
 
-            .form-control, 
+            .form-control,
             .input-with-feedback,
-            .frappe-control input, 
-            .frappe-control select, 
+            .frappe-control input,
+            .frappe-control select,
             .frappe-control textarea,
             .control-input .like-disabled-input {
                 background-color: #f8fafc !important;
@@ -85,14 +86,15 @@ frappe.ui.form.on("Audit and Compliance", {
                 box-shadow: none !important;
             }
 
-            .form-control[disabled], 
+            .form-control[disabled],
             .form-control[readonly],
             .control-value {
                 background-color: #f1f5f9 !important;
                 border-color: #cbd5e1 !important;
                 color: #475569 !important;
             }
-        `);
+
+CSS_COMMENTED_BY_PURVI */`);
 
         // Refresh Logic for Audit Score
         (frm.doc.audit_score_table || []).forEach(row => {
@@ -110,7 +112,7 @@ frappe.ui.form.on("Audit and Compliance", {
             }
             let hasDate = !!row.recived_date;
             frappe.model.set_value(row.doctype, row.name, "compliance_report", hasDate ? "Received" : "Pending");
-            
+
             if (!hasDate) {
                 frappe.model.set_value(row.doctype, row.name, "delay_in_closure", "Awaiting Receive Date");
             }
@@ -156,7 +158,7 @@ function set_month_and_show_toast(cdt, cdn, date_field_value) {
     if (date_field_value) {
         let selected_date = frappe.datetime.str_to_user(date_field_value);
         let month_name = moment(date_field_value, 'YYYY-MM-DD').format('MMMM');
-        
+
         frappe.model.set_value(cdt, cdn, 'month', month_name);
 
         frappe.show_alert({
@@ -262,11 +264,11 @@ frappe.ui.form.on("Audit Closure Delay Item", {
         if (row.report_published_date && row.recived_date) {
             if (frappe.datetime.get_diff(row.recived_date, row.report_published_date) < 0) {
                 frappe.msgprint(__('<b>Received Date</b> cannot be earlier than <b>Report Published Date</b>. Please enter a valid date.'));
-                
+
                 frappe.model.set_value(cdt, cdn, 'recived_date', '');
                 frappe.model.set_value(cdt, cdn, 'compliance_report', 'Pending');
                 frappe.model.set_value(cdt, cdn, 'delay_in_closure', 'Awaiting Receive Date');
-                
+
                 frm.fields_dict['audit_closure_table']?.grid.refresh();
                 highlight_status_rows(frm);
                 return;
@@ -275,9 +277,9 @@ frappe.ui.form.on("Audit Closure Delay Item", {
 
         let hasDate = !!row.recived_date;
         frappe.model.set_value(cdt, cdn, "compliance_report", hasDate ? "Received" : "Pending");
-        
-        let delay_val = (hasDate && row.report_published_date) 
-            ? String(frappe.datetime.get_diff(row.recived_date, row.report_published_date)) 
+
+        let delay_val = (hasDate && row.report_published_date)
+            ? String(frappe.datetime.get_diff(row.recived_date, row.report_published_date))
             : "Awaiting Receive Date";
 
         frappe.model.set_value(cdt, cdn, "delay_in_closure", delay_val);
@@ -345,11 +347,11 @@ frappe.ui.form.on("COM Visit Compliance Item", {
         if (row.date_of_publish && row.date_of_closure) {
             if (frappe.datetime.get_diff(row.date_of_closure, row.date_of_publish) < 0) {
                 frappe.msgprint(__('<b>Date of Closure</b> cannot be earlier than <b>Date of Publish</b>. Please enter a valid date.'));
-                
+
                 frappe.model.set_value(cdt, cdn, 'date_of_closure', '');
                 frappe.model.set_value(cdt, cdn, 'status', 'Pending');
                 frappe.model.set_value(cdt, cdn, 'turnaround_time_days', 'Awaiting date of closure');
-                
+
                 frm.fields_dict['com_visit_compliance']?.grid.refresh();
                 highlight_status_rows(frm);
                 return;
@@ -358,9 +360,9 @@ frappe.ui.form.on("COM Visit Compliance Item", {
 
         let hasDate = !!row.date_of_closure;
         frappe.model.set_value(cdt, cdn, "status", hasDate ? "Completed" : "Pending");
-        
-        let tat_val = (hasDate && row.date_of_publish) 
-            ? String(frappe.datetime.get_diff(row.date_of_closure, row.date_of_publish)) 
+
+        let tat_val = (hasDate && row.date_of_publish)
+            ? String(frappe.datetime.get_diff(row.date_of_closure, row.date_of_publish))
             : "Awaiting date of closure";
 
         frappe.model.set_value(cdt, cdn, "turnaround_time_days", tat_val);

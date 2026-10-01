@@ -23,10 +23,10 @@ frappe.listview_settings['Miscellaneous'] = {
                             <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <b>Required Excel Columns for Account Opening Error:</b><br>
-                                    <span style="color: #555;">BRANCH CODE ( SOL ID ), A/C Opening Date</span>
+                                    <span style="/* CSS_COMMENTED_BY_PURVI color: #555; */">BRANCH CODE ( SOL ID ), A/C Opening Date</span>
                                 </div>
                                 <div>
-                                    <button class="btn btn-xs btn-default btn-download-template" style="color: #0d5c75; font-weight: 600; text-decoration: none;">
+                                    <button class="btn btn-xs btn-default btn-download-template" style="/* CSS_COMMENTED_BY_PURVI color: #0d5c75; font-weight: 600; text-decoration: none; */">
                                         <i class="fa fa-download"></i> Download Template
                                     </button>
                                 </div>
@@ -118,10 +118,10 @@ frappe.listview_settings['Miscellaneous'] = {
                             <div style="margin-top: 5px; padding: 10px; background-color: #f4f8f8; border-left: 3px solid #0d5c75; border-radius: 4px; font-size: 12px; color: #333; display: flex; justify-content: space-between; align-items: center;">
                                 <div>
                                     <b>Required Excel Columns for Bank Reconciliation:</b><br>
-                                    <span style="color: #555;">Sol Id, Error Date</span>
+                                    <span style="/* CSS_COMMENTED_BY_PURVI color: #555; */">Sol Id, Error Date</span>
                                 </div>
                                 <div>
-                                    <button class="btn btn-xs btn-default btn-download-template" style="color: #0d5c75; font-weight: 600; text-decoration: none;">
+                                    <button class="btn btn-xs btn-default btn-download-template" style="/* CSS_COMMENTED_BY_PURVI color: #0d5c75; font-weight: 600; text-decoration: none; */">
                                         <i class="fa fa-download"></i> Download Template
                                     </button>
                                 </div>
@@ -201,6 +201,7 @@ frappe.listview_settings['Miscellaneous'] = {
                 actions_btn = listview.page.wrapper.find('button:contains("Excel Upload")');
             }
 
+            /*
             actions_btn.css({
                 'background-color': '#0d5c75',
                 'border-color': '#0d5c75',
@@ -218,6 +219,7 @@ frappe.listview_settings['Miscellaneous'] = {
                 'color': '#0d5c75',
                 'font-weight': '500'
             });
+            */
         }, 200);
     }
 };
