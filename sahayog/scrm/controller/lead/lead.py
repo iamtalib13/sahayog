@@ -401,3 +401,18 @@ def get_users_by_branch_and_designation(
         "start": start,
         "page_len": page_len,
     })
+
+
+@frappe.whitelist()
+def get_open_activities(ref_doctype=None, ref_docname=None):
+    """Safely return open tasks and events for reference doc without 404 errors on new/unsaved docs."""
+    if not ref_doctype or not ref_docname or str(ref_docname).startswith("new-"):
+        return {"tasks": [], "events": []}
+    try:
+        from erpnext.crm.utils import get_open_todos, get_open_events
+        tasks = get_open_todos(ref_doctype, ref_docname)
+        events = get_open_events(ref_doctype, ref_docname)
+        return {"tasks": tasks, "events": events}
+    except Exception:
+        return {"tasks": [], "events": []}
+
