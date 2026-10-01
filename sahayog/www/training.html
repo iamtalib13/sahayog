@@ -579,6 +579,19 @@
         background: transparent;
         color: var(--accent-ink);
       }
+      /* Your-access scope note in the calendar filters bar */
+      .access-note {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11.5px;
+        font-weight: 600;
+        color: var(--accent-ink);
+        background: var(--accent-soft);
+        border-radius: 999px;
+        padding: 3px 10px;
+        white-space: nowrap;
+        margin-left: 2px;
+      }
 
       /* Toolbar */
       .cal-toolbar {
@@ -1380,6 +1393,7 @@
         font-weight: 600;
         border-radius: 999px;
         padding: 2px 9px;
+        cursor: default;
       }
       .chip-green {
         background: var(--green-soft);
@@ -4871,6 +4885,7 @@
               </svg>
               Reset
             </button>
+            <span class="access-note" id="accessNote" style="display: none"></span>
           </div>
 
           <div class="cal-toolbar">
@@ -5868,7 +5883,7 @@
                           type="text"
                           class="nt-sched-date"
                           id="new-from-date"
-                          placeholder="DD-MM-YYYY"
+                          placeholder="DD/MM/YYYY"
                           maxlength="10"
                           inputmode="numeric"
                           autocomplete="off"
@@ -5880,7 +5895,7 @@
                           type="text"
                           class="nt-sched-date"
                           id="new-to-date"
-                          placeholder="DD-MM-YYYY"
+                          placeholder="DD/MM/YYYY"
                           maxlength="10"
                           inputmode="numeric"
                           autocomplete="off"
@@ -5967,10 +5982,10 @@
           <h3>Bulk Upload Trainings</h3>
           <button class="modal-close" data-close="bulkUploadModal" title="Close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12" /></svg></button>
         </div>
-        <div style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">Upload CSV/XLSX — one row per training: <b>Training Date, Program Name, Branch Code (SOL ID), Trainer ID (Employee ID), Training Duration (days), Program Duration in Hours (numbers only), Number of Participants</b>. To Date is auto-set from duration; rows with the same Program + Date are skipped as duplicates. Day / Zone / Region / Attended columns are ignored (derived or marked later).</div>
+        <div style="font-size:13px;color:var(--ink-2);margin-bottom:12px;">Upload CSV/XLSX — one row per training. Required: <b>Training Date, Program Name, Trainer ID (Employee ID)</b>. Optional: <b>Branch Code (SOL ID), Zone, Region, Training Type (Classroom/Virtual), Training Location, Training Days, Program Duration in Hours (numbers only), Number of Participants</b>. To Date is auto-set from days; rows with the same Program + Date are skipped as duplicates. Zone/Region are matched to masters (spellings tolerated) and cross-checked with the branch. Day / Attended columns are ignored.</div>
         <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;">
           <button class="btn" id="btn-download-template" type="button">Download Sample Template</button>
-          <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Training Date, Program Name, Branch Code, Trainer ID, Training Duration, Program Duration in Hours, Number of Participants</span>
+          <span style="font-size:11px;color:var(--ink-3);align-self:center;">Columns: S.No, Training Date, Program Name, Branch Code, Zone, Region, Trainer ID, Training Type, Training Location, Training Days, Program Duration in Hours, Number of Participants</span>
         </div>
         <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
           <span style="font-size:12px;font-weight:600;white-space:nowrap;">Uploading for:</span>
@@ -6180,17 +6195,29 @@
           h = h % 12 || 12;
           return h + ":" + m + " " + ap;
         }
-        /* Dialog date display is DD-MM-YYYY; backend/API stays ISO (YYYY-MM-DD). */
+        /* All user-facing dates are DD/MM/YYYY; backend/API stays ISO. */
+        function fmtSlash(iso) {
+          if (!iso) return "—";
+          var p = String(iso).slice(0, 10).split("-");
+          if (p.length !== 3 || !p[0] || !p[1] || !p[2]) return String(iso);
+          return (
+            String(p[2]).padStart(2, "0") +
+            "/" +
+            String(p[1]).padStart(2, "0") +
+            "/" +
+            p[0]
+          );
+        }
         function fmtDMY(iso) {
           if (!iso) return "";
           var p = String(iso).slice(0, 10).split("-");
           if (p.length !== 3 || !p[0] || !p[1] || !p[2]) return String(iso);
-          return p[2] + "-" + p[1] + "-" + p[0];
+          return p[2] + "/" + p[1] + "/" + p[0];
         }
         function parseDMY(s) {
           var m = String(s || "")
             .trim()
-            .match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+            .match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
           if (!m) return null;
           var dd = parseInt(m[1], 10),
             mm = parseInt(m[2], 10),
@@ -6547,9 +6574,62 @@
                 document.getElementById(s).value = "";
               },
             );
+            /* Reset restores your access scope (server still enforces it). */
+            applyAccessDefaults();
             state.selectedDate = new Date(today);
             loadData(true);
           };
+        }
+        /* Prefill calendar filters from Report Preference access so the
+           applied scope is visible (single-value scopes get selected). */
+        function applyAccessDefaults() {
+          var s = state.accessScope;
+          var note = document.getElementById("accessNote");
+          if (!s || !s.restricted) {
+            if (note) note.style.display = "none";
+            return false;
+          }
+          var pairs = [
+            ["fil-zone", "zone", s.zones || []],
+            ["fil-region", "region", s.regions || []],
+            ["fil-district", "district", s.districts || []],
+            ["fil-branch", "branch", s.branches || []],
+          ];
+          pairs.forEach(function (p) {
+            var el = document.getElementById(p[0]);
+            if (!el || p[2].length !== 1) return;
+            var want = p[2][0];
+            for (var i = 0; i < el.options.length; i++) {
+              if (el.options[i].value === want || el.options[i].text === want) {
+                el.selectedIndex = i;
+                state.calFilters[p[1]] = el.options[i].value;
+                break;
+              }
+            }
+          });
+          var bits = [];
+          ["zones", "regions", "districts", "branches"].forEach(function (k) {
+            var v = s[k] || [];
+            if (v.length === 1) bits.push(v[0]);
+            else if (v.length > 1) bits.push(v.length + " " + k);
+          });
+          if (note) {
+            note.textContent = "Your access: " + (bits.join(" · ") || "restricted");
+            note.style.display = bits.length ? "inline-flex" : "none";
+            note.title = "Calendar is filtered to your Report Preference access";
+          }
+          return true;
+        }
+        function loadAccessScope() {
+          state.accessScope = null;
+          return api("get_my_access_scope", {})
+            .then(function (res) {
+              state.accessScope = res || null;
+              applyAccessDefaults();
+            })
+            .catch(function () {
+              state.accessScope = null;
+            });
         }
         function pickRelevantDate() {
           var evs = filteredEvents();
@@ -6811,8 +6891,8 @@
             (ev.training_program || ev.topic || "Training") +
             " · " +
             (evStart(ev) === evEnd(ev)
-              ? fmtDateShort(evStart(ev))
-              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))) +
+              ? fmtSlash(evStart(ev))
+              : fmtSlash(evStart(ev)) + " – " + fmtSlash(evEnd(ev))) +
             ((ev.program_duration_hours || 0)
               ? " · " + ev.program_duration_hours + " hrs"
               : "") +
@@ -6831,7 +6911,7 @@
             parseInt(p[1], 10) - 1,
             parseInt(p[2], 10),
           );
-          var label = WEEKDAY_NAMES[d.getDay()] + ", " + fmtDateShort(dateIso);
+          var label = WEEKDAY_NAMES[d.getDay()] + ", " + fmtSlash(dateIso);
           titleEl.textContent =
             label +
             " — " +
@@ -7252,8 +7332,8 @@
           }
           var dateLabel = evStart(ev)
             ? evStart(ev) === evEnd(ev)
-              ? fmtDateShort(evStart(ev))
-              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))
+              ? fmtSlash(evStart(ev))
+              : fmtSlash(evStart(ev)) + " – " + fmtSlash(evEnd(ev))
             : "—";
           var rawTime = ev.time
             ? ev.end_time
@@ -7275,9 +7355,16 @@
               ? metaRow("Duration (Hours)", ev.program_duration_hours)
               : "") +
             "</div></div>";
-          // All branches as compact chips (full geo stays one line per branch in title tooltip)
-          if (geos.length > 1) {
-            var chips = geos
+          // All branches as compact chips (full geo stays one line per branch in title tooltip).
+          // Shown for every role/mode, even a single branch — otherwise the
+          // branch is invisible anywhere in the drawer.
+          var branchGeos = geos.length
+            ? geos
+            : ev.branch
+              ? [{ branch: ev.branch, zone: ev.zone, region: ev.region, district: ev.district }]
+              : [];
+          if (branchGeos.length) {
+            var chips = branchGeos
               .map(function (g) {
                 var meta = [g.zone, g.region, g.district]
                   .filter(function (x) {
@@ -7294,9 +7381,9 @@
               })
               .join(" ");
             body +=
-              '<div class="drawer-section"><div class="drawer-section-title">Branches (' +
-              geos.length +
-              ')</div><div style="display:flex;flex-wrap:wrap;gap:6px;">' +
+              '<div class="drawer-section"><div class="drawer-section-title">' +
+              (branchGeos.length === 1 ? "Branch" : "Branches (" + branchGeos.length + ")") +
+              '</div><div style="display:flex;flex-wrap:wrap;gap:6px;">' +
               chips +
               "</div></div>";
           }
@@ -8522,7 +8609,7 @@
           // In-flight guard: double-clicks would race parallel writers on the same doc
           if (state.savingTraining) return;
           var tasks = [];
-          // Schedule changes — single Save handles reschedule (dialog shows DD-MM-YYYY, API uses ISO)
+          // Schedule changes — single Save handles reschedule (dialog shows DD/MM/YYYY, API uses ISO)
           var fromRaw = (
             (document.getElementById("new-from-date") || {}).value || ""
           ).trim();
@@ -8530,11 +8617,11 @@
             (document.getElementById("new-to-date") || {}).value || ""
           ).trim();
           if (fromRaw && !parseDMY(fromRaw)) {
-            showToast("Enter dates as DD-MM-YYYY");
+            showToast("Enter dates as DD/MM/YYYY");
             return;
           }
           if (toRaw && !parseDMY(toRaw)) {
-            showToast("Enter dates as DD-MM-YYYY");
+            showToast("Enter dates as DD/MM/YYYY");
             return;
           }
           var fromDate = parseDMY(fromRaw) || "";
@@ -8861,11 +8948,11 @@
           var date = parseDMY(fromRaw);
           var toDate = parseDMY(toRaw);
           if (!date) {
-            showToast("Enter dates as DD-MM-YYYY");
+            showToast("Enter dates as DD/MM/YYYY");
             return;
           }
           if (!toDate) {
-            showToast("Enter dates as DD-MM-YYYY");
+            showToast("Enter dates as DD/MM/YYYY");
             return;
           }
           if (toDate < date) {
@@ -9157,6 +9244,16 @@
           else loadReport();
         }
 
+        /* Report date cells come as ISO from the API — show DD/MM/YYYY. */
+        function fmtReportCell(key, v) {
+          if (v == null || v === "") return "";
+          if (
+            /date/i.test(key || "") &&
+            /^\d{4}-\d{2}-\d{2}/.test(String(v))
+          )
+            return fmtSlash(String(v).slice(0, 10));
+          return v;
+        }
         function renderReport(res) {
           var cols = (res && res.columns) || [];
           var rows = (res && res.rows) || [];
@@ -9199,7 +9296,7 @@
                   "<tr>" +
                   cols
                     .map(function (c) {
-                      var v = r[c.key];
+                      var v = fmtReportCell(c.key, r[c.key]);
                       return "<td>" + esc(v == null ? "" : v) + "</td>";
                     })
                     .join("") +
@@ -9320,7 +9417,7 @@
                 lines.push(
                   cols
                     .map(function (c) {
-                      return csvCell(r[c.key]);
+                      return csvCell(fmtReportCell(c.key, r[c.key]));
                     })
                     .join(","),
                 );
@@ -11600,7 +11697,7 @@
           var eEl = document.getElementById("new-end-time");
           var pvEl = document.getElementById("new-schedule-preview");
           var hintEl = document.getElementById("new-schedule-hint");
-          // Dialog shows DD-MM-YYYY; normalize to ISO for preview/overlap checks
+          // Dialog shows DD/MM/YYYY; normalize to ISO for preview/overlap checks
           var f = parseDMY(fEl ? fEl.value : "") || "";
           var t = parseDMY(tEl ? tEl.value : "") || "";
           var st = sEl ? sEl.value.trim() : "";
@@ -11780,31 +11877,6 @@
           });
 
         /* --- helpers --- */
-        function fmtDateShort(iso) {
-          if (!iso) return "—";
-          var p = iso.split("-");
-          var months = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ];
-          return (
-            parseInt(p[2], 10) +
-            " " +
-            months[parseInt(p[1], 10) - 1] +
-            " " +
-            p[0]
-          );
-        }
 
         function loadTrainingsList() {
           var tbody = document.getElementById("trBody");
@@ -12033,10 +12105,10 @@
               var meta = STATUS_META[st];
               var dateStr =
                 ev.from_date && ev.to_date && ev.from_date !== ev.to_date
-                  ? fmtDateShort(ev.from_date) +
+                  ? fmtSlash(ev.from_date) +
                     " – " +
-                    fmtDateShort(ev.to_date)
-                  : fmtDateShort(ev.from_date || ev.date);
+                    fmtSlash(ev.to_date)
+                  : fmtSlash(ev.from_date || ev.date);
               var pillBg =
                 st === "completed"
                   ? "var(--green-soft)"
@@ -13215,8 +13287,8 @@
             var r = g.first;
             lines.push(
               [
-                r.from_date || "",
-                r.to_date || r.from_date || "",
+                r.from_date ? fmtSlash(r.from_date) : "",
+                r.to_date || r.from_date ? fmtSlash(r.to_date || r.from_date) : "",
                 r.program_name || "",
                 r.trainer_name || "",
                 g.members.length,
@@ -13340,6 +13412,9 @@
             else if (savedTab === "reports") switchTab("reports");
             else if (savedTab === "team" && state.canSeeTeam) switchTab("team");
             return loadGeo();
+          })
+          .then(function () {
+            return loadAccessScope();
           })
           .then(function () {
             loadData(true);

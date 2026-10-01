@@ -144,10 +144,12 @@ class Training(Document):
         curr = from_d
         while curr <= to_d:
             d_str = str(curr)
+            # User-facing dates are always DD/MM/YYYY (backend stays ISO)
+            d_disp = f"{d_str[8:10]}/{d_str[5:7]}/{d_str[0:4]}"
             if curr.weekday() == 6:
-                frappe.throw(_("Training cannot be scheduled on Sunday: {0}").format(d_str))
+                frappe.throw(_("Training cannot be scheduled on Sunday: {0}").format(d_disp))
             if d_str in holiday_map:
-                frappe.throw(_("Training cannot be scheduled on Holiday ({0}): {1}").format(holiday_map[d_str], d_str))
+                frappe.throw(_("Training cannot be scheduled on Holiday ({0}): {1}").format(holiday_map[d_str], d_disp))
             curr = frappe.utils.add_days(curr, 1)
 
     def _validate_participant_types(self):

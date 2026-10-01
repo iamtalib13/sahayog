@@ -123,6 +123,153 @@ def _owner_scope_sql(params, prefix="scope"):
     return "(" + " OR ".join(parts) + ")"
 
 
+def _pref_geo_scope():
+    """Current user's geography access from Report Preference (Permission Mgr).
+
+    Returns None when unrestricted (admin, or no/disabled/empty preference),
+    else {"zones": set, "regions": set, "districts": set, "sols": set} in
+    TRAINING vocab (zones/regions digit-normalised, HO kept as-is).
+    Training rows match when ANY of their geographies (or legacy fields)
+    intersects the allowed sets.
+    """
+    import re as _re
+    if _is_admin():
+        return None
+    pref_name = frappe.db.get_value("Report Preference", {"user": frappe.session.user}, "name")
+    if not pref_name and frappe.db.exists("Report Preference", frappe.session.user):
+        pref_name = frappe.session.user
+    if not pref_name:
+        return None
+    try:
+        doc = frappe.get_doc("Report Preference", pref_name)
+    except Exception:
+        return None
+    if not doc.get("enabled"):
+        return None
+
+    def _digits(s):
+        m = _re.findall(r"\d+", str(s or ""))
+        return m[0].lstrip("0") or "0" if m else None
+
+    def _norm_region(s):
+        s = str(s or "").strip()
+        if s.lower() in ("ho", "head office", "h.o."):
+            return "HO"
+        d = _digits(s)
+        return d if d is not None else s.strip().lower()
+
+    def _norm_zone(s):
+        d = _digits(s)
+        return d if d is not None else str(s or "").strip().lower()
+
+    zones, regions, districts, sols = set(), set(), set(), set()
+    dzones, dregions, ddistricts, dsols = [], [], [], []
+    for d in doc.get("zone", []):
+        if not d.zone:
+            continue
+        z = _norm_zone(d.zone)
+        if z is None:
+            continue
+        zones.add(z)
+        dz = ("ZONE-" + z) if z[:1].isdigit() else str(d.zone).strip()
+        if dz not in dzones:
+            dzones.append(dz)
+    for d in doc.get("region", []):
+        if not d.region:
+            continue
+        r = _norm_region(d.region)
+        if r is None:
+            continue
+        regions.add(r)
+        dr = "HO" if r == "HO" else (("REGION-" + r) if r[:1].isdigit() else str(d.region).strip())
+        if dr not in dregions:
+            dregions.append(dr)
+    for d in doc.get("district", []):
+        if not d.district:
+            continue
+        v = str(d.district).strip()
+        districts.add(v.lower())
+        if v not in ddistricts:
+            ddistricts.append(v)
+    for d in doc.get("sol_id", []):
+        if not d.sol_id:
+            continue
+        v = str(d.sol_id).strip()
+        sols.add(v)
+        if v not in dsols:
+            dsols.append(v)
+    zones.discard(None)
+    regions.discard(None)
+    if not (zones or regions or districts or sols):
+        return None
+    return {
+        "zones": zones, "regions": regions, "districts": districts, "sols": sols,
+        "display": {"zones": dzones, "regions": dregions, "districts": ddistricts, "branches": dsols},
+    }
+
+
+@frappe.whitelist()
+def get_my_access_scope():
+    """Current user's geo access (training vocab) for prefilling UI filters."""
+    scope = _pref_geo_scope()
+    empty = {"restricted": False, "zones": [], "regions": [], "districts": [], "branches": []}
+    if not scope:
+        return empty
+    d = scope.get("display", {})
+    return {
+        "restricted": True,
+        "zones": d.get("zones", []),
+        "regions": d.get("regions", []),
+        "districts": d.get("districts", []),
+        "branches": d.get("branches", []),
+    }
+
+
+def _in_pref_geo(geos, legacy, scope):
+    """True when a training (geographies list + legacy row) is inside the
+    user's Report Preference access. Empty scope handled by caller (None)."""
+    import re as _re
+
+    def _zdigits(s):
+        m = _re.findall(r"\d+", str(s or ""))
+        return (m[0].lstrip("0") or "0") if m else None
+
+    def _zmatch(val):
+        d = _zdigits(val)
+        v = d if d is not None else str(val or "").strip().lower()
+        return v in scope["zones"]
+
+    def _rmatch(val):
+        s = str(val or "").strip()
+        if s.lower() in ("ho", "head office", "h.o."):
+            v = "HO"
+        else:
+            d = _zdigits(s)
+            v = d if d is not None else s.lower()
+        return v in scope["regions"]
+
+    candidates = []
+    for g in geos or []:
+        candidates.append(g)
+    if legacy is not None:
+        candidates.append({
+            "branch": legacy.branch or "",
+            "zone": legacy.zone or "",
+            "region": legacy.region or "",
+            "district": legacy.district or "",
+        })
+    for c in candidates:
+        if scope["sols"] and (c.get("branch") or "") in scope["sols"]:
+            return True
+        if scope["zones"] and _zmatch(c.get("zone")):
+            return True
+        if scope["regions"] and _rmatch(c.get("region")):
+            return True
+        if scope["districts"] and str(c.get("district") or "").strip().lower() in scope["districts"]:
+            return True
+    return False
+
+
 def _safe_year_month(year, month):
     try:
         year = int(year)
@@ -324,6 +471,13 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             filtered.append(r)
         rows = filtered
 
+    # Report Preference access (Permission Manager): user only sees trainings
+    # inside their allowed zones/regions/districts/branches. Intersects with
+    # any explicit filters above; admins are unrestricted.
+    _pref = _pref_geo_scope()
+    if _pref:
+        rows = [r for r in rows if _in_pref_geo(geo_map.get(r.name, []), r, _pref)]
+
     participants = _participant_counts([r.name for r in rows])
     show_budget = True
 
@@ -425,6 +579,11 @@ def get_training_list(
         rows = filtered
     else:
         geo_map = _get_geographies_map([r.name for r in rows])
+
+    # Report Preference access (Permission Manager) — same rule as calendar.
+    _pref = _pref_geo_scope()
+    if _pref:
+        rows = [r for r in rows if _in_pref_geo(geo_map.get(r.name, []), r, _pref)]
 
     participants = _participant_counts([r.name for r in rows])
     show_budget = True
@@ -1993,9 +2152,11 @@ def get_agent_options(enabled_only=True):
     Filters by agent_status = 'live' (case-insensitive) when enabled_only is truthy.
     """
     if enabled_only:
+        # Live agents only. Status vocabulary differs across sites
+        # ('live' vs 'active'), so accept both; closed/inactive stay out.
         rows = frappe.db.sql(
             "SELECT name, agent_name, branch_name FROM `tabAgent` "
-            "WHERE LOWER(agent_status) = 'live' ORDER BY agent_name ASC",
+            "WHERE LOWER(TRIM(agent_status)) IN ('live', 'active') ORDER BY agent_name ASC",
             as_dict=True,
         )
         return rows
@@ -2152,14 +2313,13 @@ def bulk_upload_training():
         # Date->Training Date, Topic->Program Name, Branch Name->Branch Code,
         # "Program Duration in hours..."->duration hours,
         # "Number of participants invited"->headcount.
+        # Branch Code is OPTIONAL (row + training can exist without a branch).
         # Day is derived from the date; Zone/Region auto-fetch from branch;
         # "attended" is marked later in the portal — all three are ignored.
         # One row = one training; no participant rows are added here.
         required = []
         if "training date" not in header_lower and "date" not in header_lower:
             required.append("Training Date (or Date)")
-        if "branch code" not in header_lower and "branch name" not in header_lower:
-            required.append("Branch Code (or Branch Name)")
         if "trainer id" not in header_lower:
             required.append("Trainer ID")
         if "program name" not in header_lower and "training title" not in header_lower and "topic" not in header_lower:
@@ -2199,6 +2359,40 @@ def bulk_upload_training():
                     return dated
             return str(frappe.utils.getdate(raw))
 
+        # System zone/region masters (for fuzzy sheet matching)
+        valid_zones = [r[0] for r in frappe.db.sql(
+            "SELECT DISTINCT zone FROM `tabSahayog Branch` "
+            "WHERE zone IS NOT NULL AND zone != '' ORDER BY zone")]
+        valid_regions = [r[0] for r in frappe.db.sql(
+            "SELECT DISTINCT region FROM `tabSahayog Branch` "
+            "WHERE region IS NOT NULL AND region != '' ORDER BY region")]
+
+        def resolve_geo(raw, valid):
+            """Sheet value -> system value. Exact (spacing/case-insensitive)
+            first, then known aliases (HO = head office), then number-based
+            (e.g. 'Zone 1' -> 'ZONE-1'). None = no match."""
+            import re as _re
+            token = _re.sub(r"\s+", " ", (raw or "")).strip().lower()
+            if not token:
+                return ""
+            aliases = {
+                "head office": "HO", "headoffice": "HO", "h.o.": "HO",
+                "h o": "HO", "ho.": "HO",
+            }
+            if token in aliases and aliases[token] in valid:
+                return aliases[token]
+            lmap = {str(v).lower(): v for v in valid}
+            if token in lmap:
+                return lmap[token]
+            m = _re.search(r"(\d+)", token)
+            if m:
+                num = m.group(1).lstrip("0") or "0"
+                for v in valid:
+                    vm = _re.search(r"(\d+)", str(v))
+                    if vm and (vm.group(1).lstrip("0") or "0") == num:
+                        return v
+            return None
+
         trainings = []
         errors = []
         for i, row in enumerate(rows[1:], start=2):
@@ -2208,8 +2402,10 @@ def bulk_upload_training():
             program = get_val(row, "Program Name", "Training Title", "Topic")
             branch_raw = get_val(row, "Branch Code", "Branch Name")
             trainer_id = get_val(row, "Trainer ID")
-            duration_raw = get_val(row, "Training Duration", "Duration", "Duration (Days)", "Training Days")
+            type_raw = get_val(row, "Training Type", "Type")
+            duration_raw = get_val(row, "Training Days", "Training Duration", "Duration", "Duration (Days)")
             count_raw = get_val(row, "Number of Participants", "No. of Participants", "Participants Count", "Participant Count")
+            location_raw = get_val(row, "Training Location", "Location", "Venue")
             hours_raw = get_val(row, "Program Duration in Hours", "Program Duration", "Duration in Hours", "Duration Hours")
 
             if not training_date_raw:
@@ -2223,16 +2419,16 @@ def bulk_upload_training():
             if not program:
                 errors.append(f"Row {i}: Program Name / Training Title is required")
                 continue
-            if not branch_raw:
-                errors.append(f"Row {i}: Branch Code is required")
-                continue
-            # SOL ID (Sahayog Branch.name) first, display name as fallback
-            branch_code = frappe.db.get_value("Sahayog Branch", branch_raw, "name") or frappe.db.get_value("Sahayog Branch", {"branch": branch_raw}, "name")
-            if not branch_code:
-                branch_code = frappe.db.get_value("Sahayog Branch", {"branch": ["like", branch_raw]}, "name")
-            if not branch_code:
-                errors.append(f"Row {i}: Branch '{branch_raw}' not found")
-                continue
+            # Branch is optional: resolve when given, else blank geography.
+            branch_code = ""
+            if branch_raw:
+                # SOL ID (Sahayog Branch.name) first, display name as fallback
+                branch_code = frappe.db.get_value("Sahayog Branch", branch_raw, "name") or frappe.db.get_value("Sahayog Branch", {"branch": branch_raw}, "name")
+                if not branch_code:
+                    branch_code = frappe.db.get_value("Sahayog Branch", {"branch": ["like", branch_raw]}, "name")
+                if not branch_code:
+                    errors.append(f"Row {i}: Branch '{branch_raw}' not found")
+                    continue
             if not trainer_id:
                 errors.append(f"Row {i}: Trainer ID is required")
                 continue
@@ -2240,6 +2436,38 @@ def bulk_upload_training():
                 errors.append(f"Row {i}: Trainer ID '{trainer_id}' not found")
                 continue
             trainer_name = frappe.db.get_value("Employee", trainer_id, "employee_name") or trainer_id
+            # Training Type: Classroom / Virtual (case & spacing tolerant)
+            type_token = "".join(str(type_raw or "").split()).lower()
+            if type_token in ("classroom",):
+                training_type = "Classroom"
+            elif type_token in ("virtual",):
+                training_type = "Virtual"
+            else:
+                errors.append(f"Row {i}: Training Type must be Classroom or Virtual (found '{type_raw}')")
+                continue
+            # Zone / Region: fuzzy-match sheet value to system master, then
+            # cross-check against the branch's own geography (when a branch
+            # is given). Sheet wins when the branch master is blank;
+            # conflicts are rejected.
+            branch_geo = frappe.db.get_value("Sahayog Branch", branch_code, ["zone", "region"], as_dict=True) if branch_code else None
+            zone_sheet = resolve_geo(get_val(row, "Zone"), valid_zones)
+            region_sheet = resolve_geo(get_val(row, "Region"), valid_regions)
+            if get_val(row, "Zone") and zone_sheet is None:
+                errors.append(f"Row {i}: Zone '{get_val(row, 'Zone')}' not recognised (valid: {', '.join(valid_zones)})")
+                continue
+            if get_val(row, "Region") and region_sheet is None:
+                errors.append(f"Row {i}: Region '{get_val(row, 'Region')}' not recognised (valid: {', '.join(valid_regions)})")
+                continue
+            _bz = (branch_geo.zone or "") if branch_geo else ""
+            _br = (branch_geo.region or "") if branch_geo else ""
+            zone_final = zone_sheet or _bz
+            region_final = region_sheet or _br
+            if zone_sheet and _bz and zone_sheet != _bz:
+                errors.append(f"Row {i}: Zone '{zone_sheet}' does not match branch '{branch_code}' (branch is in '{_bz}')")
+                continue
+            if region_sheet and _br and region_sheet != _br:
+                errors.append(f"Row {i}: Region '{region_sheet}' does not match branch '{branch_code}' (branch is in '{_br}')")
+                continue
             if not duration_raw:
                 duration = 1
             else:
@@ -2279,9 +2507,13 @@ def bulk_upload_training():
                 "program": program.strip(),
                 "branch_code": branch_code,
                 "trainer_name": trainer_name.strip(),
+                "training_type": training_type,
+                "zone": zone_final,
+                "region": region_final,
                 "duration": duration,
                 "count": count,
                 "hours": hours,
+                "location": location_raw,
             })
 
         if not trainings:
@@ -2308,20 +2540,27 @@ def bulk_upload_training():
                 doc.from_date = from_date
                 doc.to_date = to_date
                 doc.trainer = t["trainer_name"]
+                doc.training_type = t["training_type"]
+                doc.training_location = t["location"]
                 doc.number_of_participants = t["count"]
                 if t["hours"] is not None:
                     doc.program_duration_hours = t["hours"]
                 doc.start_time = ""
                 doc.end_time = ""
-                # Single branch geography (zone/region/district auto-fetched)
-                geo = frappe.db.get_value("Sahayog Branch", t["branch_code"], ["zone", "region", "district"], as_dict=True) or {}
-                doc.append("geographies", {"branch": t["branch_code"], "zone": geo.zone or "", "region": geo.region or "", "district": geo.district or ""})
+                # Branch geography only when a branch was given (district from
+                # master); otherwise zone/region live on the legacy fields.
+                if t["branch_code"]:
+                    _dgeo = frappe.db.get_value("Sahayog Branch", t["branch_code"], ["district"], as_dict=True) or {}
+                    doc.append("geographies", {"branch": t["branch_code"], "zone": t["zone"], "region": t["region"], "district": _dgeo.district or ""})
                 # Legacy sync handled in before_save, but set first for safety
                 if doc.geographies:
                     doc.branch = doc.geographies[0].branch
                     doc.zone = doc.geographies[0].zone
                     doc.region = doc.geographies[0].region
                     doc.district = doc.geographies[0].district
+                else:
+                    doc.zone = t["zone"]
+                    doc.region = t["region"]
                 # No participant rows here — headcount lives in
                 # number_of_participants; rows are added separately.
                 doc.insert(ignore_permissions=True)
@@ -2329,7 +2568,9 @@ def bulk_upload_training():
             except Exception as e:
                 import traceback
                 frappe.log_error(traceback.format_exc(), "Bulk Upload Training")
-                errors.append(f"Training {t['program']} on {from_date}: {str(e)}")
+                _fd = from_date
+                _fd_disp = f"{_fd[8:10]}/{_fd[5:7]}/{_fd[0:4]}" if len(_fd) == 10 else _fd
+                errors.append(f"Training {t['program']} on {_fd_disp}: {str(e)}")
 
         # Build response
         msg = f"Created {created} trainings"
@@ -2349,10 +2590,10 @@ def get_bulk_upload_template():
     # One row = one training. No participant rows — headcount goes in
     # "Number of Participants". Duration auto-sets To Date in the app.
     # Sample uses real program / SOL ID / trainer ID values from the system.
-    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Trainer ID", "Training Duration", "Program Duration in Hours", "Number of Participants"]
+    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Zone", "Region", "Trainer ID", "Training Type", "Training Location", "Training Days", "Program Duration in Hours", "Number of Participants"]
     sample = [
-        ["1", "28/09/2026", "Training SK", "1000", "1754", "3", "6", "20"],
-        ["2", "29/09/2026", "JLL Training", "1012", "8751", "1", "2", "15"],
+        ["1", "28/09/2026", "Training SK", "1000", "ZONE-1", "HO", "1754", "Classroom", "GONDIA-HO", "3", "6", "20"],
+        ["2", "29/09/2026", "JLL Training", "1012", "ZONE-1", "REGION-1", "8751", "Virtual", "GONDIA", "1", "2", "15"],
     ]
     import csv, io
     out = io.StringIO()
