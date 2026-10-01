@@ -5868,7 +5868,7 @@
                           type="text"
                           class="nt-sched-date"
                           id="new-from-date"
-                          placeholder="DD-MM-YYYY"
+                          placeholder="DD/MM/YYYY"
                           maxlength="10"
                           inputmode="numeric"
                           autocomplete="off"
@@ -5880,7 +5880,7 @@
                           type="text"
                           class="nt-sched-date"
                           id="new-to-date"
-                          placeholder="DD-MM-YYYY"
+                          placeholder="DD/MM/YYYY"
                           maxlength="10"
                           inputmode="numeric"
                           autocomplete="off"
@@ -6180,17 +6180,29 @@
           h = h % 12 || 12;
           return h + ":" + m + " " + ap;
         }
-        /* Dialog date display is DD-MM-YYYY; backend/API stays ISO (YYYY-MM-DD). */
+        /* All user-facing dates are DD/MM/YYYY; backend/API stays ISO. */
+        function fmtSlash(iso) {
+          if (!iso) return "—";
+          var p = String(iso).slice(0, 10).split("-");
+          if (p.length !== 3 || !p[0] || !p[1] || !p[2]) return String(iso);
+          return (
+            String(p[2]).padStart(2, "0") +
+            "/" +
+            String(p[1]).padStart(2, "0") +
+            "/" +
+            p[0]
+          );
+        }
         function fmtDMY(iso) {
           if (!iso) return "";
           var p = String(iso).slice(0, 10).split("-");
           if (p.length !== 3 || !p[0] || !p[1] || !p[2]) return String(iso);
-          return p[2] + "-" + p[1] + "-" + p[0];
+          return p[2] + "/" + p[1] + "/" + p[0];
         }
         function parseDMY(s) {
           var m = String(s || "")
             .trim()
-            .match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+            .match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
           if (!m) return null;
           var dd = parseInt(m[1], 10),
             mm = parseInt(m[2], 10),
@@ -6811,8 +6823,8 @@
             (ev.training_program || ev.topic || "Training") +
             " · " +
             (evStart(ev) === evEnd(ev)
-              ? fmtDateShort(evStart(ev))
-              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))) +
+              ? fmtSlash(evStart(ev))
+              : fmtSlash(evStart(ev)) + " – " + fmtSlash(evEnd(ev))) +
             ((ev.program_duration_hours || 0)
               ? " · " + ev.program_duration_hours + " hrs"
               : "") +
@@ -6831,7 +6843,7 @@
             parseInt(p[1], 10) - 1,
             parseInt(p[2], 10),
           );
-          var label = WEEKDAY_NAMES[d.getDay()] + ", " + fmtDateShort(dateIso);
+          var label = WEEKDAY_NAMES[d.getDay()] + ", " + fmtSlash(dateIso);
           titleEl.textContent =
             label +
             " — " +
@@ -7252,8 +7264,8 @@
           }
           var dateLabel = evStart(ev)
             ? evStart(ev) === evEnd(ev)
-              ? fmtDateShort(evStart(ev))
-              : fmtDateShort(evStart(ev)) + " – " + fmtDateShort(evEnd(ev))
+              ? fmtSlash(evStart(ev))
+              : fmtSlash(evStart(ev)) + " – " + fmtSlash(evEnd(ev))
             : "—";
           var rawTime = ev.time
             ? ev.end_time
@@ -8522,7 +8534,7 @@
           // In-flight guard: double-clicks would race parallel writers on the same doc
           if (state.savingTraining) return;
           var tasks = [];
-          // Schedule changes — single Save handles reschedule (dialog shows DD-MM-YYYY, API uses ISO)
+          // Schedule changes — single Save handles reschedule (dialog shows DD/MM/YYYY, API uses ISO)
           var fromRaw = (
             (document.getElementById("new-from-date") || {}).value || ""
           ).trim();
@@ -8530,11 +8542,11 @@
             (document.getElementById("new-to-date") || {}).value || ""
           ).trim();
           if (fromRaw && !parseDMY(fromRaw)) {
-            showToast("Enter dates as DD-MM-YYYY");
+            showToast("Enter dates as DD/MM/YYYY");
             return;
           }
           if (toRaw && !parseDMY(toRaw)) {
-            showToast("Enter dates as DD-MM-YYYY");
+            showToast("Enter dates as DD/MM/YYYY");
             return;
           }
           var fromDate = parseDMY(fromRaw) || "";
@@ -8861,11 +8873,11 @@
           var date = parseDMY(fromRaw);
           var toDate = parseDMY(toRaw);
           if (!date) {
-            showToast("Enter dates as DD-MM-YYYY");
+            showToast("Enter dates as DD/MM/YYYY");
             return;
           }
           if (!toDate) {
-            showToast("Enter dates as DD-MM-YYYY");
+            showToast("Enter dates as DD/MM/YYYY");
             return;
           }
           if (toDate < date) {
@@ -9157,6 +9169,16 @@
           else loadReport();
         }
 
+        /* Report date cells come as ISO from the API — show DD/MM/YYYY. */
+        function fmtReportCell(key, v) {
+          if (v == null || v === "") return "";
+          if (
+            /date/i.test(key || "") &&
+            /^\d{4}-\d{2}-\d{2}/.test(String(v))
+          )
+            return fmtSlash(String(v).slice(0, 10));
+          return v;
+        }
         function renderReport(res) {
           var cols = (res && res.columns) || [];
           var rows = (res && res.rows) || [];
@@ -9199,7 +9221,7 @@
                   "<tr>" +
                   cols
                     .map(function (c) {
-                      var v = r[c.key];
+                      var v = fmtReportCell(c.key, r[c.key]);
                       return "<td>" + esc(v == null ? "" : v) + "</td>";
                     })
                     .join("") +
@@ -9320,7 +9342,7 @@
                 lines.push(
                   cols
                     .map(function (c) {
-                      return csvCell(r[c.key]);
+                      return csvCell(fmtReportCell(c.key, r[c.key]));
                     })
                     .join(","),
                 );
@@ -11600,7 +11622,7 @@
           var eEl = document.getElementById("new-end-time");
           var pvEl = document.getElementById("new-schedule-preview");
           var hintEl = document.getElementById("new-schedule-hint");
-          // Dialog shows DD-MM-YYYY; normalize to ISO for preview/overlap checks
+          // Dialog shows DD/MM/YYYY; normalize to ISO for preview/overlap checks
           var f = parseDMY(fEl ? fEl.value : "") || "";
           var t = parseDMY(tEl ? tEl.value : "") || "";
           var st = sEl ? sEl.value.trim() : "";
@@ -11780,31 +11802,6 @@
           });
 
         /* --- helpers --- */
-        function fmtDateShort(iso) {
-          if (!iso) return "—";
-          var p = iso.split("-");
-          var months = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
-          ];
-          return (
-            parseInt(p[2], 10) +
-            " " +
-            months[parseInt(p[1], 10) - 1] +
-            " " +
-            p[0]
-          );
-        }
 
         function loadTrainingsList() {
           var tbody = document.getElementById("trBody");
@@ -12033,10 +12030,10 @@
               var meta = STATUS_META[st];
               var dateStr =
                 ev.from_date && ev.to_date && ev.from_date !== ev.to_date
-                  ? fmtDateShort(ev.from_date) +
+                  ? fmtSlash(ev.from_date) +
                     " – " +
-                    fmtDateShort(ev.to_date)
-                  : fmtDateShort(ev.from_date || ev.date);
+                    fmtSlash(ev.to_date)
+                  : fmtSlash(ev.from_date || ev.date);
               var pillBg =
                 st === "completed"
                   ? "var(--green-soft)"
@@ -13215,8 +13212,8 @@
             var r = g.first;
             lines.push(
               [
-                r.from_date || "",
-                r.to_date || r.from_date || "",
+                r.from_date ? fmtSlash(r.from_date) : "",
+                r.to_date || r.from_date ? fmtSlash(r.to_date || r.from_date) : "",
                 r.program_name || "",
                 r.trainer_name || "",
                 g.members.length,
