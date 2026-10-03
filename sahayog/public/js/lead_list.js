@@ -1,9 +1,17 @@
 frappe.listview_settings["Lead"] = {
   refresh(listview) {
     const is_privileged = frappe.user_roles.includes("System Manager") || frappe.session.user === "Administrator";
+    const is_bm = frappe.user.has_role("Branch Manager") || is_privileged;
+
     listview.page.add_inner_button(__("Today's Lead Report"), function () {
       frappe.set_route("query-report", "Lead Report");
     });
+
+    if (is_bm) {
+      listview.page.add_inner_button(__("BM Lead Verification"), function () {
+        frappe.set_route("crm-lead-report");
+      });
+    }
 
     if (is_privileged) {
       listview.page.add_inner_button(__("Generate Fast Report"), function () {
