@@ -408,6 +408,21 @@ def get_users_by_branch_and_designation(
     })
 
 
+def validate_lead_conversion_verification(doc, method=None):
+    """Validate that a lead must be Verified by Branch Manager before its status can be changed to Converted."""
+    if doc.status == "Converted":
+        verification_status = doc.get("custom_verification_status") or "Pending"
+        if verification_status != "Verified":
+            frappe.throw(
+                title=_("BM Verification Required"),
+                msg=_(
+                    "This lead cannot be Converted because it has not been Verified by the Branch Manager.<br><br>"
+                    "Current Verification Status: <b>{0}</b>.<br>"
+                    "Please request your Branch Manager to verify this lead first."
+                ).format(verification_status)
+            )
+
+
 @frappe.whitelist()
 def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None):
     """Fetch leads for Branch BM verification grouped by day with day-wise tracking metrics."""
