@@ -68,12 +68,22 @@ frappe.ui.form.on("Branch Visit Review", {
 	visited_by(frm) {
 		set_visitor_signoff_access(frm);
 	},
+	overall_assessment(frm) {
+		update_overall_badge(frm);
+	},
 	template(frm) {
 		if (frm.doc.template) {
 			render_checklist(frm, frm.doc.template);
 		}
 	},
 });
+
+function update_overall_badge(frm) {
+	let $badge = frm.fields_dict.checklist.$wrapper.find(".bvr-overall-badge b");
+	if ($badge.length) {
+		$badge.text(frm.doc.overall_assessment || "\u2014");
+	}
+}
 
 function set_visitor_signoff_access(frm) {
 	set_signoff_access(
@@ -287,11 +297,11 @@ function render_checklist(frm, template) {
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Areas Requiring Attention (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Leadership Remarks</h5></div><textarea class='form-control leadership-input' data-field='leadership_remarks' rows='4' placeholder='Enter leadership remarks'>" + (frm.doc.leadership_remarks || "") + "</textarea></div>";
 
-			let tabs_html = "<div class='bvr-tabs'><ul class='nav nav-tabs'>";
+			let tabs_html = "<div class='bvr-tabs'><div class='bvr-tab-bar'><ul class='nav nav-tabs'>";
 			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
 			tabs_html += "<li><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
 			tabs_html += "<li><a class='tab-leadership' style='cursor:pointer;'>Leadership Assessment</a></li>";
-			tabs_html += "</ul>";
+			tabs_html += "</ul><span class='bvr-overall-badge'>Overall Assessment: <b>" + (frm.doc.overall_assessment || "&mdash;") + "</b></span></div>";
 			tabs_html += "<div class='tab-content-review'>" + checklist_html + "</div>";
 			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div>";
 			tabs_html += "<div class='tab-content-leadership' style='display:none;'>" + leadership_html + "</div></div>";
@@ -299,7 +309,10 @@ function render_checklist(frm, template) {
 			frm.fields_dict.checklist.$wrapper.html(tabs_html);
 
 			let style = `<style>
-				.bvr-tabs .nav-tabs { border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; background: #f8f9fb; border-radius: 8px 8px 0 0; padding: 4px 4px 0 4px; display: inline-flex; gap: 2px; }
+				.bvr-tabs .bvr-tab-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; background: #f8f9fb; border-radius: 8px 8px 0 0; padding: 4px 8px 0 4px; }
+				.bvr-tabs .bvr-tab-bar .nav-tabs { border-bottom: none; margin-bottom: 0; background: transparent; border-radius: 0; padding: 0; display: inline-flex; gap: 2px; }
+				.bvr-tabs .bvr-overall-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #4a5568; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 5px 14px; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+				.bvr-tabs .bvr-overall-badge b { color: #5e64ff; font-weight: 700; }
 				.bvr-tabs .tab-content-review { width: 100%; }
 				.bvr-tabs .nav-tabs > li > a { border: none; color: #6c7680; font-weight: 600; padding: 10px 20px; border-radius: 6px 6px 0 0; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; font-size: 13px; background: transparent; }
 				.bvr-tabs .nav-tabs > li.active > a, .bvr-tabs .nav-tabs > li > a:hover { border: none; color: #16181d; border-bottom: 2px solid #5e64ff; background: #fff; border-radius: 6px 6px 0 0; }
