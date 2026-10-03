@@ -840,7 +840,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </button>
 
                                <button 
-                                    v-if="frappe.user_roles.includes('Branch Manager') || frappe.session.user === 'Administrator'"
+                                    v-if="isBMUser()"
                                     class="btn-toggle-analytics"
                                     @click="openLeadTransferDialog">
                                     <i class="fa fa-exchange"></i>
@@ -848,7 +848,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </button>
 
                                <button 
-                                    v-if="frappe.user_roles.includes('Branch Manager') || frappe.session.user === 'Administrator'"
+                                    v-if="isBMUser()"
                                     class="btn-toggle-analytics"
                                     style="background: #e0e7ff; color: #3730a3; margin-left: 6px;"
                                     @click="openBMVerificationDialog">
@@ -1516,6 +1516,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       return count > 0
         ? { label: "Good", class: "badge-pastel-green" }
         : { label: "Bad", class: "badge-pastel-red" };
+    },
+    isBMUser() {
+      if (frappe.session.user === "Administrator") return true;
+      if (frappe.user && frappe.user.has_role) {
+        return frappe.user.has_role("Branch Manager") || frappe.user.has_role("System Manager");
+      }
+      return frappe.user_roles && (frappe.user_roles.includes("Branch Manager") || frappe.user_roles.includes("System Manager"));
     },
     goToLeadList() {
       frappe.set_route("list", "Lead");
