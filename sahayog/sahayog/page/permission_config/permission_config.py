@@ -99,6 +99,8 @@ def get_paginated_users(search=None, designation=None, branch=None, page=1, page
         LEFT JOIN `tabReport Preference` rp ON rp.user = e.user_id
         WHERE {where_clause}
         ORDER BY
+            rp.modified IS NULL,
+            rp.modified DESC,
             e.employee_name ASC,
             e.name ASC
         LIMIT %(page_size)s OFFSET %(offset)s

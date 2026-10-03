@@ -136,6 +136,9 @@ def get_widget_meta(user=None):
                 "districts": raw_districts,
                 "states": raw_states,
                 "sol_ids": raw_sols,
+                "modified": str(doc.modified),
+                "modified_by": doc.modified_by,
+                "modified_by_name": frappe.utils.get_fullname(doc.modified_by),
             }
         else:
             pref_data = {
@@ -252,6 +255,8 @@ def save_widget_preference(data):
         "status": "success",
         "name": doc.name,
         "modified": str(doc.modified),
+        "modified_by": doc.modified_by,
+        "modified_by_name": frappe.utils.get_fullname(doc.modified_by),
         "doc": doc.as_dict(),
         "message": _("Report Preferences saved successfully!")
     }
