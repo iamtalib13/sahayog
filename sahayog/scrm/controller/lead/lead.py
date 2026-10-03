@@ -86,10 +86,8 @@ def validate_duplicate_lead(doc, method=None):
         frappe.throw(
             title=_("Duplicate Lead Exists"),
             msg=_(
-                "An active lead ({0}) for Product <b>{1}</b> with Status <b>{2}</b> already exists for this customer.<br><br>"
-                "You can create a new lead for the same product ONLY after the previous lead has been <b>Converted</b>.<br>"
-                "Please edit the existing lead instead: {3}"
-            ).format(d.name, d.product, d.status, lead_link)
+                "A lead for Product <b>{0}</b> already exists for this customer (Status: <b>{1}</b>). Please edit the existing lead: {2}"
+            ).format(d.product, d.status, lead_link)
         )
 
     doc.flags.duplicate_lead_checked = True
