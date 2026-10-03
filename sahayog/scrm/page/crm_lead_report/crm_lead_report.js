@@ -840,7 +840,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </button>
 
                                <button 
-                                    v-if="isBMUser()"
                                     class="btn-toggle-analytics"
                                     @click="openLeadTransferDialog">
                                     <i class="fa fa-exchange"></i>
@@ -848,12 +847,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </button>
 
                                <button 
-                                    v-if="isBMUser()"
                                     class="btn-toggle-analytics"
-                                    style="background: #e0e7ff; color: #3730a3; margin-left: 6px;"
+                                    style="background: #e0e7ff; color: #3730a3; margin-left: 6px; position: relative;"
                                     @click="openBMVerificationDialog">
                                     <i class="fa fa-check-square"></i>
                                     BM Verification
+                                    <span v-if="bm_pending_count > 0" 
+                                          style="background: #ef4444; color: white; padding: 2px 7px; border-radius: 10px; font-size: 11px; margin-left: 5px; font-weight: bold; display: inline-block;">
+                                        {{ bm_pending_count }}
+                                    </span>
                                 </button>
                             </div>
                         </div>
@@ -1094,6 +1096,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_from_date: "", // Init mein set hoga
     employee_to_date: "", // Init mein set hoga
 
+    bm_pending_count: 0,
     employee_performance_data: [],
     has_pref: true,
     employee_report_loading: false,
@@ -1628,6 +1631,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
 
     openBMVerificationDialog() {
+      let self = this;
       let selected_status = "Pending";
       let dialog = new frappe.ui.Dialog({
         title: __("BM Lead Verification"),
@@ -1670,6 +1674,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           });
           if (res.message && res.message.status === "success") {
             frappe.show_alert({ message: __(`${res.message.count} Leads Verified successfully!`), indicator: "green" });
+            self.fetchBMPendingCount();
             loadVerificationData();
           }
         },
@@ -1692,6 +1697,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             });
             if (res.message && res.message.status === "success") {
               frappe.show_alert({ message: __(`${res.message.count} Leads Rejected.`), indicator: "red" });
+              self.fetchBMPendingCount();
               loadVerificationData();
             }
           }, __("Confirm Rejection"), __("Reject Leads"));
@@ -1777,8 +1783,24 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       loadVerificationData();
     },
 
+    async fetchBMPendingCount() {
+      if (!this.isBMUser()) return;
+      try {
+        let res = await frappe.call({
+          method: "sahayog.scrm.controller.lead.lead.get_bm_lead_verification_data",
+          args: { status: "Pending" }
+        });
+        if (res.message && res.message.metrics) {
+          this.bm_pending_count = res.message.metrics.total_pending || 0;
+        }
+      } catch (e) {
+        this.bm_pending_count = 0;
+      }
+    },
+
     // 3. INITIALIZATION (Fix yahan tha)
     async init() {
+      this.fetchBMPendingCount();
       // Preference load karein
       let res = await frappe.call(
         "sahayog.scrm.api.report_access.get_user_report_preference_record",
