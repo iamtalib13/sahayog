@@ -285,6 +285,7 @@ function render_checklist(frm, template) {
 			let leadership_html = "";
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Key Strengths (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='key_strengths' rows='4' placeholder='Enter key strengths'>" + (frm.doc.key_strengths || "") + "</textarea></div>";
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Areas Requiring Attention (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
+			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Leadership Remarks</h5></div><textarea class='form-control leadership-input' data-field='leadership_remarks' rows='4' placeholder='Enter leadership remarks'>" + (frm.doc.leadership_remarks || "") + "</textarea></div>";
 
 			let tabs_html = "<div class='bvr-tabs'><ul class='nav nav-tabs'>";
 			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
