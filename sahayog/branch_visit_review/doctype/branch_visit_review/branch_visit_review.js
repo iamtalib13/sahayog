@@ -30,7 +30,7 @@ frappe.ui.form.on("Branch Visit Review", {
 		}
 	},
 	validate(frm) {
-		if (frm.doc.responses && frm.doc.responses.length > 0) {
+		if (!frm.doc.key_strengths && frm.doc.responses && frm.doc.responses.length > 0) {
 			let strengths = frm.doc.responses
 				.filter(function (r) { return r.response && parseInt(r.response) >= 3; })
 				.map(function (r) { return r.parameter_name; })
@@ -282,12 +282,19 @@ function render_checklist(frm, template) {
 			action_html += "</tbody></table>";
 			action_html += "<button class='bvr-btn-add bvr-btn-action add-action-row'>+ Add Action Item</button>";
 
+			let leadership_html = "<div class='leadership-fields'>";
+			leadership_html += "<div class='leadership-field'><label>Key Strengths (Top 3)</label><textarea class='form-control leadership-input' data-field='key_strengths' rows='4' placeholder='Enter key strengths'>" + (frm.doc.key_strengths || "") + "</textarea></div>";
+			leadership_html += "<div class='leadership-field'><label>Areas Requiring Attention (Top 3)</label><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
+			leadership_html += "</div>";
+
 			let tabs_html = "<div class='bvr-tabs'><ul class='nav nav-tabs'>";
 			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
 			tabs_html += "<li><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
+			tabs_html += "<li><a class='tab-leadership' style='cursor:pointer;'>Leadership Assessment</a></li>";
 			tabs_html += "</ul>";
 			tabs_html += "<div class='tab-content-review'>" + checklist_html + "</div>";
-			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div></div>";
+			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div>";
+			tabs_html += "<div class='tab-content-leadership' style='display:none;'>" + leadership_html + "</div></div>";
 
 			frm.fields_dict.checklist.$wrapper.html(tabs_html);
 
@@ -328,6 +335,12 @@ function render_checklist(frm, template) {
 				.bvr-tabs select.form-control, .bvr-tabs input.form-control { border-radius: 6px; border-color: #e2e8f0; font-size: 12px; padding: 6px 10px; height: auto; transition: border-color 0.2s, box-shadow 0.2s; }
 				.bvr-tabs select.form-control:focus, .bvr-tabs input.form-control:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); }
 				.bvr-tabs .tab-content-action { background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; padding: 12px; }
+				.bvr-tabs .tab-content-leadership { background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; padding: 16px; width: 100%; }
+				.bvr-tabs .leadership-field { margin-bottom: 14px; max-width: 720px; }
+				.bvr-tabs .leadership-field:last-child { margin-bottom: 0; }
+				.bvr-tabs .leadership-field label { display: block; font-size: 12px; font-weight: 700; color: #16181d; margin-bottom: 6px; letter-spacing: 0.3px; }
+				.bvr-tabs .leadership-field textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; }
+				.bvr-tabs .leadership-field textarea:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); outline: none; }
 				.bvr-tabs .tab-content-review { padding: 4px 0; }
 			</style>`;
 			frm.fields_dict.checklist.$wrapper.find("style").remove();
@@ -335,18 +348,25 @@ function render_checklist(frm, template) {
 
 			let template_items = r.message || [];
 
-			frm.fields_dict.checklist.$wrapper.find(".tab-review").on("click", function () {
-				frm.fields_dict.checklist.$wrapper.find(".nav-tabs li").removeClass("active");
-				$(this).parent().addClass("active");
-				frm.fields_dict.checklist.$wrapper.find(".tab-content-review").show();
-				frm.fields_dict.checklist.$wrapper.find(".tab-content-action").hide();
+			let tab_map = {
+				".tab-review": ".tab-content-review",
+				".tab-action": ".tab-content-action",
+				".tab-leadership": ".tab-content-leadership",
+			};
+			Object.keys(tab_map).forEach(function (tab_sel) {
+				frm.fields_dict.checklist.$wrapper.find(tab_sel).on("click", function () {
+					frm.fields_dict.checklist.$wrapper.find(".nav-tabs li").removeClass("active");
+					$(this).parent().addClass("active");
+					Object.keys(tab_map).forEach(function (sel) {
+						frm.fields_dict.checklist.$wrapper.find(tab_map[sel]).hide();
+					});
+					frm.fields_dict.checklist.$wrapper.find(tab_map[tab_sel]).show();
+				});
 			});
 
-			frm.fields_dict.checklist.$wrapper.find(".tab-action").on("click", function () {
-				frm.fields_dict.checklist.$wrapper.find(".nav-tabs li").removeClass("active");
-				$(this).parent().addClass("active");
-				frm.fields_dict.checklist.$wrapper.find(".tab-content-review").hide();
-				frm.fields_dict.checklist.$wrapper.find(".tab-content-action").show();
+			frm.fields_dict.checklist.$wrapper.find(".leadership-input").on("blur change", function () {
+				let field = $(this).data("field");
+				frm.set_value(field, $(this).val());
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".action-input").on("blur change", function () {
