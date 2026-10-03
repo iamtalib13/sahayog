@@ -79,9 +79,9 @@ frappe.ui.form.on("Branch Visit Review", {
 });
 
 function update_overall_badge(frm) {
-	let $badge = frm.fields_dict.checklist.$wrapper.find(".bvr-overall-badge b");
-	if ($badge.length) {
-		$badge.text(frm.doc.overall_assessment || "\u2014");
+	let $select = frm.fields_dict.checklist.$wrapper.find(".bvr-overall-select");
+	if ($select.length) {
+		$select.val(frm.doc.overall_assessment || "");
 	}
 }
 
@@ -297,11 +297,23 @@ function render_checklist(frm, template) {
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Areas Requiring Attention (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Leadership Remarks</h5></div><textarea class='form-control leadership-input' data-field='leadership_remarks' rows='4' placeholder='Enter leadership remarks'>" + (frm.doc.leadership_remarks || "") + "</textarea></div>";
 
+			let overall_field = frm.get_field("overall_assessment");
+			let overall_options = [];
+			if (overall_field && overall_field.df.options) {
+				overall_options = overall_field.df.options.split("\n").filter(function (opt) { return opt; });
+			}
+			let overall_html = "<span class='bvr-overall-badge'>Overall Assessment: <select class='bvr-overall-select'>";
+			overall_html += "<option value=''" + (frm.doc.overall_assessment ? "" : " selected") + ">&mdash;</option>";
+			overall_options.forEach(function (opt) {
+				overall_html += "<option value='" + opt + "'" + (frm.doc.overall_assessment === opt ? " selected" : "") + ">" + opt + "</option>";
+			});
+			overall_html += "</select></span>";
+
 			let tabs_html = "<div class='bvr-tabs'><div class='bvr-tab-bar'><ul class='nav nav-tabs'>";
 			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
 			tabs_html += "<li><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
 			tabs_html += "<li><a class='tab-leadership' style='cursor:pointer;'>Leadership Assessment</a></li>";
-			tabs_html += "</ul><span class='bvr-overall-badge'>Overall Assessment: <b>" + (frm.doc.overall_assessment || "&mdash;") + "</b></span></div>";
+			tabs_html += "</ul>" + overall_html + "</div>";
 			tabs_html += "<div class='tab-content-review'>" + checklist_html + "</div>";
 			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div>";
 			tabs_html += "<div class='tab-content-leadership' style='display:none;'>" + leadership_html + "</div></div>";
@@ -312,7 +324,7 @@ function render_checklist(frm, template) {
 				.bvr-tabs .bvr-tab-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; background: #f8f9fb; border-radius: 8px 8px 0 0; padding: 4px 8px 0 4px; }
 				.bvr-tabs .bvr-tab-bar .nav-tabs { border-bottom: none; margin-bottom: 0; background: transparent; border-radius: 0; padding: 0; display: inline-flex; gap: 2px; }
 				.bvr-tabs .bvr-overall-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #4a5568; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 5px 14px; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-				.bvr-tabs .bvr-overall-badge b { color: #5e64ff; font-weight: 700; }
+				.bvr-tabs .bvr-overall-select { border: none; background: transparent; color: #5e64ff; font-size: 12px; font-weight: 700; cursor: pointer; outline: none; padding: 0; margin: 0; }
 				.bvr-tabs .tab-content-review { width: 100%; }
 				.bvr-tabs .nav-tabs > li > a { border: none; color: #6c7680; font-weight: 600; padding: 10px 20px; border-radius: 6px 6px 0 0; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; font-size: 13px; background: transparent; }
 				.bvr-tabs .nav-tabs > li.active > a, .bvr-tabs .nav-tabs > li > a:hover { border: none; color: #16181d; border-bottom: 2px solid #5e64ff; background: #fff; border-radius: 6px 6px 0 0; }
@@ -380,6 +392,10 @@ function render_checklist(frm, template) {
 			frm.fields_dict.checklist.$wrapper.find(".leadership-input").on("blur change", function () {
 				let field = $(this).data("field");
 				frm.set_value(field, $(this).val());
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".bvr-overall-select").on("change", function () {
+				frm.set_value("overall_assessment", $(this).val());
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".action-input").on("blur change", function () {
