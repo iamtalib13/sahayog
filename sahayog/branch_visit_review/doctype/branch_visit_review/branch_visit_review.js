@@ -9,6 +9,8 @@ frappe.ui.form.on("Branch Visit Review", {
 		if (!frm.doc.visited_by) {
 			frm.set_value("visited_by", "3130");
 		}
+		set_visitor_signoff_access(frm);
+		set_branch_head_signoff_access(frm);
 		if (frm.doc.template) {
 			render_checklist(frm, frm.doc.template);
 		} else {
@@ -37,6 +39,7 @@ frappe.ui.form.on("Branch Visit Review", {
 		}
 	},
 	branch(frm) {
+		set_branch_head_signoff_access(frm);
 		if (frm.doc.branch) {
 			frappe.call({
 				method: "frappe.client.get_value",
@@ -62,12 +65,60 @@ frappe.ui.form.on("Branch Visit Review", {
 			});
 		}
 	},
+	visited_by(frm) {
+		set_visitor_signoff_access(frm);
+	},
 	template(frm) {
 		if (frm.doc.template) {
 			render_checklist(frm, frm.doc.template);
 		}
 	},
 });
+
+function set_visitor_signoff_access(frm) {
+	set_signoff_access(
+		frm,
+		"visitor_signoff",
+		frm.doc.visited_by,
+		"sahayog.branch_visit_review.api.can_visitor_sign_off",
+		"visited_by"
+	);
+}
+
+function set_branch_head_signoff_access(frm) {
+	set_signoff_access(
+		frm,
+		"branch_head_signoff",
+		frm.doc.branch,
+		"sahayog.branch_visit_review.api.can_branch_head_sign_off",
+		"branch"
+	);
+}
+
+function set_signoff_access(frm, flag_field, value, method, arg_name) {
+	if (frm.doc.docstatus) {
+		frm.set_df_property(flag_field, "read_only", 1);
+		return;
+	}
+	if (frappe.session.user === "Administrator") {
+		frm.set_df_property(flag_field, "read_only", 0);
+		return;
+	}
+	if (!value) {
+		frm.set_df_property(flag_field, "read_only", 1);
+		return;
+	}
+	let args = {};
+	args[arg_name] = value;
+	frappe.call({
+		method: method,
+		args: args,
+		callback: function (r) {
+			let can_sign = !!r.message && !frm.doc.docstatus;
+			frm.set_df_property(flag_field, "read_only", can_sign ? 0 : 1);
+		},
+	});
+}
 
 function bindCustomEvents(frm, $row, cat, $area) {
 	$area.find(".star").on("click", function () {
