@@ -282,10 +282,9 @@ function render_checklist(frm, template) {
 			action_html += "</tbody></table>";
 			action_html += "<button class='bvr-btn-add bvr-btn-action add-action-row'>+ Add Action Item</button>";
 
-			let leadership_html = "<div class='leadership-fields'>";
-			leadership_html += "<div class='leadership-field'><label>Key Strengths (Top 3)</label><textarea class='form-control leadership-input' data-field='key_strengths' rows='4' placeholder='Enter key strengths'>" + (frm.doc.key_strengths || "") + "</textarea></div>";
-			leadership_html += "<div class='leadership-field'><label>Areas Requiring Attention (Top 3)</label><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
-			leadership_html += "</div>";
+			let leadership_html = "";
+			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Key Strengths (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='key_strengths' rows='4' placeholder='Enter key strengths'>" + (frm.doc.key_strengths || "") + "</textarea></div>";
+			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Areas Requiring Attention (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
 
 			let tabs_html = "<div class='bvr-tabs'><ul class='nav nav-tabs'>";
 			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
@@ -335,11 +334,11 @@ function render_checklist(frm, template) {
 				.bvr-tabs select.form-control, .bvr-tabs input.form-control { border-radius: 6px; border-color: #e2e8f0; font-size: 12px; padding: 6px 10px; height: auto; transition: border-color 0.2s, box-shadow 0.2s; }
 				.bvr-tabs select.form-control:focus, .bvr-tabs input.form-control:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); }
 				.bvr-tabs .tab-content-action { background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; padding: 12px; }
-				.bvr-tabs .tab-content-leadership { background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; padding: 16px; width: 100%; }
-				.bvr-tabs .leadership-field { margin-bottom: 14px; max-width: 720px; }
+				.bvr-tabs .tab-content-leadership { background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; padding: 4px 0; width: 100%; }
+				.bvr-tabs .leadership-field { margin-bottom: 16px; max-width: 760px; }
 				.bvr-tabs .leadership-field:last-child { margin-bottom: 0; }
-				.bvr-tabs .leadership-field label { display: block; font-size: 12px; font-weight: 700; color: #16181d; margin-bottom: 6px; letter-spacing: 0.3px; }
-				.bvr-tabs .leadership-field textarea { width: 100%; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; font-size: 13px; resize: vertical; transition: border-color 0.2s, box-shadow 0.2s; }
+				.bvr-tabs .leadership-field .category-header { margin: 0; border-radius: 8px 8px 0 0; }
+				.bvr-tabs .leadership-field textarea { width: 100%; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; padding: 10px 12px; font-size: 13px; resize: vertical; background: #fff; transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box; }
 				.bvr-tabs .leadership-field textarea:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); outline: none; }
 				.bvr-tabs .tab-content-review { padding: 4px 0; }
 			</style>`;
