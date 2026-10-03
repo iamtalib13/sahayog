@@ -41,8 +41,9 @@ def update_employee_details(doc, method):
 
 
 def validate_duplicate_lead(doc, method=None):
-    """Server-side duplicate lead check — same mobile + product (amount ignored, no time limit).
-    Runs in before_naming to prevent tabSeries locking when rejected, and guards against double-execution in validate.
+    """Server-side duplicate lead check — same mobile + product.
+    Allows new lead creation for same customer and product ONLY if the previous lead is Converted.
+    If un-converted lead exists, blocks creation and prompts user to edit the existing lead.
     """
     if getattr(doc.flags, "duplicate_lead_checked", False):
         return
@@ -67,10 +68,11 @@ def validate_duplicate_lead(doc, method=None):
 
     duplicates = frappe.db.sql(
         f"""
-        SELECT l.name, lp.product, lp.product_amount FROM `tabLead` l
+        SELECT l.name, l.status, lp.product, lp.product_amount FROM `tabLead` l
         JOIN `tabLead Product` lp ON lp.parent = l.name
         WHERE l.mobile_no = %s
         AND l.name != %s
+        AND l.status != 'Converted'
         AND ({conditions})
         LIMIT 1
         """,
@@ -80,9 +82,14 @@ def validate_duplicate_lead(doc, method=None):
 
     if duplicates:
         d = duplicates[0]
+        lead_link = f"<a href='/app/lead/{d.name}'><b>{d.name}</b></a>"
         frappe.throw(
-            title="Duplicate Lead",
-            msg=f"A lead for Product <b>{d.product}</b> already exists for this mobile number. (Lead: {d.name})"
+            title=_("Duplicate Lead Exists"),
+            msg=_(
+                "An active lead ({0}) for Product <b>{1}</b> with Status <b>{2}</b> already exists for this customer.<br><br>"
+                "You can create a new lead for the same product ONLY after the previous lead has been <b>Converted</b>.<br>"
+                "Please edit the existing lead instead: {3}"
+            ).format(d.name, d.product, d.status, lead_link)
         )
 
     doc.flags.duplicate_lead_checked = True
