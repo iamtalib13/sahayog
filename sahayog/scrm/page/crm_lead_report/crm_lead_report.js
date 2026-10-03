@@ -840,13 +840,20 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </button>
 
                                <button 
-                                    v-if="frappe.user_roles.includes('Branch Manager')"
+                                    v-if="frappe.user_roles.includes('Branch Manager') || frappe.session.user === 'Administrator'"
                                     class="btn-toggle-analytics"
                                     @click="openLeadTransferDialog">
-
                                     <i class="fa fa-exchange"></i>
                                     Lead Transfer
+                                </button>
 
+                               <button 
+                                    v-if="frappe.user_roles.includes('Branch Manager') || frappe.session.user === 'Administrator'"
+                                    class="btn-toggle-analytics"
+                                    style="background: #e0e7ff; color: #3730a3; margin-left: 6px;"
+                                    @click="openBMVerificationDialog">
+                                    <i class="fa fa-check-square"></i>
+                                    BM Verification
                                 </button>
                             </div>
                         </div>
@@ -1611,6 +1618,156 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         let r = await frappe.db.get_doc("Employee", emp);
         source_emp_name = r.employee_name;
       });
+    },
+
+    openBMVerificationDialog() {
+      let selected_status = "Pending";
+      let dialog = new frappe.ui.Dialog({
+        title: __("BM Lead Verification"),
+        size: "large",
+        fields: [
+          {
+            fieldtype: "HTML",
+            fieldname: "metrics_html"
+          },
+          {
+            label: "Filter Status",
+            fieldname: "status_filter",
+            fieldtype: "Select",
+            options: ["Pending", "Verified", "Rejected", "All"],
+            default: "Pending",
+            onchange() {
+              selected_status = dialog.get_value("status_filter");
+              loadVerificationData();
+            }
+          },
+          {
+            fieldtype: "HTML",
+            fieldname: "leads_table_html"
+          }
+        ],
+        primary_action_label: __("Verify Selected"),
+        primary_action: async () => {
+          let selected = [];
+          dialog.$wrapper.find('.chk-lead-verify:checked').each(function() {
+            selected.push($(this).val());
+          });
+          if (selected.length === 0) {
+            frappe.msgprint(__("Please select at least one lead to verify."));
+            return;
+          }
+          frappe.show_alert({ message: __("Verifying leads..."), indicator: "orange" });
+          let res = await frappe.call({
+            method: "sahayog.scrm.controller.lead.lead.verify_branch_leads",
+            args: { lead_names: selected, action: "Verified" }
+          });
+          if (res.message && res.message.status === "success") {
+            frappe.show_alert({ message: __(`${res.message.count} Leads Verified successfully!`), indicator: "green" });
+            loadVerificationData();
+          }
+        },
+        secondary_action_label: __("Reject Selected"),
+        secondary_action: async () => {
+          let selected = [];
+          dialog.$wrapper.find('.chk-lead-verify:checked').each(function() {
+            selected.push($(this).val());
+          });
+          if (selected.length === 0) {
+            frappe.msgprint(__("Please select at least one lead to reject."));
+            return;
+          }
+          frappe.prompt([
+            { label: "Rejection Remarks", fieldname: "remarks", fieldtype: "Small Text", reqd: 1 }
+          ], async (vals) => {
+            let res = await frappe.call({
+              method: "sahayog.scrm.controller.lead.lead.verify_branch_leads",
+              args: { lead_names: selected, action: "Rejected", remarks: vals.remarks }
+            });
+            if (res.message && res.message.status === "success") {
+              frappe.show_alert({ message: __(`${res.message.count} Leads Rejected.`), indicator: "red" });
+              loadVerificationData();
+            }
+          }, __("Confirm Rejection"), __("Reject Leads"));
+        }
+      });
+
+      async function loadVerificationData() {
+        dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:20px;"><i class="fa fa-spinner fa-spin fa-2x text-muted"></i></div>');
+        let res = await frappe.call({
+          method: "sahayog.scrm.controller.lead.lead.get_bm_lead_verification_data",
+          args: { status: selected_status }
+        });
+        if (!res.message) return;
+        let m = res.message.metrics || {};
+        let leads = res.message.leads || [];
+
+        dialog.fields_dict.metrics_html.$wrapper.html(`
+          <div style="display:flex; gap:12px; margin-bottom:15px;">
+            <div style="flex:1; background:#fef3c7; color:#92400e; padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">
+              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Total Pending</div>
+              <div style="font-size:20px; font-weight:bold;">${m.total_pending || 0}</div>
+            </div>
+            <div style="flex:1; background:#fee2e2; color:#991b1b; padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">
+              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Today's Pending</div>
+              <div style="font-size:20px; font-weight:bold;">${m.today_pending || 0}</div>
+            </div>
+            <div style="flex:1; background:#ffedd5; color:#9a3412; padding:10px 14px; border-radius:8px; border-left:4px solid #f97316;">
+              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Yesterday's Pending</div>
+              <div style="font-size:20px; font-weight:bold;">${m.yesterday_pending || 0}</div>
+            </div>
+            <div style="flex:1; background:#f3f4f6; color:#374151; padding:10px 14px; border-radius:8px; border-left:4px solid #6b7280;">
+              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Older Pending</div>
+              <div style="font-size:20px; font-weight:bold;">${m.older_pending || 0}</div>
+            </div>
+          </div>
+        `);
+
+        if (leads.length === 0) {
+          dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:25px;color:#6b7280;">No leads found for this verification status.</div>');
+          return;
+        }
+
+        let rowsHtml = leads.map(l => {
+          let badgeClass = l.custom_verification_status === "Verified" ? "background:#dcfce7;color:#166534;" : (l.custom_verification_status === "Rejected" ? "background:#fee2e2;color:#991b1b;" : "background:#fef3c7;color:#92400e;");
+          let cDate = l.creation ? frappe.datetime.str_to_user(l.creation) : "-";
+          return `
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:8px;"><input type="checkbox" class="chk-lead-verify" value="${l.name}"></td>
+              <td style="padding:8px;"><a href="/app/lead/${l.name}" target="_blank" style="font-weight:bold;color:#2563eb;">${l.name}</a><br><small style="color:#6b7280;">${l.lead_name || ''}</small></td>
+              <td style="padding:8px;">${l.mobile_no || '-'}</td>
+              <td style="padding:8px;">${l.custom_employee_name || '-'}<br><small style="color:#6b7280;">(${l.custom_employee_id || '-'})</small></td>
+              <td style="padding:8px;font-size:11px;">${cDate}</td>
+              <td style="padding:8px;"><span style="padding:2px 8px;border-radius:12px;font-weight:bold;font-size:11px;${badgeClass}">${l.custom_verification_status || 'Pending'}</span></td>
+            </tr>
+          `;
+        }).join('');
+
+        dialog.fields_dict.leads_table_html.$wrapper.html(`
+          <div style="max-height:350px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px;">
+            <table class="table table-bordered table-sm" style="margin:0; font-size:12px;">
+              <thead style="background:#f9fafb; position:sticky; top:0;">
+                <tr>
+                  <th style="width:30px;"><input type="checkbox" id="chk-select-all-leads"></th>
+                  <th>Lead ID / Name</th>
+                  <th>Mobile</th>
+                  <th>Employee</th>
+                  <th>Created On</th>
+                  <th>Verification</th>
+                </tr>
+              </thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
+        `);
+
+        dialog.$wrapper.find('#chk-select-all-leads').on('change', function() {
+          let checked = $(this).is(':checked');
+          dialog.$wrapper.find('.chk-lead-verify').prop('checked', checked);
+        });
+      }
+
+      dialog.show();
+      loadVerificationData();
     },
 
     // 3. INITIALIZATION (Fix yahan tha)
