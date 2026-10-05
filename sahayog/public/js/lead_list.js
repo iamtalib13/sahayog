@@ -1,4 +1,11 @@
 frappe.listview_settings["Lead"] = {
+  get_indicator(doc) {
+    if (doc.custom_verification_status === "Pending") {
+      return [__("Verification Pending"), "orange", "custom_verification_status,=,Pending"];
+    } else if (doc.custom_verification_status === "Rejected") {
+      return [__("Verification Rejected"), "red", "custom_verification_status,=,Rejected"];
+    }
+  },
   refresh(listview) {
     const roles = frappe.user_roles || (frappe.boot && frappe.boot.user && frappe.boot.user.roles) || [];
     const is_privileged = roles.includes("System Manager") || frappe.session.user === "Administrator";
