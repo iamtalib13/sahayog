@@ -720,9 +720,19 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     </div>
 
                     <div class="header-controls">
-                        <div class="d-flex align-items-center" style="gap: 10px;">
+                        <div class="d-flex align-items-center" style="gap: 10px; flex-wrap: wrap;">
                             <div class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280">PICK MONTH:</span>
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">PERIOD:</span>
+                                <select v-model="date_range_mode" @change="onDateRangeModeChange" class="select-input" style="font-weight: bold; padding: 3px 6px;">
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Yearly">Yearly</option>
+                                    <option value="Custom Range">Custom Range</option>
+                                </select>
+                            </div>
+
+                            <div v-if="date_range_mode === 'Monthly'" class="d-flex align-items-center">
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">MONTH:</span>
                                 <input 
                                 type="month" 
                                 v-model="master_month" 
@@ -730,23 +740,41 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 :max="today.substring(0,7)"
                                 class="select-input">
                             </div>
+
+                            <div v-if="date_range_mode === 'Quarterly'" class="d-flex align-items-center" style="gap: 6px;">
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280;">YEAR:</span>
+                                <select v-model="selected_year" @change="onYearChange" class="select-input">
+                                    <option v-for="y in available_years" :key="y" :value="y">{{ y }}</option>
+                                </select>
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280;">QUARTER:</span>
+                                <select v-model="selected_quarter" @change="onQuarterChange" class="select-input">
+                                    <option value="Q1">Q1 (Jan - Mar)</option>
+                                    <option value="Q2">Q2 (Apr - Jun)</option>
+                                    <option value="Q3">Q3 (Jul - Sep)</option>
+                                    <option value="Q4">Q4 (Oct - Dec)</option>
+                                </select>
+                            </div>
+
+                            <div v-if="date_range_mode === 'Yearly'" class="d-flex align-items-center">
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">YEAR:</span>
+                                <select v-model="selected_year" @change="onYearChange" class="select-input">
+                                    <option v-for="y in available_years" :key="y" :value="y">{{ y }}</option>
+                                </select>
+                            </div>
+
                             <div class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280">FROM:</span>
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">FROM:</span>
                                <input 
                                 type="date"
                                 v-model="employee_from_date"
-                                :min="month_start"
-                                :max="today < month_end ? today : month_end"
                                 @change="onDateChange"
                                 class="select-input">
                             </div>
                             <div class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280">TO:</span>
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">TO:</span>
                                 <input 
                                 type="date"
                                 v-model="employee_to_date"
-                                :min="employee_from_date"
-                                :max="today < month_end ? today : month_end"
                                 @change="onDateChange"
                                 class="select-input">
                             </div>
@@ -1092,6 +1120,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     search_query: { sol_id: "", product: "", source: "" },
 
     // Master Date Properties
+    date_range_mode: "Monthly",
+    selected_year: new Date().getFullYear(),
+    selected_quarter: "Q1",
+    available_years: [2026, 2025, 2024, 2023],
     master_month: frappe.datetime.now_date().substring(0, 7),
     employee_from_date: "", // Init mein set hoga
     employee_to_date: "", // Init mein set hoga
@@ -1473,6 +1505,51 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.employee_from_date = this.month_start;
       this.employee_to_date = this.month_end;
       // console.log(this.employee_from_date, this.employee_to_date);
+      this.fetchEmployeePerformance();
+    },
+    onDateRangeModeChange() {
+      const currentYear = new Date().getFullYear();
+      if (this.date_range_mode === "Monthly") {
+        this.master_month = frappe.datetime.now_date().substring(0, 7);
+        this.employee_from_date = this.month_start;
+        this.employee_to_date = this.month_end;
+      } else if (this.date_range_mode === "Quarterly") {
+        this.selected_year = currentYear;
+        this.selected_quarter = "Q1";
+        this.updateQuarterlyDates();
+      } else if (this.date_range_mode === "Yearly") {
+        this.selected_year = currentYear;
+        this.employee_from_date = `${currentYear}-01-01`;
+        this.employee_to_date = `${currentYear}-12-31`;
+      } else if (this.date_range_mode === "Custom Range") {
+        // Keep existing from / to or default
+      }
+      this.fetchEmployeePerformance();
+    },
+    updateQuarterlyDates() {
+      const year = this.selected_year || new Date().getFullYear();
+      const quarterMap = {
+        Q1: { from: `${year}-01-01`, to: `${year}-03-31` },
+        Q2: { from: `${year}-04-01`, to: `${year}-06-30` },
+        Q3: { from: `${year}-07-01`, to: `${year}-09-30` },
+        Q4: { from: `${year}-10-01`, to: `${year}-12-31` }
+      };
+      const q = quarterMap[this.selected_quarter] || quarterMap["Q1"];
+      this.employee_from_date = q.from;
+      this.employee_to_date = q.to;
+    },
+    onQuarterChange() {
+      this.updateQuarterlyDates();
+      this.fetchEmployeePerformance();
+    },
+    onYearChange() {
+      if (this.date_range_mode === "Quarterly") {
+        this.updateQuarterlyDates();
+      } else if (this.date_range_mode === "Yearly") {
+        const year = this.selected_year || new Date().getFullYear();
+        this.employee_from_date = `${year}-01-01`;
+        this.employee_to_date = `${year}-12-31`;
+      }
       this.fetchEmployeePerformance();
     },
     onDateChange() {
