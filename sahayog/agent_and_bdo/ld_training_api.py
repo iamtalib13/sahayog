@@ -2332,10 +2332,13 @@ def delete_training(name):
 
 
 @frappe.whitelist()
-def bulk_upload_training():
+def bulk_upload_training(month=None):
     # Bulk upload v2: one row = one training. Columns: Training Date,
     # Program Name (or Training Title), Branch Code (SOL ID), Trainer ID
     # (Employee ID), Training Duration (days), Number of Participants.
+    # When `month` (YYYY-MM, from the modal's month selector) is given,
+    # only rows whose Training Date falls in that month are accepted —
+    # other months are reported as row errors.
     if not _is_admin():
         frappe.throw(_("Only L&D Admin can bulk upload trainings."))
     from frappe.utils.csvutils import read_csv_content
@@ -2411,6 +2414,17 @@ def bulk_upload_training():
                     return dated
             return str(frappe.utils.getdate(raw))
 
+        # Upload-month guard (modal month selector): rows outside the
+        # selected month are rejected as errors, never created.
+        sel_month = ""
+        sel_label = ""
+        if month:
+            m = re.match(r"^(\d{4})-(\d{2})$", str(month).strip())
+            if not m or not (1 <= int(m.group(2)) <= 12):
+                return {"success": False, "message": _("Invalid upload month '{0}'. Use YYYY-MM.").format(month)}
+            sel_month = f"{m.group(1)}-{m.group(2)}"
+            sel_label = f"{calendar.month_name[int(m.group(2))]} {m.group(1)}"
+
         # System zone/region masters (for fuzzy sheet matching)
         valid_zones = [r[0] for r in frappe.db.sql(
             "SELECT DISTINCT zone FROM `tabSahayog Branch` "
@@ -2467,6 +2481,11 @@ def bulk_upload_training():
                 training_date = parse_training_date(training_date_raw)
             except Exception as e:
                 errors.append(f"Row {i}: Invalid Training Date '{training_date_raw}': {e}")
+                continue
+            if sel_month and training_date[:7] != sel_month:
+                errors.append(
+                    f"Row {i}: Training Date '{training_date_raw}' is not in {sel_label} (selected upload month)"
+                )
                 continue
             if not program:
                 errors.append(f"Row {i}: Program Name / Training Title is required")
