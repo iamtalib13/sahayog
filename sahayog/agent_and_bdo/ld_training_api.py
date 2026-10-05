@@ -1044,6 +1044,7 @@ def send_training_invitation_now(training_name):
     frappe.sendmail(
         recipients=to_emails or cc_emails,
         cc=cc_emails or None,
+        sender=_ldn._get_sender(),
         subject=_ldn._training_invitation_subject(doc),
         message=_ldn._training_invitation_email_body(doc),
         expose_recipients="header",
