@@ -2259,27 +2259,13 @@ def _require_completed(doc):
 @frappe.whitelist()
 def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None):
     """
-    Reschedule a training — L&D Admin only, with one exception: the assigned
-    trainer (owner or trainer match) may update training_type/start/end_time
-    AFTER all 5 completion checks are ticked. Dates/location/count stay Admin.
+    Reschedule a training — L&D Admin can change anything; a trainer can
+    reschedule only their own trainings (created by them or assigned to them).
     Updates date/time/location directly via db.set_value (no cancel/amend needed).
-    Also accepts number_of_participants (expected headcount, Admin only).
+    Also accepts number_of_participants (expected headcount).
     """
-    if _is_admin():
-        pass
-    else:
-        doc = frappe.get_doc("Training", name)
-        _ensure_can_update(doc)
-        _require_completed(doc)
-        # Dates/location/count are Admin-only even after completion.
-        if from_date is not None and str(from_date) != str(doc.from_date or ""):
-            frappe.throw(_("Only L&D Admin can change training dates."))
-        if to_date is not None and str(to_date) != str(doc.to_date or doc.from_date or ""):
-            frappe.throw(_("Only L&D Admin can change training dates."))
-        if training_location is not None and (training_location or "") != (doc.training_location or ""):
-            frappe.throw(_("Only L&D Admin can change the location."))
-        if number_of_participants is not None and int(number_of_participants or 0) != int(doc.number_of_participants or 0):
-            frappe.throw(_("Only L&D Admin can change the expected headcount."))
+    doc = frappe.get_doc("Training", name)
+    _ensure_can_update(doc)
 
     if not from_date:
         frappe.throw(_("From Date is required."))
@@ -2334,10 +2320,10 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
 
 @frappe.whitelist()
 def delete_training(name):
-    """Delete a training — L&D Admin only. Cancels first if submitted."""
-    if not _is_admin():
-        frappe.throw(_("Only L&D Admin can delete trainings."))
+    """Delete a training — L&D Admin, or the trainer's own training
+    (created by them or assigned to them)."""
     doc = frappe.get_doc("Training", name)
+    _ensure_can_update(doc)
     if doc.docstatus == 1:
         doc.cancel()
     frappe.delete_doc("Training", name)
