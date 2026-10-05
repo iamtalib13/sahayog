@@ -172,13 +172,21 @@ def send_closure_for_training(training_name):
     if not all(training.get(f) for f in COMPLETION_FIELDS):
         return False
 
-    recipients = _get_closure_recipients(training)
-    if not recipients:
+    to_emails, cc_emails = _get_closure_recipients(training)
+    if not to_emails and not cc_emails:
         return False
 
     subject = f"Training Completed — {training.training_program or 'L&D Training'} | {_fmt_date(training.from_date)} - {_fmt_date(training.to_date)}"
     message = _post_training_email_body(training)
-    frappe.sendmail(recipients=recipients, sender=_get_sender(), subject=subject, message=message, expose_recipients="header", now=False)
+    frappe.sendmail(
+        recipients=to_emails or cc_emails,
+        cc=cc_emails or None,
+        sender=_get_sender(),
+        subject=subject,
+        message=message,
+        expose_recipients="header",
+        now=False,
+    )
     frappe.db.set_value("Training", training_name, "closure_sent", 1)
     frappe.db.commit()
     return True
@@ -412,46 +420,43 @@ def _trainer_email(trainer_name):
 
 
 def _get_closure_recipients(training):
-    """Trainer + Branch Managers (heads) of the training's branches.
+    """(To, CC) for the closure mail — same split as invitation for now.
 
-    Branch Manager = active Employee posted at the branch (sol_id) with a
-    manager designation — same rule as Agent.get_branch_managers.
-    Covers legacy branch + multi-geography rows.
+    To: participants; CC: trainer + additional_cc.
+    Branch-manager recipients are parked below (commented) for later use.
     """
-    emails = set()
+    to_emails, cc_emails = _get_invitation_emails(training)
 
-    trainer_email = _trainer_email(training.trainer)
-    if trainer_email:
-        emails.add(trainer_email)
+    # --- Parked for later: branch managers (heads) of the training's branches.
+    # Branch Manager = active Employee posted at the branch (sol_id) with a
+    # manager designation — same rule as Agent.get_branch_managers.
+    # branch_codes = set()
+    # if training.branch:
+    #     branch_codes.add(training.branch)
+    # try:
+    #     geos = frappe.db.get_all(
+    #         "Training Geography",
+    #         filters={"parent": training.name},
+    #         pluck="branch",
+    #     )
+    #     for code in geos or []:
+    #         if code:
+    #             branch_codes.add(code)
+    # except Exception:
+    #     pass
+    # if branch_codes:
+    #     rows = frappe.db.get_all(
+    #         "Employee",
+    #         filters={
+    #             "sol_id": ["in", sorted(branch_codes)],
+    #             "status": "Active",
+    #             "designation": ["in", ["BRANCH MANAGER", "Asst. Branch Manager", "Branch Operation Manager"]],
+    #         },
+    #         fields=["company_email", "personal_email"],
+    #     )
+    #     for emp in rows:
+    #         email = emp.company_email or emp.personal_email
+    #         if email:
+    #             cc_emails.append(email) if email not in cc_emails else None
 
-    branch_codes = set()
-    if training.branch:
-        branch_codes.add(training.branch)
-    try:
-        geos = frappe.db.get_all(
-            "Training Geography",
-            filters={"parent": training.name},
-            pluck="branch",
-        )
-        for code in geos or []:
-            if code:
-                branch_codes.add(code)
-    except Exception:
-        pass
-
-    if branch_codes:
-        rows = frappe.db.get_all(
-            "Employee",
-            filters={
-                "sol_id": ["in", sorted(branch_codes)],
-                "status": "Active",
-                "designation": ["in", ["BRANCH MANAGER", "Asst. Branch Manager", "Branch Operation Manager"]],
-            },
-            fields=["company_email", "personal_email"],
-        )
-        for emp in rows:
-            email = emp.company_email or emp.personal_email
-            if email:
-                emails.add(email)
-
-    return sorted(emails)
+    return to_emails, cc_emails
