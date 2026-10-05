@@ -249,7 +249,7 @@
     "fieldname": "invitation_7d_sent",
     "fieldtype": "Check",
     "hidden": 1,
-    "label": "Invitation 7-Day Sent",
+    "label": "Email Sent (7 Days Before)",
     "no_copy": 1,
     "read_only": 1
    },
@@ -258,7 +258,7 @@
     "fieldname": "invitation_3d_sent",
     "fieldtype": "Check",
     "hidden": 1,
-    "label": "Invitation 3-Day Sent",
+    "label": "Email Sent (3 Days Before)",
     "no_copy": 1,
     "read_only": 1
    },
