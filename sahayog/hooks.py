@@ -505,17 +505,14 @@ scheduler_events = {
         ],
         # Daily at 10:00 AM (10:00)
         "0 10 * * *": [
-            "sahayog.branch_score_card.doctype.crl_monitoring_and_branch_opening_and_closing.crl_monitoring_and_branch_opening_and_closing.sync_daily_crl"
+            "sahayog.branch_score_card.doctype.crl_monitoring_and_branch_opening_and_closing.crl_monitoring_and_branch_opening_and_closing.sync_daily_crl",
+            # L&D training invitations (T-7, T-3, T-2, T-1 before training)
+            "sahayog.agent_and_bdo.ld_notifications.send_training_invitations"
         ],  
 
         # Run daily at 3:30 AM — generate fast lead report
         "30 3 * * *": [
             "sahayog.scrm.api.report_access.generate_fast_lead_report"
-        ],
-
-        # Run daily at 7:00 AM — L&D pre-training reminders (N days before training)
-        "0 7 * * *": [
-            "sahayog.agent_and_bdo.ld_notifications.send_pre_training_reminders"
         ],
 
         # Run daily at 9:00 AM — L&D post-training closure mails (for yesterday's trainings)

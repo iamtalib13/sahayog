@@ -759,7 +759,7 @@ def create_training(**kwargs):
     allowed = {
         "training_program", "is_adhoc", "from_date", "to_date", "start_time", "end_time",
         "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
-        "trainer_remarks", "training_delivered", "attendance_marked",
+        "trainer_remarks", "additional_cc", "training_delivered", "attendance_marked",
         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
         "number_of_participants",
     }
@@ -860,6 +860,17 @@ def update_training_status(training_name, field, value):
     status = get_training_status(doc)
     frappe.db.set_value("Training", training_name, "status", status)
     frappe.db.commit()
+
+    # Event-driven closure: the moment status hits Completed, queue the
+    # closure mail (trainer + branch heads). Failures never break the
+    # status save; the 9 AM cron stays as safety net.
+    if status == "Completed":
+        try:
+            from sahayog.agent_and_bdo.ld_notifications import send_closure_for_training
+            send_closure_for_training(training_name)
+        except Exception as e:
+            frappe.log_error(f"Event closure failed for {training_name}: {e}", "LD Notification")
+
     return {"success": True, "status": status}
 
 
@@ -993,6 +1004,53 @@ def update_budget(training_name, budget_amount=None, actual_expense=None):
     frappe.db.set_value("Training", training_name, "actual_expense", actual_expense)
     frappe.db.commit()
     return {"success": True}
+
+
+@frappe.whitelist()
+def update_training_emails(training_name, additional_cc=None):
+    """Save Additional CC emails from the Edit form (comma-separated).
+
+    Same permission as other training updates (Admin, or owner/trainer).
+    Invalid entries are dropped; empty string clears the CC list.
+    """
+    doc = frappe.get_doc("Training", training_name)
+    _ensure_can_update(doc)
+    clean = []
+    for part in str(additional_cc or "").replace(";", ",").split(","):
+        email = part.strip()
+        if email and "@" in email and email not in clean:
+            clean.append(email)
+    frappe.db.set_value("Training", training_name, "additional_cc", ", ".join(clean))
+    frappe.db.commit()
+    return {"success": True}
+
+
+@frappe.whitelist()
+def send_training_invitation_now(training_name):
+    """Manually queue the invitation mail for one training right now.
+
+    Test/manual resend path for when the scheduler is off. Uses the same
+    template + recipients as the cron, but never touches the milestone
+    flags (so the 10 AM cron still sends on schedule).
+    """
+    from sahayog.agent_and_bdo import ld_notifications as _ldn
+    if not _ldn._emails_enabled():
+        frappe.throw(_("L&D email notifications are disabled (Sahayog Settings)."))
+    doc = frappe.get_doc("Training", training_name)
+    _ensure_can_update(doc)
+    to_emails, cc_emails = _ldn._get_invitation_emails(doc)
+    if not to_emails and not cc_emails:
+        frappe.throw(_("No recipient email found (trainer / participants / CC)."))
+    frappe.sendmail(
+        recipients=to_emails or cc_emails,
+        cc=cc_emails or None,
+        sender=_ldn._get_sender(),
+        subject=_ldn._training_invitation_subject(doc),
+        message=_ldn._training_invitation_email_body(doc),
+        expose_recipients="header",
+        now=False,
+    )
+    return {"success": True, "to": to_emails, "cc": cc_emails}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -2201,27 +2259,13 @@ def _require_completed(doc):
 @frappe.whitelist()
 def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None):
     """
-    Reschedule a training — L&D Admin only, with one exception: the assigned
-    trainer (owner or trainer match) may update training_type/start/end_time
-    AFTER all 5 completion checks are ticked. Dates/location/count stay Admin.
+    Reschedule a training — L&D Admin can change anything; a trainer can
+    reschedule only their own trainings (created by them or assigned to them).
     Updates date/time/location directly via db.set_value (no cancel/amend needed).
-    Also accepts number_of_participants (expected headcount, Admin only).
+    Also accepts number_of_participants (expected headcount).
     """
-    if _is_admin():
-        pass
-    else:
-        doc = frappe.get_doc("Training", name)
-        _ensure_can_update(doc)
-        _require_completed(doc)
-        # Dates/location/count are Admin-only even after completion.
-        if from_date is not None and str(from_date) != str(doc.from_date or ""):
-            frappe.throw(_("Only L&D Admin can change training dates."))
-        if to_date is not None and str(to_date) != str(doc.to_date or doc.from_date or ""):
-            frappe.throw(_("Only L&D Admin can change training dates."))
-        if training_location is not None and (training_location or "") != (doc.training_location or ""):
-            frappe.throw(_("Only L&D Admin can change the location."))
-        if number_of_participants is not None and int(number_of_participants or 0) != int(doc.number_of_participants or 0):
-            frappe.throw(_("Only L&D Admin can change the expected headcount."))
+    doc = frappe.get_doc("Training", name)
+    _ensure_can_update(doc)
 
     if not from_date:
         frappe.throw(_("From Date is required."))
@@ -2259,8 +2303,16 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
         if updates["number_of_participants"] < 0:
             frappe.throw(_("Number of Participants cannot be negative."))
 
+    # New date => new invitation cycle: capture the old date BEFORE writing,
+    # so the 10 AM invitation cron picks the rescheduled training up again.
+    old_from = str(frappe.db.get_value("Training", name, "from_date") or "")[:10]
+
     for field, value in updates.items():
         frappe.db.set_value("Training", name, field, value)
+
+    if old_from != str(from_date)[:10]:
+        frappe.db.set_value("Training", name, "invitation_7d_sent", 0)
+        frappe.db.set_value("Training", name, "invitation_3d_sent", 0)
 
     frappe.db.commit()
     return {"success": True}
@@ -2268,10 +2320,10 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
 
 @frappe.whitelist()
 def delete_training(name):
-    """Delete a training — L&D Admin only. Cancels first if submitted."""
-    if not _is_admin():
-        frappe.throw(_("Only L&D Admin can delete trainings."))
+    """Delete a training — L&D Admin, or the trainer's own training
+    (created by them or assigned to them)."""
     doc = frappe.get_doc("Training", name)
+    _ensure_can_update(doc)
     if doc.docstatus == 1:
         doc.cancel()
     frappe.delete_doc("Training", name)
@@ -2280,10 +2332,13 @@ def delete_training(name):
 
 
 @frappe.whitelist()
-def bulk_upload_training():
+def bulk_upload_training(month=None):
     # Bulk upload v2: one row = one training. Columns: Training Date,
     # Program Name (or Training Title), Branch Code (SOL ID), Trainer ID
     # (Employee ID), Training Duration (days), Number of Participants.
+    # When `month` (YYYY-MM, from the modal's month selector) is given,
+    # only rows whose Training Date falls in that month are accepted —
+    # other months are reported as row errors.
     if not _is_admin():
         frappe.throw(_("Only L&D Admin can bulk upload trainings."))
     from frappe.utils.csvutils import read_csv_content
@@ -2359,6 +2414,17 @@ def bulk_upload_training():
                     return dated
             return str(frappe.utils.getdate(raw))
 
+        # Upload-month guard (modal month selector): rows outside the
+        # selected month are rejected as errors, never created.
+        sel_month = ""
+        sel_label = ""
+        if month:
+            m = re.match(r"^(\d{4})-(\d{2})$", str(month).strip())
+            if not m or not (1 <= int(m.group(2)) <= 12):
+                return {"success": False, "message": _("Invalid upload month '{0}'. Use YYYY-MM.").format(month)}
+            sel_month = f"{m.group(1)}-{m.group(2)}"
+            sel_label = f"{calendar.month_name[int(m.group(2))]} {m.group(1)}"
+
         # System zone/region masters (for fuzzy sheet matching)
         valid_zones = [r[0] for r in frappe.db.sql(
             "SELECT DISTINCT zone FROM `tabSahayog Branch` "
@@ -2415,6 +2481,11 @@ def bulk_upload_training():
                 training_date = parse_training_date(training_date_raw)
             except Exception as e:
                 errors.append(f"Row {i}: Invalid Training Date '{training_date_raw}': {e}")
+                continue
+            if sel_month and training_date[:7] != sel_month:
+                errors.append(
+                    f"Row {i}: Training Date '{training_date_raw}' is not in {sel_label} (selected upload month)"
+                )
                 continue
             if not program:
                 errors.append(f"Row {i}: Program Name / Training Title is required")
