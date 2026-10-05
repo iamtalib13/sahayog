@@ -113,7 +113,7 @@ def execute():
                 "fieldname": "custom_verification_section",
                 "fieldtype": "Section Break",
                 "insert_after": "sol_id",
-                "collapsible": 1,
+                "collapsible": 0,
             },
             {
                 "label": "Verification Status",
