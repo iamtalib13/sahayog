@@ -63,8 +63,8 @@ def send_training_invitations():
     """
     Daily task (10 AM): send Training Invitation mails.
     Schedule per training: T-7 (flag), T-3 (flag), then daily T-2, T-1.
-    Recipients: trainer + Employee-type participants (To), additional_cc (CC).
-    Agent-type participants have no email in the system — trainer + CC only.
+    To: Employee-type participants; CC: trainer + additional_cc.
+    Agent-type participants have no email — trainer + CC only.
     Dedup via Training.invitation_7d_sent / invitation_3d_sent flags.
     """
     if not _emails_enabled():
@@ -188,10 +188,6 @@ def send_closure_for_training(training_name):
 # Email body builders
 # ─────────────────────────────────────────────────────────────────────────────
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Email body builders
-# ─────────────────────────────────────────────────────────────────────────────
-
 
 def _post_training_email_body(t):
     def tick(val): return "✅ Yes" if val else "❌ No"
@@ -201,7 +197,7 @@ def _post_training_email_body(t):
       <h2 style="color:#166534;border-bottom:2px solid #dcfce7;padding-bottom:8px">
         ✅ Training Completed
       </h2>
-      <p>Dear District Head / Leader,</p>
+      <p>Dear Trainer / Branch Manager,</p>
       <p>The following L&amp;D training has been completed. Here is the status update:</p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0">
         <tr><td style="padding:6px 0;color:#64748b;width:160px">Training Program</td>
