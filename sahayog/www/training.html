@@ -5946,6 +5946,15 @@
                       placeholder="Add any specific prerequisites, materials, or classroom guidelines..."
                     ></textarea>
                   </div>
+                  <div class="fx-field fx-grow">
+                    <span class="fx-label">Additional CC Emails</span>
+                    <textarea
+                      class="fx-area"
+                      id="new-cc"
+                      rows="2"
+                      placeholder="Comma-separated emails — zonal head, branch head, extra... (invitation mails go in CC)"
+                    ></textarea>
+                  </div>
                 </div>
                 <!-- /fx-col-card -->
                 <div
@@ -8251,6 +8260,8 @@
             var agRow = agenda.closest(".nt-agenda-row");
             if (agRow) agRow.classList.remove("open");
           }
+          var ccReset = document.getElementById("new-cc");
+          if (ccReset) ccReset.value = "";
           updateSchedulePreview();
           // Auto-fill trainer from session user's linked Employee
           var trainerInput = document.getElementById("new-trainer");
@@ -8442,6 +8453,8 @@
               if (agRow) agRow.classList.add("open");
             }
           }
+          var ccFill = document.getElementById("new-cc");
+          if (ccFill) ccFill.value = ev.additional_cc || "";
           ["new-branch"].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.readOnly = true;
@@ -8729,6 +8742,19 @@
                 value: val,
               }).then(function () {
                 ev.trainer_remarks = val;
+              }),
+            );
+          }
+          var ccVal = (
+            (document.getElementById("new-cc") || {}).value || ""
+          ).trim();
+          if ((ev.additional_cc || "") !== ccVal) {
+            tasks.push(
+              api("update_training_emails", {
+                training_name: ev.name,
+                additional_cc: ccVal,
+              }).then(function () {
+                ev.additional_cc = ccVal;
               }),
             );
           }
@@ -9052,6 +9078,10 @@
               null,
             geographies: JSON.stringify(state.selectedGeographies),
             trainer_remarks: agenda.trim() || null,
+            additional_cc:
+              (
+                (document.getElementById("new-cc") || {}).value || ""
+              ).trim() || null,
             is_adhoc: isAdhoc,
             participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
