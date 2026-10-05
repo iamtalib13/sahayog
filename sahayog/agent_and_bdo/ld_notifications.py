@@ -37,6 +37,19 @@ def _emails_enabled():
         return True
 
 
+def _get_sender():
+    """Configured From-address for L&D mails (None = system default).
+
+    Set via Sahayog Settings > Email Permission > L&D Sender Email.
+    The address must exist as an outgoing-enabled Email Account.
+    """
+    try:
+        sender = (frappe.db.get_single_value("Sahayog Settings", "ld_sender_email") or "").strip()
+        return sender or None
+    except Exception:
+        return None
+
+
 def _fmt_time(t):
     if not t:
         return "—"
@@ -92,6 +105,7 @@ def _send_milestone_invitations(days_before, flag_field):
             frappe.sendmail(
                 recipients=to_emails or cc_emails,
                 cc=cc_emails or None,
+                sender=_get_sender(),
                 subject=subject,
                 message=message,
                 expose_recipients="header",
@@ -164,7 +178,7 @@ def send_closure_for_training(training_name):
 
     subject = f"Training Completed — {training.training_program or 'L&D Training'} | {_fmt_date(training.from_date)} - {_fmt_date(training.to_date)}"
     message = _post_training_email_body(training)
-    frappe.sendmail(recipients=recipients, subject=subject, message=message, expose_recipients="header", now=False)
+    frappe.sendmail(recipients=recipients, sender=_get_sender(), subject=subject, message=message, expose_recipients="header", now=False)
     frappe.db.set_value("Training", training_name, "closure_sent", 1)
     frappe.db.commit()
     return True
