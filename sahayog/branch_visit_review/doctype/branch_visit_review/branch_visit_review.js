@@ -9,6 +9,8 @@ frappe.ui.form.on("Branch Visit Review", {
 		if (!frm.doc.visited_by) {
 			frm.set_value("visited_by", "3130");
 		}
+		set_visitor_signoff_access(frm);
+		set_branch_head_signoff_access(frm);
 		if (frm.doc.template) {
 			render_checklist(frm, frm.doc.template);
 		} else {
@@ -28,7 +30,7 @@ frappe.ui.form.on("Branch Visit Review", {
 		}
 	},
 	validate(frm) {
-		if (frm.doc.responses && frm.doc.responses.length > 0) {
+		if (!frm.doc.key_strengths && frm.doc.responses && frm.doc.responses.length > 0) {
 			let strengths = frm.doc.responses
 				.filter(function (r) { return r.response && parseInt(r.response) >= 3; })
 				.map(function (r) { return r.parameter_name; })
@@ -37,6 +39,7 @@ frappe.ui.form.on("Branch Visit Review", {
 		}
 	},
 	branch(frm) {
+		set_branch_head_signoff_access(frm);
 		if (frm.doc.branch) {
 			frappe.call({
 				method: "frappe.client.get_value",
@@ -62,12 +65,70 @@ frappe.ui.form.on("Branch Visit Review", {
 			});
 		}
 	},
+	visited_by(frm) {
+		set_visitor_signoff_access(frm);
+	},
+	overall_assessment(frm) {
+		update_overall_badge(frm);
+	},
 	template(frm) {
 		if (frm.doc.template) {
 			render_checklist(frm, frm.doc.template);
 		}
 	},
 });
+
+function update_overall_badge(frm) {
+	let $select = frm.fields_dict.checklist.$wrapper.find(".bvr-overall-select");
+	if ($select.length) {
+		$select.val(frm.doc.overall_assessment || "");
+	}
+}
+
+function set_visitor_signoff_access(frm) {
+	set_signoff_access(
+		frm,
+		"visitor_signoff",
+		frm.doc.visited_by,
+		"sahayog.branch_visit_review.api.can_visitor_sign_off",
+		"visited_by"
+	);
+}
+
+function set_branch_head_signoff_access(frm) {
+	set_signoff_access(
+		frm,
+		"branch_head_signoff",
+		frm.doc.branch,
+		"sahayog.branch_visit_review.api.can_branch_head_sign_off",
+		"branch"
+	);
+}
+
+function set_signoff_access(frm, flag_field, value, method, arg_name) {
+	if (frm.doc.docstatus) {
+		frm.set_df_property(flag_field, "read_only", 1);
+		return;
+	}
+	if (frappe.session.user === "Administrator") {
+		frm.set_df_property(flag_field, "read_only", 0);
+		return;
+	}
+	if (!value) {
+		frm.set_df_property(flag_field, "read_only", 1);
+		return;
+	}
+	let args = {};
+	args[arg_name] = value;
+	frappe.call({
+		method: method,
+		args: args,
+		callback: function (r) {
+			let can_sign = !!r.message && !frm.doc.docstatus;
+			frm.set_df_property(flag_field, "read_only", can_sign ? 0 : 1);
+		},
+	});
+}
 
 function bindCustomEvents(frm, $row, cat, $area) {
 	$area.find(".star").on("click", function () {
@@ -231,17 +292,39 @@ function render_checklist(frm, template) {
 			action_html += "</tbody></table>";
 			action_html += "<button class='bvr-btn-add bvr-btn-action add-action-row'>+ Add Action Item</button>";
 
-			let tabs_html = "<div class='bvr-tabs'><ul class='nav nav-tabs'>";
+			let leadership_html = "";
+			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Key Strengths (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='key_strengths' rows='4' placeholder='Enter key strengths'>" + (frm.doc.key_strengths || "") + "</textarea></div>";
+			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Areas Requiring Attention (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
+			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Leadership Remarks</h5></div><textarea class='form-control leadership-input' data-field='leadership_remarks' rows='4' placeholder='Enter leadership remarks'>" + (frm.doc.leadership_remarks || "") + "</textarea></div>";
+
+			let overall_field = frm.get_field("overall_assessment");
+			let overall_options = [];
+			if (overall_field && overall_field.df.options) {
+				overall_options = overall_field.df.options.split("\n").filter(function (opt) { return opt; });
+			}
+			let overall_html = "<span class='bvr-overall-badge'>Overall Assessment: <select class='bvr-overall-select'>";
+			overall_html += "<option value=''" + (frm.doc.overall_assessment ? "" : " selected") + ">&mdash;</option>";
+			overall_options.forEach(function (opt) {
+				overall_html += "<option value='" + opt + "'" + (frm.doc.overall_assessment === opt ? " selected" : "") + ">" + opt + "</option>";
+			});
+			overall_html += "</select></span>";
+
+			let tabs_html = "<div class='bvr-tabs'><div class='bvr-tab-bar'><ul class='nav nav-tabs'>";
 			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
 			tabs_html += "<li><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
-			tabs_html += "</ul>";
+			tabs_html += "<li><a class='tab-leadership' style='cursor:pointer;'>Leadership Assessment</a></li>";
+			tabs_html += "</ul>" + overall_html + "</div>";
 			tabs_html += "<div class='tab-content-review'>" + checklist_html + "</div>";
-			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div></div>";
+			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div>";
+			tabs_html += "<div class='tab-content-leadership' style='display:none;'>" + leadership_html + "</div></div>";
 
 			frm.fields_dict.checklist.$wrapper.html(tabs_html);
 
 			let style = `<style>
-				.bvr-tabs .nav-tabs { border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; background: #f8f9fb; border-radius: 8px 8px 0 0; padding: 4px 4px 0 4px; display: inline-flex; gap: 2px; }
+				.bvr-tabs .bvr-tab-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; background: #f8f9fb; border-radius: 8px 8px 0 0; padding: 4px 8px 0 4px; }
+				.bvr-tabs .bvr-tab-bar .nav-tabs { border-bottom: none; margin-bottom: 0; background: transparent; border-radius: 0; padding: 0; display: inline-flex; gap: 2px; }
+				.bvr-tabs .bvr-overall-badge { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #4a5568; background: #fff; border: 1px solid #e2e8f0; border-radius: 20px; padding: 5px 14px; white-space: nowrap; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+				.bvr-tabs .bvr-overall-select { border: none; background: transparent; color: #5e64ff; font-size: 12px; font-weight: 700; cursor: pointer; outline: none; padding: 0; margin: 0; }
 				.bvr-tabs .tab-content-review { width: 100%; }
 				.bvr-tabs .nav-tabs > li > a { border: none; color: #6c7680; font-weight: 600; padding: 10px 20px; border-radius: 6px 6px 0 0; border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all 0.2s; font-size: 13px; background: transparent; }
 				.bvr-tabs .nav-tabs > li.active > a, .bvr-tabs .nav-tabs > li > a:hover { border: none; color: #16181d; border-bottom: 2px solid #5e64ff; background: #fff; border-radius: 6px 6px 0 0; }
@@ -277,6 +360,12 @@ function render_checklist(frm, template) {
 				.bvr-tabs select.form-control, .bvr-tabs input.form-control { border-radius: 6px; border-color: #e2e8f0; font-size: 12px; padding: 6px 10px; height: auto; transition: border-color 0.2s, box-shadow 0.2s; }
 				.bvr-tabs select.form-control:focus, .bvr-tabs input.form-control:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); }
 				.bvr-tabs .tab-content-action { background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; padding: 12px; }
+				.bvr-tabs .tab-content-leadership { background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; padding: 4px 0; width: 100%; }
+				.bvr-tabs .leadership-field { margin-bottom: 16px; max-width: 760px; }
+				.bvr-tabs .leadership-field:last-child { margin-bottom: 0; }
+				.bvr-tabs .leadership-field .category-header { margin: 0; border-radius: 8px 8px 0 0; }
+				.bvr-tabs .leadership-field textarea { width: 100%; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; padding: 10px 12px; font-size: 13px; resize: vertical; background: #fff; transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box; }
+				.bvr-tabs .leadership-field textarea:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); outline: none; }
 				.bvr-tabs .tab-content-review { padding: 4px 0; }
 			</style>`;
 			frm.fields_dict.checklist.$wrapper.find("style").remove();
@@ -284,18 +373,29 @@ function render_checklist(frm, template) {
 
 			let template_items = r.message || [];
 
-			frm.fields_dict.checklist.$wrapper.find(".tab-review").on("click", function () {
-				frm.fields_dict.checklist.$wrapper.find(".nav-tabs li").removeClass("active");
-				$(this).parent().addClass("active");
-				frm.fields_dict.checklist.$wrapper.find(".tab-content-review").show();
-				frm.fields_dict.checklist.$wrapper.find(".tab-content-action").hide();
+			let tab_map = {
+				".tab-review": ".tab-content-review",
+				".tab-action": ".tab-content-action",
+				".tab-leadership": ".tab-content-leadership",
+			};
+			Object.keys(tab_map).forEach(function (tab_sel) {
+				frm.fields_dict.checklist.$wrapper.find(tab_sel).on("click", function () {
+					frm.fields_dict.checklist.$wrapper.find(".nav-tabs li").removeClass("active");
+					$(this).parent().addClass("active");
+					Object.keys(tab_map).forEach(function (sel) {
+						frm.fields_dict.checklist.$wrapper.find(tab_map[sel]).hide();
+					});
+					frm.fields_dict.checklist.$wrapper.find(tab_map[tab_sel]).show();
+				});
 			});
 
-			frm.fields_dict.checklist.$wrapper.find(".tab-action").on("click", function () {
-				frm.fields_dict.checklist.$wrapper.find(".nav-tabs li").removeClass("active");
-				$(this).parent().addClass("active");
-				frm.fields_dict.checklist.$wrapper.find(".tab-content-review").hide();
-				frm.fields_dict.checklist.$wrapper.find(".tab-content-action").show();
+			frm.fields_dict.checklist.$wrapper.find(".leadership-input").on("blur change", function () {
+				let field = $(this).data("field");
+				frm.set_value(field, $(this).val());
+			});
+
+			frm.fields_dict.checklist.$wrapper.find(".bvr-overall-select").on("change", function () {
+				frm.set_value("overall_assessment", $(this).val());
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".action-input").on("blur change", function () {

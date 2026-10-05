@@ -1,7 +1,12 @@
 # Copyright (c) 2026, Sahayog and contributors
 # For license information, please see license.txt
 
+import frappe
+from frappe import _
 from frappe.model.document import Document
+from frappe.utils import now_datetime
+
+from sahayog.branch_visit_review.api import can_sign_branch_head, can_sign_visitor
 
 
 class BranchVisitReview(Document):
@@ -33,4 +38,42 @@ class BranchVisitReview(Document):
 		visitor_signed_at: DF.Datetime | None
 
 	# end: auto-generated types
-	pass
+
+	def validate(self):
+		self.validate_visitor_signoff()
+		self.validate_branch_head_signoff()
+
+	def validate_visitor_signoff(self):
+		self._validate_signoff(
+			"visitor_signoff",
+			"visitor_signed_at",
+			self.is_visitor_user,
+			"Only the visitor (Visited By) or Administrator can check Visitor Sign-Off.",
+		)
+
+	def validate_branch_head_signoff(self):
+		self._validate_signoff(
+			"branch_head_signoff",
+			"branch_head_signed_at",
+			self.is_branch_head_user,
+			"Only the branch manager of this branch or Administrator can check Branch Head Sign-Off.",
+		)
+
+	def _validate_signoff(self, flag_field, time_field, is_allowed, message):
+		if not self.has_value_changed(flag_field):
+			return
+
+		if not self.get(flag_field):
+			self.set(time_field, None)
+			return
+
+		if not is_allowed():
+			frappe.throw(_(message), frappe.PermissionError)
+
+		self.set(time_field, now_datetime())
+
+	def is_visitor_user(self) -> bool:
+		return can_sign_visitor(self.visited_by)
+
+	def is_branch_head_user(self) -> bool:
+		return can_sign_branch_head(self.branch)
