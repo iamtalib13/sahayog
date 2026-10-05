@@ -31,17 +31,19 @@
    "section_break_status",
   "column_break_status",
   "status",
-  "trainer_remarks",
-  "column_break_kvin",
+   "trainer_remarks",
+   "additional_cc",
+   "column_break_kvin",
   "training_delivered",
   "pre_assessment_taken",
   "attendance_marked",
   "feedback_taken",
   "post_assessment_taken",
-  "notifications_section",
-  "pre_reminder_sent",
-  "closure_sent",
-  "section_break_budget",
+   "notifications_section",
+   "closure_sent",
+   "invitation_7d_sent",
+   "invitation_3d_sent",
+   "section_break_budget",
   "budget_amount",
   "actual_expense",
   "amended_from"
@@ -231,20 +233,35 @@
    "fieldtype": "Check",
    "label": "Feedback Taken"
   },
-  {
-   "fieldname": "trainer_remarks",
-   "fieldtype": "Small Text",
-   "label": "Trainer Remarks"
-  },
-  {
-   "default": "0",
-   "fieldname": "pre_reminder_sent",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "Pre-Training Reminder Sent",
-   "no_copy": 1,
-   "read_only": 1
-  },
+   {
+    "fieldname": "trainer_remarks",
+    "fieldtype": "Small Text",
+    "label": "Trainer Remarks"
+   },
+   {
+    "description": "Comma-separated emails (zonal head, branch head, extra). Invitation mails go in CC to these.",
+    "fieldname": "additional_cc",
+    "fieldtype": "Small Text",
+    "label": "Additional CC Emails"
+   },
+   {
+    "default": "0",
+    "fieldname": "invitation_7d_sent",
+    "fieldtype": "Check",
+    "hidden": 1,
+    "label": "Invitation 7-Day Sent",
+    "no_copy": 1,
+    "read_only": 1
+   },
+   {
+    "default": "0",
+    "fieldname": "invitation_3d_sent",
+    "fieldtype": "Check",
+    "hidden": 1,
+    "label": "Invitation 3-Day Sent",
+    "no_copy": 1,
+    "read_only": 1
+   },
   {
    "default": "0",
    "fieldname": "closure_sent",
