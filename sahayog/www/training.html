@@ -8454,7 +8454,10 @@
             }
           }
           var ccFill = document.getElementById("new-cc");
-          if (ccFill) ccFill.value = ev.additional_cc || "";
+          if (ccFill) {
+            ccFill.value = ev.additional_cc || "";
+            ccFill.readOnly = !r.canEdit;
+          }
           ["new-branch"].forEach(function (id) {
             var el = document.getElementById(id);
             if (el) el.readOnly = true;
