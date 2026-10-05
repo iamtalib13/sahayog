@@ -21,9 +21,10 @@
   "wh_dept_map",
   "branch_access",
   "email_tab",
-  "send",
-  "enable_ld_email_notifications",
-  "crm_tab",
+   "send",
+   "enable_ld_email_notifications",
+   "ld_sender_email",
+   "crm_tab",
   "enable_crm_lead_report_cron",
   "petty_cash_management_tab",
   "enable_finacle_integration",
@@ -109,13 +110,20 @@
    "fieldtype": "Check",
    "label": "Send Email"
   },
-  {
-   "default": "1",
-   "description": "When unchecked, L&D pre-training reminder and post-training closure emails are paused (scheduler skips them).",
-   "fieldname": "enable_ld_email_notifications",
-   "fieldtype": "Check",
-   "label": "Enable L&D Email Notifications"
-  },
+   {
+    "default": "1",
+    "description": "When unchecked, L&D invitation and closure emails are paused (scheduler skips them).",
+    "fieldname": "enable_ld_email_notifications",
+    "fieldtype": "Check",
+    "label": "Enable L&D Email Notifications"
+   },
+   {
+    "description": "From-address for L&D invitation and closure mails. Must exist as an outgoing-enabled Email Account. Blank = system default outgoing account.",
+    "fieldname": "ld_sender_email",
+    "fieldtype": "Data",
+    "label": "L&D Sender Email",
+    "options": "Email"
+   },
   {
    "fieldname": "crm_tab",
    "fieldtype": "Tab Break",
