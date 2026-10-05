@@ -1,6 +1,7 @@
 frappe.ui.form.on("Lead", {
   refresh(frm) {
     hideNamingSeries();
+    frm.set_df_property("custom_verification_section", "collapsible", 0);
 
     if (!frm.is_new()) {
       addAssignButton(frm); // ✅ Only show when form is not new
