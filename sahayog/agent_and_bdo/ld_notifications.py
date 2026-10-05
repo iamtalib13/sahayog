@@ -162,7 +162,7 @@ def send_closure_for_training(training_name):
          "training_location", "zone", "region", "district", "branch",
          "training_delivered", "attendance_marked", "pre_assessment_taken",
          "post_assessment_taken", "feedback_taken", "trainer_remarks",
-         "closure_sent", "docstatus", *COMPLETION_FIELDS],
+         "additional_cc", "closure_sent", "docstatus", *COMPLETION_FIELDS],
         as_dict=True,
     )
     if not training or (training.docstatus or 0) >= 2:
