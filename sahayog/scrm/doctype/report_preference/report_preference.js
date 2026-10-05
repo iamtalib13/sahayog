@@ -226,7 +226,7 @@ frappe.ui.form.on("Report Preference", {
               indicator: "orange",
               message: __(
                 `Report Preference is already configured for user <b>${values.user}</b>.<br><br>` +
-                `Ek user ke liye sirf ek hi Report Preference record ban sakta hai.<br><br>` +
+                `A user can have only one Report Preference record..<br><br>` +
                 `<a class="btn btn-xs btn-primary" href="/app/report-preference/${res.name}">Click Here to Open Existing Record</a>`
               )
             });

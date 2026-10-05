@@ -1560,6 +1560,230 @@ def get_com_wise_bhsc(
         "grand_total": grand_total,
     }
 
+
+def _get_region_wise_trend_data(
+    financial_year,
+    selected_month,
+    branch_lookup,
+):
+    start_year = _get_financial_year_start_year(
+        financial_year
+    )
+
+    month_year_map = _get_month_year_map(
+        start_year
+    )
+
+    selected_month_number = MONTH_NUMBERS.get(
+        selected_month
+    )
+
+    if selected_month_number is None:
+        return {
+            "periods": [],
+            "regions": [],
+            "data": {},
+        }
+
+    periods = [
+        {
+            "month": "March",
+            "year": start_year,
+            "label": f"Mar-{str(start_year)[-2:]}",
+        }
+    ]
+
+    for month in MONTH_ORDER:
+
+        month_number = MONTH_NUMBERS[month]
+
+        # FY order: Apr(0) ... Mar(11); stop at selected month
+        include_month = (
+            (month_number - 4) % 12
+            <= (selected_month_number - 4) % 12
+        )
+
+        if not include_month:
+            continue
+
+        year = month_year_map[month]
+
+        periods.append(
+            {
+                "month": month,
+                "year": year,
+                "label": (
+                    f"{month[:3]}-"
+                    f"{str(year)[-2:]}"
+                ),
+            }
+        )
+
+    def _clean(value):
+        return str(value or "").strip()
+
+    # key = "ZONE-1|REGION-1"  (zone + region, so REGION-1 of every
+    # zone stays a separate series)
+    region_zone_map = {}
+    region_name_map = {}
+
+    for branch in branch_lookup.values():
+
+        zone = _clean(branch.get("zone"))
+        region = _clean(branch.get("region"))
+
+        if (
+            not zone
+            or not region
+            or region.lower() == "not assigned"
+        ):
+            continue
+
+        key = f"{zone}|{region}"
+
+        region_zone_map.setdefault(key, zone)
+        region_name_map.setdefault(key, region)
+
+    def region_sort_key(key):
+
+        zone = region_zone_map.get(key) or ""
+        region = region_name_map.get(key) or ""
+
+        try:
+            zone_number = int(zone.split("-")[-1])
+        except (ValueError, TypeError):
+            zone_number = 999
+
+        if region.upper() == "HO":
+            region_number = 0
+        else:
+            try:
+                region_number = int(region.split("-")[-1])
+            except (ValueError, TypeError):
+                region_number = 999
+
+        return (zone_number, region_number, zone, region)
+
+    regions = sorted(
+        region_zone_map.keys(),
+        key=region_sort_key,
+    )
+
+    data = {
+        region: {
+            period["label"]: None
+            for period in periods
+        }
+        for region in regions
+    }
+
+    valid_sols = set(
+        branch_lookup.keys()
+    )
+
+    if not valid_sols or not regions:
+
+        return {
+            "periods": periods,
+            "regions": regions,
+            "region_zones": {
+                region: region_zone_map.get(region)
+                for region in regions
+            },
+            "data": data,
+        }
+
+    record_map = _get_latest_scorecard_records(
+        valid_sols,
+        months={
+            period["month"]
+            for period in periods
+        },
+        years={
+            period["year"]
+            for period in periods
+        },
+    )
+
+    score_percentages = _get_scorecard_percentages(
+        record_map
+    )
+
+    region_period_scores = {}
+
+    for (
+        sol_id,
+        month,
+        year,
+    ), percentage in score_percentages.items():
+
+        branch = branch_lookup.get(
+            sol_id
+        )
+
+        if not branch:
+            continue
+
+        region = (
+            f"{str(branch.get('zone') or '').strip()}|"
+            f"{str(branch.get('region') or '').strip()}"
+        )
+
+        if region not in data:
+            continue
+
+        period_label = next(
+            (
+                period["label"]
+                for period in periods
+                if (
+                    period["month"] == month
+                    and period["year"] == year
+                )
+            ),
+            None,
+        )
+
+        if not period_label:
+            continue
+
+        if not isinstance(
+            percentage,
+            (int, float),
+        ):
+            continue
+
+        region_period_scores.setdefault(
+            (region, period_label),
+            [],
+        ).append(
+            float(percentage)
+        )
+
+    for (
+        region,
+        period_label,
+    ), scores in region_period_scores.items():
+
+        if not scores:
+            continue
+
+        data[region][period_label] = round(
+            sum(scores) / len(scores),
+            2,
+        )
+
+    return {
+        "periods": periods,
+        "regions": regions,
+        "region_zones": {
+            region: region_zone_map.get(region)
+            for region in regions
+        },
+        "data": data,
+    }
+
+
 # =========================================================
 # REGION WISE BHSC PERFORMANCE
 # =========================================================
@@ -2195,6 +2419,12 @@ def get_region_wise_bhsc(
             grand_previous_weightage
         ) * 100
 
+    trend_result = _get_region_wise_trend_data(
+        selected_fy,
+        selected_month,
+        branch_lookup,
+    )
+
     return {
         "available": True,
         "selected_fy": selected_fy,
@@ -2204,6 +2434,10 @@ def get_region_wise_bhsc(
         "previous_year": previous_year,
         "zones": zones,
         "data": data,
+        "trend_periods": trend_result["periods"],
+        "trend_regions": trend_result["regions"],
+        "trend_region_zones": trend_result["region_zones"],
+        "trend_data": trend_result["data"],
         "zone_totals": zone_totals,
         "grand_total": {
             "selected": grand_selected,
@@ -2216,8 +2450,3 @@ def get_region_wise_bhsc(
             ),
         },
     }
-
-
-# =========================================================
-# REGION WISE BHSC PERFORMANCE
-# =========================================================

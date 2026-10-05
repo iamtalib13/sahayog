@@ -381,23 +381,21 @@ box-shadow:
 inset 0 1px 1px rgba(255,255,255,.20)
 }
 .scorecard-refresh-btn{
-width:38px;
-height:38px;
-min-width:38px;
+height:36px;
 flex-shrink:0;
-display:flex;
+display:inline-flex;
 align-items:center;
 justify-content:center;
-margin-left:0;
+gap:8px;
+padding:0 18px;
 border:1px solid var(--teal-border);
-border-radius:8px;
-background:#fff;
+border-radius:999px;
+background:var(--teal-soft);
 color:var(--teal-dark);
-font-size:16px;
-font-weight:900;
+font-size:13px;
+font-weight:700;
 cursor:pointer;
-transition:all .15s ease;
-padding:0
+transition:all .15s ease
 }
 .scorecard-refresh-btn:hover{
 background:var(--teal-soft);
@@ -1320,10 +1318,11 @@ padding:12px 14px;
 border:1px solid #9fb4b7;
 background:#e7f0f1;
 color:#1f4d52;
-font-size:14px;
-font-weight:950;
+font-size:13px;
+font-weight:750;
 text-align:center;
-white-space:nowrap
+white-space:nowrap;
+line-height:1.4
 }
 .zone-wise-table th:first-child{
 position:sticky;
@@ -1339,10 +1338,11 @@ padding:12px 14px;
 border:1px solid #c5d4d6;
 background:#fff;
 color:#17383c;
-font-size:14px;
-font-weight:800;
+font-size:13px;
+font-weight:650;
 text-align:center;
-white-space:nowrap
+white-space:nowrap;
+line-height:1.4
 }
 .zone-wise-table td:first-child{
 position:sticky;
@@ -1353,28 +1353,39 @@ color:#24545a;
 font-weight:950;
 text-align:left
 }
-/* Alternate rows */
-.zone-wise-table tbody tr:nth-child(even):not(.grand-total-row) td{
-background:#f7fafb
+/* =========================================================
+   ZONE WISE TABLE - NEUTRAL ROWS
+   ========================================================= */
+
+.zone-wise-table tbody tr:not(.grand-total-row) td{
+background:#ffffff!important;
 }
-.zone-wise-table tbody tr:nth-child(even):not(.grand-total-row) td:first-child{
-background:#f7fafb
+
+.zone-wise-table tbody tr:not(.grand-total-row) td:first-child{
+background:#ffffff!important;
+color:#24545a!important;
 }
-/* Hover */
+
 .zone-wise-table tbody tr:not(.grand-total-row):hover td{
-background:#edf5f6
+background:#f7f7f7!important;
 }
+
 .zone-wise-table tbody tr:not(.grand-total-row):hover td:first-child{
-background:#e7f2f3
+background:#f7f7f7!important;
 }
-/* Zone name */
+
+/* =========================================================
+   ZONE WISE SCORE VALUES
+   ========================================================= */
+
 .zone-name-cell{
-font-weight:950!important;
+font-weight:750!important;
 color:#24545a!important;
 letter-spacing:.1px;
-font-size:14px!important
+font-size:13px!important;
+line-height:1.4
 }
-/* Score values */
+
 .zone-score-value{
 display:inline-block;
 min-width:48px;
@@ -1382,67 +1393,269 @@ font-size:14px;
 font-weight:900;
 line-height:1.4
 }
+
 .zone-score-available{
 color:#17383c!important;
 font-weight:900!important
 }
+
 .zone-score-unavailable{
 color:#687d80!important;
 font-weight:750!important
 }
+
 /* =========================================================
    GRAND TOTAL
    ========================================================= */
+
 .zone-wise-table .grand-total-row td{
-background:#e3eff0!important;
-border-top:2px solid #3A6F75!important;
-border-bottom:1px solid #9fb4b7!important;
-color:#24545a!important;
+background:#eeeeee!important;
+border-top:2px solid #b8b8b8!important;
+border-bottom:1px solid #c8c8c8!important;
+color:#3f4a4d!important;
 font-weight:950!important
 }
+
 .zone-wise-table .grand-total-row td:first-child{
-background:#e3eff0!important;
-color:#24545a!important;
+background:#eeeeee!important;
+color:#3f4a4d!important;
 font-weight:950!important
 }
+
 .grand-total-name-cell{
-background:#e3eff0!important;
-color:#24545a!important;
+background:#eeeeee!important;
+color:#3f4a4d!important;
 font-size:14px!important;
 font-weight:950!important
 }
+
 .grand-total-row .zone-score-value{
-color:#24545a!important;
+color:#3f4a4d!important;
 font-size:14px!important;
 font-weight:950!important
 }
-.zone-wise-loading{
+
+/* =========================================================
+   REGION WISE TREND GRAPH
+   ========================================================= */
+.region-trend-card{
+width:100%;
+margin-top:18px;
+padding:18px;
+border:1px solid #d5e1e3;
+border-radius:12px;
+background:#fff;
+box-shadow:0 2px 8px rgba(15,23,42,.035)
+}
+.region-trend-title{
+margin-bottom:4px;
+color:#234f54;
+font-size:15px;
+font-weight:950;
+line-height:1.4
+}
+.region-trend-subtitle{
+margin-bottom:15px;
+color:#60777b;
+font-size:11px;
+font-weight:650;
+line-height:1.5
+}
+.region-trend-chart-wrap{
+position:relative;
+width:100%;
+height:390px;
+overflow-x:auto;
+overflow-y:hidden;
+border:1px solid #dce6e8;
+border-radius:10px;
+background:
+linear-gradient(
+180deg,
+#ffffff 0%,
+#fbfdfd 100%
+)
+}
+.region-trend-chart{
+position:relative;
+width:100%;
+min-width:850px;
+height:100%;
+background:transparent
+}
+.region-trend-svg{
+display:block;
+width:100%;
+height:100%;
+overflow:visible
+}
+.region-trend-grid-line{
+stroke:#dfe7e9;
+stroke-width:1;
+stroke-dasharray:3 5;
+opacity:.9
+}
+.region-trend-zone-label{
+fill:#3A6F75;
+font-size:11px;
+font-weight:900;
+letter-spacing:.4px
+}
+.region-trend-zone-separator{
+stroke:#9aafb3;
+stroke-width:1.4;
+stroke-dasharray:5 4;
+opacity:.9
+}
+.region-trend-vertical-grid-line{
+stroke:#e4ebec;
+stroke-width:1;
+stroke-dasharray:2 4;
+opacity:.8
+}
+
+.region-trend-bar{
+fill:#3A6F75;
+opacity:.88;
+cursor:pointer;
+transition:opacity .15s ease, filter .15s ease
+}
+.region-trend-bar:hover{
+opacity:1;
+filter:brightness(.92)
+}
+.region-trend-bar-value{
+fill:#3A6F75;
+font-size:11px;
+font-weight:700;
+pointer-events:none
+}
+.region-trend-axis-line{
+stroke:#9aafb3;
+stroke-width:1.2
+}
+.region-trend-axis-label{
+fill:#526a6e;
+font-size:10px;
+font-weight:750
+}
+.region-trend-point{
+stroke:#fff;
+stroke-width:2.5;
+cursor:pointer;
+transition:
+r .18s ease,
+stroke-width .18s ease,
+filter .18s ease
+}
+.region-trend-point:hover{
+r:7;
+stroke-width:3;
+filter:
+drop-shadow(
+0 2px 4px
+rgba(15,23,42,.22)
+)
+}
+.region-trend-area{
+opacity:.055;
+pointer-events:none
+}
+.region-trend-line{
+fill:none;
+stroke-width:3;
+stroke-linecap:round;
+stroke-linejoin:round;
+vector-effect:non-scaling-stroke
+}
+.region-trend-tooltip{
+position:absolute;
+z-index:20;
+display:none;
+min-width:165px;
+max-width:230px;
+padding:10px 12px;
+border:1px solid #c5d8da;
+border-radius:8px;
+background:#fff;
+box-shadow:
+0 6px 20px rgba(15,23,42,.14);
+pointer-events:none;
+color:#17383c;
+font-size:11px;
+font-weight:750;
+line-height:1.5
+}
+.region-trend-tooltip-title{
+margin-bottom:3px;
+color:#3A6F75;
+font-size:12px;
+font-weight:950
+}
+.region-trend-tooltip-value{
+color:#405c60;
+font-size:11px;
+font-weight:800
+}
+.region-trend-legend{
+display:flex;
+flex-wrap:wrap;
+align-items:center;
+gap:10px 20px;
+margin-top:14px;
+padding-top:12px;
+border-top:1px solid #e1e9ea
+}
+.region-trend-legend-item{
+display:flex;
+align-items:center;
+gap:7px;
+color:#4c6569;
+font-size:11px;
+font-weight:800
+}
+.region-trend-legend-line{
+position:relative;
+width:27px;
+height:3px;
+border-radius:4px
+}
+.region-trend-legend-line::after{
+content:"";
+position:absolute;
+left:50%;
+top:50%;
+width:7px;
+height:7px;
+transform:translate(-50%,-50%);
+border:1.5px solid #fff;
+border-radius:50%;
+background:inherit
+}
+.region-trend-empty{
 display:flex;
 align-items:center;
 justify-content:center;
-min-height:300px;
-padding:40px;
-border:1px solid var(--border);
-border-radius:10px;
-background:#fff;
-color:var(--text-muted);
-font-size:13px;
+height:280px;
+color:#60777b;
+font-size:12px;
 font-weight:700
 }
-.zone-wise-empty{
-padding:45px 20px;
-border:1px solid var(--border);
-border-radius:10px;
-background:#fff;
-text-align:center;
-color:var(--text-muted)
+@media(max-width:850px){
+.region-trend-chart-wrap{
+height:350px
 }
-.zone-wise-empty-title{
-margin-bottom:6px;
-color:var(--teal-dark);
-font-size:17px;
-font-weight:900
+.region-trend-chart{
+min-width:750px
 }
+.region-trend-title{
+font-size:14px
+}
+.region-trend-subtitle{
+font-size:10px
+}
+}
+
 /* =========================================================
    ZONE WISE TREND GRAPH
    ========================================================= */
@@ -1746,9 +1959,17 @@ font-weight:650
 }
 
 .zone-month-pill.active{
-    background:#3A6F75;
+    background:
+    linear-gradient(
+        135deg,
+        #3A6F75 0%,
+        #6AA0A4 100%
+    );
     color:#fff;
     border-color:#3A6F75;
+    box-shadow:
+    0 2px 5px rgba(58,111,117,.14),
+    inset 0 1px 1px rgba(255,255,255,.20);
 }
 
 .com-wise-panel{
@@ -1880,9 +2101,17 @@ min-height:500px
 }
 
 .com-month-pill.active{
-    background:#3A6F75;
+    background:
+    linear-gradient(
+        135deg,
+        #3A6F75 0%,
+        #6AA0A4 100%
+    );
     color:#fff;
     border-color:#3A6F75;
+    box-shadow:
+    0 2px 5px rgba(58,111,117,.14),
+    inset 0 1px 1px rgba(255,255,255,.20);
 }
 
 .com-wise-table-wrapper{
@@ -1976,6 +2205,507 @@ min-height:500px
     border:1px solid #d9e4e5;
     border-radius:8px;
 }
+
+/* =========================================================
+   REGION WISE - POWER BI STYLE UI
+   ========================================================= */
+
+.region-wise-dashboard{
+    width:100%;
+    margin-top:12px;
+}
+
+.region-wise-heading{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:16px;
+}
+
+.region-wise-title{
+    font-size:18px;
+    font-weight:700;
+    color:#315f65;
+    letter-spacing:.2px;
+}
+
+.region-wise-subtitle{
+    margin-top:4px;
+    font-size:12px;
+    color:#7b8588;
+}
+
+/* =========================================================
+   KPI CARDS
+   ========================================================= */
+
+.region-wise-kpi-grid{
+    display:grid;
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+    gap:12px;
+    margin-bottom:18px;
+}
+
+.region-wise-kpi-card{
+    background:#ffffff;
+    border:1px solid #e2e8e9;
+    border-radius:10px;
+    padding:15px 17px;
+    min-height:82px;
+    box-shadow:
+        0 2px 8px rgba(42,70,74,.06);
+    transition:
+        transform .15s ease,
+        box-shadow .15s ease;
+}
+
+.region-wise-kpi-card:hover{
+    transform:translateY(-1px);
+    box-shadow:
+        0 5px 14px rgba(42,70,74,.10);
+}
+
+.region-wise-kpi-label{
+    font-size:11px;
+    font-weight:600;
+    color:#7a8588;
+    text-transform:uppercase;
+    letter-spacing:.6px;
+    margin-bottom:7px;
+}
+
+.region-wise-kpi-value{
+    font-size:24px;
+    line-height:1.1;
+    font-weight:700;
+    color:#315f65;
+}
+
+.region-wise-kpi-value.bhsc-change-up{
+    color:#2f7d4a;
+}
+
+.region-wise-kpi-value.bhsc-change-down{
+    color:#c45555;
+}
+
+.region-wise-kpi-value.bhsc-change-neutral{
+    color:#7a8588;
+}
+
+.bhsc-change-icon{
+    display:inline-block;
+    margin-right:4px;
+    font-size:18px;
+    font-weight:900;
+    line-height:1;
+    color:#26383b;
+    vertical-align:-1px;
+}
+
+/* =========================================================
+   TABLE CONTAINER
+   ========================================================= */
+
+.region-wise-table-wrapper{
+    width:100%;
+    overflow:visible;
+    max-height:none;
+    border:1px solid #dfe7e8;
+    border-radius:10px;
+    background:#ffffff;
+    box-shadow:
+        0 2px 10px rgba(42,70,74,.05);
+}
+
+/* =========================================================
+   POWER BI STYLE MATRIX
+   ========================================================= */
+
+.region-wise-power-table{
+    width:100%;
+    min-width:850px;
+    border-collapse:separate;
+    border-spacing:0;
+    font-size:13px;
+}
+
+.region-wise-power-table thead th{
+    position:sticky;
+    top:0;
+    z-index:5;
+    background:#3a6f75;
+    color:#ffffff;
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.45px;
+    padding:12px 14px;
+    border-right:1px solid rgba(255,255,255,.14);
+    border-bottom:1px solid #315f65;
+    white-space:nowrap;
+}
+
+.region-wise-power-table thead th:first-child{
+    border-top-left-radius:8px;
+}
+
+.region-wise-power-table thead th:last-child{
+    border-top-right-radius:8px;
+}
+
+/* =========================================================
+   NORMAL COM ROW
+   ========================================================= */
+
+.region-wise-power-table tbody td{
+    padding:10px 14px;
+    border-bottom:1px solid #edf1f2;
+    color:#35484b;
+    background:#ffffff;
+    vertical-align:middle;
+}
+
+/* =========================================================
+   HIERARCHY GUIDE LINES
+   ========================================================= */
+
+/* Zone level vertical guide */
+.region-wise-power-table tbody
+.hierarchy-region-row td:first-child,
+.region-wise-power-table tbody
+.hierarchy-com-row td:first-child,
+.region-wise-power-table tbody
+.hierarchy-region-total-row td:first-child{
+    position:relative;
+}
+
+.region-wise-power-table tbody
+.hierarchy-region-row td:first-child::after,
+.region-wise-power-table tbody
+.hierarchy-com-row td:first-child::after,
+.region-wise-power-table tbody
+.hierarchy-region-total-row td:first-child::after{
+    content:"";
+    position:absolute;
+    top:0;
+    bottom:0;
+    right:16px;
+    width:2px;
+    background:#687477;
+}
+
+/* Region level vertical guide */
+.region-wise-power-table tbody
+.hierarchy-com-row td:nth-child(2),
+.region-wise-power-table tbody
+.hierarchy-region-total-row td:nth-child(2){
+    position:relative;
+}
+
+.region-wise-power-table tbody
+.hierarchy-com-row td:nth-child(2)::after,
+.region-wise-power-table tbody
+.hierarchy-region-total-row td:nth-child(2)::after{
+    content:"";
+    position:absolute;
+    top:0;
+    bottom:0;
+    left:20px;
+    width:2px;
+    background:#687477;
+}
+
+/* Horizontal connection from hierarchy line to Region */
+.region-wise-power-table tbody
+.hierarchy-region-row td:nth-child(2){
+    position:relative;
+}
+
+.region-wise-power-table tbody
+.hierarchy-region-row td:nth-child(2)::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:50%;
+    width:20px;
+    height:2px;
+    background:#687477;
+}
+
+/* Horizontal connection from hierarchy line to COM */
+.region-wise-power-table tbody
+.hierarchy-com-row td:nth-child(3){
+    position:relative;
+}
+
+.region-wise-power-table tbody
+.hierarchy-com-row td:nth-child(3)::before{
+    content:"";
+    position:absolute;
+    left:0;
+    top:50%;
+    width:20px;
+    height:2px;
+    background:#687477;
+}
+
+
+/* =========================================================
+   REGION-SPECIFIC COLOR THEMES
+   ========================================================= */
+
+.region-wise-power-table tbody tr.hierarchy-region-row td{
+    background:#f8fafb !important;
+}
+
+.region-wise-power-table tbody tr.hierarchy-com-row td{
+    background:#ffffff !important;
+}
+
+.region-wise-power-table tbody tr.hierarchy-region-total-row td{
+    background:#ffffff !important;
+}
+
+.region-wise-power-table tbody tr.hierarchy-com-row:hover td{
+    background:#f5f9f9;
+}
+
+.hierarchy-column{
+    width:150px;
+}
+
+.com-column{
+    min-width:220px;
+}
+
+.score-column{
+    width:130px;
+    text-align:center;
+}
+
+.change-column{
+    width:100px;
+    text-align:center;
+}
+
+/* =========================================================
+   ZONE HEADER
+   ========================================================= */
+
+.hierarchy-zone-row td{
+    background:#e8f3f3 !important;
+    border-top:2px solid #c5dadd !important;
+    border-bottom:1px solid #c5dadd !important;
+    padding:0 !important;
+}
+
+.hierarchy-zone-row:hover td{
+    background:#e2efef !important;
+}
+
+.hierarchy-toggle{
+    width:100%;
+    border:0;
+    background:transparent;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:9px;
+    text-align:left;
+    font-family:inherit;
+}
+
+.zone-toggle{
+    padding:11px 14px;
+}
+
+.hierarchy-arrow{
+    width:14px;
+    min-width:14px;
+    font-size:11px;
+    color:#3a6f75;
+    transition:transform .15s ease;
+}
+
+.hierarchy-zone-name{
+    color:#315f65 !important;
+    font-size:13px;
+    font-weight:700;
+    letter-spacing:.3px;
+}
+
+/* =========================================================
+   REGION HEADER
+   ========================================================= */
+
+.hierarchy-region-row td{
+    background:#f0f5f8 !important;
+    border-top:1px solid #d7e3e7 !important;
+    border-bottom:1px solid #dce7e9 !important;
+    padding-top:0 !important;
+    padding-bottom:0 !important;
+}
+
+.region-toggle{
+    padding:9px 14px;
+    padding-left:20px;
+}
+
+.hierarchy-region-name{
+    color:#405f68 !important;
+    font-size:12px;
+    font-weight:700;
+}
+
+.hierarchy-region-row:hover td{
+    background:#eaf2f5 !important;
+}
+
+/* =========================================================
+   COM
+   ========================================================= */
+
+.hierarchy-com-row td:first-child,
+.hierarchy-com-row td:nth-child(2){
+    background:#ffffff !important;
+    border-bottom:1px solid #edf1f2 !important;
+}
+
+.com-name{
+    font-weight:500;
+    color:#405052 !important;
+    padding-left:34px !important;
+    border-left:3px solid #eef3f4;
+}
+
+.bhsc-score-cell{
+    text-align:center;
+    border-left:1px solid #e1e9ea;
+    background:#fcfdfd;
+}
+
+.bhsc-score{
+    display:inline-block;
+    min-width:58px;
+    font-weight:600;
+    font-variant-numeric:tabular-nums;
+}
+
+/* =========================================================
+   CHANGE
+   ========================================================= */
+
+.bhsc-change-cell{
+    text-align:center;
+    white-space:nowrap;
+    font-size:12px;
+    font-weight:700;
+    border-left:1px solid #e1e9ea;
+    background:#fafcfc;
+}
+
+.bhsc-change-up{
+    color:#2f7d4a;
+}
+
+.bhsc-change-down{
+    color:#c45555;
+}
+
+.bhsc-change-neutral{
+    color:#7a8588;
+}
+
+/* =========================================================
+   REGION TOTAL
+   ========================================================= */
+
+.hierarchy-region-total-row td{
+    background:#eeeeee !important;
+    color:#3f4a4d !important;
+    font-weight:600;
+    border-top:1px solid #c8c8c8 !important;
+    border-bottom:2px solid #b8b8b8 !important;
+}
+
+.hierarchy-region-total-row td:nth-child(2){
+    padding-left:28px;
+}
+
+/* =========================================================
+   ZONE TOTAL
+   ========================================================= */
+
+.hierarchy-zone-total-row td{
+    background:#eaf4f4 !important;
+    color:#315f65 !important;
+    font-weight:700;
+    border-top:2px solid #c9dddd !important;
+    border-bottom:2px solid #c9dddd !important;
+}
+
+.hierarchy-zone-total-row td:first-child{
+    padding-left:14px;
+}
+
+/* =========================================================
+   GRAND TOTAL
+   ========================================================= */
+
+.hierarchy-grand-total-row td{
+    position:sticky;
+    bottom:0;
+    z-index:4;
+    background:#315f65 !important;
+    color:#ffffff !important;
+    font-weight:700;
+    font-size:13px;
+    padding-top:13px !important;
+    padding-bottom:13px !important;
+    border-bottom:0 !important;
+}
+
+.hierarchy-grand-total-row td:first-child{
+    border-bottom-left-radius:8px;
+}
+
+.hierarchy-grand-total-row td:last-child{
+    border-bottom-right-radius:8px;
+}
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width:900px){
+
+    .region-wise-kpi-grid{
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+@media (max-width:600px){
+
+    .region-wise-kpi-grid{
+        grid-template-columns:
+            1fr;
+    }
+
+    .region-wise-title{
+        font-size:16px;
+    }
+
+    .region-wise-table-wrapper{
+        max-height:none;
+        overflow:visible;
+    }
+
+}
+
 .view-coming-soon{
 padding:30px 40px;
 border:1px solid var(--border);
@@ -2882,6 +3612,16 @@ data-view="com">
 Region Wise
 </span>
 </div>
+<button
+type="button"
+id="scorecard-refresh-btn"
+class="scorecard-refresh-btn"
+style="margin-left:auto;"
+title="Clear cache &amp; hard refresh"
+aria-label="Clear cache and hard refresh">
+<i class="fa fa-refresh"></i>
+<span>Refresh</span>
+</button>
 </div>
 <div class="scorecard-view-container">
 <div
@@ -2940,14 +3680,6 @@ ${generate_financial_year_options()}
 <div class="months-scroll">
 ${months_html}
 </div>
-<button
-type="button"
-id="scorecard-refresh-btn"
-class="scorecard-refresh-btn"
-title="Hard Refresh"
-aria-label="Hard Refresh">
-<i class="fa fa-refresh"></i>
-</button>
 </div>
 <div class="scorecard-content">
 <div id="scorecard-details">
@@ -3034,7 +3766,7 @@ style="display:none;">
 
     <div id="com-wise-content">
         <div class="com-wise-loading">
-            No data till now
+            Loading Region Wise Scorecard...
         </div>
     </div>
 
@@ -3070,7 +3802,29 @@ function apply_branch_scorecard_access(){
                     indicator:"red"
                 });
 
-                $("#scorecard-root").empty();
+                $("#scorecard-no-access").remove();
+                $("#scorecard-root").css("position","relative").append(`
+                    <div id="scorecard-no-access"
+                    style="position:absolute;inset:0;z-index:2000;background:#fff;
+                    display:flex;flex-direction:column;align-items:center;
+                    justify-content:center;gap:14px;text-align:center;">
+                        <div style="font-size:16px;font-weight:700;color:#234f54;">
+                            Access Restricted 🔒
+                        </div>
+                        <div style="font-size:13px;color:#60777b;">
+                            Please contact the Manager. If access was just given, click Check Again.
+                        </div>
+                        <button type="button" id="scorecard-check-access"
+                        style="height:34px;padding:0 18px;border:1px solid #c5d5d7;
+                        border-radius:999px;background:#edf4f5;color:#2f6f77;
+                        font-size:13px;font-weight:700;cursor:pointer;">
+                            Check Again
+                        </button>
+                    </div>
+                `);
+                $("#scorecard-check-access").off("click").on("click", function(){
+                    window.sahayog_recheck_scorecard_access(true);
+                });
                 return;
             }
 
@@ -3105,10 +3859,22 @@ true
 refresh_button
 .find("i")
 .addClass("fa-spin");
+let hard_reload=function(){
+try{
+if(frappe.assets&&frappe.assets.clear_local_storage){
+frappe.assets.clear_local_storage();
+}
+}catch(e){}
 window.location.replace(
 window.location.pathname+
 "?_="+Date.now()
 );
+};
+frappe.call({
+method:"frappe.sessions.clear",
+callback:hard_reload,
+error:hard_reload
+});
 }
 );
 $("#sol-search").on(
@@ -5417,7 +6183,7 @@ container.html(`
 class="fa fa-spinner fa-spin"
 style="margin-right:8px;">
 </i>
-Loading real Zone Wise score data...
+Loading Zone Wise BHSC Data...
 </div>
 `);
 selected_fy=
@@ -5519,7 +6285,7 @@ function load_com_wise_data(
 
     $("#com-wise-content").html(`
         <div class="com-wise-loading">
-            No data till now
+            Loading Region Wise BHSC Data...
         </div>
     `);
 
@@ -5601,6 +6367,15 @@ function render_com_wise_table(
     let grand_total =
         result.grand_total || {};
 
+    let trend_periods =
+        result.trend_periods || [];
+
+    let trend_regions =
+        result.trend_regions || [];
+
+    let trend_data =
+        result.trend_data || {};
+
     let selected_month =
         result.selected_month || "";
 
@@ -5635,28 +6410,261 @@ function render_com_wise_table(
         return number.toFixed(2);
     }
 
+    function get_change(selected, previous){
+
+        if(
+            selected === null ||
+            selected === undefined ||
+            previous === null ||
+            previous === undefined ||
+            selected === "" ||
+            previous === ""
+        ){
+            return {
+                value: "-",
+                class_name: "",
+                icon: ""
+            };
+        }
+
+        let current =
+            Number(selected);
+
+        let old =
+            Number(previous);
+
+        if(
+            !Number.isFinite(current) ||
+            !Number.isFinite(old)
+        ){
+            return {
+                value: "-",
+                class_name: "",
+                icon: ""
+            };
+        }
+
+        let difference =
+            current - old;
+
+        if(
+            Math.abs(difference) < 0.005
+        ){
+            return {
+                value: "0.00",
+                class_name: "bhsc-change-neutral",
+                icon: "→"
+            };
+        }
+
+        if(difference > 0){
+
+            return {
+                value: difference.toFixed(2),
+                class_name: "bhsc-change-up",
+                icon: "↑"
+            };
+        }
+
+        return {
+            value: Math.abs(difference).toFixed(2),
+            class_name: "bhsc-change-down",
+            icon: "↓"
+        };
+    }
+
+    function score_html(item){
+
+        let selected =
+            item && item.has_selected_data
+            ? format_score(item.selected)
+            : "-";
+
+        let previous =
+            item && item.has_previous_data
+            ? format_score(item.previous)
+            : "-";
+
+        let change =
+            get_change(
+                item && item.has_selected_data
+                ? item.selected
+                : null,
+                item && item.has_previous_data
+                ? item.previous
+                : null
+            );
+
+        return `
+            <td class="bhsc-score-cell">
+                <span class="bhsc-score">
+                    ${selected}
+                </span>
+            </td>
+
+            <td class="bhsc-score-cell">
+                <span class="bhsc-score">
+                    ${previous}
+                </span>
+            </td>
+
+            <td class="bhsc-change-cell">
+                ${
+                    change.value === "-"
+                    ? "-"
+                    : `
+                        <span class="${change.class_name}">
+                            <span class="bhsc-change-icon">
+                                ${change.icon}
+                            </span>
+                            ${change.value}
+                        </span>
+                    `
+                }
+            </td>
+        `;
+    }
+
     let html = "";
 
     // =====================================================
-    // TITLE
+    // HEADER
     // =====================================================
 
     html += `
-        <div class="com-wise-title">
-            Region Wise BHSC Performance
-        </div>
+        <div class="region-wise-dashboard">
 
-        <div class="com-wise-subtitle">
-            ${frappe.utils.escape_html(selected_month)}
-            ${frappe.utils.escape_html(String(selected_year))}
-            vs
-            ${frappe.utils.escape_html(previous_month)}
-            ${frappe.utils.escape_html(String(previous_year))}
+            <div class="region-wise-heading">
+                <div>
+                    <div class="region-wise-title">
+                        Region Wise BHSC Performance
+                    </div>
+
+                    <div class="region-wise-subtitle">
+                        ${frappe.utils.escape_html(selected_month)}
+                        ${frappe.utils.escape_html(String(selected_year))}
+                        vs
+                        ${frappe.utils.escape_html(previous_month)}
+                        ${frappe.utils.escape_html(String(previous_year))}
+                    </div>
+                </div>
+            </div>
+    `;
+
+    // =====================================================
+    // KPI CARDS
+    // =====================================================
+
+    let grand_selected =
+        grand_total.has_selected_data
+        ? format_score(grand_total.selected)
+        : "-";
+
+    let grand_previous =
+        grand_total.has_previous_data
+        ? format_score(grand_total.previous)
+        : "-";
+
+    let grand_change =
+        get_change(
+            grand_total.has_selected_data
+            ? grand_total.selected
+            : null,
+            grand_total.has_previous_data
+            ? grand_total.previous
+            : null
+        );
+
+    let total_com_count = 0;
+
+    zones.forEach(function(zone){
+
+        let zone_data =
+            data[zone] || {};
+
+        Object.keys(zone_data).forEach(function(region){
+
+            if(region === "_total"){
+                return;
+            }
+
+            let region_data =
+                zone_data[region] || {};
+
+            Object.keys(region_data).forEach(function(com){
+
+                if(
+                    com !== "_total" &&
+                    com &&
+                    com.toLowerCase() !== "not assigned"
+                ){
+                    total_com_count++;
+                }
+            });
+        });
+    });
+
+    html += `
+        <div class="region-wise-kpi-grid">
+
+            <div class="region-wise-kpi-card">
+                <div class="region-wise-kpi-label">
+                    Grand BHSC
+                </div>
+
+                <div class="region-wise-kpi-value">
+                    ${grand_selected}
+                </div>
+            </div>
+
+            <div class="region-wise-kpi-card">
+                <div class="region-wise-kpi-label">
+                    Previous BHSC
+                </div>
+
+                <div class="region-wise-kpi-value">
+                    ${grand_previous}
+                </div>
+            </div>
+
+            <div class="region-wise-kpi-card">
+                <div class="region-wise-kpi-label">
+                    Variance
+                </div>
+
+                <div class="region-wise-kpi-value ${grand_change.class_name}">
+                    ${
+                        grand_change.value === "-"
+                        ? "-"
+                        : `
+                            ${grand_change.icon}
+                            ${grand_change.value}
+                        `
+                    }
+                </div>
+            </div>
+
+            <div class="region-wise-kpi-card">
+                <div class="region-wise-kpi-label">
+                    Total COMs
+                </div>
+
+                <div class="region-wise-kpi-value">
+                    ${total_com_count}
+                </div>
+            </div>
+
         </div>
     `;
 
     // =====================================================
-    // NO DATA
+    // REGION WISE TREND GRAPH
+    // =====================================================
+
+    // Trend graph container is appended below the table
+
+    // =====================================================
+    // TABLE
     // =====================================================
 
     if(
@@ -5672,32 +6680,44 @@ function render_com_wise_table(
             </div>
         `;
 
+        html += `</div>`;
+
         $("#com-wise-content").html(html);
 
         return;
     }
 
-    // =====================================================
-    // TABLE HEADER
-    // =====================================================
-
     html += `
-        <div class="com-wise-table-wrapper">
+        <div class="region-wise-table-wrapper">
 
-            <table class="com-wise-table">
+            <table class="region-wise-power-table">
 
                 <thead>
                     <tr>
-                        <th>Zone</th>
-                        <th>Region</th>
-                        <th>COM</th>
-                        <th>
+                        <th class="hierarchy-column">
+                            Zone
+                        </th>
+
+                        <th class="hierarchy-column">
+                            Region
+                        </th>
+
+                        <th class="com-column">
+                            COM
+                        </th>
+
+                        <th class="score-column">
                             ${frappe.utils.escape_html(selected_month)}
                             BHSC
                         </th>
-                        <th>
+
+                        <th class="score-column">
                             ${frappe.utils.escape_html(previous_month)}
                             BHSC
+                        </th>
+
+                        <th class="change-column">
+                            Variance
                         </th>
                     </tr>
                 </thead>
@@ -5706,7 +6726,7 @@ function render_com_wise_table(
     `;
 
     // =====================================================
-    // ZONE LOOP
+    // ZONE
     // =====================================================
 
     zones.forEach(function(zone){
@@ -5715,22 +6735,61 @@ function render_com_wise_table(
             data[zone] || {};
 
         let regions =
-            Object.keys(zone_data);
+            Object.keys(zone_data)
+            .filter(function(region){
 
-        // Remove any accidental total key.
-        regions =
-            regions.filter(function(region){
-                return region !== "_total";
+                return (
+                    region !== "_total" &&
+                    region &&
+                    region.toLowerCase() !== "not assigned"
+                );
             });
 
+        if(!regions.length){
+            return;
+        }
+
         // -------------------------------------------------
-        // Calculate total visible COM rows for this Zone.
-        // This is used for Zone rowspan.
+        // ZONE HEADER
         // -------------------------------------------------
 
-        let zone_row_count = 0;
+        html += `
+            <tr
+                class="hierarchy-zone-row"
+                data-zone="${frappe.utils.escape_html(zone)}"
+            >
 
-        regions.forEach(function(region){
+                <td>
+                    <button
+                        type="button"
+                        class="hierarchy-toggle zone-toggle"
+                        data-zone="${frappe.utils.escape_html(zone)}"
+                        data-expanded="false"
+                    >
+                        <span class="hierarchy-arrow">
+                            ▶
+                        </span>
+
+                        <span class="hierarchy-zone-name">
+                            ${frappe.utils.escape_html(zone)}
+                        </span>
+                    </button>
+                </td>
+
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+
+            </tr>
+        `;
+
+        // -------------------------------------------------
+        // REGIONS
+        // -------------------------------------------------
+
+        regions.forEach(function(region, region_index){
 
             let region_data =
                 zone_data[region] || {};
@@ -5738,203 +6797,121 @@ function render_com_wise_table(
             let coms =
                 Object.keys(region_data)
                 .filter(function(com){
+
                     return (
                         com !== "_total" &&
                         com &&
                         com.toLowerCase() !== "not assigned"
                     );
                 });
-
-            zone_row_count += Math.max(
-                coms.length,
-                1
-            );
-        });
-
-        let zone_cell_written = false;
-
-        regions.forEach(function(region){
-
-            let region_data =
-                zone_data[region] || {};
-
-            let coms =
-                Object.keys(region_data)
-                .filter(function(com){
-                    return (
-                        com !== "_total" &&
-                        com &&
-                        com.toLowerCase() !== "not assigned"
-                    );
-                });
-
-            // -------------------------------------------------
-            // Skip empty / Not Assigned regions.
-            // -------------------------------------------------
-
-            if(
-                !region ||
-                region.toLowerCase() === "not assigned"
-            ){
-                return;
-            }
-
-            // -------------------------------------------------
-            // If no valid COM exists, don't create
-            // a fake "No COM Data" row.
-            // -------------------------------------------------
 
             if(!coms.length){
                 return;
             }
 
-            // -------------------------------------------------
-            // REGION ROWSPAN
-            // -------------------------------------------------
+            let region_key =
+                `${zone}::${region}`;
 
-            let region_rowspan =
-                coms.length;
+            // ---------------------------------------------
+            // REGION HEADER
+            // ---------------------------------------------
 
-            coms.forEach(function(com, com_index){
+            html += `
+                <tr
+                    class="hierarchy-region-row"
+                    data-zone="${frappe.utils.escape_html(zone)}"
+                    data-region="${frappe.utils.escape_html(region)}"
+                    data-region-index="${region_index}"
+                >
+
+                    <td></td>
+
+                    <td>
+                        <button
+                            type="button"
+                            class="hierarchy-toggle region-toggle"
+                            data-zone="${frappe.utils.escape_html(zone)}"
+                            data-region="${frappe.utils.escape_html(region)}"
+                            data-expanded="false"
+                        >
+                            <span class="hierarchy-arrow">
+                                ▶
+                            </span>
+
+                            <span class="hierarchy-region-name">
+                                ${frappe.utils.escape_html(region)}
+                            </span>
+                        </button>
+                    </td>
+
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+
+                </tr>
+            `;
+
+            // ---------------------------------------------
+            // COM ROWS
+            // ---------------------------------------------
+
+            coms.forEach(function(com){
 
                 let item =
                     region_data[com] || {};
 
-                html += `<tr>`;
-
-                // -------------------------------------------------
-                // ZONE CELL
-                // -------------------------------------------------
-
-                if(!zone_cell_written){
-
-                    html += `
-                        <td
-                            class="com-zone"
-                            rowspan="${zone_row_count}"
-                        >
-                            ${frappe.utils.escape_html(zone)}
-                        </td>
-                    `;
-
-                    zone_cell_written = true;
-                }
-
-                // -------------------------------------------------
-                // REGION CELL
-                // -------------------------------------------------
-
-                if(com_index === 0){
-
-                    html += `
-                        <td
-                            class="com-region"
-                            rowspan="${region_rowspan}"
-                        >
-                            ${frappe.utils.escape_html(region)}
-                        </td>
-                    `;
-                }
-
-                // -------------------------------------------------
-                // COM
-                // -------------------------------------------------
-
                 html += `
-                    <td class="com-name">
-                        ${frappe.utils.escape_html(com)}
-                    </td>
+                    <tr
+                        class="hierarchy-com-row"
+                        data-zone="${frappe.utils.escape_html(zone)}"
+                        data-region="${frappe.utils.escape_html(region)}"
+                        data-region-index="${region_index}"
+                    >
 
-                    <td>
-                        ${
-                            item.has_selected_data
-                            ? format_score(item.selected)
-                            : "-"
-                        }
-                    </td>
+                        <td></td>
 
-                    <td>
-                        ${
-                            item.has_previous_data
-                            ? format_score(item.previous)
-                            : "-"
-                        }
-                    </td>
+                        <td></td>
 
-                </tr>
+                        <td class="com-name">
+                            ${frappe.utils.escape_html(com)}
+                        </td>
+
+                        ${score_html(item)}
+
+                    </tr>
                 `;
             });
 
-            // =================================================
+            // ---------------------------------------------
             // REGION TOTAL
-            // =================================================
+            // ---------------------------------------------
 
             let region_total =
                 region_data["_total"] || {};
 
             html += `
-                <tr class="zone-total-row">
+                <tr
+                    class="hierarchy-region-total-row"
+                    data-zone="${frappe.utils.escape_html(zone)}"
+                    data-region="${frappe.utils.escape_html(region)}"
+                    data-region-index="${region_index}"
+                >
 
-                    <td colspan="2">
-                        ${frappe.utils.escape_html(zone)}
-                        -
+                    <td></td>
+
+                    <td>
                         ${frappe.utils.escape_html(region)}
                         Total
                     </td>
 
-                    <td>
-                        ${
-                            region_total.has_selected_data
-                            ? format_score(region_total.selected)
-                            : "-"
-                        }
-                    </td>
+                    <td></td>
 
-                    <td>
-                        ${
-                            region_total.has_previous_data
-                            ? format_score(region_total.previous)
-                            : "-"
-                        }
-                    </td>
+                    ${score_html(region_total)}
 
                 </tr>
             `;
         });
-
-        // =====================================================
-        // ZONE TOTAL
-        // =====================================================
-
-        let zone_total =
-            zone_totals[zone] || {};
-
-        html += `
-            <tr class="zone-total-row">
-
-                <td colspan="3">
-                    ${frappe.utils.escape_html(zone)}
-                    Total
-                </td>
-
-                <td>
-                    ${
-                        zone_total.has_selected_data
-                        ? format_score(zone_total.selected)
-                        : "-"
-                    }
-                </td>
-
-                <td>
-                    ${
-                        zone_total.has_previous_data
-                        ? format_score(zone_total.previous)
-                        : "-"
-                    }
-                </td>
-
-            </tr>
-        `;
 
     });
 
@@ -5943,25 +6920,34 @@ function render_com_wise_table(
     // =====================================================
 
     html += `
-        <tr class="grand-total-row">
+        <tr class="hierarchy-grand-total-row">
 
-            <td colspan="3">
+            <td>
                 Grand Total
             </td>
 
+            <td></td>
+
+            <td></td>
+
             <td>
-                ${
-                    grand_total.has_selected_data
-                    ? format_score(grand_total.selected)
-                    : "-"
-                }
+                ${grand_selected}
+            </td>
+
+            <td>
+                ${grand_previous}
             </td>
 
             <td>
                 ${
-                    grand_total.has_previous_data
-                    ? format_score(grand_total.previous)
-                    : "-"
+                    grand_change.value === "-"
+                    ? "-"
+                    : `
+                        <span class="${grand_change.class_name}">
+                            ${grand_change.icon}
+                            ${grand_change.value}
+                        </span>
+                    `
                 }
             </td>
 
@@ -5974,9 +6960,786 @@ function render_com_wise_table(
             </table>
 
         </div>
+
+    </div>
+    `;
+
+    html += `
+        <div id="region-wise-trend-graph" style="margin-top:24px;"></div>
     `;
 
     $("#com-wise-content").html(html);
+
+    let trend_region_zones = result.trend_region_zones || {};
+
+    render_region_wise_trend_graph(
+        trend_periods,
+        trend_regions,
+        trend_data,
+        trend_region_zones
+    );
+
+    // Region Wise: keep all Zones and Regions collapsed by default
+    $("#com-wise-content .hierarchy-region-row").hide();
+    $("#com-wise-content .hierarchy-com-row").hide();
+    $("#com-wise-content .hierarchy-region-total-row").hide();
+
+    // =====================================================
+    // ZONE TOGGLE
+    // =====================================================
+
+    $("#com-wise-content")
+        .off("click.region-wise-zone")
+        .on(
+            "click.region-wise-zone",
+            ".zone-toggle",
+            function(){
+
+                let zone =
+                    $(this).attr("data-zone");
+
+                let button =
+                    $(this);
+
+                let expanded =
+                    button.attr("data-expanded") === "true";
+
+                button.attr(
+                    "data-expanded",
+                    expanded ? "false" : "true"
+                );
+
+                button
+                    .find(".hierarchy-arrow")
+                    .text(
+                        expanded
+                        ? "▶"
+                        : "▼"
+                    );
+
+                let region_rows =
+                    $('#com-wise-content .hierarchy-region-row[data-zone="' +
+                    zone +
+                    '"]');
+
+                let com_rows =
+                    $('#com-wise-content .hierarchy-com-row[data-zone="' +
+                    zone +
+                    '"]');
+
+                let total_rows =
+                    $('#com-wise-content .hierarchy-region-total-row[data-zone="' +
+                    zone +
+                    '"]');
+
+                if(expanded){
+
+                    region_rows.hide();
+
+                    com_rows.hide();
+
+                    total_rows.hide();
+
+                    region_rows
+                        .find(".region-toggle")
+                        .attr(
+                            "data-expanded",
+                            "false"
+                        )
+                        .find(".hierarchy-arrow")
+                        .text("▶");
+
+                } else {
+
+                    region_rows.show();
+
+                    com_rows.hide();
+
+                    total_rows.hide();
+
+                    region_rows
+                        .find(".region-toggle")
+                        .attr(
+                            "data-expanded",
+                            "false"
+                        )
+                        .find(".hierarchy-arrow")
+                        .text("▶");
+                }
+            }
+        );
+
+    // =====================================================
+    // REGION TOGGLE
+    // =====================================================
+
+    $("#com-wise-content")
+        .off("click.region-wise-region")
+        .on(
+            "click.region-wise-region",
+            ".region-toggle",
+            function(){
+
+                let zone =
+                    $(this).attr("data-zone");
+
+                let region =
+                    $(this).attr("data-region");
+
+                let button =
+                    $(this);
+
+                let expanded =
+                    button.attr("data-expanded") === "true";
+
+                button.attr(
+                    "data-expanded",
+                    expanded ? "false" : "true"
+                );
+
+                button
+                    .find(".hierarchy-arrow")
+                    .text(
+                        expanded
+                        ? "▶"
+                        : "▼"
+                    );
+
+                let com_selector =
+                    '#com-wise-content .hierarchy-com-row' +
+                    '[data-zone="' + zone + '"]' +
+                    '[data-region="' + region + '"]';
+
+                let total_selector =
+                    '#com-wise-content .hierarchy-region-total-row' +
+                    '[data-zone="' + zone + '"]' +
+                    '[data-region="' + region + '"]';
+
+                if(expanded){
+
+                    $(com_selector).hide();
+
+                    $(total_selector).hide();
+
+                } else {
+
+                    $(com_selector).show();
+
+                    $(total_selector).show();
+                }
+            }
+        );
+}
+
+
+function render_region_wise_trend_graph(
+periods,
+regions,
+data,
+region_zones
+){
+
+let container =
+$("#region-wise-trend-graph");
+
+if(!container.length){
+return;
+}
+
+/* -------------------------------------------------------
+   VALIDATION
+   ------------------------------------------------------- */
+
+if(
+!regions ||
+!regions.length
+){
+
+container.html(`
+<div class="region-trend-empty">
+No Region Wise data available.
+</div>
+`);
+
+return;
+}
+
+/* -------------------------------------------------------
+   SELECTED / LATEST PERIOD
+   One bar per Region
+   ------------------------------------------------------- */
+
+let selected_period =
+periods && periods.length
+? periods[periods.length - 1]
+: null;
+
+let period_label =
+selected_period
+? String(selected_period.label || "")
+: "";
+
+/* -------------------------------------------------------
+   REGION ORDER
+   ZONE → REGION
+   ------------------------------------------------------- */
+
+let ordered_regions = [...regions];
+
+let region_label = (key)=>{
+let name = String(key).split("|").pop();
+if(/^REGION-/i.test(name)){
+return "R" + name.replace(/^REGION-/i, "");
+}
+return name;
+};
+
+/* -------------------------------------------------------
+   DIMENSIONS
+   ------------------------------------------------------- */
+
+let chart_height = 440;
+
+let left = 52;
+let right = 35;
+let top = 78;
+let bottom = 62;
+
+let bar_width = 32;
+let bar_gap = 24;
+
+let zone_gap = 30;
+let x_offsets = [];
+let _cursor = left;
+let _prev_zone = null;
+
+ordered_regions.forEach((region, i)=>{
+let z = String(region_zones?.[region] || "Other");
+if(_prev_zone !== null && z !== _prev_zone){
+_cursor += zone_gap;
+}
+x_offsets.push(_cursor + bar_gap / 2);
+_cursor += bar_width + bar_gap;
+_prev_zone = z;
+});
+
+let chart_width = Math.max(1000, _cursor + right);
+
+let plot_width =
+chart_width -
+left -
+right;
+
+let plot_height =
+chart_height -
+top -
+bottom;
+
+/* -------------------------------------------------------
+   SCALE
+   ------------------------------------------------------- */
+
+let get_x = (index)=>x_offsets[index];
+
+let get_y =
+(value)=>{
+
+let safe_value =
+Math.max(
+0,
+Math.min(
+100,
+Number(value) || 0
+)
+);
+
+return (
+top +
+plot_height -
+(
+safe_value / 100
+) *
+plot_height
+);
+
+};
+
+/* -------------------------------------------------------
+   SVG
+   ------------------------------------------------------- */
+
+if(!$("#region-trend-look-style").length){
+$("head").append(
+'<style id="region-trend-look-style">' +
+'#region-wise-trend-graph .region-trend-chart-wrap{height:auto!important;overflow-x:auto!important;overflow-y:hidden!important;padding-bottom:6px;}' +
+'#region-wise-trend-graph .region-trend-chart{height:auto!important;min-width:0!important;width:auto!important;}' +
+'#region-wise-trend-graph .region-trend-svg{overflow:visible;}' +
+'#region-wise-trend-graph .region-trend-bar:hover{opacity:.82;}' +
+'</style>'
+);
+}
+
+let svg = "";
+let axis_svg = "";
+
+svg += `
+<svg
+class="region-trend-svg"
+viewBox="0 0 ${chart_width} ${chart_height}"
+width="${chart_width}" height="${chart_height}"
+style="display:block;max-width:none;width:${chart_width}px;height:${chart_height}px;"
+preserveAspectRatio="xMinYMin meet"
+>
+<defs>
+<linearGradient id="region-bar-shade" x1="0" y1="0" x2="0" y2="1">
+<stop offset="0%" stop-color="#3f8a93" stop-opacity="1"/>
+<stop offset="100%" stop-color="#b7dde0" stop-opacity="0.9"/>
+</linearGradient>
+</defs>
+`;
+
+/* -------------------------------------------------------
+   HORIZONTAL GRID
+   ------------------------------------------------------- */
+
+for(
+let score = 0;
+score <= 100;
+score += 10
+){
+
+let y =
+get_y(score);
+
+svg += `
+<line
+class="region-trend-grid-line" style="stroke:#94a3b8;stroke-width:1;stroke-opacity:0.55;"
+x1="${left}"
+y1="${y}"
+x2="${chart_width - right}"
+y2="${y}"
+/>
+`;
+
+axis_svg += `
+<text
+class="region-trend-axis-label"
+style="font-size:11px;font-weight:600;fill:#94a3b8;"
+x="${left - 10}"
+y="${y + 4}"
+text-anchor="end"
+>
+${score}
+</text>
+`;
+
+}
+
+/* -------------------------------------------------------
+   ZONE GROUPS
+   ------------------------------------------------------- */
+
+let zone_groups = [];
+
+ordered_regions.forEach(
+(region,index)=>{
+
+let zone =
+String(
+region_zones?.[region] || "Other"
+);
+
+let last =
+zone_groups[
+zone_groups.length - 1
+];
+
+if(
+!last ||
+last.zone !== zone
+){
+
+zone_groups.push({
+zone: zone,
+start: index,
+end: index
+});
+
+}else{
+
+last.end = index;
+
+}
+
+}
+);
+
+/* ZONE BACKGROUND BANDS */
+
+zone_groups.forEach(
+(group,gi)=>{
+
+if(gi % 2 === 0){
+return;
+}
+
+let half = (bar_gap + zone_gap) / 2;
+let bx = get_x(group.start) - half;
+let bw = (get_x(group.end) + bar_width + half) - bx;
+
+svg += `
+<rect
+x="${bx}"
+y="${top - 20}"
+width="${bw}"
+height="${plot_height + 30}"
+rx="10"
+style="fill:#2f6f77;fill-opacity:0.035;"
+/>
+`;
+
+}
+);
+
+/* -------------------------------------------------------
+   VERTICAL GRID + BARS
+   ------------------------------------------------------- */
+
+ordered_regions.forEach(
+(region,index)=>{
+
+let x =
+get_x(index);
+
+let region_data =
+data[region] || {};
+
+let cell_value =
+region_data[period_label];
+
+let value = 0;
+
+if(
+cell_value !== null &&
+cell_value !== undefined &&
+typeof cell_value === "object" &&
+Number.isFinite(
+Number(cell_value.average)
+)
+){
+
+value =
+Number(cell_value.average);
+
+}else if(
+Number.isFinite(
+Number(cell_value)
+)
+){
+
+value =
+Number(cell_value);
+
+}
+
+let y =
+get_y(value);
+
+let bar_height =
+top +
+plot_height -
+y;
+
+/* vertical grid */
+
+svg += `
+<line
+class="region-trend-vertical-grid-line" style="stroke:#94a3b8;stroke-width:1;stroke-opacity:0.35;stroke-dasharray:3 4;"
+x1="${x + bar_width / 2}"
+y1="${top}"
+x2="${x + bar_width / 2}"
+y2="${top + plot_height}"
+/>
+`;
+
+/* bar */
+
+svg += `
+<rect
+class="region-trend-bar" style="fill:url(#region-bar-shade);"
+x="${x}"
+y="${y}"
+width="${bar_width}"
+height="${Math.max(bar_height,0)}"
+rx="8"
+data-region="${String(region)}"
+data-zone="${String(region_zones?.[region] || "Other")}"
+data-period="${period_label}"
+data-value="${value}"
+data-tooltip="${region_label(region)} | ${String(region_zones?.[region] || "Other")} | ${period_label} | ${value.toFixed(2)}%"
+/>
+`;
+
+/* value */
+
+svg += `
+<text
+class="region-trend-bar-value" style="font-size:11px;font-weight:700;fill:#2f6f77;"
+x="${x + bar_width / 2}"
+y="${Math.max(y - 8, top + 12)}"
+text-anchor="middle"
+>
+${value.toFixed(0)}
+</text>
+`;
+
+/* region */
+
+svg += `
+<text
+class="region-trend-axis-label"
+x="${x + bar_width / 2}"
+y="${chart_height - 30}" style="font-size:11px;font-weight:600;fill:#64748b;"
+text-anchor="middle"
+>
+${region_label(region)}
+</text>
+`;
+
+}
+);
+
+/* -------------------------------------------------------
+   PREVIOUS PERIOD PROGRESS LINE
+   ------------------------------------------------------- */
+
+let previous_period =
+periods && periods.length > 1
+? periods[periods.length - 2]
+: null;
+
+if(previous_period){
+
+let previous_label =
+String(previous_period.label || "");
+
+let line_points = [];
+let line_circles = "";
+
+ordered_regions.forEach(
+(region,index)=>{
+
+let raw =
+(data[region] || {})[previous_label];
+
+if(raw && typeof raw === "object"){
+raw = raw.average;
+}
+
+if(
+raw === null ||
+raw === undefined ||
+!Number.isFinite(Number(raw))
+){
+return;
+}
+
+let v = Number(raw);
+let px = get_x(index) + bar_width / 2;
+let py = get_y(v);
+
+line_points.push(px + "," + py);
+
+line_circles += `
+<circle cx="${px}" cy="${py}" r="4"
+fill="#f59e0b" stroke="#ffffff" stroke-width="1.5">
+<title>${region_label(region)} | ${previous_label} | ${v.toFixed(2)}%</title>
+</circle>
+`;
+
+}
+);
+
+if(line_points.length){
+
+svg += `
+<polyline
+points="${line_points.join(" ")}"
+fill="none"
+stroke="#f59e0b"
+stroke-width="2.5"
+stroke-linejoin="round"
+stroke-linecap="round"
+/>
+`;
+
+svg += line_circles;
+
+svg += `
+<text
+class="region-trend-axis-label"
+x="${chart_width - right}"
+y="52"
+text-anchor="end"
+>
+Bars: ${period_label} | Line: ${previous_label}
+</text>
+`;
+
+}
+
+}
+
+/* -------------------------------------------------------
+   ZONE LABELS + SEPARATORS
+   ------------------------------------------------------- */
+
+zone_groups.forEach(
+(group,group_index)=>{
+
+let start_x =
+get_x(group.start);
+
+let end_x =
+get_x(group.end) +
+bar_width;
+
+let center_x =
+(start_x + end_x) / 2;
+
+svg += `
+<text
+class="region-trend-zone-label" style="font-size:12px;font-weight:800;fill:#2f6f77;letter-spacing:.6px;"
+x="${center_x}"
+y="32"
+text-anchor="middle"
+>
+${group.zone}
+</text>
+`;
+
+if(
+group_index > 0
+){
+
+let separator_x = start_x - (bar_gap + zone_gap) / 2;
+
+svg += `
+<line
+class="region-trend-zone-separator"
+x1="${separator_x}"
+y1="${top - 18}"
+x2="${separator_x}"
+y2="${top + plot_height + 10}"
+/>
+`;
+
+}
+
+}
+);
+
+svg += `
+</svg>
+`;
+
+/* -------------------------------------------------------
+   RENDER
+   ------------------------------------------------------- */
+
+container.html(`
+<div class="region-trend-card">
+
+<div class="region-trend-title">
+Region Wise BHSC
+</div>
+
+<div class="region-trend-subtitle">
+${period_label
+? `Region-wise score for ${period_label}`
+: "Region-wise score comparison"}
+</div>
+
+<div
+class="region-trend-chart-wrap"
+style="overflow-x:auto;"
+>
+
+<div
+class="region-trend-chart"
+style="width:${chart_width}px;"
+>
+<div style="position:sticky;left:0;z-index:3;width:${left}px;height:${chart_height}px;margin-bottom:-${chart_height}px;background:#fff;">
+<svg width="${left}" height="${chart_height}" style="display:block;overflow:visible;">${axis_svg}</svg>
+</div>
+${svg}
+</div>
+
+</div>
+
+<div
+class="region-trend-tooltip"
+id="region-trend-tooltip"
+>
+</div>
+
+</div>
+`);
+
+/* -------------------------------------------------------
+   TOOLTIP
+   ------------------------------------------------------- */
+
+container
+.off(
+"mouseenter.regionTrend",
+".region-trend-bar"
+)
+.on(
+"mouseenter.regionTrend",
+".region-trend-bar",
+function(){
+
+let tooltip =
+$("#region-trend-tooltip");
+
+let text =
+$(this).attr(
+"data-tooltip"
+);
+
+tooltip
+.text(text)
+.show();
+
+let offset =
+$(this).position();
+
+tooltip.css({
+left:
+(offset.left + 12) + "px",
+
+top:
+(offset.top - 42) + "px"
+});
+
+}
+)
+.off(
+"mouseleave.regionTrend",
+".region-trend-bar"
+)
+.on(
+"mouseleave.regionTrend",
+".region-trend-bar",
+function(){
+
+$("#region-trend-tooltip")
+.hide();
+
+}
+);
+
 }
 
 
@@ -6457,7 +8220,7 @@ container.html(`
 Zone Wise BHSC Monthly Comparison
 </div>
 <div class="zone-trend-subtitle">
-Month-wise comparison of average BHSC score for all zones based on actual Branch Score Card records.
+Month-wise comparison of average BHSC score for all zones based on Branch Score Card records.
 </div>
 <div class="zone-trend-chart-wrap">
 <div
@@ -7056,7 +8819,7 @@ container.html(`
 Zone Wise BHSC Average Score and Trend – ${frappe.utils.escape_html(title_text)}
 </div>
 <div class="zone-wise-subtitle">
-Average score is calculated from actual Branch Score Card records available for each branch in the respective zone and month.
+Average score is calculated from Branch Score Card records available for each branch in the respective zone and month.
 </div>
 </div>
 </div>
@@ -7081,9 +8844,6 @@ id="zone-wise-trend-graph">
 <div
 id="zone-wise-trend-comparison">
 </div>
-<div class="zone-wise-footer">
-Only actual scorecard records are included in the average. A dash (—) means no valid scorecard score was available for that zone/month.
-</div>
 </div>
 `);
 render_zone_wise_trend_graph(
@@ -7099,3 +8859,37 @@ console.log(
     result
 );
 }
+
+/* =========================================================
+   ACCESS RE-CHECK (no hard refresh needed)
+   ========================================================= */
+window.sahayog_recheck_scorecard_access = function(show_feedback){
+    frappe.call({
+        method:"sahayog.branch_score_card.page.branch_scorecard.branch_scorecard.get_branch_scorecard_access",
+        callback:function(r){
+            let a = r.message || {};
+            if(a.is_editor || a.has_access){
+                window.location.reload();
+            }else if(show_feedback){
+                frappe.show_alert({
+                    message:"Access not assigned yet.",
+                    indicator:"orange"
+                });
+            }
+        }
+    });
+};
+
+if(frappe.pages["branch-scorecard"]){
+    frappe.pages["branch-scorecard"].on_page_show = function(){
+        if($("#scorecard-no-access").length){
+            window.sahayog_recheck_scorecard_access(false);
+        }
+    };
+}
+
+$(window).off("focus.scorecardAccess").on("focus.scorecardAccess", function(){
+    if($("#scorecard-no-access").length){
+        window.sahayog_recheck_scorecard_access(false);
+    }
+});
