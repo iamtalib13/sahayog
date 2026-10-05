@@ -2,6 +2,7 @@ frappe.ui.form.on("Lead", {
   refresh(frm) {
     hideNamingSeries();
     frm.set_df_property("custom_verification_section", "collapsible", 0);
+    setVerificationHighlight(frm);
 
     if (!frm.is_new()) {
       addAssignButton(frm); // ✅ Only show when form is not new
@@ -25,6 +26,63 @@ frappe.ui.form.on("Lead", {
 });
 
 /* ---------------- Utility Functions ---------------- */
+function setVerificationHighlight(frm) {
+  if (frm.is_new()) return;
+  const status = frm.doc.custom_verification_status || "Pending";
+
+  setTimeout(() => {
+    let f = frm.get_field("custom_verification_status");
+    if (f && f.$wrapper) {
+      let $input = f.$wrapper.find("input, select, .control-value");
+      if (status === "Pending") {
+        $input.css({
+          "background-color": "#fef3c7",
+          "border": "2px solid #f59e0b",
+          "color": "#92400e",
+          "border-radius": "6px",
+          "font-weight": "bold"
+        });
+      } else if (status === "Verified") {
+        $input.css({
+          "background-color": "#dcfce7",
+          "border": "2px solid #22c55e",
+          "color": "#166534",
+          "border-radius": "6px",
+          "font-weight": "bold"
+        });
+      } else if (status === "Rejected") {
+        $input.css({
+          "background-color": "#fee2e2",
+          "border": "2px solid #ef4444",
+          "color": "#991b1b",
+          "border-radius": "6px",
+          "font-weight": "bold"
+        });
+      }
+    }
+  }, 200);
+
+  if (status === "Pending") {
+    frm.dashboard.set_headline(
+      __("⚠️ <b>BM Verification Pending:</b> This lead is currently pending for Branch Manager Verification."),
+      "orange"
+    );
+  } else if (status === "Verified") {
+    let vBy = frm.doc.custom_verified_by || "BM";
+    let vOn = frm.doc.custom_verified_on ? frappe.datetime.str_to_user(frm.doc.custom_verified_on) : "";
+    frm.dashboard.set_headline(
+      __("✅ <b>BM Verified:</b> This lead has been verified by <b>{0}</b> on <b>{1}</b>.", [vBy, vOn]),
+      "green"
+    );
+  } else if (status === "Rejected") {
+    let rem = frm.doc.custom_verification_remarks || "No remarks";
+    frm.dashboard.set_headline(
+      __("❌ <b>BM Verification Rejected:</b> Remarks: {0}", [rem]),
+      "red"
+    );
+  }
+}
+
 // Add "Assign to" button
 
 function addAssignButton(frm) {
