@@ -1,3 +1,27 @@
+function sahayog_inject_style(id, css){
+    $("#" + id).remove();
+    $("head").append('<style id="' + id + '">' + css + '</style>');
+}
+
+function sahayog_cell_number(cell_value){
+    if(
+        cell_value !== null &&
+        cell_value !== undefined &&
+        typeof cell_value === "object" &&
+        Number.isFinite(Number(cell_value.average))
+    ){
+        return Number(cell_value.average);
+    }
+    if(Number.isFinite(Number(cell_value))){
+        return Number(cell_value);
+    }
+    return null;
+}
+
+function sahayog_short_month(month_name){
+    return String(month_name || "").trim().slice(0, 3);
+}
+
 frappe.pages["branch-scorecard"].on_page_load=function(wrapper){
 $("#branch-scorecard-style").remove();
 $("<style>")
@@ -1231,17 +1255,6 @@ background:#fff;
 box-shadow:
 0 0 0 3px rgba(255,255,255,.16)
 }
-.scorecard-view-tab.active::after{
-content:"";
-position:absolute;
-left:18px;
-right:18px;
-bottom:-6px;
-height:3px;
-border-radius:4px;
-background:#3A6F75;
-opacity:.9
-}
 .scorecard-view-container{
 width:100%;
 height:auto!important;
@@ -1975,19 +1988,6 @@ font-weight:650
 .com-wise-panel{
 display:block;
 min-height:500px
-}
-
-.com-wise-filter-bar{
-    width:100%;
-    display:flex;
-    align-items:center;
-    gap:20px;
-    margin-bottom:20px;
-    padding:0;
-}
-
-.com-wise-fy-container{
-    flex-shrink:0;
 }
 
 /* =========================================================
@@ -2987,10 +2987,6 @@ min-width:105px;
 padding:8px 14px;
 font-size:12px
 }
-.scorecard-view-tab.active::after{
-left:14px;
-right:14px
-}
 .scorecard-view-container{
 height:auto!important;
 min-height:500px;
@@ -3385,7 +3381,9 @@ function get_zone_selected_month(){
 }
 
 
-function render_zone_month_capsules(
+function render_month_capsules_for(
+    container_selector,
+    pill_class,
     selected_fy,
     requested_active_month
 ){
@@ -3413,7 +3411,7 @@ function render_zone_month_capsules(
 
             return `
                 <div
-                    class="zone-month-pill ${
+                    class="${pill_class} ${
                         month === active_month
                         ? "active"
                         : ""
@@ -3427,11 +3425,26 @@ function render_zone_month_capsules(
 
         }).join("");
 
-    $("#zone-wise-months").html(
+    $(container_selector).html(
         months_html
     );
 
     return active_month;
+
+}
+
+
+function render_zone_month_capsules(
+    selected_fy,
+    requested_active_month
+){
+
+    return render_month_capsules_for(
+        "#zone-wise-months",
+        "zone-month-pill",
+        selected_fy,
+        requested_active_month
+    );
 
 }
 
@@ -3489,48 +3502,12 @@ function render_com_month_capsules(
     requested_active_month
 ){
 
-    let visible_months =
-        get_visible_months_for_fy(
-            selected_fy
-        );
-
-    let active_month =
-        visible_months.includes(
-            requested_active_month
-        )
-        ? requested_active_month
-        : (
-            visible_months.length
-            ? visible_months[
-                visible_months.length - 1
-            ]
-            : null
-        );
-
-    let months_html =
-        visible_months.map(function(month){
-
-            return `
-                <div
-                    class="com-month-pill ${
-                        month === active_month
-                        ? "active"
-                        : ""
-                    }"
-                    data-month="${frappe.utils.escape_html(
-                        month
-                    )}">
-                    ${month_short_names[month]}
-                </div>
-            `;
-
-        }).join("");
-
-    $("#com-wise-months").html(
-        months_html
+    return render_month_capsules_for(
+        "#com-wise-months",
+        "com-month-pill",
+        selected_fy,
+        requested_active_month
     );
-
-    return active_month;
 
 }
 
@@ -6377,13 +6354,13 @@ function render_com_wise_table(
         result.trend_data || {};
 
     let selected_month =
-        result.selected_month || "";
+        sahayog_short_month(result.selected_month);
 
     let selected_year =
         result.selected_year || "";
 
     let previous_month =
-        result.previous_month || "";
+        sahayog_short_month(result.previous_month);
 
     let previous_year =
         result.previous_year || "";
@@ -6695,16 +6672,8 @@ function render_com_wise_table(
                 <thead>
                     <tr>
                         <th class="hierarchy-column">
-                            Zone
-                        </th>
-
-                        <th class="hierarchy-column">
-                            Region
-                        </th>
-
-                        <th class="com-column">
-                            COM
-                        </th>
+ Zone / Region / COM
+ </th>
 
                         <th class="score-column">
                             ${frappe.utils.escape_html(selected_month)}
@@ -6759,7 +6728,7 @@ function render_com_wise_table(
                 data-zone="${frappe.utils.escape_html(zone)}"
             >
 
-                <td>
+                <td class="tree-cell tree-zone">
                     <button
                         type="button"
                         class="hierarchy-toggle zone-toggle"
@@ -6775,14 +6744,7 @@ function render_com_wise_table(
                         </span>
                     </button>
                 </td>
-
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-
-            </tr>
+ ${score_html(zone_totals[zone] || {})}</tr>
         `;
 
         // -------------------------------------------------
@@ -6824,9 +6786,7 @@ function render_com_wise_table(
                     data-region-index="${region_index}"
                 >
 
-                    <td></td>
-
-                    <td>
+                    <td class="tree-cell tree-region">
                         <button
                             type="button"
                             class="hierarchy-toggle region-toggle"
@@ -6843,13 +6803,7 @@ function render_com_wise_table(
                             </span>
                         </button>
                     </td>
-
-                    <td></td>
-                    <td></td>
-                    <td></td>
-                    <td></td>
-
-                </tr>
+ ${score_html(region_data["_total"] || {})}</tr>
             `;
 
             // ---------------------------------------------
@@ -6869,11 +6823,7 @@ function render_com_wise_table(
                         data-region-index="${region_index}"
                     >
 
-                        <td></td>
-
-                        <td></td>
-
-                        <td class="com-name">
+                        <td class="com-name tree-cell tree-com">
                             ${frappe.utils.escape_html(com)}
                         </td>
 
@@ -6890,27 +6840,7 @@ function render_com_wise_table(
             let region_total =
                 region_data["_total"] || {};
 
-            html += `
-                <tr
-                    class="hierarchy-region-total-row"
-                    data-zone="${frappe.utils.escape_html(zone)}"
-                    data-region="${frappe.utils.escape_html(region)}"
-                    data-region-index="${region_index}"
-                >
-
-                    <td></td>
-
-                    <td>
-                        ${frappe.utils.escape_html(region)}
-                        Total
-                    </td>
-
-                    <td></td>
-
-                    ${score_html(region_total)}
-
-                </tr>
-            `;
+            // region total is shown on the Region row
         });
 
     });
@@ -6925,10 +6855,6 @@ function render_com_wise_table(
             <td>
                 Grand Total
             </td>
-
-            <td></td>
-
-            <td></td>
 
             <td>
                 ${grand_selected}
@@ -6970,6 +6896,8 @@ function render_com_wise_table(
 
     $("#com-wise-content").html(html);
 
+    render_region_side_panel(zones, data, zone_totals, selected_month, previous_month);
+
     let trend_region_zones = result.trend_region_zones || {};
 
     render_region_wise_trend_graph(
@@ -6983,6 +6911,10 @@ function render_com_wise_table(
     $("#com-wise-content .hierarchy-region-row").hide();
     $("#com-wise-content .hierarchy-com-row").hide();
     $("#com-wise-content .hierarchy-region-total-row").hide();
+
+    sahayog_lock_snapshot_height();
+    setTimeout(sahayog_lock_snapshot_height, 400);
+    sahayog_enlarge_delta_arrows();
 
     // =====================================================
     // ZONE TOGGLE
@@ -7198,15 +7130,15 @@ return name;
    DIMENSIONS
    ------------------------------------------------------- */
 
-let chart_height = 440;
+let chart_height = 330;
 
 let left = 52;
 let right = 35;
-let top = 78;
-let bottom = 62;
+let top = 70;
+let bottom = 50;
 
-let bar_width = 32;
-let bar_gap = 24;
+let bar_width = 22;
+let bar_gap = 30;
 
 let zone_gap = 30;
 let x_offsets = [];
@@ -7393,7 +7325,7 @@ x="${bx}"
 y="${top - 20}"
 width="${bw}"
 height="${plot_height + 30}"
-rx="10"
+rx="0"
 style="fill:#2f6f77;fill-opacity:0.035;"
 />
 `;
@@ -7417,29 +7349,9 @@ data[region] || {};
 let cell_value =
 region_data[period_label];
 
-let value = 0;
-
-if(
-cell_value !== null &&
-cell_value !== undefined &&
-typeof cell_value === "object" &&
-Number.isFinite(
-Number(cell_value.average)
-)
-){
-
-value =
-Number(cell_value.average);
-
-}else if(
-Number.isFinite(
-Number(cell_value)
-)
-){
-
-value =
-Number(cell_value);
-
+let value = sahayog_cell_number(cell_value);
+if(value === null){
+value = 0;
 }
 
 let y =
@@ -7471,7 +7383,7 @@ x="${x}"
 y="${y}"
 width="${bar_width}"
 height="${Math.max(bar_height,0)}"
-rx="8"
+rx="0"
 data-region="${String(region)}"
 data-zone="${String(region_zones?.[region] || "Other")}"
 data-period="${period_label}"
@@ -7575,17 +7487,6 @@ stroke-linecap="round"
 
 svg += line_circles;
 
-svg += `
-<text
-class="region-trend-axis-label"
-x="${chart_width - right}"
-y="52"
-text-anchor="end"
->
-Bars: ${period_label} | Line: ${previous_label}
-</text>
-`;
-
 }
 
 }
@@ -7658,6 +7559,19 @@ Region Wise BHSC
 ${period_label
 ? `Region-wise score for ${period_label}`
 : "Region-wise score comparison"}
+</div>
+
+<div class="region-trend-legend-top" style="display:flex;align-items:center;gap:22px;margin:0 0 10px;">
+<div style="display:flex;align-items:center;gap:6px;color:#405c60;font-size:11px;font-weight:800;">
+<span style="width:11px;height:11px;border-radius:2px;background:#3A6F75;display:inline-block;"></span>
+<span>Current Month: ${period_label} (Bar)</span>
+</div>
+<div style="display:flex;align-items:center;gap:6px;color:#405c60;font-size:11px;font-weight:800;">
+<span style="position:relative;width:24px;height:3px;border-radius:2px;background:#f59e0b;display:inline-block;">
+<span style="position:absolute;left:50%;top:50%;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:#f59e0b;border:1.5px solid #fff;"></span>
+</span>
+<span>Previous Month: ${periods && periods.length > 1 ? periods[periods.length - 2].label : ""} (Line)</span>
+</div>
 </div>
 
 <div
@@ -7808,27 +7722,7 @@ period.label||
 );
 let cell_value=
 zone_data[key];
-let value=null;
-if(
-cell_value!==null&&
-cell_value!==undefined&&
-typeof cell_value==="object"&&
-Number.isFinite(
-Number(cell_value.average)
-)
-){
-value=
-Number(
-cell_value.average
-);
-}else if(
-Number.isFinite(
-Number(cell_value)
-)
-){
-value=
-Number(cell_value);
-}
+let value = sahayog_cell_number(cell_value);
 if(
 value!==null&&
 Number.isFinite(value)
@@ -8049,27 +7943,7 @@ period.label||
 );
 let cell_value=
 zone_data[key];
-let value=null;
-if(
-cell_value!==null&&
-cell_value!==undefined&&
-typeof cell_value==="object"&&
-Number.isFinite(
-Number(cell_value.average)
-)
-){
-value=
-Number(
-cell_value.average
-);
-}else if(
-Number.isFinite(
-Number(cell_value)
-)
-){
-value=
-Number(cell_value);
-}
+let value = sahayog_cell_number(cell_value);
 if(
 value!==null&&
 Number.isFinite(value)
@@ -8514,97 +8388,6 @@ function render_zone_wise_trend_comparison(
             </td>
         </tr>
     `;
-    /*
-     * COMMENTED_ZONE_COMPARISON_TABLE
-     *
-     *     container.html(`
-     *         <div class="zone-comparison-card">
-     *             <div class="zone-comparison-header">
-     *                 <div>
-     *                     <div class="zone-comparison-title">
-     *                         Zone-wise Trend Compared to
-     *                         ${frappe.utils.escape_html(
-     *                             previous_label
-     *                         )}
-     *                     </div>
-     *                     <div class="zone-comparison-subtitle">
-     *                         ${frappe.utils.escape_html(
-     *                             selected_label
-     *                         )}
-     *                         score is compared with the immediately
-     *                         previous month's score. Only branches
-     *                         having valid scores in both months are included.
-     *                     </div>
-     *                 </div>
-     *                 <div class="zone-comparison-period">
-     *                     ${frappe.utils.escape_html(
-     *                         selected_label
-     *                     )}
-     *                     vs
-     *                     ${frappe.utils.escape_html(
-     *                         previous_label
-     *                     )}
-     *                 </div>
-     *             </div>
-     *             <div class="zone-comparison-table-wrap">
-     *                 <table class="zone-comparison-table">
-     *                     <thead>
-     *                         <tr>
-     *                             <th>
-     *                                 Zone
-     *                             </th>
-     *                             <th>
-     *                                 Constant
-     *                             </th>
-     *                             <th>
-     *                                 Down
-     *                             </th>
-     *                             <th>
-     *                                 Up
-     *                             </th>
-     *                             <th>
-     *                                 Grand Total
-     *                             </th>
-     *                         </tr>
-     *                     </thead>
-     *                     <tbody>
-     *                         ${rows_html}
-     *                     </tbody>
-     *                 </table>
-     *             </div>
-     *             <div class="zone-comparison-legend">
-     *                 <div class="zone-comparison-legend-item">
-     *                     <span
-     *                         class="zone-comparison-legend-dot"
-     *                         style="background:#718084;">
-     *                     </span>
-     *                     Constant
-     *                 </div>
-     *                 <div class="zone-comparison-legend-item">
-     *                     <span
-     *                         class="zone-comparison-legend-dot"
-     *                         style="background:#b45353;">
-     *                     </span>
-     *                     Down
-     *                 </div>
-     *                 <div class="zone-comparison-legend-item">
-     *                     <span
-     *                         class="zone-comparison-legend-dot"
-     *                         style="background:#42805a;">
-     *                     </span>
-     *                     Up
-     *                 </div>
-     *                 <div class="zone-comparison-legend-item">
-     *                     <span
-     *                         class="zone-comparison-legend-dot"
-     *                         style="background:#3a6f75;">
-     *                     </span>
-     *                     Grand Total
-     *                 </div>
-     *             </div>
-     *         </div>
-     *     `);
-     */
 
 }
 /* =========================================================
@@ -8677,7 +8460,7 @@ latest_period.year||
 :"";
 let title_text=
 title_month&&title_year
-?`${title_month} ${title_year}`
+?`${sahayog_short_month(title_month)} ${title_year}`
 :title_year;
 let table_header_html=
 periods.map(
@@ -8858,6 +8641,7 @@ console.log(
     "Zone Wise table rendered:",
     result
 );
+sahayog_style_zone_table(container);
 }
 
 /* =========================================================
@@ -8893,3 +8677,486 @@ $(window).off("focus.scorecardAccess").on("focus.scorecardAccess", function(){
         window.sahayog_recheck_scorecard_access(false);
     }
 });
+
+/* Region Wise: single tree column (Zone / Region / COM) */
+sahayog_inject_style("region-tree-style", [
+    '.region-wise-power-table th.hierarchy-column{width:auto!important;min-width:320px;text-align:left!important;}',
+    '.region-wise-power-table td.tree-cell{text-align:left!important;border-left:none!important;}',
+    '.region-wise-power-table td.tree-cell::before{display:none!important;content:none!important;}',
+    '.region-wise-power-table td.tree-region{padding-left:34px!important;}',
+    '.region-wise-power-table td.tree-com{padding-left:78px!important;}',
+    '.region-wise-power-table tr.hierarchy-zone-row td,.region-wise-power-table tr.hierarchy-region-row td{font-weight:700;}'
+].join(""));
+
+/* Region Wise: remove tree lines / dashes and extra white space */
+sahayog_inject_style("region-tree-clean", [
+    '.region-wise-power-table{table-layout:auto!important;width:100%!important;}',
+    '.region-wise-power-table th,.region-wise-power-table td{border-left:0!important;border-right:0!important;box-shadow:none!important;background-image:none!important;}',
+    '.region-wise-power-table tr::before,.region-wise-power-table tr::after,',
+    '.region-wise-power-table th::before,.region-wise-power-table th::after,',
+    '.region-wise-power-table td::before,.region-wise-power-table td::after{content:none!important;display:none!important;border:0!important;background:none!important;}',
+    '.region-wise-power-table th:first-child,.region-wise-power-table td:first-child{width:auto!important;min-width:0!important;text-align:left!important;}',
+    '.region-wise-power-table th.hierarchy-column{min-width:0!important;padding-left:16px!important;}',
+    '.region-wise-power-table td.tree-zone{padding-left:12px!important;}',
+    '.region-wise-power-table td.tree-region{padding-left:34px!important;}',
+    '.region-wise-power-table td.tree-com{padding-left:58px!important;}',
+    '.region-wise-power-table .hierarchy-toggle{margin:0!important;padding-left:0!important;border:0!important;}',
+    '.region-wise-power-table th.score-column,.region-wise-power-table th.change-column,',
+    '.region-wise-power-table td.bhsc-score-cell,.region-wise-power-table td.bhsc-change-cell{width:130px!important;text-align:center!important;}'
+].join(""));
+
+/* Region Wise: compact professional table */
+sahayog_inject_style("region-tree-compact", [
+    '#com-wise-content .region-wise-kpi-grid,#com-wise-content .region-wise-table-wrapper{max-width:900px;}',
+    '#com-wise-content .region-wise-table-wrapper{border:1px solid #d5e1e3;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.04);}',
+    '#com-wise-content .region-wise-power-table{table-layout:fixed!important;width:100%!important;}',
+    '#com-wise-content .region-wise-power-table th.score-column,#com-wise-content .region-wise-power-table th.change-column,',
+    '#com-wise-content .region-wise-power-table td.bhsc-score-cell,#com-wise-content .region-wise-power-table td.bhsc-change-cell{width:120px!important;text-align:center!important;}',
+    '#com-wise-content .region-wise-power-table th.hierarchy-column{width:auto!important;}',
+    '#com-wise-content .region-wise-power-table tbody td{padding-top:9px!important;padding-bottom:9px!important;}',
+    '#com-wise-content .region-wise-power-table tr.hierarchy-com-row:hover td{background:#f1f7f8!important;}',
+    '#com-wise-content .region-wise-power-table tr.hierarchy-grand-total-row td{background:#3A6F75!important;color:#fff!important;font-weight:800;}',
+    '#com-wise-content .region-wise-power-table tr.hierarchy-grand-total-row td span{color:#fff!important;}'
+].join(""));
+
+/* =========================================================
+   REGION SNAPSHOT - CURRENT / PREVIOUS MONTH INDICATORS
+   ========================================================= */
+sahayog_inject_style("region-snapshot-indicator-style", [
+    '.rsp2-legend{display:flex;gap:12px;align-items:center;margin:8px 0 10px;}',
+    '.rsp2-legend-item{display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:700;color:#60777b;}',
+    '.rsp2-legend-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}',
+    '.rsp2-current-dot{background:#4f9665;}',
+    '.rsp2-previous-dot{background:#d6a62a;}',
+    '.rsp2-score-wrap{display:flex;flex-direction:column;align-items:flex-end;gap:3px;}',
+    '.rsp2-score-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border-radius:5px;font-size:8px;font-weight:800;line-height:1.2;}',
+    '.rsp2-current-badge{background:#e8f4eb;color:#2f7a4c;}',
+    '.rsp2-previous-badge{background:#fff5d9;color:#9a7415;}',
+    '.rsp2-score-main{font-size:12px;font-weight:800;color:#234f54;}',
+    '.rsp2-previous-score{font-size:10px;font-weight:700;color:#9a7415;}',
+    '.rsp2-track{background:#f4f5f2!important;}',
+    '.rsp2-fill{position:absolute;left:0;top:0;z-index:2;background:#4f9665!important;}',
+    '.rsp2-previous-fill{position:absolute;left:0;top:0;z-index:1;height:100%;border-radius:999px;background:#e3b83f!important;opacity:.75;}',
+    '.rsp2-current-score{display:block;color:#2f7a4c;font-size:12px;font-weight:800;}',
+    '.rsp2-previous-score{display:block;color:#9a7415;font-size:9px;font-weight:700;margin-top:2px;}'
+].join(""));
+
+/* =========================================================
+   REGION WISE SIDE PANEL (zone bars + top/bottom regions)
+   ========================================================= */
+function render_region_side_panel(zones, data, zone_totals, selected_month, previous_month){
+    let dash = $("#com-wise-content .region-wise-dashboard");
+    if(!dash.length){ return; }
+    $("#region-side-panel").remove();
+
+    let esc = (v)=>frappe.utils.escape_html(String(v));
+    let num = (v)=>{
+        if(v === null || v === undefined || v === ""){ return null; }
+        let n = Number(v);
+        return Number.isFinite(n) ? n : null;
+    };
+    let clamp = (n)=>Math.max(0, Math.min(100, n));
+
+    // ---- zone performance rows ----
+    let zone_rows = "";
+    (zones || []).forEach(function(zone){
+        let tot = (zone_totals || {})[zone] || {};
+        let cur = num(tot.selected);
+        let prev = num(tot.previous);
+
+        let delta = '<span class="rsp2-delta">-</span>';
+        if(cur !== null && prev !== null){
+            let d = cur - prev;
+            if(Math.abs(d) < 0.005){
+                delta = '<span class="rsp2-delta">&rarr; 0.00</span>';
+            }else if(d > 0){
+                delta = '<span class="rsp2-delta rsp2-up">&uarr; ' + d.toFixed(2) + '</span>';
+            }else{
+                delta = '<span class="rsp2-delta rsp2-down">&darr; ' + Math.abs(d).toFixed(2) + '</span>';
+            }
+        }
+
+        let previous_bar = prev === null ? "" :
+            '<span class="rsp2-previous-fill" style="width:' + clamp(prev) + '%"></span>';
+
+        let current_badge_left = cur === null ? 0 : clamp(cur);
+        let previous_badge_left = prev === null ? 0 : clamp(prev);
+
+        let badges_close =
+            cur !== null &&
+            prev !== null &&
+            Math.abs(current_badge_left - previous_badge_left) < 15;
+
+        let current_badge_shift = 0;
+        let previous_badge_shift = 0;
+
+        let hover_badges = `
+            ${cur === null ? "" : `
+            <span class="rsp2-hover-badge rsp2-hover-current"
+                  style="left:calc(${current_badge_left}% + ${current_badge_shift}px);">
+                <span class="rsp2-hover-dot"></span>
+                ${esc(selected_month)}: ${cur.toFixed(2)}
+            </span>`}
+            ${prev === null ? "" : `
+            <span class="rsp2-hover-badge rsp2-hover-previous"
+                  style="left:calc(${previous_badge_left}% + ${previous_badge_shift}px);">
+                <span class="rsp2-hover-dot"></span>
+                ${esc(previous_month)}: ${prev.toFixed(2)}
+            </span>`}`;
+
+        zone_rows += `
+            <div class="rsp2-zrow">
+                <span class="rsp2-zname">${esc(zone)}</span>
+                <span class="rsp2-track">
+                    ${previous_bar}
+                    <span class="rsp2-fill" style="width:${cur === null ? 0 : clamp(cur)}%"></span>
+                    ${hover_badges}
+                </span>
+                <span class="rsp2-score">
+                    <span class="rsp2-current-score">${cur === null ? "-" : cur.toFixed(2)}</span>
+                    <span class="rsp2-previous-score">${prev === null ? "-" : prev.toFixed(2)}</span>
+                </span>
+                ${delta}
+            </div>`;
+    });
+
+    // ---- region ranking ----
+    let region_list = [];
+    (zones || []).forEach(function(zone){
+        let zd = (data || {})[zone] || {};
+        Object.keys(zd).forEach(function(region){
+            if(region === "_total"){ return; }
+            let tot = (zd[region] || {})["_total"] || {};
+            let cur = num(tot.selected);
+            if(cur !== null){
+                region_list.push({name: zone + " · " + region, value: cur});
+            }
+        });
+    });
+    region_list.sort((a,b)=>b.value - a.value);
+
+    let rank_html = function(list){
+        if(!list.length){ return '<div class="rsp2-empty">No data</div>'; }
+        return list.map(function(r, i){
+            return `<div class="rsp2-rrow">
+                <span class="rsp2-rank">${i + 1}</span>
+                <span class="rsp2-rname">${esc(r.name)}</span>
+                <span class="rsp2-rscore">${r.value.toFixed(2)}</span>
+            </div>`;
+        }).join("");
+    };
+    let zone_top_list = [];
+    (zones || []).forEach(function(z){
+        let best = null;
+        region_list.forEach(function(r){
+            if(String(r.name).split(" · ")[0] === z && (!best || r.value > best.value)){
+                best = r;
+            }
+        });
+        if(best){ zone_top_list.push(best); }
+    });
+    let top3 = region_list.slice(0, 3);
+    let bottom3 = region_list.length > 3 ? region_list.slice(-3).reverse() : [];
+
+    let html = `
+        <div id="region-side-panel">
+            <div class="rsp2-card">
+                <div class="rsp2-head">
+                    <div class="rsp2-title">Performance Snapshot</div>
+                    <div>
+                        <div class="rsp2-sub">${esc(selected_month)} vs ${esc(previous_month)}</div>
+                        <div class="rsp2-legend">
+                            <span><i class="rsp2-legend-current"></i>Current Month</span>
+                            <span><i class="rsp2-legend-previous"></i>Previous Month</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="rsp2-section">Zone Performance</div>
+                <div class="rsp2-cols">
+                    <span>Zone</span><span>${esc(selected_month)} (bar) / ${esc(previous_month)} (tick)</span><span>Score</span><span>Var.</span>
+                </div>
+                <div class="rsp2-zone-grid">
+                    ${zone_rows || '<div class="rsp2-empty">No data</div>'}
+                </div>
+
+                <div class="rsp2-split">
+                    <div>
+                        <div class="rsp2-section">Current Month Top Region per Zone</div>
+                        <div class="rsp2-ranklist">${rank_html(zone_top_list)}</div>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+
+    dash.append(html);
+}
+
+sahayog_inject_style("region-side-style", [
+    '#com-wise-content .region-wise-dashboard{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);column-gap:16px;align-items:start;}',
+    '#com-wise-content .region-wise-heading{grid-column:1 / -1;grid-row:1;}',
+    '#com-wise-content .region-wise-kpi-grid{grid-column:1;grid-row:2;max-width:none!important;}',
+    '#com-wise-content .region-wise-table-wrapper{grid-column:1;grid-row:3;max-width:none!important;}',
+    '#com-wise-content #region-side-panel{grid-column:2;grid-row:2 / span 2;display:flex;flex-direction:column;gap:14px;}',
+    '#com-wise-content #region-wise-trend-graph{grid-column:1 / -1;grid-row:4;min-width:0;}',
+    '@media(max-width:1100px){#com-wise-content .region-wise-dashboard{display:block;}#com-wise-content #region-side-panel{margin-top:14px;}}'
+].join(""));
+
+
+sahayog_inject_style("region-snapshot-legend-style", [
+    '#com-wise-content #region-side-panel .rsp2-legend{display:flex!important;justify-content:flex-end!important;align-items:center!important;gap:12px!important;margin-top:5px!important;font-size:9px!important;font-weight:700!important;color:#60777b!important;}',
+    '#com-wise-content #region-side-panel .rsp2-legend span{display:inline-flex!important;align-items:center!important;gap:4px!important;white-space:nowrap!important;}',
+    '#com-wise-content #region-side-panel .rsp2-legend i{display:inline-block!important;width:8px!important;height:8px!important;border-radius:50%!important;}',
+    '#com-wise-content #region-side-panel .rsp2-legend-current{background:#4f9665!important;}',
+    '#com-wise-content #region-side-panel .rsp2-legend-previous{background:#e3b83f!important;}'
+].join(""));
+
+sahayog_inject_style("region-snapshot-style", [
+    '.rsp2-card{background:#fff;border:1px solid #d5e1e3;border-radius:12px;padding:16px 18px;box-shadow:0 2px 8px rgba(15,23,42,.04);}',
+    '.rsp2-head{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;border-bottom:1px solid #e1e9ea;}',
+    '.rsp2-title{color:#234f54;font-size:14px;font-weight:800;}',
+    '.rsp2-sub{color:#60777b;font-size:11px;font-weight:600;}',
+    '.rsp2-section{margin:14px 0 6px;color:#60777b;font-size:10px;font-weight:800;letter-spacing:.8px;text-transform:uppercase;}',
+    '.rsp2-cols,.rsp2-zrow{display:grid;grid-template-columns:64px minmax(0,1fr) 54px 62px;align-items:center;column-gap:12px;}',
+    '.rsp2-cols{padding:0 0 4px;color:#8a9ca0;font-size:9px;font-weight:700;letter-spacing:.3px;border-bottom:1px solid #eef3f4;}',
+    '.rsp2-cols span:nth-child(3),.rsp2-cols span:nth-child(4){text-align:right;}',
+    '.rsp2-zrow{height:56px;border-bottom:1px solid #f1f5f6;}',
+    '.rsp2-zname{font-size:11px;font-weight:700;color:#405c60;}',
+    '.rsp2-track{position:relative;height:10px;background:#f4f5f2!important;border:1px solid #cbd8da;border-radius:999px;box-sizing:border-box;overflow:visible;}',
+    '.rsp2-fill{position:absolute;left:0;top:0;z-index:2;height:100%;background:#4f9665!important;border-radius:999px;}',
+    '.rsp2-previous-fill{position:absolute;left:0;top:0;z-index:1;height:100%;border-radius:999px;background:#e3b83f!important;opacity:.85;}',
+    '.rsp2-tick{display:none;}',
+    '.rsp2-hover-badge{position:absolute;z-index:20;display:inline-flex;align-items:center;gap:4px;padding:4px 7px;border-radius:6px;font-size:9px;font-weight:800;line-height:1;white-space:nowrap;box-shadow:0 3px 10px rgba(15,23,42,.14);border:1px solid;transform:translateX(-50%);pointer-events:none;}',
+    '.rsp2-hover-current{top:calc(100% + 13px);}',
+    '.rsp2-hover-previous{bottom:calc(100% + 13px);}',
+    '.rsp2-hover-current::before{content:"";position:absolute;left:50%;bottom:100%;height:10px;border-left:2px solid #4f9665;}',
+    '.rsp2-hover-current::after{content:"";position:absolute;left:50%;bottom:calc(100% + 8px);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-top:6px solid #4f9665;transform:translateX(-50%);}',
+    '.rsp2-hover-previous::after{content:"";position:absolute;left:50%;top:100%;height:10px;border-left:2px solid #e3b83f;}',
+    '.rsp2-hover-previous::before{content:"";position:absolute;left:50%;top:calc(100% + 8px);width:0;height:0;border-left:4px solid transparent;border-right:4px solid transparent;border-bottom:6px solid #e3b83f;transform:translateX(-50%);}',
+    '.rsp2-hover-current{background:#eaf5ed;color:#2f7a4c;border-color:#c9e2d0;}',
+    '.rsp2-hover-previous{background:#fff6dc;color:#9a7415;border-color:#ead58e;}',
+    '.rsp2-hover-dot{width:6px;height:6px;border-radius:50%;display:inline-block;flex:none;}',
+    '.rsp2-hover-current .rsp2-hover-dot{background:#4f9665;}',
+    '.rsp2-hover-previous .rsp2-hover-dot{background:#e3b83f;}',
+
+    '.rsp2-score{text-align:right;font-size:12px;font-weight:800;color:#234f54;}',
+    '.rsp2-delta{text-align:right;font-size:10px;font-weight:700;color:#60777b;}',
+    '.rsp2-up{color:#2f7a4c;}',
+    '.rsp2-down{color:#b23c43;}',
+    '.rsp2-split{display:grid;grid-template-columns:1fr 1fr;column-gap:22px;margin-top:6px;}',
+    '.rsp2-rrow{display:grid;grid-template-columns:18px minmax(0,1fr) auto;align-items:center;column-gap:8px;height:30px;border-bottom:1px solid #f1f5f6;}',
+    '.rsp2-rank{color:#8a9ca0;font-size:11px;font-weight:800;}',
+    '.rsp2-rname{font-size:11px;font-weight:600;color:#405c60;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}',
+    '.rsp2-rscore{font-size:12px;font-weight:800;color:#234f54;}',
+    '.rsp2-empty{color:#60777b;font-size:11px;padding:6px 0;}',
+    '@media(max-width:520px){.rsp2-split{grid-template-columns:1fr;}}'
+].join(""));
+
+/* Region Wise: Snapshot card level with the main table (same top and bottom) */
+sahayog_inject_style("region-equal-style", [
+    '#com-wise-content #region-side-panel{grid-column:2!important;grid-row:2 / span 2!important;align-self:stretch!important;margin-top:0!important;padding-top:0!important;display:flex!important;flex-direction:column;}',
+    '#com-wise-content #region-side-panel .rsp2-card{flex:1 1 auto;display:flex;flex-direction:column;min-height:520px!important;box-sizing:border-box!important;}',
+    '#com-wise-content #region-side-panel .rsp2-split{margin-top:auto;}'
+].join(""));
+
+sahayog_inject_style("region-short-style", [
+    '#region-wise-trend-graph .region-trend-chart-wrap{height:auto!important;padding-bottom:6px;}',
+    '#region-wise-trend-graph .region-trend-chart{height:auto!important;}'
+].join(""));
+
+sahayog_inject_style("region-noimprove-style", [
+    '#com-wise-content #region-side-panel .rsp2-split{grid-template-columns:1fr!important;}'
+].join(""));
+
+sahayog_inject_style("region-ranklist-style", [
+    '#com-wise-content #region-side-panel .rsp2-ranklist{max-height:240px;overflow-y:auto;padding-right:6px;}',
+    '#com-wise-content #region-side-panel .rsp2-ranklist::-webkit-scrollbar{width:5px;}',
+    '#com-wise-content #region-side-panel .rsp2-ranklist::-webkit-scrollbar-thumb{background:#c5d5d7;border-radius:4px;}'
+].join(""));
+
+
+sahayog_inject_style("region-zonetop-style", [
+    '#com-wise-content #region-side-panel .rsp2-split{display:flex!important;flex-direction:column!important;margin-top:18px!important;margin-bottom:0!important;align-self:stretch!important;flex:1 1 auto!important;min-height:0!important;}',
+    '#com-wise-content #region-side-panel .rsp2-split > div{width:100%!important;align-self:stretch!important;display:flex!important;flex-direction:column!important;flex:1 1 auto!important;min-height:0!important;}',
+    '#com-wise-content #region-side-panel .rsp2-ranklist{max-height:none!important;overflow:visible!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:repeat(3,1fr)!important;grid-auto-flow:column!important;column-gap:22px!important;row-gap:0!important;align-items:stretch!important;align-content:stretch!important;justify-content:stretch!important;flex:1 1 auto!important;min-height:0!important;}',
+    '#com-wise-content #region-side-panel .rsp2-ranklist > *{min-width:0!important;align-self:stretch!important;height:100%!important;}',
+    '#com-wise-content #region-side-panel .rsp2-card .rsp2-split{margin-top:0!important;align-self:stretch!important;position:relative!important;top:0!important;}'
+].join(""));
+
+/* Snapshot keeps its own height; does not stretch with the table */
+sahayog_inject_style("region-badge-space-style", [
+    '#com-wise-content #region-side-panel{margin-top:0!important;}',
+    '#com-wise-content #region-side-panel .rsp2-card{padding-top:22px!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zrow{height:100px!important;}'
+].join(""));
+
+sahayog_inject_style("region-zone-grid-style", [
+    '#com-wise-content #region-side-panel .rsp2-section{margin-bottom:8px!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:repeat(3,100px)!important;column-gap:18px!important;row-gap:0!important;align-items:stretch!important;min-height:300px!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid .rsp2-zrow{display:grid!important;grid-template-columns:42px minmax(0,1fr) 42px!important;column-gap:8px!important;height:100px!important;min-height:100px!important;min-width:0!important;align-items:center!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid .rsp2-zrow:nth-child(1){grid-column:1!important;grid-row:1!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid .rsp2-zrow:nth-child(2){grid-column:1!important;grid-row:2!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid .rsp2-zrow:nth-child(3){grid-column:1!important;grid-row:3!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid .rsp2-zrow:nth-child(4){grid-column:2!important;grid-row:1!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid .rsp2-zrow:nth-child(5){grid-column:2!important;grid-row:2!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid .rsp2-zrow:nth-child(6){grid-column:2!important;grid-row:3!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid .rsp2-score{display:none!important;}',
+    '#com-wise-content #region-side-panel .rsp2-cols{display:none!important;}'
+].join(""));
+
+sahayog_inject_style("region-snapshot-height-style", [
+    '#com-wise-content #region-side-panel .rsp2-card{height:100%!important;min-height:520px!important;box-sizing:border-box!important;}',
+    '#com-wise-content #region-side-panel .rsp2-zone-grid{flex:1 1 auto!important;}',
+    '#com-wise-content #region-side-panel .rsp2-split{margin-top:18px!important;}'
+].join(""));
+
+sahayog_inject_style("region-fixedsize-style", [
+    '#com-wise-content #region-side-panel{align-self:stretch!important;height:auto!important;display:flex!important;position:sticky;top:90px;}',
+    '#com-wise-content #region-side-panel .rsp2-card{flex:1 1 auto!important;display:flex!important;flex-direction:column!important;height:auto!important;min-height:520px!important;box-sizing:border-box!important;}',
+    '#com-wise-content #region-side-panel .rsp2-split{margin-top:18px!important;}'
+].join(""));
+
+/* =========================================================
+   ZONE WISE TABLE: heatmap, no-data dash, variance, latest column
+   ========================================================= */
+function sahayog_style_zone_table(container){
+    let table = container.find(".zone-wise-table");
+    if(!table.length){ return; }
+
+    let head_cells = table.find("thead th");
+    let last_col = head_cells.length - 1;
+    if(last_col < 1){ return; }
+
+    let parse = function(cell){
+        let span = $(cell).find(".zone-score-value");
+        if(!span.length){ return null; }
+        let txt = span.text().trim();
+        if(txt === "" || txt === "\u2014"){ return null; }
+        let n = Number(txt);
+        if(!Number.isFinite(n) || n === 0){ return null; }
+        return n;
+    };
+
+    table.find("tbody tr").each(function(){
+        let cells = $(this).children("td");
+        let is_total = $(this).hasClass("grand-total-row");
+
+        cells.each(function(idx){
+            if(idx === 0){ return; }
+            let n = parse(this);
+            let span = $(this).find(".zone-score-value");
+
+            if(n === null){
+                span.text("\u2013").css({color:"#b6c3c6", fontWeight:"600"});
+                return;
+            }
+
+            if(!is_total){
+                let ratio = Math.max(0, Math.min(1, (n - 80) / 20));
+                let alpha = 0.06 + ratio * 0.34;
+                $(this).css("background", "rgba(58,111,117," + alpha.toFixed(3) + ")");
+                span.css("color", ratio > 0.75 ? "#173f44" : "#234f54");
+            }
+        });
+
+        let cur = parse(cells.get(last_col));
+        let prev = last_col > 1 ? parse(cells.get(last_col - 1)) : null;
+        if(cur !== null && prev !== null){
+            let d = cur - prev;
+            let html;
+            if(Math.abs(d) < 0.005){
+                html = '<span style="color:#60777b;">&rarr; 0.00</span>';
+            }else if(d > 0){
+                html = '<span style="color:#2f7a4c;">&uarr; ' + d.toFixed(2) + '</span>';
+            }else{
+                html = '<span style="color:#b23c43;">&darr; ' + Math.abs(d).toFixed(2) + '</span>';
+            }
+            $(cells.get(last_col)).append(
+                '<div style="font-size:10px;font-weight:700;margin-top:2px;">' + html + '</div>'
+            );
+        }
+    });
+
+    table.find("thead th").eq(last_col).css({
+        background:"#2f6a71", color:"#fff"
+    });
+    table.find("tbody tr").each(function(){
+        if($(this).hasClass("grand-total-row")){ return; }
+        $(this).children("td").eq(last_col).css("box-shadow", "inset 0 0 0 1.5px rgba(58,111,117,.55)");
+    });
+}
+
+sahayog_inject_style("zone-heatmap-style", [
+    '.zone-wise-table td{transition:background .15s ease;}',
+    '.zone-wise-table tbody tr:not(.grand-total-row):hover td{filter:brightness(.97);}'
+].join(""));
+
+/* Snapshot variance: block badge, bigger arrow/text */
+(function(){
+$("#region-delta-badge-style").remove();
+$("head").append('<style id="region-delta-badge-style">' +
+'#com-wise-content #region-side-panel .rsp2-delta{display:inline-flex!important;align-items:center;justify-content:center;justify-self:end;min-width:58px;padding:4px 8px;border-radius:6px;font-size:13px!important;font-weight:800!important;line-height:1.2;white-space:nowrap;letter-spacing:.2px;}' +
+'#com-wise-content #region-side-panel .rsp2-delta.rsp2-up{background:#dff3e6;color:#1b6b3a!important;border:1px solid #9fd3b3;}' +
+'#com-wise-content #region-side-panel .rsp2-delta.rsp2-down{background:#fde3e3;color:#a4262c!important;border:1px solid #f0a9ac;}' +
+'#com-wise-content #region-side-panel .rsp2-delta:not(.rsp2-up):not(.rsp2-down){background:transparent;color:#8a9ca0!important;font-weight:700!important;}' +
+'</style>');
+})();
+
+/* Snapshot: reserve space for the variance badge so it never overlaps the bar */
+(function(){
+$("#region-delta-fit-style").remove();
+$("head").append('<style id="region-delta-fit-style">' +
+'#com-wise-content #region-side-panel .rsp2-cols,#com-wise-content #region-side-panel .rsp2-zrow{grid-template-columns:64px minmax(0,1fr) auto auto!important;column-gap:12px!important;}' +
+'#com-wise-content #region-side-panel .rsp2-delta{box-sizing:border-box;min-width:0!important;width:auto!important;padding:3px 8px!important;margin-left:6px;position:static!important;justify-self:end;}' +
+'#com-wise-content #region-side-panel .rsp2-zrow{overflow:visible;}' +
+'</style>');
+})();
+
+/* Snapshot: wider panel, smaller variance badge, space reserved for it */
+(function(){
+$("#region-delta-small-style").remove();
+$("head").append('<style id="region-delta-small-style">' +
+'#com-wise-content .region-wise-dashboard{grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)!important;}' +
+'#com-wise-content #region-side-panel .rsp2-delta{font-size:11px!important;font-weight:800!important;padding:2px 6px!important;min-width:0!important;width:auto!important;border-radius:5px!important;line-height:1.2!important;white-space:nowrap;}' +
+'#com-wise-content #region-side-panel .rsp2-track{margin-right:52px!important;}' +
+'#com-wise-content #region-side-panel .rsp2-zrow{overflow:visible;}' +
+'</style>');
+})();
+
+/* Snapshot: do not stretch with the table (height only, nothing else) */
+sahayog_inject_style("region-snapshot-nostretch-style", [
+    '#com-wise-content .region-wise-dashboard #region-side-panel{align-self:start!important;height:auto!important;}',
+    '#com-wise-content .region-wise-dashboard #region-side-panel .rsp2-card{height:auto!important;}'
+].join(""));
+
+/* Snapshot: match table bottom once (collapsed state), then stay fixed */
+function sahayog_lock_snapshot_height(){
+    let card = document.querySelector("#region-side-panel .rsp2-card");
+    let wrap = document.querySelector("#com-wise-content .region-wise-table-wrapper");
+    if(!card || !wrap){ return; }
+    if(document.querySelector("#com-wise-content .zone-toggle[data-expanded='true']")){ return; }
+    let target = Math.round(
+        wrap.getBoundingClientRect().bottom - card.getBoundingClientRect().top
+    );
+    if(target < 200){ return; }
+    ["height", "min-height", "max-height"].forEach(function(prop){
+        card.style.setProperty(prop, target + "px", "important");
+    });
+}
+
+/* Snapshot variance: make the up/down arrow clearly visible */
+function sahayog_enlarge_delta_arrows(){
+    $("#region-side-panel .rsp2-delta.rsp2-up, #region-side-panel .rsp2-delta.rsp2-down").each(function(){
+        if($(this).find(".rsp2-arrow").length){ return; }
+        let txt = $(this).text().trim();
+        let arrow = txt.charAt(0);
+        let rest = txt.slice(1).trim();
+        if(arrow !== "\u2191" && arrow !== "\u2193"){ return; }
+        $(this).html('<span class="rsp2-arrow">' + arrow + '</span><span>' + rest + '</span>');
+    });
+}
+
+sahayog_inject_style("region-delta-arrow-style", [
+    '#com-wise-content #region-side-panel .rsp2-delta{display:inline-flex!important;align-items:center!important;gap:3px!important;}',
+    '#com-wise-content #region-side-panel .rsp2-delta .rsp2-arrow{font-size:17px!important;font-weight:900!important;line-height:1!important;}'
+].join(""));
