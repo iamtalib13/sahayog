@@ -6256,14 +6256,20 @@
             return ev[f.key];
           }).length;
         }
+        /* Trainer owns this training (owner match OR trainer field match). */
+        function isOwnTraining(ev) {
+          if (!ev) return false;
+          return (
+            ev.trainer === state.currentEmployee ||
+            ev.trainer === state.currentEmployeeName ||
+            ev.owner === frappe.session.user
+          );
+        }
         /* Assigned trainer (owner or trainer match) with 5/5 checks gets
            extended edit rights: training type, time and budget. */
         function isOwnCompletedTraining(ev) {
           if (!ev || completionScore(ev) !== 5) return false;
-          return (
-            ev.trainer === state.currentEmployee ||
-            ev.trainer === state.currentEmployeeName
-          );
+          return isOwnTraining(ev);
         }
         function evStart(ev) {
           return ev.from_date || ev.date || "";
@@ -8381,9 +8387,9 @@
           f("new-end-time", fmtTimeInput(ev.end_time));
           f("new-training-type", ev.training_type || "");
           f("new-expected-count", ev.number_of_participants != null ? ev.number_of_participants : "");
-          // Schedule is L&D Admin only — lock date/time/type for trainers (no 417 trap).
-          // Own trainings at 5/5 checks unlock type + time (dates/count stay Admin).
-          var canResched = state.role === "ld_admin";
+          // L&D Admin can reschedule any training.
+          // Trainers can reschedule their own trainings (owner or trainer match).
+          var canResched = state.role === "ld_admin" || (state.role === "trainer" && isOwnTraining(ev));
           var ownDone = isOwnCompletedTraining(ev);
           var canEditTime = canResched || ownDone;
           ["new-from-date", "new-to-date", "new-expected-count"].forEach(
