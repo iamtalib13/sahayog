@@ -191,13 +191,21 @@ def send_closure_for_training(training_name):
 
 def _post_training_email_body(t):
     def tick(val): return "✅ Yes" if val else "❌ No"
+    trainer_name = t.trainer or "—"
+    try:
+        trainer_designation = (
+            frappe.db.get_value("Employee", {"employee_name": t.trainer}, "designation")
+            if t.trainer else None
+        ) or "—"
+    except Exception:
+        trainer_designation = "—"
 
     return f"""
     <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
       <h2 style="color:#166534;border-bottom:2px solid #dcfce7;padding-bottom:8px">
         ✅ Training Completed
       </h2>
-      <p>Dear Trainer / Branch Manager,</p>
+      <p>Dear Team,</p>
       <p>The following L&amp;D training has been completed. Here is the status update:</p>
       <table style="width:100%;border-collapse:collapse;margin:16px 0">
         <tr><td style="padding:6px 0;color:#64748b;width:160px">Training Program</td>
@@ -221,6 +229,11 @@ def _post_training_email_body(t):
             <td style="padding:7px 10px">{tick(t.feedback_taken)}</td></tr>
       </table>
       {f'<p style="margin-top:14px;font-size:13px"><b>Trainer Remarks:</b> {t.trainer_remarks}</p>' if t.trainer_remarks else ""}
+      <br>
+      <p style="margin:0">Regards,</p>
+      <p style="margin:4px 0 0"><b>{frappe.utils.escape_html(trainer_name)}</b> ({frappe.utils.escape_html(trainer_designation)})<br>
+      HR-Learning and Development<br>
+      www.sahayogmultistate.com</p>
       <p style="color:#64748b;font-size:12px;margin-top:24px">
         This is an automated closure update from the L&amp;D Training System.
       </p>
