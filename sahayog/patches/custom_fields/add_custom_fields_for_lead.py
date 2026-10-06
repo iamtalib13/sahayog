@@ -107,9 +107,45 @@ def execute():
                 "fieldtype": "Link",
                 "options": "Sahayog Branch",
                 "insert_after": "custom_column_break_1",
+            },
+            {
+                "label": "BM Lead Verification",
+                "fieldname": "custom_verification_section",
+                "fieldtype": "Section Break",
+                "insert_after": "sol_id",
+                "collapsible": 0,
+            },
+            {
+                "label": "Verification Status",
+                "fieldname": "custom_verification_status",
+                "fieldtype": "Select",
+                "options": "Pending\nVerified\nRejected",
+                "default": "Pending",
+                "insert_after": "custom_verification_section",
+                "in_standard_filter": 1,
+                "in_list_view": 1,
+            },
+            {
+                "label": "Verified By",
+                "fieldname": "custom_verified_by",
+                "fieldtype": "Link",
+                "options": "User",
+                "read_only": 1,
+                "insert_after": "custom_verification_status",
+            },
+            {
+                "label": "Verified On",
+                "fieldname": "custom_verified_on",
+                "fieldtype": "Datetime",
+                "read_only": 1,
+                "insert_after": "custom_verified_by",
+            },
+            {
+                "label": "Verification Remarks",
+                "fieldname": "custom_verification_remarks",
+                "fieldtype": "Small Text",
+                "insert_after": "custom_verified_on",
             }
-            
-
         ],
     }
-    create_custom_fields(fields)
+    create_custom_fields(fields, update=True)

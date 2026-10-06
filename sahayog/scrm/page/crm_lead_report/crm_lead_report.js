@@ -720,9 +720,19 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     </div>
 
                     <div class="header-controls">
-                        <div class="d-flex align-items-center" style="gap: 10px;">
+                        <div class="d-flex align-items-center" style="gap: 10px; flex-wrap: wrap;">
                             <div class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280">PICK MONTH:</span>
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">PERIOD:</span>
+                                <select v-model="date_range_mode" @change="onDateRangeModeChange" class="select-input" style="font-weight: bold; padding: 3px 6px;">
+                                    <option value="Monthly">Monthly</option>
+                                    <option value="Quarterly">Quarterly</option>
+                                    <option value="Yearly">Yearly</option>
+                                    <option value="Custom Range">Custom Range</option>
+                                </select>
+                            </div>
+
+                            <div v-if="date_range_mode === 'Monthly'" class="d-flex align-items-center">
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">MONTH:</span>
                                 <input 
                                 type="month" 
                                 v-model="master_month" 
@@ -730,23 +740,41 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 :max="today.substring(0,7)"
                                 class="select-input">
                             </div>
+
+                            <div v-if="date_range_mode === 'Quarterly'" class="d-flex align-items-center" style="gap: 6px;">
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280;">YEAR:</span>
+                                <select v-model="selected_year" @change="onYearChange" class="select-input">
+                                    <option v-for="y in available_years" :key="y" :value="y">{{ y }}</option>
+                                </select>
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280;">QUARTER:</span>
+                                <select v-model="selected_quarter" @change="onQuarterChange" class="select-input">
+                                    <option value="Q1">Q1 (Jan - Mar)</option>
+                                    <option value="Q2">Q2 (Apr - Jun)</option>
+                                    <option value="Q3">Q3 (Jul - Sep)</option>
+                                    <option value="Q4">Q4 (Oct - Dec)</option>
+                                </select>
+                            </div>
+
+                            <div v-if="date_range_mode === 'Yearly'" class="d-flex align-items-center">
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">YEAR:</span>
+                                <select v-model="selected_year" @change="onYearChange" class="select-input">
+                                    <option v-for="y in available_years" :key="y" :value="y">{{ y }}</option>
+                                </select>
+                            </div>
+
                             <div class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280">FROM:</span>
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">FROM:</span>
                                <input 
                                 type="date"
                                 v-model="employee_from_date"
-                                :min="month_start"
-                                :max="today < month_end ? today : month_end"
                                 @change="onDateChange"
                                 class="select-input">
                             </div>
                             <div class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280">TO:</span>
+                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">TO:</span>
                                 <input 
                                 type="date"
                                 v-model="employee_to_date"
-                                :min="employee_from_date"
-                                :max="today < month_end ? today : month_end"
                                 @change="onDateChange"
                                 class="select-input">
                             </div>
@@ -840,13 +868,22 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </button>
 
                                <button 
-                                    v-if="frappe.user_roles.includes('Branch Manager')"
                                     class="btn-toggle-analytics"
                                     @click="openLeadTransferDialog">
-
                                     <i class="fa fa-exchange"></i>
                                     Lead Transfer
+                                </button>
 
+                               <button 
+                                    class="btn-toggle-analytics"
+                                    style="background: #e0e7ff; color: #3730a3; margin-left: 6px; position: relative;"
+                                    @click="openBMVerificationDialog">
+                                    <i class="fa fa-check-square"></i>
+                                    BM Verification
+                                    <span v-if="bm_pending_count > 0" 
+                                          style="background: #ef4444; color: white; padding: 2px 7px; border-radius: 10px; font-size: 11px; margin-left: 5px; font-weight: bold; display: inline-block;">
+                                        {{ bm_pending_count }}
+                                    </span>
                                 </button>
                             </div>
                         </div>
@@ -1083,10 +1120,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     search_query: { sol_id: "", product: "", source: "" },
 
     // Master Date Properties
+    date_range_mode: "Monthly",
+    selected_year: new Date().getFullYear(),
+    selected_quarter: "Q1",
+    available_years: [2026, 2025, 2024, 2023],
     master_month: frappe.datetime.now_date().substring(0, 7),
     employee_from_date: "", // Init mein set hoga
     employee_to_date: "", // Init mein set hoga
 
+    bm_pending_count: 0,
     employee_performance_data: [],
     has_pref: true,
     employee_report_loading: false,
@@ -1465,6 +1507,51 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       // console.log(this.employee_from_date, this.employee_to_date);
       this.fetchEmployeePerformance();
     },
+    onDateRangeModeChange() {
+      const currentYear = new Date().getFullYear();
+      if (this.date_range_mode === "Monthly") {
+        this.master_month = frappe.datetime.now_date().substring(0, 7);
+        this.employee_from_date = this.month_start;
+        this.employee_to_date = this.month_end;
+      } else if (this.date_range_mode === "Quarterly") {
+        this.selected_year = currentYear;
+        this.selected_quarter = "Q1";
+        this.updateQuarterlyDates();
+      } else if (this.date_range_mode === "Yearly") {
+        this.selected_year = currentYear;
+        this.employee_from_date = `${currentYear}-01-01`;
+        this.employee_to_date = `${currentYear}-12-31`;
+      } else if (this.date_range_mode === "Custom Range") {
+        // Keep existing from / to or default
+      }
+      this.fetchEmployeePerformance();
+    },
+    updateQuarterlyDates() {
+      const year = this.selected_year || new Date().getFullYear();
+      const quarterMap = {
+        Q1: { from: `${year}-01-01`, to: `${year}-03-31` },
+        Q2: { from: `${year}-04-01`, to: `${year}-06-30` },
+        Q3: { from: `${year}-07-01`, to: `${year}-09-30` },
+        Q4: { from: `${year}-10-01`, to: `${year}-12-31` }
+      };
+      const q = quarterMap[this.selected_quarter] || quarterMap["Q1"];
+      this.employee_from_date = q.from;
+      this.employee_to_date = q.to;
+    },
+    onQuarterChange() {
+      this.updateQuarterlyDates();
+      this.fetchEmployeePerformance();
+    },
+    onYearChange() {
+      if (this.date_range_mode === "Quarterly") {
+        this.updateQuarterlyDates();
+      } else if (this.date_range_mode === "Yearly") {
+        const year = this.selected_year || new Date().getFullYear();
+        this.employee_from_date = `${year}-01-01`;
+        this.employee_to_date = `${year}-12-31`;
+      }
+      this.fetchEmployeePerformance();
+    },
     onDateChange() {
       const today = frappe.datetime.nowdate();
 
@@ -1509,6 +1596,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       return count > 0
         ? { label: "Good", class: "badge-pastel-green" }
         : { label: "Bad", class: "badge-pastel-red" };
+    },
+    isBMUser() {
+      if (frappe.session.user === "Administrator") return true;
+      if (frappe.user && frappe.user.has_role) {
+        return frappe.user.has_role("Branch Manager") || frappe.user.has_role("System Manager");
+      }
+      return frappe.user_roles && (frappe.user_roles.includes("Branch Manager") || frappe.user_roles.includes("System Manager"));
     },
     goToLeadList() {
       frappe.set_route("list", "Lead");
@@ -1613,8 +1707,177 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       });
     },
 
+    openBMVerificationDialog() {
+      let self = this;
+      let selected_status = "Pending";
+      let dialog = new frappe.ui.Dialog({
+        title: __("BM Lead Verification"),
+        size: "large",
+        fields: [
+          {
+            fieldtype: "HTML",
+            fieldname: "metrics_html"
+          },
+          {
+            label: "Filter Status",
+            fieldname: "status_filter",
+            fieldtype: "Select",
+            options: ["Pending", "Verified", "Rejected", "All"],
+            default: "Pending",
+            onchange() {
+              selected_status = dialog.get_value("status_filter");
+              loadVerificationData();
+            }
+          },
+          {
+            fieldtype: "HTML",
+            fieldname: "leads_table_html"
+          }
+        ],
+        primary_action_label: __("Verify Selected"),
+        primary_action: async () => {
+          let selected = [];
+          dialog.$wrapper.find('.chk-lead-verify:checked').each(function() {
+            selected.push($(this).val());
+          });
+          if (selected.length === 0) {
+            frappe.msgprint(__("Please select at least one lead to verify."));
+            return;
+          }
+          frappe.show_alert({ message: __("Verifying leads..."), indicator: "orange" });
+          let res = await frappe.call({
+            method: "sahayog.scrm.controller.lead.lead.verify_branch_leads",
+            args: { lead_names: selected, action: "Verified" }
+          });
+          if (res.message && res.message.status === "success") {
+            frappe.show_alert({ message: __(`${res.message.count} Leads Verified successfully!`), indicator: "green" });
+            self.fetchBMPendingCount();
+            loadVerificationData();
+          }
+        },
+        secondary_action_label: __("Reject Selected"),
+        secondary_action: async () => {
+          let selected = [];
+          dialog.$wrapper.find('.chk-lead-verify:checked').each(function() {
+            selected.push($(this).val());
+          });
+          if (selected.length === 0) {
+            frappe.msgprint(__("Please select at least one lead to reject."));
+            return;
+          }
+          frappe.prompt([
+            { label: "Rejection Remarks", fieldname: "remarks", fieldtype: "Small Text", reqd: 1 }
+          ], async (vals) => {
+            let res = await frappe.call({
+              method: "sahayog.scrm.controller.lead.lead.verify_branch_leads",
+              args: { lead_names: selected, action: "Rejected", remarks: vals.remarks }
+            });
+            if (res.message && res.message.status === "success") {
+              frappe.show_alert({ message: __(`${res.message.count} Leads Rejected.`), indicator: "red" });
+              self.fetchBMPendingCount();
+              loadVerificationData();
+            }
+          }, __("Confirm Rejection"), __("Reject Leads"));
+        }
+      });
+
+      async function loadVerificationData() {
+        dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:20px;"><i class="fa fa-spinner fa-spin fa-2x text-muted"></i></div>');
+        let res = await frappe.call({
+          method: "sahayog.scrm.controller.lead.lead.get_bm_lead_verification_data",
+          args: { status: selected_status }
+        });
+        if (!res.message) return;
+        let m = res.message.metrics || {};
+        let leads = res.message.leads || [];
+
+        dialog.fields_dict.metrics_html.$wrapper.html(`
+          <div style="display:flex; gap:12px; margin-bottom:15px;">
+            <div style="flex:1; background:#fef3c7; color:#92400e; padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">
+              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Total Pending</div>
+              <div style="font-size:20px; font-weight:bold;">${m.total_pending || 0}</div>
+            </div>
+            <div style="flex:1; background:#fee2e2; color:#991b1b; padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">
+              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Today's Pending</div>
+              <div style="font-size:20px; font-weight:bold;">${m.today_pending || 0}</div>
+            </div>
+            <div style="flex:1; background:#ffedd5; color:#9a3412; padding:10px 14px; border-radius:8px; border-left:4px solid #f97316;">
+              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Yesterday's Pending</div>
+              <div style="font-size:20px; font-weight:bold;">${m.yesterday_pending || 0}</div>
+            </div>
+            <div style="flex:1; background:#f3f4f6; color:#374151; padding:10px 14px; border-radius:8px; border-left:4px solid #6b7280;">
+              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Older Pending</div>
+              <div style="font-size:20px; font-weight:bold;">${m.older_pending || 0}</div>
+            </div>
+          </div>
+        `);
+
+        if (leads.length === 0) {
+          dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:25px;color:#6b7280;">No leads found for this verification status.</div>');
+          return;
+        }
+
+        let rowsHtml = leads.map(l => {
+          let badgeClass = l.custom_verification_status === "Verified" ? "background:#dcfce7;color:#166534;" : (l.custom_verification_status === "Rejected" ? "background:#fee2e2;color:#991b1b;" : "background:#fef3c7;color:#92400e;");
+          let cDate = l.creation ? frappe.datetime.str_to_user(l.creation) : "-";
+          return `
+            <tr style="border-bottom:1px solid #f3f4f6;">
+              <td style="padding:8px;"><input type="checkbox" class="chk-lead-verify" value="${l.name}"></td>
+              <td style="padding:8px;"><a href="/app/lead/${l.name}" target="_blank" style="font-weight:bold;color:#2563eb;">${l.name}</a><br><small style="color:#6b7280;">${l.lead_name || ''}</small></td>
+              <td style="padding:8px;">${l.mobile_no || '-'}</td>
+              <td style="padding:8px;">${l.custom_employee_name || '-'}<br><small style="color:#6b7280;">(${l.custom_employee_id || '-'})</small></td>
+              <td style="padding:8px;font-size:11px;">${cDate}</td>
+              <td style="padding:8px;"><span style="padding:2px 8px;border-radius:12px;font-weight:bold;font-size:11px;${badgeClass}">${l.custom_verification_status || 'Pending'}</span></td>
+            </tr>
+          `;
+        }).join('');
+
+        dialog.fields_dict.leads_table_html.$wrapper.html(`
+          <div style="max-height:350px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px;">
+            <table class="table table-bordered table-sm" style="margin:0; font-size:12px;">
+              <thead style="background:#f9fafb; position:sticky; top:0;">
+                <tr>
+                  <th style="width:30px;"><input type="checkbox" id="chk-select-all-leads"></th>
+                  <th>Lead ID / Name</th>
+                  <th>Mobile</th>
+                  <th>Employee</th>
+                  <th>Created On</th>
+                  <th>Verification</th>
+                </tr>
+              </thead>
+              <tbody>${rowsHtml}</tbody>
+            </table>
+          </div>
+        `);
+
+        dialog.$wrapper.find('#chk-select-all-leads').on('change', function() {
+          let checked = $(this).is(':checked');
+          dialog.$wrapper.find('.chk-lead-verify').prop('checked', checked);
+        });
+      }
+
+      dialog.show();
+      loadVerificationData();
+    },
+
+    async fetchBMPendingCount() {
+      if (!this.isBMUser()) return;
+      try {
+        let res = await frappe.call({
+          method: "sahayog.scrm.controller.lead.lead.get_bm_lead_verification_data",
+          args: { status: "Pending" }
+        });
+        if (res.message && res.message.metrics) {
+          this.bm_pending_count = res.message.metrics.total_pending || 0;
+        }
+      } catch (e) {
+        this.bm_pending_count = 0;
+      }
+    },
+
     // 3. INITIALIZATION (Fix yahan tha)
     async init() {
+      this.fetchBMPendingCount();
       // Preference load karein
       let res = await frappe.call(
         "sahayog.scrm.api.report_access.get_user_report_preference_record",

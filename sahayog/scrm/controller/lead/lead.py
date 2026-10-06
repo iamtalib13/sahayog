@@ -41,8 +41,9 @@ def update_employee_details(doc, method):
 
 
 def validate_duplicate_lead(doc, method=None):
-    """Server-side duplicate lead check — same mobile + product (amount ignored, no time limit).
-    Runs in before_naming to prevent tabSeries locking when rejected, and guards against double-execution in validate.
+    """Server-side duplicate lead check — same mobile + product.
+    Allows new lead creation for same customer and product ONLY if the previous lead is Converted.
+    If un-converted lead exists, blocks creation and prompts user to edit the existing lead.
     """
     if getattr(doc.flags, "duplicate_lead_checked", False):
         return
@@ -67,10 +68,11 @@ def validate_duplicate_lead(doc, method=None):
 
     duplicates = frappe.db.sql(
         f"""
-        SELECT l.name, lp.product, lp.product_amount FROM `tabLead` l
+        SELECT l.name, l.status, lp.product, lp.product_amount FROM `tabLead` l
         JOIN `tabLead Product` lp ON lp.parent = l.name
         WHERE l.mobile_no = %s
         AND l.name != %s
+        AND l.status != 'Converted'
         AND ({conditions})
         LIMIT 1
         """,
@@ -80,9 +82,12 @@ def validate_duplicate_lead(doc, method=None):
 
     if duplicates:
         d = duplicates[0]
+        lead_link = f"<a href='/app/lead/{d.name}'><b>{d.name}</b></a>"
         frappe.throw(
-            title="Duplicate Lead",
-            msg=f"A lead for Product <b>{d.product}</b> already exists for this mobile number. (Lead: {d.name})"
+            title=_("Duplicate Lead Exists"),
+            msg=_(
+                "A lead for Product <b>{0}</b> already exists for this customer (Status: <b>{1}</b>). Please edit the existing lead: {2}"
+            ).format(d.product, d.status, lead_link)
         )
 
     doc.flags.duplicate_lead_checked = True
@@ -403,6 +408,104 @@ def get_users_by_branch_and_designation(
     })
 
 
+def validate_lead_conversion_verification(doc, method=None):
+    """Validate that a lead must be Verified by Branch Manager before its status can be changed to Converted."""
+    if doc.status == "Converted":
+        verification_status = doc.get("custom_verification_status") or "Pending"
+        if verification_status != "Verified":
+            frappe.throw(
+                title=_("BM Verification Required"),
+                msg=_(
+                    "This lead cannot be Converted because it has not been Verified by the Branch Manager.<br><br>"
+                    "Current Verification Status: <b>{0}</b>.<br>"
+                    "Please request your Branch Manager to verify this lead first."
+                ).format(verification_status)
+            )
+
+
+@frappe.whitelist()
+def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None):
+    """Fetch leads for Branch BM verification grouped by day with day-wise tracking metrics."""
+    user = frappe.session.user
+    
+    if not sol_id and user != "Administrator":
+        sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
+
+    filters = {}
+    if sol_id:
+        filters["sol_id"] = sol_id
+    if status and status != "All":
+        filters["custom_verification_status"] = status
+    if from_date and to_date:
+        filters["creation"] = ["between", [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]]
+
+    leads = frappe.get_all(
+        "Lead",
+        fields=[
+            "name", "lead_name", "mobile_no", "status", "source", "sol_id", "creation",
+            "custom_employee_name", "custom_employee_id", "custom_verification_status",
+            "custom_verified_by", "custom_verified_on", "custom_verification_remarks"
+        ],
+        filters=filters,
+        order_by="creation desc",
+        limit_page_length=500
+    )
+
+    # Day-wise pending tracking stats
+    today_str = frappe.utils.today()
+    yesterday_str = frappe.utils.add_days(today_str, -1)
+
+    today_count = 0
+    yesterday_count = 0
+    older_count = 0
+
+    for l in leads:
+        c_date = str(l.creation).split()[0] if l.creation else ""
+        v_status = l.get("custom_verification_status") or "Pending"
+        if v_status == "Pending":
+            if c_date == today_str:
+                today_count += 1
+            elif c_date == yesterday_str:
+                yesterday_count += 1
+            else:
+                older_count += 1
+
+    return {
+        "leads": leads,
+        "metrics": {
+            "total_pending": today_count + yesterday_count + older_count,
+            "today_pending": today_count,
+            "yesterday_pending": yesterday_count,
+            "older_pending": older_count,
+        }
+    }
+
+
+@frappe.whitelist()
+def verify_branch_leads(lead_names, action, remarks=None):
+    """Verify or Reject leads by Branch BM."""
+    if not lead_names:
+        frappe.throw(_("No leads selected for verification."))
+
+    lead_names = frappe.parse_json(lead_names) if isinstance(lead_names, str) else lead_names
+    if action not in ["Verified", "Rejected", "Pending"]:
+        frappe.throw(_("Invalid verification action."))
+
+    now_time = frappe.utils.now_datetime()
+    user = frappe.session.user
+
+    for name in lead_names:
+        doc = frappe.get_doc("Lead", name)
+        doc.db_set({
+            "custom_verification_status": action,
+            "custom_verified_by": user,
+            "custom_verified_on": now_time,
+            "custom_verification_remarks": remarks or ""
+        })
+
+    return {"status": "success", "count": len(lead_names)}
+
+
 @frappe.whitelist()
 def get_open_activities(ref_doctype=None, ref_docname=None):
     """Safely return open tasks and events for reference doc without 404 errors on new/unsaved docs."""
@@ -415,4 +518,6 @@ def get_open_activities(ref_doctype=None, ref_docname=None):
         return {"tasks": tasks, "events": events}
     except Exception:
         return {"tasks": [], "events": []}
+
+
 
