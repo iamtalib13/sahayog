@@ -6262,7 +6262,7 @@
           return (
             ev.trainer === state.currentEmployee ||
             ev.trainer === state.currentEmployeeName ||
-            ev.owner === frappe.session.user
+            (state.sessionUser && ev.owner === state.sessionUser)
           );
         }
         /* Assigned trainer (owner or trainer match) with 5/5 checks gets
@@ -13427,6 +13427,7 @@
               info.employee && info.employee.employee_name
                 ? info.employee.employee_name
                 : null;
+            state.sessionUser = info.user || null;
             state.hasTeam = !!info.has_team;
             state.teamCount = info.team_count || 0;
             state.canSeeTeam = !!info.can_see_team;
