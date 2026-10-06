@@ -12385,9 +12385,7 @@
           tbody.querySelectorAll("tr[data-name]").forEach(function (row) {
             row.addEventListener("click", function (e) {
               if (e.target.closest(".td-actions")) return;
-              var ev = state.calEvents.find(function (x) {
-                return x.name === row.dataset.name;
-              });
+              var ev = findTrainingByName(row.dataset.name);
               if (ev) openDrawer(ev, "view");
             });
           });
@@ -12396,9 +12394,7 @@
           tbody.querySelectorAll("[data-menu-edit]").forEach(function (btn) {
             btn.addEventListener("click", function (e) {
               e.stopPropagation();
-              var ev = state.calEvents.find(function (x) {
-                return x.name === btn.dataset.menuEdit;
-              });
+              var ev = findTrainingByName(btn.dataset.menuEdit);
               if (ev) openDrawer(ev, "edit");
             });
           });
@@ -12420,6 +12416,19 @@
                   showToast("Could not delete: " + err.message);
                 });
             });
+          });
+        }
+
+        /* Trainings-tab rows come from trainingsList (any month); fall back
+           to the calendar month cache. The old code searched calEvents only,
+           so rows outside the calendar month silently never opened. */
+        function findTrainingByName(name) {
+          var hit = (state.trainingsList || []).find(function (x) {
+            return x.name === name;
+          });
+          if (hit) return hit;
+          return (state.calEvents || []).find(function (x) {
+            return x.name === name;
           });
         }
 
