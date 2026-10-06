@@ -8153,7 +8153,7 @@
         /* ---------- Add training ---------- */
         var addModal = document.getElementById("addModal");
 
-        /* Training programs per division (trainer sees only their own division) */
+        /* Training programs: full list for everyone (no division filter) */
         var TRAINING_PROGRAMS = [
           { name: "Audit Training Program", div: "retail branch banking" },
           { name: "Branch Business Master Class/ License to Operate", div: "retail branch banking" },
@@ -8174,21 +8174,10 @@
           { name: "JLL Refresher Training", div: "jll" },
           { name: "Retail Asset Master Class/ License to Operate", div: "jll" },
         ];
-        function trainerDivisionOf(trainerName) {
-          var e =
-            (state.allEmployees || []).find(function (x) {
-              return (x.employee_name || "") === (trainerName || "");
-            }) || {};
-          return ((e.custom_division || e.department) || "").trim().toLowerCase();
-        }
         function populateTrainingTitles(trainerName, currentValue) {
           var sel = document.getElementById("new-program");
           if (!sel) return;
-          var div = trainerDivisionOf(trainerName);
-          var list = TRAINING_PROGRAMS.filter(function (p) {
-            return !div || p.div === div;
-          });
-          if (!list.length) list = TRAINING_PROGRAMS;
+          var list = TRAINING_PROGRAMS;
           var cur = (currentValue || "").trim();
           var html = '<option value="">Select program</option>';
           list.forEach(function (p) {
