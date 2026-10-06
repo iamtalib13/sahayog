@@ -2256,8 +2256,53 @@ def _require_completed(doc):
         frappe.throw(_("Allowed only after all completion checks are ticked."))
 
 
+def _replace_geographies(training_name, geographies):
+    """Replace a training's geography rows (see update_training_schedule)."""
+    seen = []
+    seen_set = set()
+    for geo in geographies or []:
+        if isinstance(geo, dict):
+            code = (geo.get("branch") or geo.get("name") or "").strip()
+        else:
+            code = str(geo or "").strip()
+        if code and code not in seen_set:
+            seen_set.add(code)
+            seen.append(code)
+    if not seen:
+        return
+    resolved = []
+    for code in seen:
+        info = frappe.db.get_value(
+            "Sahayog Branch", code, ["zone", "region", "district"], as_dict=True
+        ) or {}
+        resolved.append({
+            "branch": code,
+            "zone": info.get("zone") or "",
+            "region": info.get("region") or "",
+            "district": info.get("district") or "",
+        })
+    for row in frappe.db.get_all(
+        "Training Geography", filters={"parent": training_name}, pluck="name"
+    ):
+        frappe.db.delete("Training Geography", row)
+    for i, g in enumerate(resolved, start=1):
+        frappe.get_doc({
+            "doctype": "Training Geography",
+            "parent": training_name,
+            "parenttype": "Training",
+            "parentfield": "geographies",
+            "idx": i,
+            **g,
+        }).insert(ignore_permissions=True)
+    first = resolved[0]
+    frappe.db.set_value("Training", training_name, "branch", first["branch"])
+    frappe.db.set_value("Training", training_name, "zone", first["zone"])
+    frappe.db.set_value("Training", training_name, "region", first["region"])
+    frappe.db.set_value("Training", training_name, "district", first["district"])
+
+
 @frappe.whitelist()
-def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None):
+def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None):
     """
     Reschedule a training — L&D Admin can change anything; a trainer can
     reschedule only their own trainings (created by them or assigned to them).
@@ -2309,6 +2354,14 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
 
     for field, value in updates.items():
         frappe.db.set_value("Training", name, field, value)
+
+    # Geography replace (edit modal): participant auto-added branches and
+    # manual branch edits were previously shown in the UI but never saved.
+    # `geographies` = JSON list of {branch}; zone/region/district re-resolved
+    # from Sahayog Branch, legacy fields mirror the first row. Skipped when
+    # not sent (None) or empty (never wipe all rows by accident).
+    if geographies is not None:
+        _replace_geographies(name, frappe.parse_json(geographies) or [])
 
     if old_from != str(from_date)[:10]:
         frappe.db.set_value("Training", name, "invitation_7d_sent", 0)
