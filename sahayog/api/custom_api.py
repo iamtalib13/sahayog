@@ -594,6 +594,16 @@ def get_page_visitors(page="sahayog_dashboard"):
             last_visit_dt DESC
     """, (page, start_of_day), as_dict=True)
 
+    def _normalize_zone(val):
+        if not val:
+            return "Unassigned"
+        s = str(val).strip()
+        import re
+        m = re.search(r'\d+', s)
+        if m:
+            return f"Zone-{m.group()}"
+        return s.title() if s else "Unassigned"
+
     visitors_map = {}
     dept_counts = {}
     zone_counts = {}
@@ -606,8 +616,9 @@ def get_page_visitors(page="sahayog_dashboard"):
         dept = r.get("department") or "Other"
         dept_counts[dept] = dept_counts.get(dept, 0) + 1
 
-        zone = r.get("custom_zone") or "Unassigned"
-        zone_counts[zone] = zone_counts.get(zone, 0) + 1
+        raw_zone = r.get("custom_zone")
+        norm_zone = _normalize_zone(raw_zone)
+        zone_counts[norm_zone] = zone_counts.get(norm_zone, 0) + 1
 
         first_v = frappe.utils.format_datetime(r.get("first_visit_dt"), "hh:mm a") if r.get("first_visit_dt") else ""
         last_v = frappe.utils.format_datetime(r.get("last_visit_dt"), "hh:mm a") if r.get("last_visit_dt") else ""
@@ -619,7 +630,7 @@ def get_page_visitors(page="sahayog_dashboard"):
             "designation": r.get("designation") or "",
             "department": r.get("department") or "",
             "branch": r.get("branch") or "",
-            "zone": r.get("custom_zone") or "",
+            "zone": norm_zone,
             "first_visit": first_v,
             "last_visit": last_v,
             "visit_count": r.get("visit_count") or 1,
@@ -634,8 +645,9 @@ def get_page_visitors(page="sahayog_dashboard"):
             e_info = frappe.db.get_value("Employee", {"user_id": live_u}, ["designation", "department", "branch", "custom_zone"], as_dict=True) or {}
             dept = e_info.get("department") or "Other"
             dept_counts[dept] = dept_counts.get(dept, 0) + 1
-            zone = e_info.get("custom_zone") or "Unassigned"
-            zone_counts[zone] = zone_counts.get(zone, 0) + 1
+            raw_zone = e_info.get("custom_zone")
+            norm_zone = _normalize_zone(raw_zone)
+            zone_counts[norm_zone] = zone_counts.get(norm_zone, 0) + 1
 
             visitors_map[live_u] = {
                 "user": live_u,
@@ -644,7 +656,7 @@ def get_page_visitors(page="sahayog_dashboard"):
                 "designation": e_info.get("designation") or "",
                 "department": dept,
                 "branch": e_info.get("branch") or "",
-                "zone": e_info.get("custom_zone") or "",
+                "zone": norm_zone,
                 "first_visit": now_formatted,
                 "last_visit": now_formatted,
                 "visit_count": 1,
