@@ -4871,6 +4871,11 @@
                 <option value="">All Branches</option>
               </select>
             </div>
+            <div class="filter-group">
+              <select class="field-select" id="fil-trainer">
+                <option value="">All Trainers</option>
+              </select>
+            </div>
             <button class="btn-reset" id="btn-reset" title="Reset filters">
               <svg
                 viewBox="0 0 24 24"
@@ -6113,7 +6118,7 @@
           viewDate: null,
           selectedDate: null,
           calEvents: [],
-          calFilters: { zone: "", region: "", district: "", branch: "" },
+          calFilters: { zone: "", region: "", district: "", branch: "", trainer: "" },
           statusFilter: null,
           search: "",
           dialogMode: "add",
@@ -6352,14 +6357,15 @@
               if (f.zone && ev.zone !== f.zone) return false;
               if (f.region && ev.region !== f.region) return false;
               if (f.district && ev.district !== f.district) return false;
-              if (
-                f.branch &&
-                !(ev.branch || "")
-                  .toLowerCase()
-                  .includes(f.branch.toLowerCase())
-              )
-                return false;
-            }
+            if (
+              f.branch &&
+              !(ev.branch || "")
+                .toLowerCase()
+                .includes(f.branch.toLowerCase())
+            )
+              return false;
+          }
+          if (f.trainer && (ev.trainer || "") !== f.trainer) return false;
             if (q) {
               var hayParts = [
                 ev.training_program,
@@ -6483,6 +6489,12 @@
               fillSelect("emp-district", districts, "All Districts");
               fillSelect("emp-branch", branches, "All Branches");
               state.branchOptions = branches;
+              state.geoMasters = {
+                zones: zones,
+                regions: regions,
+                districts: districts,
+                branches: branches,
+              };
               return Promise.all([
                 api("get_trainer_options", { enabled_only: 1 }),
                 api("get_branch_options"),
@@ -6493,6 +6505,9 @@
               state.allEmployees = Array.isArray(res[0]) ? res[0] : [];
               state.branchPick = Array.isArray(res[1]) ? res[1] : [];
               state.allAgents = Array.isArray(res[2]) ? res[2] : [];
+              /* Masters arrived — narrow district/branch options to the
+                 current zone/region (keeps still-valid selections). */
+              if (typeof cascadeGeo === "function") cascadeGeo();
               /* Branch names may have arrived after the trainings list
                  rendered — repaint so codes become names without any
                  user action (e.g. changing rows-per-page). */
@@ -6543,6 +6558,7 @@
                     .trim() || "Holiday";
               });
               state.holidays = cleanH;
+              if (typeof fillTrainerOptions === "function") fillTrainerOptions();
               render();
               updateSchedulePreview();
             })
@@ -6556,16 +6572,19 @@
         function setupFilters() {
           document.getElementById("fil-zone").onchange = function (e) {
             state.calFilters.zone = e.target.value;
+            cascadeGeo();
             state.selectedDate = pickRelevantDate();
             loadData(true);
           };
           document.getElementById("fil-region").onchange = function (e) {
             state.calFilters.region = e.target.value;
+            cascadeGeo();
             state.selectedDate = pickRelevantDate();
             loadData(true);
           };
           document.getElementById("fil-district").onchange = function (e) {
             state.calFilters.district = e.target.value;
+            cascadeGeo();
             state.selectedDate = pickRelevantDate();
             loadData(true);
           };
@@ -6574,26 +6593,105 @@
             state.selectedDate = pickRelevantDate();
             loadData(true);
           };
+          document.getElementById("fil-trainer").onchange = function (e) {
+            state.calFilters.trainer = e.target.value;
+            state.selectedDate = pickRelevantDate();
+            render();
+          };
           document.getElementById("btn-reset").onclick = function () {
             state.calFilters = {
               zone: "",
               region: "",
               district: "",
               branch: "",
+              trainer: "",
             };
             state.statusFilter = null;
             state.search = "";
             document.getElementById("searchInput").value = "";
-            ["fil-zone", "fil-region", "fil-district", "fil-branch"].forEach(
+            ["fil-zone", "fil-region", "fil-district", "fil-branch", "fil-trainer"].forEach(
               function (s) {
                 document.getElementById(s).value = "";
               },
             );
-            /* Reset restores your access scope (server still enforces it). */
+            /* Reset restores full geo options + your access scope (server still enforces it). */
+            refillGeoMasters();
             applyAccessDefaults();
+            cascadeGeo();
             state.selectedDate = new Date(today);
             loadData(true);
           };
+        }
+        /* Cascading geo filters (branch master is the source of truth):
+           zone/region narrow districts, district (+zone/region) narrows
+           branches. Selections that fall outside the narrowed options reset. */
+        function branchesMatching(zone, region, district) {
+          return (state.branchPick || []).filter(function (b) {
+            if (zone && b.zone !== zone) return false;
+            if (region && b.region !== region) return false;
+            if (district && b.district !== district) return false;
+            return true;
+          });
+        }
+        function uniqSorted(arr) {
+          var seen = {},
+            out = [];
+          arr.forEach(function (v) {
+            if (v && !seen[v]) {
+              seen[v] = 1;
+              out.push(v);
+            }
+          });
+          return out.sort();
+        }
+        function cascadeGeo() {
+          var f = state.calFilters;
+          if (!state.branchPick || !state.branchPick.length) return;
+          var districts = uniqSorted(
+            branchesMatching(f.zone, f.region, "").map(function (b) {
+              return b.district;
+            }),
+          );
+          fillSelect("fil-district", districts, "All Districts");
+          if (f.district && districts.indexOf(f.district) === -1)
+            f.district = "";
+          document.getElementById("fil-district").value = f.district || "";
+          var branches = uniqSorted(
+            branchesMatching(f.zone, f.region, f.district).map(function (b) {
+              return b.name;
+            }),
+          );
+          fillSelect("fil-branch", branches, "All Branches");
+          if (f.branch && branches.indexOf(f.branch) === -1) f.branch = "";
+          document.getElementById("fil-branch").value = f.branch || "";
+        }
+        function refillGeoMasters() {
+          var m = state.geoMasters || {};
+          fillSelect("fil-zone", m.zones || [], "All Zones");
+          fillSelect("fil-region", m.regions || [], "All Regions");
+          fillSelect("fil-district", m.districts || [], "All Districts");
+          fillSelect("fil-branch", m.branches || [], "All Branches");
+        }
+        /* Trainer options come from the loaded month data (client-side
+           filter, so the list is always complete). Invalid selections reset. */
+        function fillTrainerOptions() {
+          var seen = {},
+            list = [];
+          (state.calEvents || []).forEach(function (ev) {
+            var t = ev.trainer || "";
+            if (t && !seen[t]) {
+              seen[t] = 1;
+              list.push(t);
+            }
+          });
+          list.sort();
+          var cur = state.calFilters.trainer || "";
+          fillSelect("fil-trainer", list, "All Trainers");
+          if (cur && list.indexOf(cur) === -1) {
+            state.calFilters.trainer = "";
+            cur = "";
+          }
+          document.getElementById("fil-trainer").value = cur;
         }
         /* Prefill calendar filters from Report Preference access so the
            applied scope is visible (single-value scopes get selected). */
@@ -7291,6 +7389,12 @@
           state.currentEvent = ev;
           var r = role();
           var editable = mode === "edit" && r.canEdit;
+          /* Completed trainings are fully read-only, except budget top-up
+             while a budget field is still empty. */
+          var isDone = completionScore(ev) === 5;
+          var canEditDrawer = editable && !isDone;
+          var budgetOpen = (state.role === "ld_admin" || isOwnCompletedTraining(ev)) &&
+            (ev.budget_amount == null || ev.budget_amount === "" || ev.actual_expense == null || ev.actual_expense === "");
           var st = statusOf(ev);
           var meta = STATUS_META[st];
           var score = completionScore(ev);
@@ -7308,7 +7412,7 @@
           var head =
             '<div class="title">' +
             '<div class="drawer-kicker">' +
-            (editable ? "Edit Training" : "Training Details") +
+            (canEditDrawer ? "Edit Training" : "Training Details") +
             "</div>" +
             '<div class="drw-title-row">' +
             "<h3>" +
@@ -7324,7 +7428,7 @@
             (ev.is_adhoc ? ' <span class="chip chip-gray">Ad-hoc</span>' : "") +
             "</div>" +
             "</div>" +
-            (editable
+            (canEditDrawer || (isDone && budgetOpen)
               ? '<button class="btn btn-primary" id="drawerSaveTop" style="height:30px;padding:0 14px;font-size:12.5px;flex-shrink:0;">Save</button>'
               : "") +
             '<button class="icon-btn" id="drawerClose" title="Close">' +
@@ -7421,7 +7525,7 @@
 
           var checkList = CHECK_FIELDS.map(function (f) {
             var on = !!ev[f.key];
-            var input = editable
+            var input = canEditDrawer
               ? '<input type="checkbox" ' +
                 (on ? "checked" : "") +
                 ' data-field="' +
@@ -7452,23 +7556,30 @@
              attendance ticks. Reuses the existing attendance section renderer;
              fillAttendanceSection() below populates it (instant when the
              opener pre-fetched participant_list, fetched otherwise). */
-          if (!editable) {
+          if (!canEditDrawer) {
             body += attendanceSectionHTML(ev, false);
           }
 
           if (r.showBudget) {
-            /* Budget inputs: L&D Admin + own-trainer after 5/5 checks;
-               everyone else sees values read-only. */
-            if (editable && (state.role === "ld_admin" || isOwnCompletedTraining(ev))) {
+            /* Budget inputs: L&D Admin + own-trainer after 5/5 checks (also
+               on completed trainings while a field is still empty);
+               everyone else sees values read-only. Filled values lock. */
+            var drwBfilled = ev.budget_amount != null && ev.budget_amount !== "";
+            var drwAfilled = ev.actual_expense != null && ev.actual_expense !== "";
+            if ((editable || isDone) && (state.role === "ld_admin" || isOwnCompletedTraining(ev))) {
               body +=
                 '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
                 '<label>Budget Amount (₹)<input id="drw-budget-amount" type="number" step="0.01" min="0" value="' +
                 (ev.budget_amount == null ? "" : ev.budget_amount) +
-                '" /></label>' +
+                '"' +
+                (drwBfilled ? " readonly" : "") +
+                " /></label>" +
                 '<label>Actual Expense (₹)<input id="drw-actual-expense" type="number" step="0.01" min="0" value="' +
                 (ev.actual_expense == null ? "" : ev.actual_expense) +
-                '" /></label>' +
+                '"' +
+                (drwAfilled ? " readonly" : "") +
+                " /></label>" +
                 "</div>" +
                 '<div class="budget-edit-foot">' +
                 '<span class="budget-hint">Saved with Save Changes</span>' +
@@ -7483,7 +7594,7 @@
             }
           }
 
-          if (editable) {
+          if (canEditDrawer) {
             body +=
               '<div class="drawer-section">' +
               '<div class="drawer-section-title">Trainer Remarks</div>' +
@@ -7507,9 +7618,11 @@
           actionsEl.innerHTML = "";
           actionsEl.style.display = "none";
 
-          if (editable) {
+          if (canEditDrawer || (isDone && budgetOpen)) {
             var saveTop = document.getElementById("drawerSaveTop");
             if (saveTop) saveTop.onclick = saveDrawerChanges;
+          }
+          if (canEditDrawer) {
             document
               .querySelectorAll("#drawerBody .check-item input")
               .forEach(function (inp) {
@@ -7532,7 +7645,7 @@
           drawerOverlay.classList.add("open");
           drawer.classList.add("open");
           drawer.setAttribute("aria-hidden", "false");
-          fillAttendanceSection(ev, editable);
+          fillAttendanceSection(ev, editable && !isDone);
         }
 
         /* ----- Calendar modal attendance (edit mode): summary + popover ----- */
@@ -7541,7 +7654,8 @@
           var wrap = document.getElementById("nt-attendance-wrap");
           if (!wrap) return;
           var show =
-            state.dialogMode === "edit" && role().canEdit && ev && ev.name;
+            state.dialogMode === "edit" && role().canEdit && ev && ev.name &&
+            completionScore(ev) !== 5;
           wrap.style.display = show ? "" : "none";
           closeAttPop();
           if (!show) return;
@@ -8078,24 +8192,28 @@
             closeDrawer();
             return;
           }
+          /* Completed trainings are read-only — only budget may be saved. */
+          var isDoneSave = completionScore(ev) === 5;
           var base = state.drawerBase || { checks: {} };
           var tasks = [];
 
-          CHECK_FIELDS.forEach(function (f) {
-            var cur = ev[f.key] || 0;
-            if (cur !== (base.checks[f.key] || 0)) {
-              tasks.push(
-                api("update_training_status", {
-                  training_name: ev.name,
-                  field: f.key,
-                  value: cur,
-                }),
-              );
-            }
-          });
+          if (!isDoneSave) {
+            CHECK_FIELDS.forEach(function (f) {
+              var cur = ev[f.key] || 0;
+              if (cur !== (base.checks[f.key] || 0)) {
+                tasks.push(
+                  api("update_training_status", {
+                    training_name: ev.name,
+                    field: f.key,
+                    value: cur,
+                  }),
+                );
+              }
+            });
+          }
 
           var rem = (document.getElementById("drw-remarks") || {}).value || "";
-          if (rem !== (base.remarks || "")) {
+          if (!isDoneSave && rem !== (base.remarks || "")) {
             tasks.push(
               api("update_training_status", {
                 training_name: ev.name,
