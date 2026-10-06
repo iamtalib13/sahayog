@@ -429,11 +429,17 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
     """Trainings for a given month with status info, shaped for the calendar."""
     year, month = _safe_year_month(year, month)
     last_day = calendar.monthrange(year, month)[1]
+    month_start = f"{year}-{month:02d}-01"
+    month_end = f"{year}-{month:02d}-{last_day}"
+    # Pad ±7 days so the visible grid's prev/next-month filler cells (and
+    # week views spanning the boundary) also get their trainings.
+    pad_start = str(frappe.utils.add_days(month_start, -7))
+    pad_end = str(frappe.utils.add_days(month_end, 7))
 
     filters = {
         "docstatus": ["<", 2],
-        # Any training whose date range overlaps the requested month
-        "from_date": ["<=", f"{year}-{month:02d}-{last_day}"],
+        # Any training whose date range overlaps the padded window
+        "from_date": ["<=", pad_end],
     }
     scope_or_filters = _owner_scope()
 
@@ -444,10 +450,9 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
         fields=CALENDAR_FIELDS + BUDGET_FIELDS,
         order_by="from_date asc, start_time asc",
     )
-    month_start = f"{year}-{month:02d}-01"
-    # Keep only trainings that reach into (or end within) this month.
+    # Keep only trainings that reach into (or end within) the padded window.
     # Missing to_date falls back to from_date (single-day).
-    rows = [r for r in rows if str(r.to_date or r.from_date or "")[:10] >= month_start]
+    rows = [r for r in rows if str(r.to_date or r.from_date or "")[:10] >= pad_start]
 
     # Enrich with geographies for post-filtering (supports multi-branch)
     geo_map = _get_geographies_map([r.name for r in rows])
