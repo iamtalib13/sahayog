@@ -8380,7 +8380,10 @@
           // Trainers can reschedule their own trainings (owner or trainer match).
           var canResched = state.role === "ld_admin" || (state.role === "trainer" && isOwnTraining(ev));
           var ownDone = isOwnCompletedTraining(ev);
-          var canEditTime = canResched || ownDone;
+          // Completed trainings are read-only (budget exception handled separately).
+          var isDone = completionScore(ev) === 5;
+          if (isDone) canResched = false;
+          var canEditTime = !isDone && (canResched || ownDone);
           ["new-from-date", "new-to-date", "new-expected-count"].forEach(
             function (id) {
               var el = document.getElementById(id);
@@ -8407,8 +8410,8 @@
           );
           var typeSel2 = document.getElementById("new-training-type");
           if (typeSel2) {
-            typeSel2.disabled = !(canResched || ownDone);
-            typeSel2.title = canResched || ownDone
+            typeSel2.disabled = !canEditTime;
+            typeSel2.title = canEditTime
               ? ""
               : "Available to trainers after all checks are done";
           }
@@ -8438,10 +8441,11 @@
           f("new-location", ev.training_location || "");
           var adhoc = document.getElementById("new-adhoc");
           adhoc.checked = !!ev.is_adhoc;
-          adhoc.disabled = !r.canEdit;
+          adhoc.disabled = !r.canEdit || isDone;
           var agenda = document.getElementById("new-agenda");
           if (agenda) {
             agenda.value = ev.trainer_remarks || "";
+            agenda.readOnly = isDone;
             if (agenda.value.trim()) {
               agenda.classList.add("open");
               var agRow = agenda.closest(".nt-agenda-row");
@@ -8451,7 +8455,7 @@
           var ccFill = document.getElementById("new-cc");
           if (ccFill) {
             ccFill.value = ev.additional_cc || "";
-            ccFill.readOnly = !r.canEdit;
+            ccFill.readOnly = !r.canEdit || isDone;
           }
           ["new-branch"].forEach(function (id) {
             var el = document.getElementById(id);
@@ -8543,7 +8547,7 @@
             "%</span></div></div>";
           var checkList = CHECK_FIELDS.map(function (f) {
             var on = !!ev[f.key];
-            var input = r.canEdit
+            var input = r.canEdit && score !== 5
               ? '<input type="checkbox" ' +
                 (on ? "checked" : "") +
                 ' data-field="' +
@@ -8568,18 +8572,24 @@
             checkList +
             "</div>";
           if (r.showBudget) {
-            /* Budget inputs: L&D Admin + own-trainer after 5/5 checks. */
+            /* Budget inputs: editable only while empty — filled values stay read-only. */
             var budgetHtml;
+            var bFilled = ev.budget_amount != null && ev.budget_amount !== "";
+            var aFilled = ev.actual_expense != null && ev.actual_expense !== "";
             if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
               budgetHtml =
                 '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
                 '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' +
                 (ev.budget_amount == null ? "" : ev.budget_amount) +
-                '" /></label>' +
+                '"' +
+                (bFilled ? " readonly" : "") +
+                " /></label>" +
                 '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="0" value="' +
                 (ev.actual_expense == null ? "" : ev.actual_expense) +
-                '" /></label>' +
+                '"' +
+                (aFilled ? " readonly" : "") +
+                " /></label>" +
                 "</div></div>";
             } else {
               budgetHtml =
@@ -8617,6 +8627,8 @@
             closeModal("addModal");
             return;
           }
+          // Completed trainings are read-only — only budget may still be saved.
+          var isDoneSave = completionScore(ev) === 5;
           // In-flight guard: double-clicks would race parallel writers on the same doc
           if (state.savingTraining) return;
           var tasks = [];
@@ -8667,7 +8679,7 @@
             return;
           }
           var expChanged = expEl ? expVal !== (ev.number_of_participants || 0) : false;
-          if (scheduleChanged || expChanged) {
+          if (!isDoneSave && (scheduleChanged || expChanged)) {
             if (!fromDate) {
               showToast("From Date is required");
               return;
@@ -8732,7 +8744,7 @@
             );
           }
           var val = (document.getElementById("new-agenda") || {}).value || "";
-          if ((ev.trainer_remarks || "") !== val) {
+          if (!isDoneSave && (ev.trainer_remarks || "") !== val) {
             tasks.push(
               api("update_training_status", {
                 training_name: ev.name,
@@ -8746,7 +8758,7 @@
           var ccVal = (
             (document.getElementById("new-cc") || {}).value || ""
           ).trim();
-          if ((ev.additional_cc || "") !== ccVal) {
+          if (!isDoneSave && (ev.additional_cc || "") !== ccVal) {
             tasks.push(
               api("update_training_emails", {
                 training_name: ev.name,
@@ -8781,7 +8793,7 @@
             Object.keys(beforePairs).forEach(function (k) {
               if (!afterPairs[k]) pChanged = true;
             });
-            if (pChanged) {
+            if (!isDoneSave && pChanged) {
               doSync = function () {
                 return api("sync_participants", {
                   training_name: ev.name,
