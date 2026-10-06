@@ -564,7 +564,7 @@ def get_page_visitors(page="sahayog_dashboard"):
 
     is_cxo = has_cxo_access(user)
 
-    # Query Activity Log DocType for today's visits with multi-field fallback join to Employee and Sahayog Branch
+    # Query Activity Log DocType for today's visits with direct join to Employee and Sahayog Branch
     rows = frappe.db.sql("""
         SELECT 
             a.user,
@@ -575,25 +575,19 @@ def get_page_visitors(page="sahayog_dashboard"):
             u.user_image,
             e.designation,
             e.department,
-            COALESCE(NULLIF(e.branch, ''), NULLIF(sb.branch, '')) AS branch,
-            COALESCE(NULLIF(e.custom_zone, ''), NULLIF(sb.zone, '')) AS custom_zone
+            COALESCE(NULLIF(sb.branch, ''), NULLIF(e.branch, '')) AS branch,
+            COALESCE(NULLIF(sb.zone, ''), NULLIF(e.custom_zone, '')) AS custom_zone
         FROM 
             `tabActivity Log` a
         LEFT JOIN 
             `tabUser` u ON a.user = u.name
         LEFT JOIN 
-            `tabEmployee` e ON (
-                e.user_id = a.user 
-                OR e.company_email = a.user 
-                OR e.personal_email = a.user 
-                OR e.employee_number = a.user
-            )
+            `tabEmployee` e ON e.user_id = a.user
         LEFT JOIN 
             `tabSahayog Branch` sb ON (
                 sb.name = e.sahayog_branch 
-                OR sb.sol_id = e.sol_id 
-                OR sb.name = e.branch 
-                OR sb.branch = e.branch
+                OR sb.sol_id = e.sahayog_branch 
+                OR sb.sol_id = e.sol_id
             )
         WHERE 
             a.reference_doctype = 'Page'
@@ -619,22 +613,20 @@ def get_page_visitors(page="sahayog_dashboard"):
     def _resolve_emp_info(uid):
         if not uid or uid in ("Guest", "Administrator"):
             return {}
-        # Try direct user_id match
         emp = frappe.db.sql("""
             SELECT 
                 e.designation, e.department, 
-                COALESCE(NULLIF(e.branch, ''), NULLIF(sb.branch, '')) AS branch,
-                COALESCE(NULLIF(e.custom_zone, ''), NULLIF(sb.zone, '')) AS custom_zone
+                COALESCE(NULLIF(sb.branch, ''), NULLIF(e.branch, '')) AS branch,
+                COALESCE(NULLIF(sb.zone, ''), NULLIF(e.custom_zone, '')) AS custom_zone
             FROM `tabEmployee` e
             LEFT JOIN `tabSahayog Branch` sb ON (
                 sb.name = e.sahayog_branch 
-                OR sb.sol_id = e.sol_id 
-                OR sb.name = e.branch 
-                OR sb.branch = e.branch
+                OR sb.sol_id = e.sahayog_branch 
+                OR sb.sol_id = e.sol_id
             )
-            WHERE e.user_id = %s OR e.company_email = %s OR e.personal_email = %s OR e.employee_number = %s
+            WHERE e.user_id = %s
             LIMIT 1
-        """, (uid, uid, uid, uid), as_dict=True)
+        """, (uid,), as_dict=True)
         return emp[0] if emp else {}
 
     visitors_map = {}
