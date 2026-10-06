@@ -663,10 +663,21 @@ def get_page_visitors(page="sahayog_dashboard"):
                 "is_live": True
             }
 
-    visitors_list = list(visitors_map.values())
+    def _is_admin(u):
+        if not u:
+            return True
+        s = str(u).strip().lower()
+        return s == "administrator" or s == "guest" or s.startswith("administrator@")
+
+    # Clean out any stale admin keys from live_dict
+    for k in list(live_dict.keys()):
+        if _is_admin(k):
+            del live_dict[k]
+
+    visitors_list = [v for v in visitors_map.values() if not _is_admin(v.get("user")) and not _is_admin(v.get("full_name"))]
     visitors_list.sort(key=lambda x: (not x["is_live"], x.get("last_visit", "")), reverse=True)
 
-    today_count = len(visitors_map)
+    today_count = len(visitors_list)
     live_count = len(live_dict)
 
     return {
