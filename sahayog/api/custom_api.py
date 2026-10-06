@@ -384,21 +384,21 @@ def get_page_summary_stats(page="sahayog_dashboard"):
         today_str = frappe.utils.today()
         start_of_day = today_str + " 00:00:00"
 
-        # Count unique users from Activity Log today
+        # Count unique users from Activity Log today (excluding Guest and Administrator)
         db_count = frappe.db.sql("""
             SELECT COUNT(DISTINCT user)
             FROM `tabActivity Log`
             WHERE reference_doctype = 'Page'
               AND reference_name = %s
               AND creation >= %s
-              AND user NOT IN ('Guest')
+              AND user NOT IN ('Guest', 'Administrator')
         """, (page, start_of_day))[0][0] or 0
 
-        # Concurrent live viewers in last 60 seconds
+        # Concurrent live viewers in last 60 seconds (excluding Guest and Administrator)
         now_ts = time.time()
         live_key = f"sahayog:page_live:{page}"
         live_dict = frappe.cache.get_value(live_key) or {}
-        live_users = {u: ts for u, ts in live_dict.items() if (now_ts - ts) <= 60}
+        live_users = {u: ts for u, ts in live_dict.items() if (now_ts - ts) <= 60 and u not in ("Guest", "Administrator")}
 
         return {
             "today_visitors_count": max(db_count, len(live_users)),
@@ -415,7 +415,7 @@ def create_page_activity_log(page, user=None):
     """
     if not user:
         user = frappe.session.user
-    if not user or user == "Guest":
+    if not user or user in ("Guest", "Administrator"):
         return None
 
     try:
@@ -460,8 +460,8 @@ def record_page_visit(page="sahayog_dashboard"):
     """
     import time
     user = frappe.session.user
-    if not user or user == "Guest":
-        return {"status": "guest", "today_visitors_count": 0, "live_viewers_count": 0, "has_cxo_access": False, "visitors": []}
+    if not user or user in ("Guest", "Administrator"):
+        return get_page_visitors(page=page)
 
     try:
         now_ts = time.time()
@@ -469,7 +469,7 @@ def record_page_visit(page="sahayog_dashboard"):
 
         # Register live heartbeat
         live_dict = frappe.cache.get_value(live_key) or {}
-        live_dict = {u: ts for u, ts in live_dict.items() if (now_ts - ts) <= 60}
+        live_dict = {u: ts for u, ts in live_dict.items() if (now_ts - ts) <= 60 and u not in ("Guest", "Administrator")}
         live_dict[user] = now_ts
         frappe.cache.set_value(live_key, live_dict, expires_in_sec=120)
 
@@ -498,15 +498,20 @@ def ping_page_heartbeat(page="sahayog_dashboard"):
     """
     import time
     user = frappe.session.user
-    if not user or user == "Guest":
-        return {"status": "guest", "today_visitors_count": 0, "live_viewers_count": 0}
+    if not user or user in ("Guest", "Administrator"):
+        stats = get_page_summary_stats(page=page)
+        return {
+            "status": "success",
+            "today_visitors_count": stats.get("today_visitors_count", 0),
+            "live_viewers_count": stats.get("live_viewers_count", 0)
+        }
 
     try:
         now_ts = time.time()
         live_key = f"sahayog:page_live:{page}"
 
         live_dict = frappe.cache.get_value(live_key) or {}
-        live_dict = {u: ts for u, ts in live_dict.items() if (now_ts - ts) <= 60}
+        live_dict = {u: ts for u, ts in live_dict.items() if (now_ts - ts) <= 60 and u not in ("Guest", "Administrator")}
         live_dict[user] = now_ts
         frappe.cache.set_value(live_key, live_dict, expires_in_sec=120)
 
@@ -526,7 +531,7 @@ def leave_page(page="sahayog_dashboard"):
     Removes the user from live viewers pool when leaving the page.
     """
     user = frappe.session.user
-    if not user or user == "Guest":
+    if not user or user in ("Guest", "Administrator"):
         return {"status": "ok"}
 
     try:
@@ -544,18 +549,18 @@ def leave_page(page="sahayog_dashboard"):
 def get_page_visitors(page="sahayog_dashboard"):
     """
     Queries Activity Log DocType for all visitors who accessed the given page today.
-    Merges with live active session data. CXO/Admin gets detailed visitor cards.
+    Merges with live active session data.
     """
     import time
     user = frappe.session.user
     today_str = frappe.utils.today()
     start_of_day = today_str + " 00:00:00"
 
-    # Live active pool
+    # Live active pool (excluding Guest and Administrator)
     now_ts = time.time()
     live_key = f"sahayog:page_live:{page}"
     live_dict = frappe.cache.get_value(live_key) or {}
-    live_dict = {u: ts for u, ts in live_dict.items() if (now_ts - ts) <= 60}
+    live_dict = {u: ts for u, ts in live_dict.items() if (now_ts - ts) <= 60 and u not in ("Guest", "Administrator")}
 
     is_cxo = has_cxo_access(user)
 
@@ -570,7 +575,8 @@ def get_page_visitors(page="sahayog_dashboard"):
             u.user_image,
             e.designation,
             e.department,
-            e.branch
+            e.branch,
+            e.custom_zone
         FROM 
             `tabActivity Log` a
         LEFT JOIN 
@@ -581,23 +587,27 @@ def get_page_visitors(page="sahayog_dashboard"):
             a.reference_doctype = 'Page'
             AND a.reference_name = %s
             AND a.creation >= %s
-            AND a.user NOT IN ('Guest')
+            AND a.user NOT IN ('Guest', 'Administrator')
         GROUP BY 
-            a.user, u.full_name, a.full_name, u.user_image, e.designation, e.department, e.branch
+            a.user, u.full_name, a.full_name, u.user_image, e.designation, e.department, e.branch, e.custom_zone
         ORDER BY 
             last_visit_dt DESC
     """, (page, start_of_day), as_dict=True)
 
     visitors_map = {}
     dept_counts = {}
+    zone_counts = {}
 
     for r in rows:
         u_id = r.get("user")
-        if not u_id:
+        if not u_id or u_id in ("Guest", "Administrator"):
             continue
 
         dept = r.get("department") or "Other"
         dept_counts[dept] = dept_counts.get(dept, 0) + 1
+
+        zone = r.get("custom_zone") or "Unassigned"
+        zone_counts[zone] = zone_counts.get(zone, 0) + 1
 
         first_v = frappe.utils.format_datetime(r.get("first_visit_dt"), "hh:mm a") if r.get("first_visit_dt") else ""
         last_v = frappe.utils.format_datetime(r.get("last_visit_dt"), "hh:mm a") if r.get("last_visit_dt") else ""
@@ -609,6 +619,7 @@ def get_page_visitors(page="sahayog_dashboard"):
             "designation": r.get("designation") or "",
             "department": r.get("department") or "",
             "branch": r.get("branch") or "",
+            "zone": r.get("custom_zone") or "",
             "first_visit": first_v,
             "last_visit": last_v,
             "visit_count": r.get("visit_count") or 1,
@@ -618,11 +629,13 @@ def get_page_visitors(page="sahayog_dashboard"):
     # Ensure any user currently live is also included in visitors_map
     now_formatted = frappe.utils.format_datetime(frappe.utils.now_datetime(), "hh:mm a")
     for live_u in live_dict.keys():
-        if live_u not in visitors_map and live_u != "Guest":
+        if live_u not in visitors_map and live_u not in ("Guest", "Administrator"):
             u_info = frappe.db.get_value("User", live_u, ["full_name", "user_image"], as_dict=True) or {}
-            e_info = frappe.db.get_value("Employee", {"user_id": live_u}, ["designation", "department", "branch"], as_dict=True) or {}
+            e_info = frappe.db.get_value("Employee", {"user_id": live_u}, ["designation", "department", "branch", "custom_zone"], as_dict=True) or {}
             dept = e_info.get("department") or "Other"
             dept_counts[dept] = dept_counts.get(dept, 0) + 1
+            zone = e_info.get("custom_zone") or "Unassigned"
+            zone_counts[zone] = zone_counts.get(zone, 0) + 1
 
             visitors_map[live_u] = {
                 "user": live_u,
@@ -631,6 +644,7 @@ def get_page_visitors(page="sahayog_dashboard"):
                 "designation": e_info.get("designation") or "",
                 "department": dept,
                 "branch": e_info.get("branch") or "",
+                "zone": e_info.get("custom_zone") or "",
                 "first_visit": now_formatted,
                 "last_visit": now_formatted,
                 "visit_count": 1,
@@ -638,10 +652,7 @@ def get_page_visitors(page="sahayog_dashboard"):
             }
 
     visitors_list = list(visitors_map.values())
-    if is_cxo:
-        visitors_list.sort(key=lambda x: (not x["is_live"], x.get("last_visit", "")), reverse=True)
-    else:
-        visitors_list = []
+    visitors_list.sort(key=lambda x: (not x["is_live"], x.get("last_visit", "")), reverse=True)
 
     today_count = len(visitors_map)
     live_count = len(live_dict)
@@ -651,7 +662,8 @@ def get_page_visitors(page="sahayog_dashboard"):
         "page": page,
         "today_visitors_count": today_count,
         "live_viewers_count": live_count,
-        "has_cxo_access": is_cxo,
+        "has_cxo_access": True,
         "visitors": visitors_list,
-        "department_breakdown": dept_counts
+        "department_breakdown": dept_counts,
+        "zone_breakdown": zone_counts
     }
