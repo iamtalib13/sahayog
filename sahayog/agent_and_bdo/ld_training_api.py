@@ -425,7 +425,7 @@ def get_holidays(year, month):
 # ─────────────────────────────────────────────────────────────────────────────
 
 @frappe.whitelist()
-def get_calendar_data(year, month, zone=None, region=None, district=None, branch=None):
+def get_calendar_data(year, month, zone=None, region=None, district=None, branch=None, trainer_id=None):
     """Trainings for a given month with status info, shaped for the calendar."""
     year, month = _safe_year_month(year, month)
     last_day = calendar.monthrange(year, month)[1]
@@ -453,6 +453,18 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
     # Keep only trainings that reach into (or end within) the padded window.
     # Missing to_date falls back to from_date (single-day).
     rows = [r for r in rows if str(r.to_date or r.from_date or "")[:10] >= pad_start]
+
+    if trainer_id and str(trainer_id).strip():
+        # Trainer-ID search: resolve the ID to employee names, then match
+        # Training.trainer (which stores employee_name, not the ID).
+        q = str(trainer_id).strip()
+        names = frappe.db.get_all(
+            "Employee",
+            filters={"name": ["like", f"%{q}%"]},
+            pluck="employee_name",
+        )
+        name_set = {n for n in (names or []) if n}
+        rows = [r for r in rows if (r.trainer or "") in name_set]
 
     # Enrich with geographies for post-filtering (supports multi-branch)
     geo_map = _get_geographies_map([r.name for r in rows])

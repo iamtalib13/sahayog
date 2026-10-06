@@ -4876,6 +4876,14 @@
                 <option value="">All Trainers</option>
               </select>
             </div>
+            <div class="filter-group">
+              <input
+                class="field-input"
+                id="fil-trainer-id"
+                placeholder="Trainer ID..."
+                autocomplete="off"
+              />
+            </div>
             <button class="btn-reset" id="btn-reset" title="Reset filters">
               <svg
                 viewBox="0 0 24 24"
@@ -6114,7 +6122,7 @@
           viewDate: null,
           selectedDate: null,
           calEvents: [],
-          calFilters: { zone: "", region: "", district: "", branch: "", trainer: "" },
+          calFilters: { zone: "", region: "", district: "", branch: "", trainer: "", trainerId: "" },
           statusFilter: null,
           search: "",
           dialogMode: "add",
@@ -6536,6 +6544,7 @@
               region: f.region || null,
               district: f.district || null,
               branch: f.branch || null,
+              trainer_id: f.trainerId || null,
             }),
             api("get_holidays", { year: y, month: m }).catch(function () {
               return {};
@@ -6594,6 +6603,17 @@
             state.selectedDate = pickRelevantDate();
             render();
           };
+          /* Trainer-ID search (server-side) — reload on change, not on
+             every keystroke. */
+          (function () {
+            var el = document.getElementById("fil-trainer-id");
+            if (!el) return;
+            el.addEventListener("change", function () {
+              state.calFilters.trainerId = el.value.trim();
+              state.selectedDate = pickRelevantDate();
+              loadData(true);
+            });
+          })();
           document.getElementById("btn-reset").onclick = function () {
             state.calFilters = {
               zone: "",
@@ -6601,11 +6621,12 @@
               district: "",
               branch: "",
               trainer: "",
+              trainerId: "",
             };
             state.statusFilter = null;
             state.search = "";
             document.getElementById("searchInput").value = "";
-            ["fil-zone", "fil-region", "fil-district", "fil-branch", "fil-trainer"].forEach(
+            ["fil-zone", "fil-region", "fil-district", "fil-branch", "fil-trainer", "fil-trainer-id"].forEach(
               function (s) {
                 document.getElementById(s).value = "";
               },
