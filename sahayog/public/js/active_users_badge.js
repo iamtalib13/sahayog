@@ -169,6 +169,51 @@
       transition: all 0.3s ease;
     }
     
+    .sahayog-au-drishti-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      display: inline-flex;
+      align-items: center;
+      color: #0f766e;
+      background-color: #f0fdfa;
+      border: 1px solid #ccfbf1;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    
+    .sahayog-au-drishti-badge:hover {
+      background-color: #ccfbf1;
+      border-color: #99f6e4;
+    }
+    
+    .sahayog-au-tab-btn.active {
+      background: #ffffff !important;
+      color: #0f172a !important;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08) !important;
+    }
+    
+    .sahayog-au-live-pill {
+      font-size: 9px;
+      font-weight: 700;
+      color: #047857;
+      background: #dcfce7;
+      padding: 1px 5px;
+      border-radius: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+    }
+    
+    .sahayog-au-live-dot {
+      width: 4px;
+      height: 4px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: sahayog-au-pulse-anim 1.8s infinite;
+    }
+    
     .sahayog-au-body-list {
       max-height: 280px;
       overflow-y: auto;
@@ -299,6 +344,10 @@
       : name[0].toUpperCase();
   }
 
+  let activeTab = "desk";
+  let cachedDeskData = null;
+  let cachedDrishtiData = null;
+
   // Setup Navbar Badge
   function setupActiveUsersBadge() {
     const checkInterval = setInterval(() => {
@@ -329,14 +378,22 @@
         <div class="dropdown-menu sahayog-au-dropdown-menu dropdown-menu-right" role="menu">
           <div class="sahayog-au-header">
             <span class="sahayog-au-header-title">Online Users</span>
-            <div style="display: flex; gap: 6px; align-items: center;">
+            <div style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap; justify-content: flex-end;">
               <span class="sahayog-au-header-dot" id="active-users-header-dot">0 Online</span>
               <span class="sahayog-au-cpu-badge low" id="server-status-cpu-badge">CPU: 0%</span>
-              <span class="sahayog-au-today-badge" id="server-status-today-badge">Today: 0</span>
+              <span class="sahayog-au-today-badge" id="server-status-today-badge" title="Unique Desk Logins Today">Desk: 0</span>
+              <span class="sahayog-au-drishti-badge" id="server-status-drishti-badge" title="Drishti Dashboard Visitors Today" style="display: none;">Drishti: 0</span>
             </div>
+          </div>
+          <div class="sahayog-au-tabs" style="display: flex; gap: 4px; margin-bottom: 10px; background: #f1f5f9; padding: 2px; border-radius: 6px;">
+            <button type="button" class="sahayog-au-tab-btn active" data-tab="desk" style="flex: 1; border: none; background: #fff; padding: 4px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; color: #1e293b; box-shadow: 0 1px 2px rgba(0,0,0,0.05); cursor: pointer; transition: all 0.15s ease;">Desk Users (<span id="au-tab-desk-count">0</span>)</button>
+            <button type="button" class="sahayog-au-tab-btn" data-tab="drishti" style="flex: 1; border: none; background: transparent; padding: 4px 6px; border-radius: 4px; font-size: 11px; font-weight: 600; color: #64748b; cursor: pointer; transition: all 0.15s ease;">Drishti Page (<span id="au-tab-drishti-count">0</span>)</button>
           </div>
           <div class="sahayog-au-body-list" id="active-users-body-list">
             <div class="text-center text-muted py-3" style="font-size: 12px;">Loading active users...</div>
+          </div>
+          <div id="sahayog-au-drishti-footer" style="display: none; padding-top: 8px; margin-top: 8px; border-top: 1px solid #e2e8f0; text-align: center;">
+            <a href="/app/sahayog_dashboard" style="font-size: 11px; font-weight: 600; color: #417d81; text-decoration: none;">Open Drishti Dashboard ↗</a>
           </div>
         </div>
       </li>
@@ -349,7 +406,133 @@
       navbarNav.insertAdjacentHTML("beforeend", badgeHTML);
     }
 
-    $(document).on("show.bs.dropdown", ".dropdown-active-users", () => fetchActiveUsers());
+    $(document).on("show.bs.dropdown", ".dropdown-active-users", () => {
+      // If currently on sahayog_dashboard page, default or highlight drishti
+      if (window.location.pathname.includes("sahayog_dashboard")) {
+        activeTab = "drishti";
+        $(".sahayog-au-tab-btn").removeClass("active").css({ background: "transparent", color: "#64748b" });
+        $('.sahayog-au-tab-btn[data-tab="drishti"]').addClass("active").css({ background: "#ffffff", color: "#0f172a" });
+        $("#sahayog-au-drishti-footer").show();
+      }
+      fetchActiveUsers();
+      if (activeTab === "drishti") {
+        fetchDrishtiVisitors();
+      }
+    });
+
+    $(document).on("click", ".sahayog-au-tab-btn", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const tab = $(this).data("tab");
+      switchTab(tab);
+    });
+
+    $(document).on("click", "#server-status-drishti-badge", function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      switchTab("drishti");
+    });
+  }
+
+  function switchTab(tab) {
+    activeTab = tab;
+    $(".sahayog-au-tab-btn").removeClass("active").css({ background: "transparent", color: "#64748b" });
+    $(`.sahayog-au-tab-btn[data-tab="${tab}"]`).addClass("active").css({ background: "#ffffff", color: "#0f172a" });
+
+    if (tab === "desk") {
+      $("#sahayog-au-drishti-footer").hide();
+      if (cachedDeskData) {
+        renderDeskUsers(cachedDeskData.users, cachedDeskData.has_cxo_access);
+      } else {
+        fetchActiveUsers();
+      }
+    } else if (tab === "drishti") {
+      $("#sahayog-au-drishti-footer").show();
+      fetchDrishtiVisitors();
+    }
+  }
+
+  function fetchDrishtiVisitors() {
+    const bodyList = document.getElementById("active-users-body-list");
+    if (bodyList && !cachedDrishtiData) {
+      bodyList.innerHTML = '<div class="text-center text-muted py-3" style="font-size: 12px;">Loading Drishti visitors...</div>';
+    }
+    frappe.call({
+      method: "sahayog.api.custom_api.get_page_visitors",
+      args: { page: "sahayog_dashboard" },
+      callback: (r) => {
+        if (r.message && r.message.status === "success") {
+          cachedDrishtiData = r.message;
+          const todayCount = r.message.today_visitors_count || 0;
+          const liveCount = r.message.live_viewers_count || 0;
+          $("#au-tab-drishti-count").text(todayCount);
+          const drishtiBadge = document.getElementById("server-status-drishti-badge");
+          if (drishtiBadge) {
+            drishtiBadge.innerText = `👁️ Drishti: ${todayCount}`;
+            drishtiBadge.title = `Drishti Dashboard: ${todayCount} visited today (${liveCount} live now)`;
+            drishtiBadge.style.display = "inline-flex";
+          }
+          if (activeTab === "drishti") {
+            renderDrishtiVisitors(r.message);
+          }
+        }
+      }
+    });
+  }
+
+  function renderDrishtiVisitors(data) {
+    const bodyList = document.getElementById("active-users-body-list");
+    if (!bodyList) return;
+
+    if (!data.has_cxo_access) {
+      bodyList.innerHTML = `
+        <div class="sahayog-au-empty-state" style="padding: 24px 16px; text-align: center;">
+          <svg class="es-icon icon-md mb-2" style="width: 24px; height: 24px; stroke: var(--text-muted, #64748b); fill: none;" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-color, #1e293b);">Access Restricted</div>
+          <div style="font-size: 10.5px; color: var(--text-muted, #64748b); margin-top: 4px; line-height: 1.4;">Only CXO users can view individual visitor details. Total: ${data.today_visitors_count || 0} visited today (${data.live_viewers_count || 0} live).</div>
+        </div>
+      `;
+      return;
+    }
+
+    const visitors = data.visitors || [];
+    if (!visitors.length) {
+      bodyList.innerHTML = `
+        <div class="sahayog-au-empty-state">
+          <div style="font-size: 12px;">No visitors on Drishti today yet</div>
+        </div>
+      `;
+      return;
+    }
+
+    let listHTML = "";
+    visitors.forEach((user) => {
+      const initials = getInitials(user.full_name || user.user);
+      const avatarColor = getAvatarColor(user.user || user.full_name);
+      const roleText = [user.designation, user.department].filter(Boolean).join(" • ") || "Drishti Viewer";
+      listHTML += `
+        <div class="sahayog-au-item" title="First: ${user.first_visit || 'N/A'}, Last: ${user.last_visit || 'N/A'}">
+          <div class="sahayog-au-avatar" style="background-color: ${avatarColor};">
+            ${initials}
+            ${user.is_live ? '<span class="sahayog-au-avatar-indicator"></span>' : ''}
+          </div>
+          <div class="sahayog-au-info">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <span class="sahayog-au-name">${user.full_name || user.user}</span>
+              ${user.is_live
+                ? '<span class="sahayog-au-live-pill"><span class="sahayog-au-live-dot"></span>Live</span>'
+                : `<span style="font-size: 9.5px; color: #94a3b8;">${user.last_visit || ''}</span>`}
+            </div>
+            <span class="sahayog-au-email" title="${roleText}">${roleText}</span>
+          </div>
+        </div>
+      `;
+    });
+
+    bodyList.innerHTML = listHTML;
   }
 
   // Fetch active users list and CPU usage
@@ -358,12 +541,15 @@
       method: "sahayog.api.custom_api.get_currently_logged_in_users",
       callback: (r) => {
         if (r.message && r.message.status === "success") {
+          cachedDeskData = r.message;
           updateUI(
             r.message.total_logged_in_users,
             r.message.users,
             r.message.has_cxo_access,
             r.message.cpu_usage,
-            r.message.today_unique_users
+            r.message.today_unique_users,
+            r.message.drishti_today_visitors,
+            r.message.drishti_live_viewers
           );
         }
       },
@@ -372,12 +558,12 @@
   }
 
   // Update UI Elements with scoped updates
-  function updateUI(count, users, hasCxoAccess, cpuUsage = 0, todayUniqueUsers = 0) {
+  function updateUI(count, users, hasCxoAccess, cpuUsage = 0, todayUniqueUsers = 0, drishtiTodayVisitors = 0, drishtiLiveViewers = 0) {
     const badge = document.getElementById("active-users-count-badge");
     const headerDot = document.getElementById("active-users-header-dot");
-    const bodyList = document.getElementById("active-users-body-list");
     const cpuBadge = document.getElementById("server-status-cpu-badge");
     const todayBadge = document.getElementById("server-status-today-badge");
+    const drishtiBadge = document.getElementById("server-status-drishti-badge");
 
     if (badge) {
       badge.innerText = count;
@@ -385,11 +571,14 @@
     }
     if (headerDot) headerDot.innerText = `${count} Online`;
 
+    $("#au-tab-desk-count").text(count);
+    $("#au-tab-drishti-count").text(drishtiTodayVisitors);
+
     // Update CPU Badge as rounded integer
     if (cpuBadge) {
       const roundedCpu = Math.round(cpuUsage);
       cpuBadge.innerText = `CPU: ${roundedCpu}%`;
-      cpuBadge.className = "sahayog-au-cpu-badge"; // Reset classes
+      cpuBadge.className = "sahayog-au-cpu-badge";
 
       if (roundedCpu < 60) {
         cpuBadge.classList.add("low");
@@ -401,9 +590,22 @@
     }
 
     if (todayBadge) {
-      todayBadge.innerText = `Today: ${todayUniqueUsers}`;
+      todayBadge.innerText = `Desk: ${todayUniqueUsers}`;
     }
 
+    if (drishtiBadge) {
+      drishtiBadge.innerText = `👁️ Drishti: ${drishtiTodayVisitors || 0}`;
+      drishtiBadge.title = `Drishti Dashboard: ${drishtiTodayVisitors || 0} visited today (${drishtiLiveViewers || 0} live now)`;
+      drishtiBadge.style.display = "inline-flex";
+    }
+
+    if (activeTab === "desk") {
+      renderDeskUsers(users, hasCxoAccess);
+    }
+  }
+
+  function renderDeskUsers(users, hasCxoAccess) {
+    const bodyList = document.getElementById("active-users-body-list");
     if (!bodyList) return;
 
     // Restricted access handling
@@ -460,6 +662,48 @@
     bodyList.innerHTML = listHTML;
   }
 
+  // Track Drishti Dashboard visit and live heartbeat
+  let drishtiHeartbeatInterval = null;
+
+  function handleDrishtiTracking() {
+    const isDrishti = (frappe.get_route_str && frappe.get_route_str().includes("sahayog_dashboard")) ||
+                      (window.location.pathname.includes("sahayog_dashboard"));
+
+    if (isDrishti) {
+      if (!drishtiHeartbeatInterval) {
+        frappe.call({
+          method: "sahayog.api.custom_api.record_page_visit",
+          args: { page: "sahayog_dashboard" },
+          silent: true
+        });
+
+        drishtiHeartbeatInterval = setInterval(() => {
+          frappe.call({
+            method: "sahayog.api.custom_api.ping_page_heartbeat",
+            args: { page: "sahayog_dashboard" },
+            silent: true
+          });
+        }, 30000);
+      }
+    } else if (drishtiHeartbeatInterval) {
+      clearInterval(drishtiHeartbeatInterval);
+      drishtiHeartbeatInterval = null;
+      frappe.call({
+        method: "sahayog.api.custom_api.leave_page",
+        args: { page: "sahayog_dashboard" },
+        silent: true
+      });
+    }
+  }
+
   // Initialize
-  $(document).ready(() => setupActiveUsersBadge());
+  $(document).ready(() => {
+    setupActiveUsersBadge();
+    handleDrishtiTracking();
+    $(window).on("hashchange", handleDrishtiTracking);
+    if (frappe.router) {
+      frappe.router.on("change", handleDrishtiTracking);
+    }
+  });
 })();
+
