@@ -4967,12 +4967,8 @@
                 autocomplete="off"
               />
             </div>
-            <select class="field-select" id="tr-status">
-              <option value="">All Status</option>
-              <option value="upcoming">Upcoming</option>
-              <option value="inprogress">In Progress</option>
-              <option value="completed">Completed</option>
-              <option value="pending">Pending</option>
+            <select class="field-select" id="tr-trainer">
+              <option value="">All Trainers</option>
             </select>
             <select class="field-select" id="tr-zone">
               <option value="">All Zones</option>
@@ -11979,6 +11975,7 @@
         var trFilters = {
           search: "",
           status: "",
+          trainer: "",
           zone: "",
           region: "",
           district: "",
@@ -12061,6 +12058,8 @@
                 monEl.value = nowMon;
                 trFilters.month = nowMon;
               }
+              if (typeof fillTrTrainerOptions === "function")
+                fillTrTrainerOptions();
               renderTrainings();
             })
             .catch(function (err) {
@@ -12125,6 +12124,7 @@
               if (f.district && ev.district !== f.district) return false;
               if (f.branch && ev.branch !== f.branch) return false;
             }
+            if (f.trainer && (ev.trainer || "") !== f.trainer) return false;
             if (f.month) {
               var evKey = (ev.from_date || ev.date || "").slice(0, 7);
               if (evKey !== f.month) return false;
@@ -12479,6 +12479,26 @@
         }
 
         /* --- filter handlers --- */
+        /* Trainer options from loaded data (client-side filter). */
+        function fillTrTrainerOptions() {
+          var seen = {},
+            list = [];
+          [state.trainingsList, state.calEvents].forEach(function (src) {
+            (src || []).forEach(function (ev) {
+              var t = ev.trainer || "";
+              if (t && !seen[t]) {
+                seen[t] = 1;
+                list.push(t);
+              }
+            });
+          });
+          list.sort();
+          var cur = trFilters.trainer || "";
+          fillSelect("tr-trainer", list, "All Trainers");
+          if (cur && list.indexOf(cur) === -1) trFilters.trainer = "";
+          var el = document.getElementById("tr-trainer");
+          if (el) el.value = trFilters.trainer || "";
+        }
         function setupTrFilters() {
           function onChange(key, id) {
             var el = document.getElementById(id);
@@ -12500,7 +12520,7 @@
           }
 
           onInput("search", "tr-search");
-          onChange("status", "tr-status");
+          onChange("trainer", "tr-trainer");
           onChange("zone", "tr-zone");
           onChange("region", "tr-region");
           onChange("district", "tr-district");
@@ -12514,6 +12534,7 @@
               trFilters = {
                 search: "",
                 status: "",
+                trainer: "",
                 zone: "",
                 region: "",
                 district: "",
@@ -12524,7 +12545,7 @@
               trPage.current = 1;
               [
                 "tr-search",
-                "tr-status",
+                "tr-trainer",
                 "tr-zone",
                 "tr-region",
                 "tr-district",
