@@ -8679,7 +8679,12 @@
             return;
           }
           var expChanged = expEl ? expVal !== (ev.number_of_participants || 0) : false;
-          if (!isDoneSave && (scheduleChanged || expChanged)) {
+          /* Geography (branch rows incl. participant auto-adds) was shown in
+             the modal but never saved — detect and persist it here. */
+          var beforeGeo = ((ev.geographies || []).map(function (g) { return g.branch || ""; }).filter(Boolean).sort().join("|"));
+          var afterGeo = ((state.selectedGeographies || []).map(function (g) { return (g.branch || "").trim(); }).filter(Boolean).sort().join("|"));
+          var geoChanged = beforeGeo !== afterGeo;
+          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged)) {
             if (!fromDate) {
               showToast("From Date is required");
               return;
@@ -8731,6 +8736,7 @@
                 training_type: trainingType || null,
                 training_location: trainingLocation || null,
                 number_of_participants: expChanged ? expVal : null,
+                geographies: geoChanged ? JSON.stringify(state.selectedGeographies) : null,
               }).then(function () {
                 ev.from_date = fromDate;
                 ev.to_date = toDate;
@@ -8740,6 +8746,8 @@
                 ev.training_type = trainingType;
                 ev.training_location = trainingLocation;
                 if (expChanged) ev.number_of_participants = expVal;
+                /* ev.geographies refreshes from the get_training_details
+                   refetch after save — no manual merge needed. */
               }),
             );
           }
