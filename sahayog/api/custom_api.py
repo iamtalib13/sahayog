@@ -564,7 +564,7 @@ def get_page_visitors(page="sahayog_dashboard"):
 
     is_cxo = has_cxo_access(user)
 
-    # Query Activity Log DocType for today's visits
+    # Query Activity Log DocType for today's visits with multi-field fallback join to Employee and Sahayog Branch
     rows = frappe.db.sql("""
         SELECT 
             a.user,
@@ -575,21 +575,33 @@ def get_page_visitors(page="sahayog_dashboard"):
             u.user_image,
             e.designation,
             e.department,
-            e.branch,
-            e.custom_zone
+            COALESCE(NULLIF(e.branch, ''), NULLIF(sb.branch, '')) AS branch,
+            COALESCE(NULLIF(e.custom_zone, ''), NULLIF(sb.zone, '')) AS custom_zone
         FROM 
             `tabActivity Log` a
         LEFT JOIN 
             `tabUser` u ON a.user = u.name
         LEFT JOIN 
-            `tabEmployee` e ON a.user = e.user_id
+            `tabEmployee` e ON (
+                e.user_id = a.user 
+                OR e.company_email = a.user 
+                OR e.personal_email = a.user 
+                OR e.employee_number = a.user
+            )
+        LEFT JOIN 
+            `tabSahayog Branch` sb ON (
+                sb.name = e.sahayog_branch 
+                OR sb.sol_id = e.sol_id 
+                OR sb.name = e.branch 
+                OR sb.branch = e.branch
+            )
         WHERE 
             a.reference_doctype = 'Page'
             AND a.reference_name = %s
             AND a.creation >= %s
             AND a.user NOT IN ('Guest', 'Administrator')
         GROUP BY 
-            a.user, u.full_name, a.full_name, u.user_image, e.designation, e.department, e.branch, e.custom_zone
+            a.user, u.full_name, a.full_name, u.user_image, e.designation, e.department, e.branch, sb.branch, e.custom_zone, sb.zone
         ORDER BY 
             last_visit_dt DESC
     """, (page, start_of_day), as_dict=True)
@@ -604,6 +616,27 @@ def get_page_visitors(page="sahayog_dashboard"):
             return f"Zone-{m.group()}"
         return s.title() if s else "Unassigned"
 
+    def _resolve_emp_info(uid):
+        if not uid or uid in ("Guest", "Administrator"):
+            return {}
+        # Try direct user_id match
+        emp = frappe.db.sql("""
+            SELECT 
+                e.designation, e.department, 
+                COALESCE(NULLIF(e.branch, ''), NULLIF(sb.branch, '')) AS branch,
+                COALESCE(NULLIF(e.custom_zone, ''), NULLIF(sb.zone, '')) AS custom_zone
+            FROM `tabEmployee` e
+            LEFT JOIN `tabSahayog Branch` sb ON (
+                sb.name = e.sahayog_branch 
+                OR sb.sol_id = e.sol_id 
+                OR sb.name = e.branch 
+                OR sb.branch = e.branch
+            )
+            WHERE e.user_id = %s OR e.company_email = %s OR e.personal_email = %s OR e.employee_number = %s
+            LIMIT 1
+        """, (uid, uid, uid, uid), as_dict=True)
+        return emp[0] if emp else {}
+
     visitors_map = {}
     dept_counts = {}
     zone_counts = {}
@@ -613,12 +646,19 @@ def get_page_visitors(page="sahayog_dashboard"):
         if not u_id or u_id in ("Guest", "Administrator"):
             continue
 
-        dept = r.get("department") or "Other"
-        dept_counts[dept] = dept_counts.get(dept, 0) + 1
-
         raw_zone = r.get("custom_zone")
+        if not raw_zone:
+            fallback = _resolve_emp_info(u_id)
+            raw_zone = fallback.get("custom_zone")
+            if not r.get("designation"): r["designation"] = fallback.get("designation")
+            if not r.get("department"): r["department"] = fallback.get("department")
+            if not r.get("branch"): r["branch"] = fallback.get("branch")
+
         norm_zone = _normalize_zone(raw_zone)
         zone_counts[norm_zone] = zone_counts.get(norm_zone, 0) + 1
+
+        dept = r.get("department") or "Other"
+        dept_counts[dept] = dept_counts.get(dept, 0) + 1
 
         first_v = frappe.utils.format_datetime(r.get("first_visit_dt"), "hh:mm a") if r.get("first_visit_dt") else ""
         last_v = frappe.utils.format_datetime(r.get("last_visit_dt"), "hh:mm a") if r.get("last_visit_dt") else ""
@@ -642,7 +682,7 @@ def get_page_visitors(page="sahayog_dashboard"):
     for live_u in live_dict.keys():
         if live_u not in visitors_map and live_u not in ("Guest", "Administrator"):
             u_info = frappe.db.get_value("User", live_u, ["full_name", "user_image"], as_dict=True) or {}
-            e_info = frappe.db.get_value("Employee", {"user_id": live_u}, ["designation", "department", "branch", "custom_zone"], as_dict=True) or {}
+            e_info = _resolve_emp_info(live_u)
             dept = e_info.get("department") or "Other"
             dept_counts[dept] = dept_counts.get(dept, 0) + 1
             raw_zone = e_info.get("custom_zone")
