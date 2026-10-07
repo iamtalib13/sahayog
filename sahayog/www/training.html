@@ -6323,6 +6323,23 @@
           );
         }
 
+        /* Legacy `region` may be one region, a comma list, or "All"
+           (multi-region training) — match any list position or the wildcard. */
+        function regionMatches(stored, wanted) {
+          if (!wanted) return true;
+          var toks = String(stored || "")
+            .split(",")
+            .map(function (t) {
+              return t.trim();
+            })
+            .filter(Boolean);
+          if (!toks.length) return false;
+          var lw = String(wanted).trim().toLowerCase();
+          return toks.some(function (t) {
+            var tl = t.toLowerCase();
+            return tl === "all" || tl === lw;
+          });
+        }
         function filteredEvents() {
           var f = state.calFilters;
           var q = (state.search || "").trim().toLowerCase();
@@ -6359,7 +6376,7 @@
                 return false;
             } else {
               if (f.zone && ev.zone !== f.zone) return false;
-              if (f.region && ev.region !== f.region) return false;
+              if (f.region && !regionMatches(ev.region, f.region)) return false;
               if (f.district && ev.district !== f.district) return false;
             if (
               f.branch &&
@@ -6472,6 +6489,33 @@
             el.appendChild(op);
           });
         }
+        /* Branch options show code + name ("1000 - GONDIA-HO"); the option
+           value stays the branch code so all filters keep working. */
+        function branchLabel(code) {
+          var b = (state.branchPick || []).find(function (x) {
+            return x.name === code;
+          });
+          if (b && b.branch && b.branch !== code)
+            return code + " - " + b.branch;
+          return code;
+        }
+        function fillBranchSelect(id, codes, placeholder) {
+          var el = document.getElementById(id);
+          if (!el) return;
+          var cur = el.value;
+          el.innerHTML = "";
+          var o = document.createElement("option");
+          o.value = "";
+          o.textContent = placeholder;
+          el.appendChild(o);
+          (codes || []).forEach(function (c) {
+            var op = document.createElement("option");
+            op.value = c;
+            op.textContent = branchLabel(c);
+            el.appendChild(op);
+          });
+          el.value = cur || "";
+        }
 
         function loadGeo() {
           return api("get_geo_options")
@@ -6483,7 +6527,7 @@
               fillSelect("fil-zone", zones, "All Zones");
               fillSelect("fil-region", regions, "All Regions");
               fillSelect("fil-district", districts, "All Districts");
-              fillSelect("fil-branch", branches, "All Branches");
+              fillBranchSelect("fil-branch", branches, "All Branches");
               fillSelect("tr-zone", zones, "All Zones");
               fillSelect("tr-region", regions, "All Regions");
               fillSelect("tr-district", districts, "All Districts");
@@ -6509,6 +6553,12 @@
               state.allEmployees = Array.isArray(res[0]) ? res[0] : [];
               state.branchPick = Array.isArray(res[1]) ? res[1] : [];
               state.allAgents = Array.isArray(res[2]) ? res[2] : [];
+              /* Branch names arrived after the first fill — repaint code-only
+                 dropdowns (Trainings + Reports tabs) as "code - name". */
+              if (state.geoMasters) {
+                fillBranchSelect("tr-branch", state.geoMasters.branches, "All Branches");
+                fillBranchSelect("emp-branch", state.geoMasters.branches, "All Branches");
+              }
               /* Masters arrived — narrow district/branch options to the
                  current zone/region (keeps still-valid selections). */
               if (typeof cascadeGeo === "function") cascadeGeo();
@@ -6678,7 +6728,7 @@
               return b.name;
             }),
           );
-          fillSelect("fil-branch", branches, "All Branches");
+          fillBranchSelect("fil-branch", branches, "All Branches");
           if (f.branch && branches.indexOf(f.branch) === -1) f.branch = "";
           document.getElementById("fil-branch").value = f.branch || "";
         }
@@ -6687,7 +6737,7 @@
           fillSelect("fil-zone", m.zones || [], "All Zones");
           fillSelect("fil-region", m.regions || [], "All Regions");
           fillSelect("fil-district", m.districts || [], "All Districts");
-          fillSelect("fil-branch", m.branches || [], "All Branches");
+          fillBranchSelect("fil-branch", m.branches || [], "All Branches");
         }
         /* Trainer options come from the loaded month data (client-side
            filter, so the list is always complete). Invalid selections reset. */
@@ -12141,7 +12191,7 @@
                 return false;
             } else {
               if (f.zone && ev.zone !== f.zone) return false;
-              if (f.region && ev.region !== f.region) return false;
+              if (f.region && !regionMatches(ev.region, f.region)) return false;
               if (f.district && ev.district !== f.district) return false;
               if (f.branch && ev.branch !== f.branch) return false;
             }
