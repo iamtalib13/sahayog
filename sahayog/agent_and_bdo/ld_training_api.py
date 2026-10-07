@@ -2143,49 +2143,62 @@ def get_team_training_report(
     page=None,
     page_size=None,
 ):
-    """Team-scoped training history. One row per team-member participant.
-
-    Same enrichment as the employee-wise report; defaults to the current
-    financial year-to-date when no date bounds are given.
+    """Team-scoped training report. Shows all trainings where team members
+    are the trainer — so a manager can track their team's training activity.
+    Defaults to current year (Jan 1 → Dec 31).
     """
     team_ids = _require_team_access()
 
     today_dt = frappe.utils.getdate()
     from_dt = frappe.utils.getdate(from_date) if from_date else frappe.utils.getdate(f"{today_dt.year}-01-01")
-    to_dt = frappe.utils.getdate(to_date) if to_date else today_dt
+    to_dt = frappe.utils.getdate(to_date) if to_date else frappe.utils.getdate(f"{today_dt.year}-12-31")
     if from_dt > to_dt:
         frappe.throw(_("From Date cannot be after To Date."))
 
-    placeholders = ", ".join(["%s"] * len(team_ids))
+    # Get team members' names (trainer field stores employee_name not ID)
+    team_emp_data = frappe.db.get_all(
+        "Employee",
+        filters={"name": ["in", team_ids]},
+        fields=["name", "employee_name", "sahayog_branch"],
+    )
+    team_names = [e.employee_name for e in team_emp_data if e.employee_name]
+
+    if not team_names:
+        return {"columns": TEAM_REPORT_COLUMNS, "rows": [], "total": 0}
+
+    params = {"from_dt": str(from_dt), "to_dt": str(to_dt)}
+
+    # Build trainer name keys for SQL IN clause
+    trainer_keys = []
+    for i, name in enumerate(team_names):
+        key = f"tr_{i}"
+        trainer_keys.append(f"%({key})s")
+        params[key] = name
+
     conds = [
         "t.docstatus < 2",
         "t.from_date <= %(to_dt)s",
         "COALESCE(t.to_date, t.from_date) >= %(from_dt)s",
+        f"t.trainer IN ({', '.join(trainer_keys)})",
     ]
-    params = {"from_dt": str(from_dt), "to_dt": str(to_dt)}
-    team_keys = []
-    for i, emp_id in enumerate(team_ids):
-        key = f"team_{i}"
-        team_keys.append(f"%({key})s")
-        params[key] = emp_id
-    conds.append(f"p.agent_employee IN ({', '.join(team_keys)})")
 
     q = (employee or "").strip().lower()
     if q:
-        # Search covers member (id/name) + trainer + program so reporting
-        # managers can find trainings either way (additive ORs only).
+        # q can be emp_id (from dropdown) or free text (from search box)
+        # resolve emp_id → employee_name so trainer field (which stores name) matches
+        resolved_name = frappe.db.get_value("Employee", q.upper(), "employee_name") or q
         conds.append(
-            "(LOWER(p.agent_employee) LIKE %(q)s OR LOWER(p.full_name) LIKE %(q)s "
-            "OR LOWER(t.trainer) LIKE %(q)s OR LOWER(t.training_program) LIKE %(q)s)"
+            "(LOWER(t.trainer) LIKE %(q)s OR LOWER(t.trainer) LIKE %(qn)s "
+            "OR LOWER(t.training_program) LIKE %(q)s "
+            "OR LOWER(t.training_location) LIKE %(q)s)"
         )
         params["q"] = f"%{q}%"
+        params["qn"] = f"%{resolved_name.lower()}%"
 
     where = " AND ".join(conds)
 
     base = """
         FROM `tabTraining` t
-        INNER JOIN `tabTraining Participant` p
-          ON p.parent = t.name AND p.parenttype = 'Training'
         WHERE {where}
     """.format(where=where)
 
@@ -2196,10 +2209,9 @@ def get_team_training_report(
         "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
         "t.start_time, t.end_time, t.trainer, t.training_location, "
         "t.training_delivered, t.attendance_marked, "
-        "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, t.docstatus, "
-        "p.idx, p.reference_doctype, p.agent_employee, p.full_name "
+        "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, t.docstatus "
     )
-    order_limit = " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC"
+    order_limit = " ORDER BY t.from_date ASC, t.start_time ASC"
     if page_size:
         page_params = dict(params, page_size=page_size, offset=offset)
         rows = frappe.db.sql(
@@ -2213,27 +2225,20 @@ def get_team_training_report(
     if not rows:
         return {"columns": TEAM_REPORT_COLUMNS, "rows": [], "total": 0}
 
-    emp_ids = {r.agent_employee for r in rows if r.agent_employee}
-    emp_data = _employee_master(emp_ids)
-    branch_ids = {
-        (getattr(e, "sahayog_branch", "") or "") for e in emp_data.values()
-        if getattr(e, "sahayog_branch", "")
-    }
+    # Build trainer name → employee map for enrichment
+    trainer_name_to_emp = {e.employee_name: e for e in team_emp_data if e.employee_name}
+    branch_ids = {e.sahayog_branch for e in team_emp_data if e.sahayog_branch}
     branch_meta = _branch_meta(branch_ids)
-
-    def _yn(v):
-        return "Yes" if v else "No"
 
     out = []
     seq = offset
     for r in rows:
         seq += 1
-        e = emp_data.get(r.agent_employee) if r.agent_employee else None
-        emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
+        e = trainer_name_to_emp.get(r.trainer)
+        emp_branch_code = (e.sahayog_branch or "") if e else ""
         branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
         from_str = str(r.from_date or "")[:10]
         to_str = str(r.to_date or r.from_date or "")[:10]
-        display_name = r.full_name or (e.employee_name if e else "") or r.agent_employee or ""
         status = r.status or get_training_status(_row_tag(r))
         start_fmt = _format_time(r.start_time)
         end_fmt = _format_time(r.end_time)
@@ -2244,13 +2249,13 @@ def get_team_training_report(
         branch_fallback = (
             (branch_meta_row.branch or branch_meta_row.name)
             if branch_meta_row
-            else emp_branch_code or ((e.branch or "") if e else "")
+            else emp_branch_code
         )
         out.append({
             "s_no": seq,
             "name": r.training_name,
-            "emp_id": r.agent_employee or "",
-            "employee_name": display_name,
+            "emp_id": e.name if e else "",
+            "employee_name": "",  # blank until participant is added; Members cell shows — automatically
             "from_date": from_str,
             "to_date": to_str,
             "training_date": _pretty_date_range(from_str, to_str),
