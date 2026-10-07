@@ -71,7 +71,42 @@ def _geography_matches(geos, zone=None, region=None, district=None, branch=None)
     return True
 
 
+def _region_match(stored, wanted):
+    """Region-filter match for the legacy `region` field, which may hold one
+    region, a comma-separated list ("REGION-2, REGION-3"), or "All"
+    (bulk-upload multi-region). Blank stays blank = no specific match."""
+    if not wanted:
+        return True
+    toks = [t.strip() for t in str(stored or "").split(",") if t.strip()]
+    if not toks:
+        return False
+    lw = str(wanted).strip().lower()
+    for t in toks:
+        tl = t.lower()
+        if tl == "all":
+            return True
+        if tl == lw:
+            return True
+    return False
+
+
 def _geo_sql(col, val, param_key, params):
+    if col == "region":
+        # Legacy `region` may be "All" or a comma list — match the exact value,
+        # the All wildcard, or any list position (plus multi-branch rows).
+        params[param_key] = val
+        params[param_key + "_all"] = "All"
+        params[param_key + "_start"] = f"{val}, %"
+        params[param_key + "_mid"] = f"%, {val}, %"
+        params[param_key + "_end"] = f"%, {val}"
+        return (
+            f"(t.{col} = %({param_key})s OR t.{col} = %({param_key}_all)s "
+            f"OR t.{col} LIKE %({param_key}_start)s "
+            f"OR t.{col} LIKE %({param_key}_mid)s "
+            f"OR t.{col} LIKE %({param_key}_end)s OR EXISTS "
+            f"(SELECT 1 FROM `tabTraining Geography` tg "
+            f"WHERE tg.parent = t.name AND tg.{col} = %({param_key})s))"
+        )
     params[param_key] = val
     return (
         f"(t.{col} = %({param_key})s OR EXISTS "
@@ -240,13 +275,20 @@ def _in_pref_geo(geos, legacy, scope):
         return v in scope["zones"]
 
     def _rmatch(val):
-        s = str(val or "").strip()
-        if s.lower() in ("ho", "head office", "h.o."):
-            v = "HO"
-        else:
-            d = _zdigits(s)
-            v = d if d is not None else s.lower()
-        return v in scope["regions"]
+        toks = [t.strip() for t in str(val or "").split(",") if t.strip()]
+        if not toks:
+            return False
+        for tok in toks:
+            if tok.lower() == "all":
+                return True
+            if tok.lower() in ("ho", "head office", "h.o."):
+                v = "HO"
+            else:
+                d = _zdigits(tok)
+                v = d if d is not None else tok.lower()
+            if v in scope["regions"]:
+                return True
+        return False
 
     candidates = []
     for g in geos or []:
@@ -479,7 +521,7 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             else:
                 if zone and r.zone != zone:
                     continue
-                if region and r.region != region:
+                if region and not _region_match(r.region, region):
                     continue
                 if district and r.district != district:
                     continue
@@ -586,7 +628,7 @@ def get_training_list(
             else:
                 if zone and r.zone != zone:
                     continue
-                if region and r.region != region:
+                if region and not _region_match(r.region, region):
                     continue
                 if district and r.district != district:
                     continue
@@ -736,7 +778,7 @@ def get_status_overview(year, month, zone=None, region=None, district=None, bran
             else:
                 if zone and r.zone != zone:
                     continue
-                if region and r.region != region:
+                if region and not _region_match(r.region, region):
                     continue
                 if district and r.district != district:
                     continue
@@ -2470,19 +2512,44 @@ def bulk_upload_training(month=None):
             return ""
 
         def parse_training_date(raw):
-            # Supports DD/MM/YY, DD/MM/YYYY, YYYY-MM-DD
-            if "/" in raw:
-                parts = raw.split("/")
-                if len(parts) == 3:
-                    dd = parts[0].zfill(2)
-                    mm = parts[1].zfill(2)
-                    yy = parts[2]
-                    if len(yy) == 2:
-                        yy = "20" + yy
-                    dated = f"{yy}-{mm}-{dd}"
-                    frappe.utils.getdate(dated)  # validate
-                    return dated
-            return str(frappe.utils.getdate(raw))
+            # Supports DD/MM/YYYY, DD-MM-YYYY, DD.MM.YYYY (and 2-digit year),
+            # YYYY-MM-DD, and Excel datetime strings ("2026-10-03 00:00:00").
+            # NOTE: frappe.utils.getdate("03-10-2026") parses as MM-DD-YYYY
+            # (2026-03-10), so dash/dot dates must be handled explicitly here
+            # and never fall through to getdate().
+            s = str(raw or "").strip()
+            if not s:
+                raise ValueError("empty date")
+            # Excel/CSV datetime strings: keep only the date part
+            date_part = re.split(r"[T ]+", s, maxsplit=1)[0].strip()
+            norm = re.sub(r"[.\-]+", "/", date_part)
+            norm = re.sub(r"\s+/", "/", norm)
+            norm = re.sub(r"/\s+", "/", norm)
+            norm = norm.strip("/")
+            m_iso = re.match(r"^(\d{4})/(\d{1,2})/(\d{1,2})$", norm)
+            if m_iso:
+                dated = f"{m_iso.group(1)}-{m_iso.group(2).zfill(2)}-{m_iso.group(3).zfill(2)}"
+                frappe.utils.getdate(dated)  # validate
+                return dated
+            m_dmy = re.match(r"^(\d{1,2})/(\d{1,2})/(\d{2,4})$", norm)
+            if m_dmy:
+                dd = m_dmy.group(1).zfill(2)
+                mm = m_dmy.group(2).zfill(2)
+                yy = m_dmy.group(3)
+                if len(yy) == 2:
+                    yy = "20" + yy
+                dated = f"{yy}-{mm}-{dd}"
+                frappe.utils.getdate(dated)  # validate
+                return dated
+            # ISO with dashes (unambiguous) — validate strictly
+            m_iso_dash = re.match(r"^(\d{4})-(\d{1,2})-(\d{1,2})$", date_part)
+            if m_iso_dash:
+                dated = f"{m_iso_dash.group(1)}-{m_iso_dash.group(2).zfill(2)}-{m_iso_dash.group(3).zfill(2)}"
+                frappe.utils.getdate(dated)  # validate
+                return dated
+            raise ValueError(
+                f"unsupported date format '{raw}'. Use DD/MM/YYYY or YYYY-MM-DD"
+            )
 
         # Upload-month guard (modal month selector): rows outside the
         # selected month are rejected as errors, never created.
@@ -2591,23 +2658,68 @@ def bulk_upload_training(month=None):
             # is given). Sheet wins when the branch master is blank;
             # conflicts are rejected.
             branch_geo = frappe.db.get_value("Sahayog Branch", branch_code, ["zone", "region"], as_dict=True) if branch_code else None
+            # Region accepts a single region, a comma-separated list
+            # ("REGION-2, REGION-3"), or an All-variant (All / Region All /
+            # Pan India) meaning every region. All of it is stored on the ONE
+            # training — one sheet row never creates multiple trainings.
+            region_raw = get_val(row, "Region")
+            # Sheet uses many separators: comma, &, ;, /, + ("1,2&3", "1 & 3",
+            # "Region-1,2,3,4"). Normalise them all to commas first.
+            _rtmp = re.sub(r"[&;/+]", ",", str(region_raw or ""))
+            _rtmp = re.sub(r"(?i)\band\b", ",", _rtmp)
+            region_tokens = [t.strip() for t in _rtmp.split(",") if t.strip()]
+            region_all = (
+                len(region_tokens) == 1
+                and re.sub(r"\s+", "", region_tokens[0]).lower() in (
+                    "all", "allregion", "allregions", "regionall", "regionalls",
+                    "panindia", "allindia",
+                )
+            )
             zone_sheet = resolve_geo(get_val(row, "Zone"), valid_zones)
-            region_sheet = resolve_geo(get_val(row, "Region"), valid_regions)
             if get_val(row, "Zone") and zone_sheet is None:
                 errors.append(f"Row {i}: Zone '{get_val(row, 'Zone')}' not recognised (valid: {', '.join(valid_zones)})")
                 continue
-            if get_val(row, "Region") and region_sheet is None:
-                errors.append(f"Row {i}: Region '{get_val(row, 'Region')}' not recognised (valid: {', '.join(valid_regions)})")
-                continue
+            region_list = []
+            if region_all:
+                if branch_code:
+                    errors.append(f"Row {i}: Region 'All' cannot be combined with Branch '{branch_raw}' — leave Branch blank or set a specific Region")
+                    continue
+                if not zone_sheet:
+                    errors.append(f"Row {i}: Region 'All' needs a valid Zone in the Zone column (found '{get_val(row, 'Zone')}')")
+                    continue
+                region_list = ["All"]
+            elif region_tokens:
+                bad_token = None
+                for _tok in region_tokens:
+                    _rv = resolve_geo(_tok, valid_regions)
+                    if _rv is None:
+                        bad_token = _tok
+                        break
+                    if _rv not in region_list:
+                        region_list.append(_rv)
+                if bad_token is not None:
+                    errors.append(f"Row {i}: Region '{bad_token}' not recognised (valid: {', '.join(valid_regions)} or 'All')")
+                    continue
+                if branch_code:
+                    errors.append(f"Row {i}: Multiple regions cannot be combined with Branch '{branch_raw}' — leave Branch blank or set a single Region")
+                    continue
+                if zone_sheet:
+                    zone_regions = {r[0] for r in frappe.db.sql(
+                        "SELECT DISTINCT region FROM `tabSahayog Branch` "
+                        "WHERE zone = %s AND region IS NOT NULL AND region != ''", (zone_sheet,))}
+                    bad = [x for x in region_list if x not in zone_regions]
+                    if bad:
+                        errors.append(f"Row {i}: Region(s) '{', '.join(bad)}' are not in Zone '{zone_sheet}'")
+                        continue
             _bz = (branch_geo.zone or "") if branch_geo else ""
             _br = (branch_geo.region or "") if branch_geo else ""
             zone_final = zone_sheet or _bz
-            region_final = region_sheet or _br
+            region_final = ", ".join(region_list) if region_list else _br
             if zone_sheet and _bz and zone_sheet != _bz:
                 errors.append(f"Row {i}: Zone '{zone_sheet}' does not match branch '{branch_code}' (branch is in '{_bz}')")
                 continue
-            if region_sheet and _br and region_sheet != _br:
-                errors.append(f"Row {i}: Region '{region_sheet}' does not match branch '{branch_code}' (branch is in '{_br}')")
+            if len(region_list) == 1 and not region_all and _br and region_list[0] != _br:
+                errors.append(f"Row {i}: Region '{region_list[0]}' does not match branch '{branch_code}' (branch is in '{_br}')")
                 continue
             if not duration_raw:
                 duration = 1
@@ -2667,11 +2779,12 @@ def bulk_upload_training(month=None):
             from_date = t["training_date"]
             # Duration: to_date = from_date + (duration - 1)
             to_date = str(frappe.utils.add_days(from_date, t["duration"] - 1))
-            # Skip when the same program already exists on the same date
-            # (trainer may differ) — within file and in the database.
-            key = (from_date, t["program"].strip().lower())
+            # Skip when the same program already exists on the same date with
+            # the same trainer — within file and in the database. Same
+            # program/date with a different trainer is a separate training.
+            key = (from_date, t["program"].strip().lower(), t["trainer_name"].strip().lower())
             try:
-                if key in seen or frappe.db.exists("Training", {"from_date": from_date, "training_program": t["program"]}):
+                if key in seen or frappe.db.exists("Training", {"from_date": from_date, "training_program": t["program"], "trainer": t["trainer_name"]}):
                     skipped += 1
                     seen.add(key)
                     continue
