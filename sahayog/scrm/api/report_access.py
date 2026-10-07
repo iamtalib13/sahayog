@@ -872,9 +872,9 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             IFNULL(lp.product, ''),
             IFNULL(lp.product_name, ''),
             IFNULL(lp.product_amount, 0),
-            IFNULL(COALESCE(e.employee_name, e_owner.employee_name), ''),
-            IFNULL(COALESCE(e.employee_number, e_owner.employee_number), ''),
-            IFNULL(COALESCE(e.designation, e_owner.designation), ''),
+            IFNULL(COALESCE(e.employee_name, e_owner.employee_name, l.custom_employee_name), ''),
+            IFNULL(COALESCE(e.employee_number, e_owner.employee_number, l.custom_employee_id), ''),
+            IFNULL(COALESCE(e.designation, e_owner.designation, l.custom_designation), ''),
             IFNULL(l.sol_id, ''),
             IFNULL(sb.branch, ''),
             IFNULL(sb.district, ''),
@@ -883,7 +883,8 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             DATE_FORMAT(l.creation, '%d-%m-%Y %H:%i:%s') as created_on,
             DATE_FORMAT(l.modified, '%d-%m-%Y %H:%i:%s') as last_modified,
             CONCAT(TIMESTAMPDIFF(DAY, l.creation, NOW()), ' Days') as lead_age,
-            IFNULL(l.lead_owner, '')
+            IFNULL(l.lead_owner, ''),
+            IFNULL(COALESCE(e.status, e_owner.status), 'Active') as emp_status
         FROM `tabLead` l
         LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
         LEFT JOIN `tabEmployee` e ON (LOWER(e.user_id) = LOWER(l.lead_owner) OR e.employee_number = l.lead_owner)
@@ -901,7 +902,7 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
         "Product Code", "Product Name", "Amount",
         "Employee Name", "Employee ID", "Designation",
         "SOL ID", "Branch", "District", "Region", "Zone",
-        "Created On", "Last Modified", "Lead Age", "Owner Email"
+        "Created On", "Last Modified", "Lead Age", "Owner Email", "Employee Status"
     ]
 
     new_leads_map = {}
@@ -1162,7 +1163,7 @@ def download_fast_lead_report(from_date, to_date, filters=None):
         "Product Code", "Product Name", "Amount",
         "Employee Name", "Employee ID", "Designation",
         "SOL ID", "Branch", "District", "Region", "Zone",
-        "Created On", "Last Modified", "Lead Age", "Owner Email"
+        "Created On", "Last Modified", "Lead Age", "Owner Email", "Employee Status"
     ]
 
     if target_path and os.path.exists(target_path):
@@ -1271,7 +1272,8 @@ def download_fast_lead_report(from_date, to_date, filters=None):
                 created_on_str,
                 last_modified_str,
                 lead_age_str,
-                r.get("lead_owner") or ""
+                r.get("lead_owner") or "",
+                "Active"
             ]
             matching_rows.append(row)
 
