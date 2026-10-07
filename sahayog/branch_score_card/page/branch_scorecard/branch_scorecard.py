@@ -275,6 +275,16 @@ def get_visible_branch_records():
 def get_branch_scorecard_access():
     roles = frappe.get_roles()
 
+    employee = frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        ["employee_name", "employee_number"],
+        as_dict=True,
+    ) or {}
+
+    employee_name = employee.get("employee_name") or frappe.session.user
+    employee_number = employee.get("employee_number") or "-"
+
     # Branch Scorecard Editor has existing unrestricted access
     if "Branch Scorecard Editor" in roles:
         return {
@@ -284,6 +294,9 @@ def get_branch_scorecard_access():
             "has_zone_access": False,
             "has_region_access": False,
             "has_sol_access": False,
+            "user_id": frappe.session.user,
+            "employee_name": employee_name,
+            "employee_number": employee_number,
         }
 
     preference_name = frappe.db.get_value(
@@ -303,6 +316,9 @@ def get_branch_scorecard_access():
             "has_zone_access": False,
             "has_region_access": False,
             "has_sol_access": False,
+            "user_id": frappe.session.user,
+            "employee_name": employee_name,
+            "employee_number": employee_number,
         }
 
     report_preference = frappe.get_doc(
@@ -338,6 +354,9 @@ def get_branch_scorecard_access():
         "has_zone_access": has_zone_access,
         "has_region_access": has_region_access,
         "has_sol_access": has_sol_access,
+        "user_id": frappe.session.user,
+        "employee_name": employee_name,
+        "employee_number": employee_number,
     }
 
 
