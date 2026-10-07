@@ -529,7 +529,10 @@
         background: #f8fafc;
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
-        flex-wrap: wrap;
+        /* Single row always — scrolls horizontally on narrow screens
+           instead of pushing Trainer ID / Reset to the next line. */
+        flex-wrap: nowrap;
+        overflow-x: auto;
       }
       .filter-group {
         display: flex;
@@ -552,9 +555,16 @@
       .filters-bar .filter-group select {
         width: auto;
         min-width: 118px;
+        /* Long "code - name" branch labels must not stretch the row */
+        max-width: 168px;
+        text-overflow: ellipsis;
         height: 26px;
         font-size: 12px;
         padding: 0 7px;
+      }
+      .filters-bar #fil-trainer-id {
+        width: 92px;
+        min-width: 0;
       }
       .filters-bar .btn-reset {
         margin-left: 4px;
@@ -579,18 +589,35 @@
         background: transparent;
         color: var(--accent-ink);
       }
-      /* Your-access scope note in the calendar filters bar */
+      /* Access-scope pill in the header (next to search) — shows the user's
+         Report Preference geography at a glance; full detail in tooltip. */
       .access-note {
         display: inline-flex;
         align-items: center;
+        gap: 6px;
         font-size: 11.5px;
         font-weight: 600;
         color: var(--accent-ink);
         background: var(--accent-soft);
+        border: 1px solid #d7defc;
         border-radius: 999px;
-        padding: 3px 10px;
+        padding: 4px 11px;
         white-space: nowrap;
-        margin-left: 2px;
+        flex-shrink: 1;
+        min-width: 0;
+        max-width: 36vw;
+        cursor: default;
+      }
+      .access-note svg {
+        width: 13px;
+        height: 13px;
+        flex-shrink: 0;
+      }
+      .access-note .an-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
       }
 
       /* Toolbar */
@@ -4843,6 +4870,19 @@
           </svg>
           <input type="text" id="searchInput" placeholder="Search trainings" />
         </div>
+        <span class="access-note" id="accessNote" style="display: none">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span class="an-text" id="accessNoteText"></span>
+        </span>
         <div class="header-spacer"></div>
         <div class="header-right"></div>
       </header>
@@ -4884,7 +4924,13 @@
                 autocomplete="off"
               />
             </div>
-            <button class="btn-reset" id="btn-reset" title="Reset filters">
+            <button
+              class="btn-reset"
+              id="btn-reset"
+              title="Reset filters"
+              aria-label="Reset filters"
+              style="padding: 0 5px"
+            >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -4896,9 +4942,7 @@
                 <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
                 <path d="M3 3v5h5" />
               </svg>
-              Reset
             </button>
-            <span class="access-note" id="accessNote" style="display: none"></span>
           </div>
 
           <div class="cal-toolbar">
@@ -6794,9 +6838,21 @@
             else if (v.length > 1) bits.push(v.length + " " + k);
           });
           if (note) {
-            note.textContent = "Your access: " + (bits.join(" · ") || "restricted");
+            var label = "Your access: " + (bits.join(" · ") || "restricted");
+            var txt = document.getElementById("accessNoteText");
+            if (txt) txt.textContent = label;
+            else note.textContent = label;
             note.style.display = bits.length ? "inline-flex" : "none";
-            note.title = "Calendar is filtered to your Report Preference access";
+            var detail = ["zones", "regions", "districts", "branches"]
+              .map(function (k) {
+                var v = s[k] || [];
+                if (!v.length) return null;
+                var name = k.charAt(0).toUpperCase() + k.slice(1);
+                return name + ": " + (v.length <= 8 ? v.join(", ") : v.length + " selected");
+              })
+              .filter(Boolean)
+              .join("  |  ");
+            note.title = detail || "Calendar is filtered to your Report Preference access";
           }
           return true;
         }
