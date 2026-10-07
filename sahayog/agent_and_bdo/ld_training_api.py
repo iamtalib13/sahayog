@@ -419,8 +419,10 @@ def _require_team_access():
 
 @frappe.whitelist()
 def get_holidays(year, month):
-    # Holidays for current user (Sundays + Employee.holiday_list) for a month.
-    # Mirrors team_attendance._get_employee_holiday_dates logic.
+    # Holidays for current user (Sundays + state-wise holiday list) for a month.
+    # Priority: 1) Employee.holiday_list (manual override)
+    #           2) State holiday list derived from employee's branch state
+    #           3) Company default_holiday_list (last resort)
     year, month = _safe_year_month(year, month)
     last_day = calendar.monthrange(year, month)[1]
     holidays = {}
@@ -428,27 +430,55 @@ def get_holidays(year, month):
         d = frappe.utils.getdate(f"{year}-{month:02d}-{day:02d}")
         if d.weekday() == 6:
             holidays[str(d)] = "Sunday"
-    # Fetch Employee.holiday_list (as in sahayog/api/attendance.py)
-    emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["holiday_list", "company"], as_dict=True)
+
+    # State (upper-cased from Sahayog Branch) -> Holiday List name prefix
+    _STATE_PREFIX = {
+        "MAHARASHTRA": "Maharashtra",
+        "MADHYA PRADESH": "Madhya Pradesh",
+        "KARNATAKA": "Karnataka",
+        "UTTARAKHAND": "Uttarakhand",
+        "HIMACHAL PRADESH": "Himachal Pradesh",
+        "CHANDIGARH": "Chandigarh",
+        "PUDUCHERRY": "Pondicherry",
+        "JAMMU AND KASHMIR": "Jammu & Kashmir",
+    }
+
+    emp = frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        ["holiday_list", "company", "sahayog_branch"],
+        as_dict=True,
+    )
+
     holiday_list = None
     if emp:
-        holiday_list = emp.holiday_list
+        # 1. Use employee's explicitly set holiday_list
+        if emp.holiday_list:
+            holiday_list = emp.holiday_list
+
+        # 2. Try state-wise holiday list from employee's branch
+        if not holiday_list and emp.sahayog_branch:
+            try:
+                state = frappe.db.get_value("Sahayog Branch", emp.sahayog_branch, "state")
+                if state:
+                    prefix = _STATE_PREFIX.get(str(state).strip().upper())
+                    if prefix:
+                        # Try current year first, then any year for that state
+                        cand = f"{prefix} - {year}"
+                        if frappe.db.exists("Holiday List", cand):
+                            holiday_list = cand
+                        else:
+                            # Fallback to any existing list for this state
+                            holiday_list = frappe.db.get_value(
+                                "Holiday List", {"name": ["like", f"{prefix} - %"]}, "name"
+                            )
+            except Exception:
+                pass
+
+        # 3. Last resort: company default holiday list
         if not holiday_list and emp.company:
             holiday_list = frappe.db.get_value("Company", emp.company, "default_holiday_list")
-    if not holiday_list:
-        # Fallback: try user's branch state -> Holiday List "{State} - {year}"
-        try:
-            emp_branch = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "sahayog_branch")
-            if emp_branch:
-                state = frappe.db.get_value("Sahayog Branch", emp_branch, "state")
-                if state:
-                    cand = f"{state} - {year}"
-                    if frappe.db.exists("Holiday List", cand):
-                        holiday_list = cand
-                    else:
-                        holiday_list = frappe.db.get_value("Holiday List", {"holiday_list_name": ["like", f"{state} - %"]}, "name")
-        except Exception:
-            pass
+
     if holiday_list:
         rows = frappe.db.sql(
             "SELECT holiday_date, description FROM `tabHoliday` WHERE parent=%(hl)s AND holiday_date BETWEEN %(start)s AND %(end)s",
@@ -457,7 +487,7 @@ def get_holidays(year, month):
         )
         for r in rows:
             d_str = str(r.holiday_date)[:10]
-            # If already Sunday, overwrite with holiday description (more informative)
+            # Overwrite Sunday with holiday description (more informative)
             holidays[d_str] = (r.description or "Holiday").strip() if r.description else "Holiday"
     return holidays
 
