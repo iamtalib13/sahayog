@@ -419,7 +419,7 @@ def create_page_activity_log(page, user=None):
         return None
 
     try:
-        page_titles = {"sahayog_dashboard": "Drishti Dashboard", "my-crm": "My CRM"}
+        page_titles = {"sahayog_dashboard": "Drishti Dashboard", "my-crm": "My CRM", "crm-lead-report": "CRM Leads Report"}
         page_title = page_titles.get(page, page)
         full_name = frappe.utils.get_fullname(user)
 

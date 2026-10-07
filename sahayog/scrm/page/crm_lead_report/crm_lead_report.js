@@ -2256,3 +2256,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
   }).mount("#crm-app");
 };
+
+frappe.pages["crm-lead-report"].on_page_show = function () {
+  // Log every page visit into Activity Log
+  frappe.call({
+    method: "sahayog.api.custom_api.record_page_visit",
+    args: { page: "crm-lead-report" },
+    freeze: false,
+  });
+};
