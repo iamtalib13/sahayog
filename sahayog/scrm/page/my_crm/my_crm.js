@@ -11,6 +11,15 @@ frappe.pages["my-crm"].on_page_load = function (wrapper) {
   new MyCRM(wrapper);
 };
 
+frappe.pages["my-crm"].on_page_show = function () {
+  // Log every page visit into Activity Log
+  frappe.call({
+    method: "sahayog.api.custom_api.record_page_visit",
+    args: { page: "my-crm" },
+    freeze: false,
+  });
+};
+
 let _freezeStartTime = null;
 const FREEZE_MIN_DURATION = 1500;
 

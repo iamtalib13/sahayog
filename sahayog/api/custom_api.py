@@ -411,7 +411,7 @@ def get_page_summary_stats(page="sahayog_dashboard"):
 def create_page_activity_log(page, user=None):
     """
     Creates an Activity Log record for the page visit.
-    Debounces to 1 entry per user per 15 minutes to avoid duplicate log flood.
+    Logs every visit (no debounce) so each page access is tracked.
     """
     if not user:
         user = frappe.session.user
@@ -419,20 +419,8 @@ def create_page_activity_log(page, user=None):
         return None
 
     try:
-        # Check if an Activity Log was already created in the last 15 minutes
-        recent = frappe.db.sql("""
-            SELECT name FROM `tabActivity Log`
-            WHERE user = %s
-              AND reference_doctype = 'Page'
-              AND reference_name = %s
-              AND creation >= NOW() - INTERVAL 15 MINUTE
-            LIMIT 1
-        """, (user, page))
-
-        if recent:
-            return recent[0][0]
-
-        page_title = "Drishti Dashboard" if page == "sahayog_dashboard" else page
+        page_titles = {"sahayog_dashboard": "Drishti Dashboard", "my-crm": "My CRM"}
+        page_title = page_titles.get(page, page)
         full_name = frappe.utils.get_fullname(user)
 
         log = frappe.new_doc("Activity Log")
