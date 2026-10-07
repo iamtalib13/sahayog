@@ -566,6 +566,14 @@
         width: 92px;
         min-width: 0;
       }
+      /* Locked geography (non-admin restricted scope) — visibly read-only */
+      .filters-bar select:disabled,
+      .tr-toolbar select:disabled,
+      .report-toolbar select:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        background: var(--surface-2);
+      }
       .filters-bar .btn-reset {
         margin-left: 4px;
       }
@@ -6805,10 +6813,39 @@
           document.getElementById("fil-trainer").value = cur;
         }
         /* Prefill calendar filters from Report Preference access so the
-           applied scope is visible (single-value scopes get selected). */
+           applied scope is visible (single-value scopes get selected).
+           Non-admins with a restricted scope get their geography filters
+           locked — they only ever see their own access (server enforces it
+           too); L&D Admin keeps full access. */
+        var GEO_FILTER_IDS = [
+          "fil-zone",
+          "fil-region",
+          "fil-district",
+          "fil-branch",
+          "tr-zone",
+          "tr-region",
+          "tr-district",
+          "tr-branch",
+          "emp-zone",
+          "emp-region",
+          "emp-district",
+          "emp-branch",
+        ];
+        function lockGeoFilters() {
+          var s = state.accessScope;
+          var locked = state.role !== "ld_admin" && !!(s && s.restricted);
+          GEO_FILTER_IDS.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.disabled = locked;
+            el.title = locked ? "Locked to your access" : "";
+          });
+          return locked;
+        }
         function applyAccessDefaults() {
           var s = state.accessScope;
           var note = document.getElementById("accessNote");
+          lockGeoFilters();
           if (!s || !s.restricted) {
             if (note) note.style.display = "none";
             return false;
