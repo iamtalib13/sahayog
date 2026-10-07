@@ -132,7 +132,7 @@ left:11px;
 padding:0 5px;
 background:#fff;
 color:var(--teal-dark);
-font-size:12px;
+font-size:11px;
 font-weight:900;
 line-height:14px;
 letter-spacing:.4px;
@@ -398,33 +398,34 @@ linear-gradient(
 #3A6F75 0%,
 #6AA0A4 100%
 );
-border-color:#3A6F75;
+border-color:#315B87;
 color:#fff;
 box-shadow:
 0 2px 5px rgba(58,111,117,.14),
 inset 0 1px 1px rgba(255,255,255,.20)
 }
 .scorecard-refresh-btn{
-height:36px;
+height:28px;
+min-width:62px;
+padding:0 8px;
 flex-shrink:0;
 display:inline-flex;
 align-items:center;
 justify-content:center;
-gap:8px;
-padding:0 18px;
-border:1px solid var(--teal-border);
+gap:4px;
+border:1px solid #cfe1e4;
 border-radius:999px;
-background:var(--teal-soft);
-color:var(--teal-dark);
-font-size:13px;
+background:#f4fafb;
+color:#52787d;
+font-size:10px;
 font-weight:700;
 cursor:pointer;
 transition:all .15s ease
 }
 .scorecard-refresh-btn:hover{
-background:var(--teal-soft);
-border-color:var(--teal-dark);
-color:var(--teal-dark)
+background:#eaf5f6;
+border-color:#a9cdd1;
+color:#3A6F75
 }
 .scorecard-refresh-btn:active{
 transform:scale(.94)
@@ -434,6 +435,7 @@ opacity:.65;
 cursor:wait
 }
 .scorecard-refresh-btn .fa{
+font-size:10px;
 transition:transform .15s ease
 }
 .scorecard-content{
@@ -825,7 +827,7 @@ width:150px;
 transform:translateX(-50%);
 overflow:hidden;
 color:var(--text-muted);
-font-size:10px;
+font-size:9px;
 font-weight:750;
 line-height:1.2;
 text-align:center;
@@ -1083,7 +1085,7 @@ font-weight:950
 .combined-grade-score-row{
 display:flex;
 align-items:center;
-gap:9px;
+gap:6px;
 min-height:32px;
 margin-top:8px
 }
@@ -1189,6 +1191,71 @@ border:1px solid #d7e5e6;
 border-radius:11px;
 box-shadow:0 2px 8px rgba(58,111,117,.045)
 }
+.scorecard-logged-user{
+height:38px;
+min-width:165px;
+display:flex;
+align-items:center;
+gap:9px;
+margin-left:8px;
+padding:3px 9px 3px 4px;
+border:1px solid #c9dfe3;
+border-radius:999px;
+background:#f4fafb;
+box-shadow:0 2px 7px rgba(58,111,117,.08);
+flex:0 0 auto;
+}
+
+.scorecard-user-avatar{
+width:28px;
+height:28px;
+display:flex;
+align-items:center;
+justify-content:center;
+border-radius:50%;
+background:#e1f0f2;
+color:#3A6F75;
+font-size:12px;
+flex:0 0 28px;
+box-shadow:0 1px 3px rgba(58,111,117,.10);
+}
+
+.scorecard-user-details{
+min-width:0;
+display:flex;
+flex-direction:column;
+justify-content:center;
+line-height:1.15;
+}
+
+.scorecard-user-name{
+max-width:120px;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+color:#244b52;
+font-size:12px;
+font-weight:900;
+}
+
+.scorecard-user-id{
+max-width:155px;
+overflow:hidden;
+text-overflow:ellipsis;
+white-space:nowrap;
+margin-top:3px;
+color:#718b90;
+font-size:10px;
+font-weight:750;
+}
+
+.scorecard-logged-user:hover{
+border-color:#a9cdd1;
+background:#edf7f8;
+box-shadow:0 3px 9px rgba(58,111,117,.12);
+transform:translateY(-1px);
+}
+
 .scorecard-view-tab{
 position:relative;
 height:42px;
@@ -3599,6 +3666,28 @@ aria-label="Clear cache and hard refresh">
 <i class="fa fa-refresh"></i>
 <span>Refresh</span>
 </button>
+<div
+class="scorecard-logged-user"
+id="scorecard-logged-user"
+title="Logged-in User">
+<div
+class="scorecard-user-avatar"
+id="scorecard-user-avatar">
+<i class="fa fa-user"></i>
+</div>
+<div class="scorecard-user-details">
+<div
+class="scorecard-user-name"
+id="scorecard-user-name">
+Loading...
+</div>
+<div
+class="scorecard-user-id"
+id="scorecard-user-id">
+Emp ID: -
+</div>
+</div>
+</div>
 </div>
 <div class="scorecard-view-container">
 <div
@@ -3756,6 +3845,12 @@ function apply_branch_scorecard_access(){
         callback:function(r){
             let access = r.message || {};
 
+            let employee_name = access.employee_name || frappe.session.user || "User";
+            let employee_number = access.employee_number || "-";
+
+            $(wrapper).find("#scorecard-user-name").text(employee_name);
+            $(wrapper).find("#scorecard-user-id").text("Emp ID: " + employee_number);
+
             console.log("========== BRANCH SCORECARD ACCESS DEBUG ==========");
             console.log("Logged-in User:", frappe.session.user);
             console.log("Full Backend Access Response:", access);
@@ -3773,29 +3868,24 @@ function apply_branch_scorecard_access(){
             }
 
             if(!access.has_access){
-                frappe.msgprint({
-                    title:"No Access",
-                    message:"Access Restricted 🔒 — Please Contact the Manager.",
-                    indicator:"red"
-                });
 
                 $("#scorecard-no-access").remove();
-                $("#scorecard-root").css("position","relative").append(`
+                $("#scorecard-root").css({position:"relative", zIndex:0, isolation:"isolate"}).append(`
                     <div id="scorecard-no-access"
-                    style="position:absolute;inset:0;z-index:2000;background:#fff;
+                    style="position:absolute;inset:0;z-index:10;background:#fff;
                     display:flex;flex-direction:column;align-items:center;
                     justify-content:center;gap:14px;text-align:center;">
-                        <div style="font-size:16px;font-weight:700;color:#234f54;">
+                        <div style="font-size:28px;font-weight:800;color:#0b2427;">
                             Access Restricted 🔒
                         </div>
-                        <div style="font-size:13px;color:#60777b;">
-                            Please contact the Manager. If access was just given, click Check Again.
+                        <div style="font-size:18px;color:#1c3639;font-weight:600;">
+                            Please contact the Manager. If access was just given, click Refresh.
                         </div>
                         <button type="button" id="scorecard-check-access"
-                        style="height:34px;padding:0 18px;border:1px solid #c5d5d7;
-                        border-radius:999px;background:#edf4f5;color:#2f6f77;
-                        font-size:13px;font-weight:700;cursor:pointer;">
-                            Check Again
+                        style="height:46px;padding:0 30px;border:1.5px solid #6f9499;
+                        border-radius:999px;background:#edf4f5;color:#0b2427;
+                        font-size:17px;font-weight:800;cursor:pointer;">
+                            Refresh
                         </button>
                     </div>
                 `);
@@ -4905,12 +4995,6 @@ record=>
 is_valid_sahayog_branch(record)
 );
 if(!valid_branches.length){
-    frappe.msgprint({
-        title: __("No Access"),
-        message: __("Access Restricted 🔒 — Please Contact the Manager."),
-        indicator: "red"
-    });
-    return;
 $("#scorecard-list").html(`
 <div
 class="text-muted text-center p-2"
@@ -8396,287 +8480,1982 @@ function render_zone_wise_trend_comparison(
 function render_zone_wise_table(
 result
 ){
-let container=
-$("#zone-wise-content");
-if(!container.length){
-return;
-}
-let periods=
-Array.isArray(result.periods)
-?result.periods
-:[];
-let zones=
-Array.isArray(result.zones)
-?result.zones
-:[];
-let data=
-result.data||
-{};
-let grand_total=
-result.grand_total||
-{};
-if(!periods.length){
-container.html(`
-<div class="zone-wise-empty">
-<div class="zone-wise-empty-title">
-No Trend Period Available
-</div>
-<div>
-No valid months are available for the selected FY.
-</div>
-</div>
-`);
-return;
-}
-if(!zones.length){
-container.html(`
-<div class="zone-wise-empty">
-<div class="zone-wise-empty-title">
-No Zone Data Available
-</div>
-<div>
-No actual zone mapping was found in Sahayog Branch.
-</div>
-</div>
-`);
-return;
-}
-let latest_period=
-periods[periods.length-1]||
-null;
-let title_month=
-latest_period
-?String(
-latest_period.month||
-""
-)
-:"";
-let title_year=
-latest_period
-?String(
-latest_period.year||
-""
-)
-:"";
-let title_text=
-title_month&&title_year
-?`${sahayog_short_month(title_month)} ${title_year}`
-:title_year;
-let table_header_html=
-periods.map(
-period=>`
-<th>
-${frappe.utils.escape_html(
-period.label||
-""
-)}
-</th>
-`
-).join("");
-let table_rows_html="";
-zones.forEach(zone=>{
-    let zone_data=
-    data[zone]||
-    {};
-    let cells_html="";
-    periods.forEach(period=>{
-        let key=
-        String(
-            period.label||
-            ""
-        );
-        let cell_value=
-        zone_data[key];
-        if(
-            cell_value!==null&&
-            cell_value!==undefined&&
-            typeof cell_value==="object"&&
-            Number.isFinite(
-                Number(cell_value.average)
-            )
-        ){
-            let average=
-            Number(
-                cell_value.average
-            );
-            let branch_count=
-            Number(
-                cell_value.branch_count
-            )||
-            0;
-            cells_html+=`
-            <td>
-            <span
-            class="zone-score-value zone-score-available"
-            title="${branch_count} branch scorecard(s) used">
-            ${average.toFixed(2)}
-            </span>
-            </td>
+    let container = $("#zone-wise-content");
+
+    const format_score = (value) => {
+        const n = Number(value);
+        return Number.isFinite(n) ? n.toFixed(2) : "—";
+    };
+
+    if(!container.length){
+        return;
+    }
+
+    let periods = Array.isArray(result.periods) ? result.periods : [];
+    let zones = Array.isArray(result.zones) ? result.zones : [];
+    let data = result.data || {};
+    let grand_total = result.grand_total || {};
+
+    if(!periods.length){
+        container.html(`
+            <div class="zws-empty">
+                <div class="zws-empty-title">No Trend Period Available</div>
+                <div>No valid months are available for the selected FY.</div>
+            </div>
+        `);
+        return;
+    }
+
+    if(!zones.length){
+        container.html(`
+            <div class="zws-empty">
+                <div class="zws-empty-title">No Zone Data Available</div>
+                <div>No actual zone mapping was found in Sahayog Branch.</div>
+            </div>
+        `);
+        return;
+    }
+
+    const target = 95;
+    const latest_period = periods[periods.length - 1] || {};
+    const latest_label = String(latest_period.label || "");
+    const previous_period = periods.length > 1
+        ? periods[periods.length - 2]
+        : null;
+    const previous_label = previous_period
+        ? String(previous_period.label || "")
+        : "";
+
+    function getValue(zone, period){
+        let zone_data = data[zone] || {};
+        let cell = zone_data[String(period.label || "")];
+        return sahayog_cell_number(cell);
+    }
+
+    function getBranchCount(zone, period){
+        let zone_data = data[zone] || {};
+        let cell = zone_data[String(period.label || "")];
+
+        if(cell && typeof cell === "object"){
+            let count = Number(cell.branch_count);
+            return Number.isFinite(count) ? count : 0;
+        }
+
+        return 0;
+    }
+
+    function safe(value){
+        return frappe.utils.escape_html(String(value ?? ""));
+    }
+
+    let latest_values = zones
+        .map(zone => ({
+            zone: zone,
+            value: getValue(zone, latest_period)
+        }))
+        .filter(item => item.value !== null && Number.isFinite(item.value));
+
+    let current_total = sahayog_cell_number(grand_total[latest_label]);
+
+    if(current_total === null && latest_values.length){
+        current_total =
+            latest_values.reduce((sum, item) => sum + item.value, 0) /
+            latest_values.length;
+    }
+
+    let previous_total = previous_label
+        ? sahayog_cell_number(grand_total[previous_label])
+        : null;
+
+    let best_zone = latest_values.length
+        ? latest_values.reduce((a,b) => a.value > b.value ? a : b)
+        : null;
+
+    let lowest_zone = latest_values.length
+        ? latest_values.reduce((a,b) => a.value < b.value ? a : b)
+        : null;
+
+    let target_count = latest_values.filter(
+        item => item.value >= target
+    ).length;
+
+    let coverage_count = 0;
+    zones.forEach(zone => {
+        if(getBranchCount(zone, latest_period) > 0){
+            coverage_count++;
+        }
+    });
+
+    let coverage_pct = zones.length
+        ? (coverage_count / zones.length) * 100
+        : 0;
+
+    let delta = (
+        current_total !== null &&
+        previous_total !== null
+    )
+        ? current_total - previous_total
+        : null;
+
+    let delta_html = "";
+
+    if(delta !== null){
+        if(Math.abs(delta) < 0.005){
+            delta_html = `
+                <span class="zws-delta zws-delta-flat">
+                    → 0.00
+                </span>
             `;
-        }else if(
-            Number.isFinite(
-                Number(cell_value)
-            )
-        ){
-            cells_html+=`
-            <td>
-            <span
-            class="zone-score-value zone-score-available">
-            ${Number(cell_value).toFixed(2)}
-            </span>
-            </td>
+        }else if(delta > 0){
+            delta_html = `
+                <span class="zws-delta zws-delta-up">
+                    ↑ ${delta.toFixed(2)}
+                </span>
             `;
         }else{
-            cells_html+=`
-            <td>
-            <span
-            class="zone-score-value zone-score-unavailable">
-            —
-            </span>
-            </td>
+            delta_html = `
+                <span class="zws-delta zws-delta-down">
+                    ↓ ${Math.abs(delta).toFixed(2)}
+                </span>
             `;
         }
-    });
-    table_rows_html+=`
-    <tr>
-    <td class="zone-name-cell">
-    ${frappe.utils.escape_html(
-        zone
-    )}
-    </td>
-    ${cells_html}
-    </tr>
-    `;
-});
-/* =========================================================
-   GRAND TOTAL ROW
-   ========================================================= */
-let grand_total_cells_html="";
-periods.forEach(period=>{
-    let key=
-    String(
-        period.label||
-        ""
-    );
-    let total_value=
-    grand_total[key];
-    if(
-        total_value!==null&&
-        total_value!==undefined&&
-        Number.isFinite(
-            Number(total_value)
-        )
-    ){
-        grand_total_cells_html+=`
-        <td>
-        <span
-        class="zone-score-value zone-score-available">
-        ${Number(total_value).toFixed(2)}
-        </span>
-        </td>
+    }
+
+    /* =====================================================
+       TABLE
+       ===================================================== */
+
+    function zone_status_class(value){
+        if(value === null || !Number.isFinite(Number(value))){
+            return "zws-cell-none";
+        }
+
+        let score = Number(value);
+
+        if(score >= target){
+            return "zws-cell-good";
+        }
+
+        if(score >= target - 5){
+            return "zws-cell-warning";
+        }
+
+        return "zws-cell-danger";
+    }
+
+    function zone_coverage(period){
+        let count = zones.filter(zone => {
+            return getValue(zone, period) !== null;
+        }).length;
+
+        return count;
+    }
+
+    let table_head = periods.map((period, period_index) => {
+
+        let coverage = zone_coverage(period);
+
+        let selected_class =
+            period_index === periods.length - 1
+            ? " zws-period-selected"
+            : "";
+
+        return `
+            <th class="${selected_class}">
+                <span class="zws-period-label">
+                    ${safe(period.label || "")}
+                </span>
+                <small>
+                    ${
+                        coverage
+                        ? `${coverage}/${zones.length} zones`
+                        : "no data"
+                    }
+                </small>
+            </th>
         `;
-    }else{
-        grand_total_cells_html+=`
-        <td>
-        <span
-        class="zone-score-value zone-score-unavailable">
-        —
-        </span>
-        </td>
+    }).join("");
+
+    let table_rows = zones.map(zone => {
+
+        let cells = periods.map((period, period_index) => {
+
+            let value = getValue(zone, period);
+
+            let selected_class =
+                period_index === periods.length - 1
+                ? " zws-period-selected"
+                : "";
+
+            if(value === null){
+                return `
+                    <td class="zws-score-cell zws-cell-none${selected_class}">
+                        <span class="zws-score zws-no-data">—</span>
+                    </td>
+                `;
+            }
+
+            let diff = "";
+
+            if(
+                period_index === periods.length - 1 &&
+                period_index > 0
+            ){
+                let previous =
+                    getValue(
+                        zone,
+                        periods[period_index - 1]
+                    );
+
+                if(previous !== null){
+
+                    let d = value - previous;
+
+                    if(Math.abs(d) < 0.005){
+
+                        diff = `
+                            <small class="zws-cell-flat">
+                                → 0.00
+                            </small>
+                        `;
+
+                    }else if(d > 0){
+
+                        diff = `
+                            <small class="zws-cell-up">
+                                ↑ ${d.toFixed(2)}
+                            </small>
+                        `;
+
+                    }else{
+
+                        diff = `
+                            <small class="zws-cell-down">
+                                ↓ ${Math.abs(d).toFixed(2)}
+                            </small>
+                        `;
+                    }
+                }
+            }
+
+            return `
+                <td class="zws-score-cell ${zone_status_class(value)}${selected_class}">
+                    <span class="zws-score">
+                        ${value.toFixed(2)}
+                    </span>
+                    ${diff}
+                </td>
+            `;
+
+        }).join("");
+
+        return `
+            <tr>
+                <td class="zws-zone-name">
+                    ${safe(zone)}
+                </td>
+                ${cells}
+            </tr>
+        `;
+
+    }).join("");
+
+    /* =====================================================
+       RANKING
+       ===================================================== */
+
+    let ranking = latest_values
+        .slice()
+        .sort((a,b) => b.value - a.value);
+
+    let ranking_html = ranking.map((item, index) => {
+
+        let width = Math.max(
+            4,
+            Math.min(100, item.value)
+        );
+
+        let performance_class =
+            item.value >= 85
+                ? "zws-performance-good"
+                : item.value >= 65
+                    ? "zws-performance-average"
+                    : "zws-performance-low";
+
+        return `
+            <div class="zws-rank-row">
+                <div class="zws-rank-number">${index + 1}</div>
+
+                <div class="zws-rank-main">
+                    <div class="zws-rank-label">
+                        <span>${safe(item.zone)}</span>
+                        <strong>${item.value.toFixed(2)}</strong>
+                    </div>
+
+                    <div class="zws-rank-track">
+                        <div
+                            class="zws-rank-bar ${performance_class}"
+                            style="width:${width}%;">
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    /* =====================================================
+       TREND CHART
+       ===================================================== */
+
+    let chart_width = Math.max(
+        820,
+        periods.length * 115
+    );
+
+    let chart_height = 310;
+    let left = 48;
+    let right = 25;
+    let top = 25;
+    let bottom = 48;
+
+    let plot_width = chart_width - left - right;
+    let plot_height = chart_height - top - bottom;
+
+    let all_values = [];
+
+    zones.forEach(zone => {
+        periods.forEach(period => {
+            let value = getValue(zone, period);
+
+            if(value !== null){
+                all_values.push(value);
+            }
+        });
+    });
+
+    all_values.push(target);
+
+    let min_value = Math.min(0, ...all_values);
+    let max_value = Math.max(100, ...all_values);
+
+    let y_min = Math.floor(min_value / 10) * 10;
+    let y_max = Math.ceil(max_value / 10) * 10;
+
+    if(y_max <= y_min){
+        y_max = y_min + 100;
+    }
+
+    function chartX(index){
+        if(periods.length === 1){
+            return left + plot_width / 2;
+        }
+
+        return left +
+            (index / (periods.length - 1)) *
+            plot_width;
+    }
+
+    function chartY(value){
+        return top +
+            ((y_max - value) / (y_max - y_min)) *
+            plot_height;
+    }
+
+    let grid_html = "";
+
+    for(let value = y_max; value >= y_min; value -= 20){
+
+        let y = chartY(value);
+
+        grid_html += `
+            <line
+                x1="${left}"
+                y1="${y}"
+                x2="${chart_width-right}"
+                y2="${y}"
+                class="zws-grid">
+            </line>
+
+            <text
+                x="${left-9}"
+                y="${y+4}"
+                text-anchor="end"
+                class="zws-axis-label">
+                ${value}
+            </text>
         `;
     }
-});
-table_rows_html+=`
-<tr class="grand-total-row">
-<td class="grand-total-name-cell">
-Grand Total
-</td>
-${grand_total_cells_html}
-</tr>
-`;
-container.html(`
-<div class="zone-wise-container">
-<div class="zone-wise-header">
-<div>
-<div class="zone-wise-title">
-Zone Wise BHSC Average Score and Trend – ${frappe.utils.escape_html(title_text)}
-</div>
-<div class="zone-wise-subtitle">
-Average score is calculated from Branch Score Card records available for each branch in the respective zone and month.
-</div>
-</div>
-</div>
-<div class="zone-wise-table-wrap">
-<table class="zone-wise-table">
-<thead>
-<tr>
-<th>
-Zone
-</th>
-${table_header_html}
-</tr>
-</thead>
-<tbody>
-${table_rows_html}
-</tbody>
-</table>
-</div>
-<div
-id="zone-wise-trend-graph">
-</div>
-<div
-id="zone-wise-trend-comparison">
-</div>
-</div>
-`);
-render_zone_wise_trend_graph(
-    periods,
-    zones,
-    data
-);
-render_zone_wise_trend_comparison(
-    result.trend_comparison
-);
-console.log(
-    "Zone Wise table rendered:",
-    result
-);
-sahayog_style_zone_table(container);
-}
 
-/* =========================================================
-   ACCESS RE-CHECK (no hard refresh needed)
-   ========================================================= */
-window.sahayog_recheck_scorecard_access = function(show_feedback){
-    frappe.call({
-        method:"sahayog.branch_score_card.page.branch_scorecard.branch_scorecard.get_branch_scorecard_access",
-        callback:function(r){
-            let a = r.message || {};
-            if(a.is_editor || a.has_access){
-                window.location.reload();
-            }else if(show_feedback){
-                frappe.show_alert({
-                    message:"Access not assigned yet.",
-                    indicator:"orange"
+    let x_labels = periods.map((period,index) => `
+        <text
+            x="${chartX(index)}"
+            y="${chart_height-bottom+25}"
+            text-anchor="middle"
+            class="zws-axis-label">
+            ${safe(period.label || "")}
+        </text>
+    `).join("");
+
+    let zone_colors = [
+        "#3A6F75",
+        "#806FA8",
+        "#C4864E",
+        "#668F70",
+        "#7189B0",
+        "#B86F73",
+        "#829457",
+        "#8F7568"
+    ];
+
+    let chart_lines = "";
+
+    zones.forEach((zone, zone_index) => {
+
+        let points = [];
+
+        periods.forEach((period,index) => {
+            let value = getValue(zone, period);
+
+            if(value !== null){
+                points.push({
+                    x: chartX(index),
+                    y: chartY(value),
+                    value: value
                 });
             }
-        }
-    });
-};
+        });
 
-if(frappe.pages["branch-scorecard"]){
-    frappe.pages["branch-scorecard"].on_page_show = function(){
-        if($("#scorecard-no-access").length){
-            window.sahayog_recheck_scorecard_access(false);
+        if(!points.length){
+            return;
         }
-    };
+
+        let color =
+            zone_colors[zone_index % zone_colors.length];
+
+        let path = `M ${points[0].x} ${points[0].y}`;
+
+        for(let i = 1; i < points.length; i++){
+            let previous = points[i-1];
+            let current = points[i];
+
+            let mid =
+                (previous.x + current.x) / 2;
+
+            path +=
+                ` C ${mid} ${previous.y}, ` +
+                `${mid} ${current.y}, ` +
+                `${current.x} ${current.y}`;
+        }
+
+        chart_lines += `
+            <path
+                d="${path}"
+                class="zws-chart-line"
+                stroke="${color}">
+            </path>
+        `;
+
+        points.forEach(point => {
+            chart_lines += `
+                <circle
+                    cx="${point.x}"
+                    cy="${point.y}"
+                    r="4"
+                    fill="${color}"
+                    class="zws-chart-point">
+                    <title>
+                        ${safe(zone)}: ${point.value.toFixed(2)}
+                    </title>
+                </circle>
+            `;
+        });
+    });
+
+    let trend_legend = zones.map((zone, index) => `
+        <span class="zws-legend-item">
+            <span
+                class="zws-legend-dot"
+                style="background:${zone_colors[index % zone_colors.length]}">
+            </span>
+            ${safe(zone)}
+        </span>
+    `).join("");
+
+    /* =====================================================
+       MAIN DASHBOARD
+       ===================================================== */
+
+    container.html(`
+        <div class="zws-dashboard">
+
+            <div class="zws-header">
+                <div>
+                    <div class="zws-heading">
+                        Zone Wise Performance
+                    </div>
+
+                    <div class="zws-subheading">
+                        Real-time Zone-wise Branch Score Card performance
+                    </div>
+                </div>
+            </div>
+
+            <div class="zws-hero-grid">
+
+                <div class="zws-gauge-card">
+
+                    <div class="zws-card-label">
+                        GRAND TOTAL
+                    </div>
+
+                    <div class="zws-gauge">
+                        <svg
+                            viewBox="0 0 220 145"
+                            class="zws-gauge-svg">
+
+                            <path
+                                d="M 25 110 A 85 85 0 0 1 195 110"
+                                class="zws-gauge-bg">
+                            </path>
+
+                            <path
+                                d="M 25 110 A 85 85 0 0 1 195 110"
+                                class="zws-gauge-value"
+                                pathLength="100"
+                                style="stroke-dasharray:${Math.min(
+                                    100,
+                                    Math.max(0, current_total || 0)
+                                )} 100;">
+                            </path>
+
+                            ${[0,25,50,75,100].map(score => {
+                                const angle = Math.PI - (score / 100) * Math.PI;
+                                const outer_x = 110 + 91 * Math.cos(angle);
+                                const outer_y = 110 - 91 * Math.sin(angle);
+                                const inner_x = 110 + 80 * Math.cos(angle);
+                                const inner_y = 110 - 80 * Math.sin(angle);
+                                const label_x = 110 + 103 * Math.cos(angle);
+                                const label_y = 110 - 103 * Math.sin(angle);
+
+                                return `
+                                    <line
+                                        x1="${outer_x.toFixed(2)}"
+                                        y1="${outer_y.toFixed(2)}"
+                                        x2="${inner_x.toFixed(2)}"
+                                        y2="${inner_y.toFixed(2)}"
+                                        class="zws-gauge-tick">
+                                    </line>
+
+                                    <text
+                                        x="${label_x.toFixed(2)}"
+                                        y="${(label_y + 3).toFixed(2)}"
+                                        class="zws-gauge-scale-label"
+                                        text-anchor="middle">
+                                        ${score}
+                                    </text>
+                                `;
+                            }).join("")}
+
+                            ${current_total !== null ? (() => {
+                                const score = Math.min(
+                                    100,
+                                    Math.max(0, Number(current_total) || 0)
+                                );
+                                const angle = Math.PI - (score / 100) * Math.PI;
+
+                                const point_x = 110 + 85 * Math.cos(angle);
+                                const point_y = 110 - 85 * Math.sin(angle);
+
+                                return `
+                                    <circle
+                                        cx="${point_x.toFixed(2)}"
+                                        cy="${point_y.toFixed(2)}"
+                                        r="5"
+                                        class="zws-gauge-point">
+                                    </circle>
+                                `;
+                            })() : ""}
+                        </svg>
+
+                        <div class="zws-gauge-value-text">
+                            ${current_total !== null
+                                ? current_total.toFixed(2)
+                                : "—"}
+                        </div>
+
+                        <div class="zws-gauge-caption">
+                            Average Score
+                        </div>
+                    </div>
+
+                    ${delta_html}
+                </div>
+
+                <div class="zws-section-card zws-hero-ranking-card">
+
+                    <div class="zws-section-header">
+                        <div>
+                            <div class="zws-section-title">
+                                Zone Ranking
+                            </div>
+
+                            <div class="zws-section-subtitle">
+                                Current month performance
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="zws-ranking">
+                        ${ranking_html || `
+                            <div class="zws-empty-inline">
+                                No current month score data available.
+                            </div>
+                        `}
+                    </div>
+
+                </div>
+
+                <div class="zws-section-card zws-grand-trend-card">
+
+                    <div class="zws-section-header">
+                        <div>
+                            <div class="zws-section-title">
+                                Grand Total Trend
+                            </div>
+
+                            <div class="zws-section-subtitle">
+                                Monthly average score
+                            </div>
+                        </div>
+                    </div>
+
+                    ${(() => {
+                        const trend_points = periods
+                            .map((period) => {
+                                const value = sahayog_cell_number(
+                                    grand_total[period.label]
+                                );
+
+                                return Number.isFinite(value)
+                                    ? {
+                                        label: String(period.label || ""),
+                                        value
+                                    }
+                                    : null;
+                            })
+                            .filter(Boolean);
+
+                        const latest = trend_points.length
+                            ? trend_points[trend_points.length - 1]
+                            : null;
+
+                        const previous = trend_points.length > 1
+                            ? trend_points[trend_points.length - 2]
+                            : null;
+
+                        const change = latest && previous
+                            ? latest.value - previous.value
+                            : null;
+
+                        const direction = change === null
+                            ? "constant"
+                            : change > 0
+                                ? "up"
+                                : change < 0
+                                    ? "down"
+                                    : "constant";
+
+                        const direction_icon = direction === "up"
+                            ? "↑"
+                            : direction === "down"
+                                ? "↓"
+                                : "—";
+
+                        const direction_text = direction === "up"
+                            ? "Improved"
+                            : direction === "down"
+                                ? "Declined"
+                                : "No Change";
+
+                        const chart_width = 240;
+                        const chart_height = 78;
+                        const chart_left = 8;
+                        const chart_right = 8;
+                        const chart_top = 8;
+                        const chart_bottom = 8;
+
+                        let chart_html = "";
+
+                        if (trend_points.length) {
+                            const values = trend_points.map(item => item.value);
+                            const min_value = Math.min(...values);
+                            const max_value = Math.max(...values);
+                            const range = Math.max(
+                                1,
+                                max_value - min_value
+                            );
+
+                            const points = trend_points.map((item, index) => {
+                                const x = trend_points.length === 1
+                                    ? chart_width / 2
+                                    : chart_left +
+                                      (
+                                          index /
+                                          (trend_points.length - 1)
+                                      ) *
+                                      (
+                                          chart_width -
+                                          chart_left -
+                                          chart_right
+                                      );
+
+                                const y = chart_top +
+                                    (
+                                        (max_value - item.value) /
+                                        range
+                                    ) *
+                                    (
+                                        chart_height -
+                                        chart_top -
+                                        chart_bottom
+                                    );
+
+                                return {
+                                    x,
+                                    y,
+                                    label: item.label,
+                                    value: item.value
+                                };
+                            });
+
+                            const line_points = points
+                                .map(point =>
+                                    `${point.x.toFixed(2)},${point.y.toFixed(2)}`
+                                )
+                                .join(" ");
+
+                            chart_html = `
+                                <svg
+                                    viewBox="0 0 ${chart_width} ${chart_height}"
+                                    class="zws-grand-trend-svg"
+                                    preserveAspectRatio="none">
+
+                                    <polyline
+                                        points="${line_points}"
+                                        class="zws-grand-trend-line">
+                                    </polyline>
+
+                                    ${points.map(point => `
+                                        <circle
+                                            cx="${point.x.toFixed(2)}"
+                                            cy="${point.y.toFixed(2)}"
+                                            r="3"
+                                            class="zws-grand-trend-point">
+                                        </circle>
+                                    `).join("")}
+                                </svg>
+                            `;
+                        } else {
+                            chart_html = `
+                                <div class="zws-grand-trend-no-data">
+                                    No trend data available.
+                                </div>
+                            `;
+                        }
+
+                        return `
+                            <div class="zws-grand-trend-summary">
+
+                                <div class="zws-grand-trend-current">
+                                    <span>Current</span>
+                                    <strong>
+                                        ${latest
+                                            ? latest.value.toFixed(2)
+                                            : "—"}
+                                    </strong>
+                                </div>
+
+                                <div class="zws-grand-trend-change zws-grand-trend-${direction}">
+                                    <span class="zws-grand-trend-arrow">
+                                        ${direction_icon}
+                                    </span>
+
+                                    <span>
+                                        ${
+                                            change === null
+                                                ? direction_text
+                                                : `${direction_text} ${Math.abs(change).toFixed(2)}`
+                                        }
+                                    </span>
+                                </div>
+
+                            </div>
+
+                            <div class="zws-grand-trend-chart">
+                                ${chart_html}
+                            </div>
+
+                            <div class="zws-grand-trend-months">
+                                ${trend_points.map(item => `
+                                    <div class="zws-grand-trend-month">
+                                        <span>${safe(item.label)}</span>
+                                        <strong>${item.value.toFixed(2)}</strong>
+                                    </div>
+                                `).join("")}
+                            </div>
+                        `;
+                    })()}
+
+                </div>
+
+            </div>
+
+            <div class="zws-section-card">
+
+                <div class="zws-section-header">
+                    <div>
+                        <div class="zws-section-title">
+                            Zone-wise Average Score
+                        </div>
+
+                        <div class="zws-section-subtitle">
+                            Monthly average score and month-over-month movement
+                        </div>
+                    </div>
+                </div>
+
+                <div class="zws-table-wrap">
+                    <table class="zws-table">
+
+                        <thead>
+                            <tr>
+                                <th>Zone</th>
+                                ${table_head}
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            ${table_rows}
+                            <tr class="zws-grand-total-row">
+                                <td class="zws-grand-total-label">Grand Total</td>
+                                ${periods.map((period) => {
+                                    const raw = grand_total[period.label];
+                                    const value = sahayog_cell_number(raw);
+                                    const has_value = Number.isFinite(value);
+
+                                    return `
+                                        <td class="zws-grand-total-cell">
+                                            ${
+                                                has_value
+                                                    ? format_score(value)
+                                                    : "—"
+                                            }
+                                        </td>
+                                    `;
+                                }).join("")}
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            <div class="zws-section-card">
+
+                <div class="zws-section-header">
+                    <div>
+                        <div class="zws-section-title">
+                            Zone Trend
+                        </div>
+
+                        <div class="zws-section-subtitle">
+                            Real-time monthly score trend by zone
+                        </div>
+                    </div>
+
+
+                </div>
+
+                <div class="zws-chart-scroll">
+                    <div
+                        class="zws-chart"
+                        style="width:${chart_width}px;">
+
+                        <svg
+                            viewBox="0 0 ${chart_width} ${chart_height}"
+                            preserveAspectRatio="none">
+
+                            ${grid_html}
+
+                            <line
+                                x1="${left}"
+                                y1="${top}"
+                                x2="${left}"
+                                y2="${chart_height-bottom}"
+                                class="zws-axis">
+                            </line>
+
+                            <line
+                                x1="${left}"
+                                y1="${chart_height-bottom}"
+                                x2="${chart_width-right}"
+                                y2="${chart_height-bottom}"
+                                class="zws-axis">
+                            </line>
+
+                            ${x_labels}
+                            ${chart_lines}
+
+                        </svg>
+                    </div>
+                </div>
+
+                <div class="zws-legend">
+                    ${trend_legend}
+                </div>
+
+            </div>
+
+        </div>
+    `);
+
+    /* =====================================================
+       SCOPED ZONE WISE STYLES
+       ===================================================== */
+
+
+
+
+
+
+    sahayog_inject_style("zone-wise-modern-dashboard", `
+
+        #zone-wise-content{
+            width:100%;
+        }
+
+        #zone-wise-content .zws-dashboard{
+            width:100%;
+            padding:2px 0 28px;
+            color:#17383c;
+        }
+
+        #zone-wise-content .zws-header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:18px;
+            padding:18px 20px;
+            margin-bottom:14px;
+            border:1px solid #d7e3e5;
+            border-radius:14px;
+            background:#fff;
+            box-shadow:0 2px 8px rgba(25,55,60,.045);
+        }
+
+        #zone-wise-content .zws-heading{
+            font-size:19px;
+            font-weight:900;
+            color:#234f54;
+            line-height:1.3;
+        }
+
+        #zone-wise-content .zws-subheading{
+            margin-top:5px;
+            font-size:11px;
+            font-weight:600;
+            color:#718589;
+        }
+
+        #zone-wise-content .zws-header-meta{
+            display:flex;
+            gap:8px;
+            align-items:center;
+            flex-shrink:0;
+        }
+
+        #zone-wise-content .zws-period-badge,
+        #zone-wise-content .zws-target-badge{
+            padding:7px 12px;
+            border-radius:999px;
+            font-size:11px;
+            font-weight:800;
+            white-space:nowrap;
+        }
+
+        #zone-wise-content .zws-period-badge{
+            background:#edf5f5;
+            color:#2f6f77;
+        }
+
+        #zone-wise-content .zws-target-badge{
+            background:#fff5df;
+            color:#9a6500;
+        }
+
+        #zone-wise-content .zws-hero-grid{
+            display:grid;
+            grid-template-columns:1.35fr 1fr 1.35fr;
+            gap:12px;
+            margin-bottom:14px;
+        }
+
+        #zone-wise-content .zws-hero-ranking-card{
+            min-width:0;
+            overflow:hidden;
+            display:flex;
+            flex-direction:column;
+            box-sizing:border-box;
+        }
+
+        #zone-wise-content .zws-hero-ranking-card .zws-section-header{
+            flex:0 0 auto;
+            margin-bottom:10px;
+        }
+
+
+        #zone-wise-content .zws-hero-ranking-card .zws-ranking{
+            flex:1 1 auto;
+            min-height:0;
+            max-height:none;
+            overflow-y:auto;
+            overflow-x:hidden;
+            padding:0 6px 2px 0;
+        }
+
+        #zone-wise-content .zws-gauge-card,
+        #zone-wise-content .zws-stat-card{
+            min-height:174px;
+            padding:17px;
+            border:1px solid #d7e3e5;
+            border-radius:14px;
+            background:#fff;
+            box-shadow:0 2px 7px rgba(25,55,60,.035);
+        }
+
+        #zone-wise-content .zws-card-label,
+        #zone-wise-content .zws-stat-title{
+            color:#789095;
+            font-size:10px;
+            font-weight:900;
+            letter-spacing:.8px;
+        }
+
+        #zone-wise-content .zws-hero-grid{
+            align-items:stretch !important;
+        }
+
+        #zone-wise-content .zws-hero-grid > .zws-gauge-card,
+        #zone-wise-content .zws-hero-grid > .zws-hero-ranking-card{
+            height:230px !important;
+            min-height:230px !important;
+            max-height:230px !important;
+            box-sizing:border-box !important;
+            align-self:stretch !important;
+        }
+
+        #zone-wise-content .zws-hero-ranking-card{
+            overflow:hidden !important;
+            display:flex !important;
+            flex-direction:column !important;
+        }
+
+        #zone-wise-content .zws-grand-trend-card{
+            height:230px !important;
+            min-height:230px !important;
+            max-height:230px !important;
+            padding:15px !important;
+            box-sizing:border-box !important;
+            overflow:hidden !important;
+            display:flex !important;
+            flex-direction:column !important;
+            border:1px solid #d7e3e5;
+            border-radius:14px;
+            background:#fff;
+            box-shadow:0 2px 7px rgba(25,55,60,.035);
+        }
+
+        #zone-wise-content .zws-grand-trend-card .zws-section-header{
+            margin-bottom:7px !important;
+        }
+
+        #zone-wise-content .zws-grand-trend-summary{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:10px;
+            margin-bottom:4px;
+        }
+
+        #zone-wise-content .zws-grand-trend-current{
+            display:flex;
+            align-items:baseline;
+            gap:6px;
+        }
+
+        #zone-wise-content .zws-grand-trend-current span{
+            color:#526d71;
+            font-size:9px;
+            font-weight:850;
+        }
+
+        #zone-wise-content .zws-grand-trend-current strong{
+            color:#245c63;
+            font-size:20px;
+            font-weight:950;
+        }
+
+        #zone-wise-content .zws-grand-trend-change{
+            display:flex;
+            align-items:center;
+            gap:4px;
+            font-size:9px;
+            font-weight:850;
+            white-space:nowrap;
+        }
+
+        #zone-wise-content .zws-grand-trend-arrow{
+            font-size:15px;
+            font-weight:950;
+        }
+
+        #zone-wise-content .zws-grand-trend-up{
+            color:#4f9d69;
+        }
+
+        #zone-wise-content .zws-grand-trend-down{
+            color:#d45b5b;
+        }
+
+        #zone-wise-content .zws-grand-trend-constant{
+            color:#8a9699;
+        }
+
+        #zone-wise-content .zws-grand-trend-chart{
+            width:100%;
+            height:64px;
+            min-height:64px;
+            flex:0 0 64px;
+            margin:2px 0 5px;
+            border-radius:8px;
+            background:#f7faf9;
+            overflow:hidden;
+        }
+
+        #zone-wise-content .zws-grand-trend-svg{
+            width:100%;
+            height:100%;
+            display:block;
+        }
+
+        #zone-wise-content .zws-grand-trend-line{
+            fill:none;
+            stroke:#4f8f96;
+            stroke-width:2.5;
+            stroke-linecap:round;
+            stroke-linejoin:round;
+        }
+
+        #zone-wise-content .zws-grand-trend-point{
+            fill:#fff;
+            stroke:#4f8f96;
+            stroke-width:2;
+        }
+
+        #zone-wise-content .zws-grand-trend-months{
+            display:grid;
+            grid-template-columns:repeat(3,minmax(0,1fr));
+            gap:5px 8px;
+            margin-top:4px;
+            flex:1 1 auto;
+            min-height:0;
+            max-height:none;
+            overflow-y:auto;
+            overflow-x:hidden;
+            padding:2px 4px 2px 0;
+            box-sizing:border-box;
+        }
+
+        #zone-wise-content .zws-grand-trend-months::-webkit-scrollbar{
+            width:4px;
+        }
+
+        #zone-wise-content .zws-grand-trend-months::-webkit-scrollbar-thumb{
+            background:#c7d7d9;
+            border-radius:99px;
+        }
+
+        #zone-wise-content .zws-grand-trend-months::-webkit-scrollbar-track{
+            background:transparent;
+        }
+
+        #zone-wise-content .zws-grand-trend-month{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:6px;
+            min-width:0;
+            min-height:20px;
+            padding:4px 7px;
+            border-radius:5px;
+            background:#f4f8f8;
+            box-sizing:border-box;
+        }
+
+        #zone-wise-content .zws-grand-trend-month span{
+            min-width:0;
+            overflow:hidden;
+            text-overflow:ellipsis;
+            white-space:nowrap;
+            color:#819295;
+            font-size:9px;
+            font-weight:800;
+        }
+
+        #zone-wise-content .zws-grand-trend-month strong{
+            color:#315f64;
+            font-size:9px;
+            font-weight:950;
+        }
+
+        #zone-wise-content .zws-grand-trend-no-data{
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            height:100%;
+            color:#9aa7a9;
+            font-size:9px;
+            font-weight:700;
+        }
+
+
+        #zone-wise-content .zws-hero-ranking-card .zws-section-header{
+            flex:0 0 auto !important;
+            margin-bottom:10px !important;
+        }
+
+        #zone-wise-content .zws-hero-ranking-card .zws-ranking{
+            flex:1 1 auto !important;
+            min-height:0 !important;
+            max-height:none !important;
+            overflow-y:auto !important;
+            overflow-x:hidden !important;
+            padding:0 6px 2px 0 !important;
+        }
+
+        #zone-wise-content .zws-gauge-card{
+            border:1px solid #245c63;
+            background:linear-gradient(180deg,#d7ebed 0%,#b9d9dc 100%);
+            box-shadow:0 5px 16px rgba(36,92,99,.18);
+        }
+
+        #zone-wise-content .zws-gauge-card .zws-card-label{
+            color:#174a50;
+            font-weight:950;
+        }
+
+        #zone-wise-content .zws-gauge-card .zws-gauge-bg{
+            stroke:#a7c8cc;
+        }
+
+        #zone-wise-content .zws-gauge-card .zws-gauge-value{
+            stroke:#245c63;
+        }
+
+        #zone-wise-content .zws-gauge-card .zws-gauge-point{
+            fill:#123f45;
+            stroke:#ffffff;
+        }
+
+        #zone-wise-content .zws-gauge-card .zws-gauge-scale-label{
+            fill:#245c63;
+            font-weight:950;
+        }
+
+        #zone-wise-content .zws-gauge-card .zws-gauge-tick{
+            stroke:#245c63;
+            stroke-width:2.5;
+        }
+
+        #zone-wise-content .zws-gauge-card .zws-gauge-value-text{
+            color:#123f45;
+            font-weight:950;
+        }
+
+        #zone-wise-content .zws-gauge-card .zws-gauge-caption{
+            color:#245c63;
+            font-weight:850;
+        }
+
+        #zone-wise-content .zws-gauge{
+            position:relative;
+            height:170px;
+            margin-top:4px;
+            overflow:visible;
+        }
+
+        #zone-wise-content .zws-gauge-svg{
+            width:100%;
+            height:170px;
+            overflow:visible;
+            display:block;
+        }
+
+        #zone-wise-content .zws-gauge-bg{
+            fill:none;
+            stroke:#e7eeee;
+            stroke-width:17;
+            stroke-linecap:round;
+        }
+
+        #zone-wise-content .zws-gauge-value{
+            fill:none;
+            stroke:#3a6f75;
+            stroke-width:17;
+            stroke-linecap:round;
+        }
+
+        #zone-wise-content .zws-gauge-tick{
+            stroke:#789095;
+            stroke-width:2;
+            stroke-linecap:round;
+        }
+
+        #zone-wise-content .zws-gauge-scale-label{
+            fill:#6f8286;
+            font-size:9px;
+            font-weight:800;
+        }
+
+        #zone-wise-content .zws-gauge-point{
+            fill:#234f54;
+            stroke:#fff;
+            stroke-width:2.5;
+        }
+
+        #zone-wise-content .zws-gauge-value-text{
+            position:absolute;
+            left:0;
+            right:0;
+            bottom:28px;
+            text-align:center;
+            color:#234f54;
+            font-size:30px;
+            font-weight:950;
+            line-height:1;
+        }
+
+        #zone-wise-content .zws-gauge-caption{
+            position:absolute;
+            left:0;
+            right:0;
+            bottom:4px;
+            text-align:center;
+            color:#84969a;
+            font-size:11px;
+            font-weight:700;
+        }
+
+        #zone-wise-content .zws-delta{
+            display:block;
+            text-align:center;
+            font-size:14px;
+            font-weight:850;
+        }
+
+        #zone-wise-content .zws-delta-up,
+        #zone-wise-content .zws-cell-up{
+            color:#277247;
+        }
+
+        #zone-wise-content .zws-delta-down,
+        #zone-wise-content .zws-cell-down{
+            color:#b23c43;
+        }
+
+        #zone-wise-content .zws-delta-flat,
+        #zone-wise-content .zws-cell-flat{
+            color:#77898d;
+        }
+
+        #zone-wise-content .zws-stat-title{
+            margin-bottom:7px;
+            font-size:10px;
+        }
+
+        #zone-wise-content .zws-stat-value{
+            min-height:0;
+            color:#234f54;
+            font-size:22px;
+            font-weight:900;
+            line-height:1.1;
+        }
+
+        #zone-wise-content .zws-stat-big{
+            color:#234f54;
+            font-size:27px;
+            font-weight:950;
+        }
+
+        #zone-wise-content .zws-stat-big span{
+            color:#93a3a6;
+            font-size:13px;
+            font-weight:700;
+        }
+
+        #zone-wise-content .zws-stat-sub{
+            margin-top:4px;
+            color:#839498;
+            font-size:9px;
+            font-weight:700;
+        }
+
+
+        #zone-wise-content .zws-section-card{
+            margin-bottom:14px;
+            padding:17px;
+            border:1px solid #d7e3e5;
+            border-radius:14px;
+            background:#fff;
+            box-shadow:0 2px 7px rgba(25,55,60,.035);
+            width:100%;
+            box-sizing:border-box;
+            overflow:visible;
+        }
+
+        #zone-wise-content .zws-table-wrap{
+            width:100%;
+            max-width:100%;
+            overflow-x:auto;
+            overflow-y:visible;
+            display:block;
+            box-sizing:border-box;
+        }
+
+        #zone-wise-content .zws-table{
+            width:100%;
+            min-width:720px;
+            border-collapse:collapse;
+            table-layout:auto;
+        }
+
+        #zone-wise-content .zws-table th,
+        #zone-wise-content .zws-table td{
+            white-space:nowrap;
+        }
+
+        #zone-wise-content .zws-grand-total-row{
+            display:table-row !important;
+            visibility:visible !important;
+            opacity:1 !important;
+            background:#edf5f5;
+            border-top:2px solid #3a6f75;
+        }
+
+        #zone-wise-content .zws-grand-total-row td{
+            display:table-cell !important;
+            visibility:visible !important;
+            opacity:1 !important;
+            padding:11px 10px;
+            color:#234f54;
+            font-weight:900;
+        }
+
+        #zone-wise-content .zws-grand-total-label{
+            color:#234f54 !important;
+            font-weight:950 !important;
+        }
+
+        #zone-wise-content .zws-grand-total-cell{
+            text-align:center;
+            font-weight:950 !important;
+        }
+
+        #zone-wise-content .zws-dashboard,
+        #zone-wise-content .zws-header,
+        #zone-wise-content .zws-hero-grid,
+        #zone-wise-content .zws-section-card{
+            box-sizing:border-box;
+        }
+
+        #zone-wise-content .zws-hero-grid{
+            width:100%;
+            min-width:0;
+        }
+
+        @media (max-width:1100px){
+            #zone-wise-content .zws-hero-grid{
+                grid-template-columns:repeat(2,minmax(0,1fr));
+            }
+
+            #zone-wise-content .zws-gauge-card{
+                grid-column:span 2;
+            }
+        }
+
+        @media (max-width:700px){
+            #zone-wise-content .zws-header{
+                align-items:flex-start;
+                flex-direction:column;
+            }
+
+            #zone-wise-content .zws-header-meta{
+                width:100%;
+                flex-wrap:wrap;
+            }
+
+            #zone-wise-content .zws-hero-grid{
+                grid-template-columns:1fr;
+            }
+
+            #zone-wise-content .zws-gauge-card{
+                grid-column:auto;
+            }
+
+            #zone-wise-content .zws-section-card{
+                padding:12px;
+            }
+        }
+
+        #zone-wise-content .zws-section-header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            margin-bottom:14px;
+        }
+
+        #zone-wise-content .zws-section-title{
+            color:#234f54;
+            font-size:15px;
+            font-weight:900;
+        }
+
+        #zone-wise-content .zws-section-subtitle{
+            margin-top:3px;
+            color:#839498;
+            font-size:10px;
+            font-weight:650;
+        }
+
+        #zone-wise-content .zws-table-wrap{
+            width:100%;
+            overflow-x:auto;
+            border:1px solid #d9e3e5;
+            border-radius:9px;
+        }
+
+        #zone-wise-content .zws-table{
+            width:100%;
+            min-width:760px;
+            border-collapse:collapse;
+            background:#fff;
+        }
+
+        #zone-wise-content .zws-table th{
+            padding:11px 13px;
+            border-bottom:1px solid #d5e0e2;
+            background:#edf4f5;
+            color:#365f64;
+            font-size:10px;
+            font-weight:900;
+            text-align:center;
+            white-space:nowrap;
+        }
+
+        #zone-wise-content .zws-table th:first-child{
+            position:sticky;
+            left:0;
+            z-index:2;
+            text-align:left;
+        }
+
+        #zone-wise-content .zws-table td{
+            padding:12px 13px;
+            border-bottom:1px solid #edf1f2;
+            color:#284e52;
+            font-size:11px;
+            font-weight:700;
+            text-align:center;
+            white-space:nowrap;
+        }
+
+        #zone-wise-content .zws-table td:first-child{
+            position:sticky;
+            left:0;
+            z-index:1;
+            background:#fff;
+            text-align:left;
+        }
+
+        #zone-wise-content .zws-table tbody tr:hover td{
+            background:#f8fbfb;
+        }
+
+        #zone-wise-content .zws-table tbody tr:hover td:first-child{
+            background:#f8fbfb;
+        }
+
+        #zone-wise-content .zws-zone-name{
+            color:#24545a!important;
+            font-weight:900!important;
+        }
+
+        #zone-wise-content .zws-score{
+            display:block;
+            font-size:12px;
+            font-weight:900;
+        }
+
+        #zone-wise-content .zws-no-data{
+            color:#b3c0c3;
+        }
+
+        #zone-wise-content .zws-table small{
+            display:block;
+            margin-top:3px;
+            font-size:9px;
+            font-weight:800;
+        }
+
+        #zone-wise-content .zws-target-key{
+            display:flex;
+            align-items:center;
+            gap:6px;
+            color:#9a6500;
+            font-size:10px;
+            font-weight:850;
+        }
+
+        #zone-wise-content .zws-target-key span{
+            width:20px;
+            border-top:2px dashed #d39416;
+        }
+
+        #zone-wise-content .zws-chart-scroll{
+            width:100%;
+            overflow-x:auto;
+            overflow-y:hidden;
+            padding:8px 4px 10px;
+            border-radius:12px;
+            background:#f8fbfc;
+        }
+
+        #zone-wise-content .zws-chart{
+            min-width:820px;
+            height:340px;
+        }
+
+        #zone-wise-content .zws-chart svg{
+            width:100%;
+            height:340px;
+            display:block;
+            overflow:visible;
+        }
+
+        #zone-wise-content .zws-grid{
+            stroke:#c8d8db;
+            stroke-width:1.2;
+            stroke-dasharray:4 4;
+            opacity:1;
+        }
+
+        #zone-wise-content .zws-grid-vertical{
+            stroke:#d5e1e3;
+            stroke-width:1;
+            stroke-dasharray:3 4;
+            opacity:1;
+        }
+
+        #zone-wise-content .zws-axis{
+            stroke:#58777d;
+            stroke-width:1.6;
+        }
+
+        #zone-wise-content .zws-axis-label{
+            fill:#294f56;
+            font-size:11px;
+            font-weight:900;
+        }
+
+        #zone-wise-content .zws-x-axis-label{
+            fill:#294f56;
+            font-size:11px;
+            font-weight:900;
+        }
+
+        #zone-wise-content .zws-chart-line{
+            fill:none;
+            stroke-width:3.5;
+            stroke-linecap:round;
+            stroke-linejoin:round;
+            vector-effect:non-scaling-stroke;
+            filter:drop-shadow(0 1px 1px rgba(20,55,60,.18));
+        }
+
+        #zone-wise-content .zws-chart-point-ring{
+            opacity:1;
+            pointer-events:none;
+        }
+
+        #zone-wise-content .zws-chart-point{
+            stroke:#ffffff;
+            stroke-width:2;
+            cursor:pointer;
+        }
+
+        #zone-wise-content .zws-chart-point:hover{
+            stroke-width:3;
+        }
+
+        #zone-wise-content .zws-legend{
+            display:flex;
+            flex-wrap:wrap;
+            gap:10px 20px;
+            margin-top:12px;
+            padding:4px 6px 2px;
+        }
+
+        #zone-wise-content .zws-legend-item{
+            display:flex;
+            align-items:center;
+            gap:7px;
+            color:#294f56;
+            font-size:11px;
+            font-weight:900;
+        }
+
+        #zone-wise-content .zws-legend-dot{
+            width:11px;
+            height:11px;
+            border-radius:50%;
+            box-shadow:0 0 0 2px #ffffff, 0 0 0 3px #a9c0c4;
+        }
+
+        #zone-wise-content .zws-ranking{
+            display:flex;
+            flex-direction:column;
+            gap:12px;
+        }
+
+        #zone-wise-content .zws-rank-row{
+            display:flex;
+            align-items:center;
+            gap:10px;
+        }
+
+        #zone-wise-content .zws-rank-number{
+            width:25px;
+            color:#8b9a9d;
+            font-size:11px;
+            font-weight:900;
+            text-align:center;
+        }
+
+        #zone-wise-content .zws-rank-main{
+            flex:1;
+            min-width:0;
+        }
+
+        #zone-wise-content .zws-rank-label{
+            display:flex;
+            justify-content:space-between;
+            gap:12px;
+            margin-bottom:5px;
+            color:#365c61;
+            font-size:11px;
+            font-weight:750;
+        }
+
+        #zone-wise-content .zws-rank-label strong{
+            color:#234f54;
+            font-weight:900;
+        }
+
+        #zone-wise-content .zws-rank-track{
+            position:relative;
+            height:9px;
+            overflow:visible;
+            border-radius:99px;
+            background:#edf2f3;
+        }
+
+        #zone-wise-content .zws-rank-bar{
+            height:100%;
+            border-radius:99px;
+            background:#6a9da1;
+            transition:background .2s ease;
+        }
+
+        #zone-wise-content .zws-rank-bar.zws-performance-good{
+            background:#4f9d69;
+        }
+
+        #zone-wise-content .zws-rank-bar.zws-performance-average{
+            background:#d6a83d;
+        }
+
+        #zone-wise-content .zws-rank-bar.zws-performance-low{
+            background:#d45b5b;
+        }
+
+        #zone-wise-content .zws-target-marker{
+            position:absolute;
+            top:-3px;
+            width:2px;
+            height:15px;
+            background:#d39416;
+        }
+
+        #zone-wise-content .zws-empty,
+        #zone-wise-content .zws-empty-inline{
+            padding:35px;
+            text-align:center;
+            color:#788b8f;
+            font-size:12px;
+        }
+
+        #zone-wise-content .zws-empty-title{
+            margin-bottom:5px;
+            color:#365d62;
+            font-size:14px;
+            font-weight:900;
+        }
+
+        @media(max-width:1100px){
+
+            #zone-wise-content .zws-hero-grid{
+                grid-template-columns:repeat(2,1fr);
+            }
+
+            #zone-wise-content .zws-gauge-card{
+                grid-column:span 2;
+            }
+        }
+
+        @media(max-width:700px){
+
+            #zone-wise-content .zws-header{
+                align-items:flex-start;
+                flex-direction:column;
+            }
+
+            #zone-wise-content .zws-header-meta{
+                width:100%;
+            }
+
+            #zone-wise-content .zws-hero-grid{
+                grid-template-columns:1fr;
+            }
+
+            #zone-wise-content .zws-gauge-card{
+                grid-column:auto;
+            }
+
+            #zone-wise-content .zws-section-card{
+                padding:12px;
+            }
+        }
+
+    `);
+
+    sahayog_inject_style("zone-wise-final-visibility-fix", `
+        #zone-wise-content{
+            width:100% !important;
+            max-width:100% !important;
+            overflow:visible !important;
+            box-sizing:border-box !important;
+        }
+
+        #zone-wise-content .zws-dashboard{
+            width:100% !important;
+            max-width:100% !important;
+            min-width:0 !important;
+            overflow:visible !important;
+            box-sizing:border-box !important;
+        }
+
+        #zone-wise-content .zws-section-card{
+            width:100% !important;
+            max-width:100% !important;
+            min-width:0 !important;
+            overflow:visible !important;
+            box-sizing:border-box !important;
+        }
+
+        #zone-wise-content .zws-table-wrap{
+            width:100% !important;
+            max-width:100% !important;
+            overflow-x:auto !important;
+            overflow-y:visible !important;
+            display:block !important;
+            box-sizing:border-box !important;
+        }
+
+        #zone-wise-content .zws-table{
+            width:100% !important;
+            min-width:760px !important;
+            border-collapse:collapse !important;
+            visibility:visible !important;
+        }
+
+        #zone-wise-content .zws-grand-total-row{
+            display:table-row !important;
+            visibility:visible !important;
+            opacity:1 !important;
+        }
+
+        #zone-wise-content .zws-grand-total-row td{
+            display:table-cell !important;
+            visibility:visible !important;
+            opacity:1 !important;
+        }
+
+        @media (max-width:1100px){
+            #zone-wise-content .zws-hero-grid{
+                grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+            }
+        }
+
+        @media (max-width:700px){
+            #zone-wise-content .zws-hero-grid{
+                grid-template-columns:1fr !important;
+            }
+
+            #zone-wise-content .zws-table{
+                min-width:700px !important;
+            }
+        }
+    `);
+
+    console.log(
+        "Zone Wise modern dashboard rendered:",
+        result
+    );
 }
 
-$(window).off("focus.scorecardAccess").on("focus.scorecardAccess", function(){
-    if($("#scorecard-no-access").length){
-        window.sahayog_recheck_scorecard_access(false);
+
+
+
+/* ZONE WISE GRAND TOTAL DARK BACKGROUND FIX */
+sahayog_inject_style("zone-wise-grand-total-dark-fix", `
+    #zone-wise-content .zws-table .zws-grand-total-row,
+    #zone-wise-content .zws-table .zws-grand-total-row td{
+        background:#b9d5d9 !important;
+        color:#0d363c !important;
     }
-});
+
+    #zone-wise-content .zws-table .zws-grand-total-row td{
+        font-weight:950 !important;
+    }
+
+    #zone-wise-content .zws-table .zws-grand-total-row .zws-grand-total-label,
+    #zone-wise-content .zws-table .zws-grand-total-row .zws-grand-total-cell{
+        background:#b9d5d9 !important;
+        color:#0d363c !important;
+    }
+`);
 
 /* Region Wise: single tree column (Zone / Region / COM) */
 sahayog_inject_style("region-tree-style", [
@@ -9160,3 +10939,203 @@ sahayog_inject_style("region-delta-arrow-style", [
     '#com-wise-content #region-side-panel .rsp2-delta{display:inline-flex!important;align-items:center!important;gap:3px!important;}',
     '#com-wise-content #region-side-panel .rsp2-delta .rsp2-arrow{font-size:17px!important;font-weight:900!important;line-height:1!important;}'
 ].join(""));
+
+
+/* ZONE WISE TABLE VISIBILITY OVERRIDE */
+sahayog_inject_style("zone-wise-table-visibility-override", `
+    #zone-wise-content .zws-table{
+        border-collapse:separate !important;
+        border-spacing:3px !important;
+        background:#ffffff !important;
+    }
+
+    #zone-wise-content .zws-table th{
+        padding:8px 7px !important;
+        color:#0d363c !important;
+        font-size:12px !important;
+        font-weight:950 !important;
+        text-align:center !important;
+        background:#c5dadd !important;
+    }
+
+    #zone-wise-content .zws-table th small{
+        display:block !important;
+        margin-top:3px !important;
+        color:#234f55 !important;
+        font-size:10px !important;
+        font-weight:850 !important;
+        line-height:1.1 !important;
+    }
+
+    #zone-wise-content .zws-table th:first-child{
+        text-align:left !important;
+        color:#0d363c !important;
+    }
+
+    #zone-wise-content .zws-table td{
+        height:48px !important;
+        padding:5px 8px !important;
+        border:0 !important;
+        border-radius:7px !important;
+        color:#173f44 !important;
+        font-size:13px !important;
+        font-weight:900 !important;
+        text-align:center !important;
+        vertical-align:middle !important;
+    }
+
+    #zone-wise-content .zws-table td:first-child{
+        background:#ffffff !important;
+        color:#173f44 !important;
+        font-size:13px !important;
+        font-weight:950 !important;
+        text-align:left !important;
+    }
+
+    #zone-wise-content .zws-zone-name{
+        color:#173f44 !important;
+        font-size:13px !important;
+        font-weight:950 !important;
+    }
+
+    #zone-wise-content .zws-score-cell{
+        min-width:82px !important;
+    }
+
+    #zone-wise-content .zws-score{
+        display:block !important;
+        color:#173f44 !important;
+        font-size:15px !important;
+        font-weight:950 !important;
+        line-height:1.15 !important;
+    }
+
+    #zone-wise-content .zws-score-cell small{
+        display:block !important;
+        margin-top:3px !important;
+        font-size:11px !important;
+        font-weight:950 !important;
+        line-height:1.05 !important;
+    }
+
+    #zone-wise-content .zws-cell-good{
+        background:#f5fbf6 !important;
+        color:#236b3a !important;
+    }
+
+    #zone-wise-content .zws-cell-good .zws-score{
+        color:#236b3a !important;
+    }
+
+    #zone-wise-content .zws-cell-warning{
+        background:#fffdf2 !important;
+        color:#7a5700 !important;
+    }
+
+    #zone-wise-content .zws-cell-warning .zws-score{
+        color:#7a5700 !important;
+    }
+
+    #zone-wise-content .zws-cell-danger{
+        background:#fff7f7 !important;
+        color:#9b3434 !important;
+    }
+
+    #zone-wise-content .zws-cell-danger .zws-score{
+        color:#9b3434 !important;
+    }
+
+    #zone-wise-content .zws-cell-none{
+        background:repeating-linear-gradient(
+            135deg,
+            #ffffff 0 5px,
+            #e8eeee 5px 6px
+        ) !important;
+        color:#647b7f !important;
+    }
+
+    #zone-wise-content .zws-no-data{
+        color:#647b7f !important;
+        font-size:14px !important;
+        font-weight:850 !important;
+    }
+
+    #zone-wise-content .zws-cell-up{
+        color:#15733a !important;
+        font-size:11px !important;
+        font-weight:950 !important;
+    }
+
+    #zone-wise-content .zws-cell-down{
+        color:#b02a2a !important;
+        font-size:11px !important;
+        font-weight:950 !important;
+    }
+
+    #zone-wise-content .zws-cell-flat{
+        color:#5d7074 !important;
+        font-size:11px !important;
+        font-weight:950 !important;
+    }
+
+    #zone-wise-content .zws-period-selected{
+        box-shadow:0 0 0 2px #245c63 !important;
+    }
+
+    #zone-wise-content .zws-grand-total-row td{
+        height:52px !important;
+        padding:6px 8px !important;
+        background:#b9d5d9 !important;
+        color:#0d363c !important;
+        font-size:14px !important;
+        font-weight:950 !important;
+        border-top:2px solid #245c63 !important;
+    }
+
+    #zone-wise-content .zws-grand-total-label{
+        color:#0d363c !important;
+        font-size:14px !important;
+        font-weight:950 !important;
+    }
+
+    #zone-wise-content .zws-grand-total-cell{
+        color:#0d363c !important;
+        font-size:15px !important;
+        font-weight:950 !important;
+        text-align:center !important;
+    }
+`);
+
+/* =========================================================
+   ACCESS RE-CHECK (no hard refresh needed)
+   ========================================================= */
+window.sahayog_recheck_scorecard_access = function(show_feedback){
+    frappe.call({
+        method:"sahayog.branch_score_card.page.branch_scorecard.branch_scorecard.get_branch_scorecard_access",
+        callback:function(r){
+            let a = r.message || {};
+            if(a.is_editor || a.has_access){
+                window.location.reload();
+            }else if(show_feedback){
+                frappe.show_alert({
+                    message:"Access not assigned yet.",
+                    indicator:"orange"
+                });
+            }
+        }
+    });
+};
+
+if(frappe.pages["branch-scorecard"]){
+    frappe.pages["branch-scorecard"].on_page_show = function(){
+        if($("#scorecard-no-access").length){
+            window.sahayog_recheck_scorecard_access(false);
+        }
+    };
+}
+
+$(window).off("focus.scorecardAccess").on("focus.scorecardAccess", function(){
+    if($("#scorecard-no-access").length){
+        window.sahayog_recheck_scorecard_access(false);
+    }
+});
