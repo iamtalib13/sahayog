@@ -2659,6 +2659,41 @@ def bulk_upload_training(month=None):
                     f"Row {i}: Training Date '{training_date_raw}' is not in {sel_label} (selected upload month)"
                 )
                 continue
+            # Sunday check
+            import datetime as _dt
+            _td = frappe.utils.getdate(training_date)
+            if _td.weekday() == 6:
+                errors.append(f"Row {i}: Training Date '{training_date}' is a Sunday — trainings cannot be scheduled on Sundays")
+                continue
+            # Holiday check — use uploader's state-wise holiday list
+            _STATE_PREFIX_BU = {
+                "MAHARASHTRA": "Maharashtra", "MADHYA PRADESH": "Madhya Pradesh",
+                "KARNATAKA": "Karnataka", "UTTARAKHAND": "Uttarakhand",
+                "HIMACHAL PRADESH": "Himachal Pradesh", "CHANDIGARH": "Chandigarh",
+                "PUDUCHERRY": "Pondicherry", "JAMMU AND KASHMIR": "Jammu & Kashmir",
+            }
+            _emp_bl = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["holiday_list", "company", "sahayog_branch"], as_dict=True)
+            _hl = None
+            if _emp_bl:
+                _hl = _emp_bl.holiday_list
+                if not _hl and _emp_bl.sahayog_branch:
+                    _st = frappe.db.get_value("Sahayog Branch", _emp_bl.sahayog_branch, "state")
+                    if _st:
+                        _pfx = _STATE_PREFIX_BU.get(str(_st).strip().upper())
+                        if _pfx:
+                            _cand = f"{_pfx} - {_td.year}"
+                            _hl = _cand if frappe.db.exists("Holiday List", _cand) else frappe.db.get_value("Holiday List", {"name": ["like", f"{_pfx} - %"]}, "name")
+                if not _hl and _emp_bl.company:
+                    _hl = frappe.db.get_value("Company", _emp_bl.company, "default_holiday_list")
+            if _hl:
+                _hol_row = frappe.db.sql(
+                    "SELECT description FROM `tabHoliday` WHERE parent=%s AND holiday_date=%s LIMIT 1",
+                    (_hl, training_date), as_dict=True
+                )
+                if _hol_row:
+                    _hdesc = (_hol_row[0].description or "Holiday").strip()
+                    errors.append(f"Row {i}: Training Date '{training_date}' is a Holiday ({_hdesc}) — trainings cannot be scheduled on holidays")
+                    continue
             if not program:
                 errors.append(f"Row {i}: Program Name / Training Title is required")
                 continue
