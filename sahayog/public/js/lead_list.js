@@ -87,7 +87,7 @@ function openBMVerificationModal(listview) {
   let selected_status = "Pending";
   let dialog = new frappe.ui.Dialog({
     title: __("BM Lead Verification"),
-    size: "large",
+    size: "extra-large",
     fields: [
       { fieldtype: "HTML", fieldname: "metrics_html" },
       {
