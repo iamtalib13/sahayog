@@ -74,7 +74,35 @@ from frappe.utils import cint
 
 ALLOWED_ROLES = ["HO Petty Cash Manager", "HO Petty Cash Verifier"]
 TARGET_ROLE = "Branch User"
-ELIGIBLE_DESIGNATIONS = ["Branch Operation Manager", "BRANCH MANAGER"]
+# ELIGIBLE_DESIGNATIONS = ["Branch Operation Manager", "BRANCH MANAGER"]
+ELIGIBLE_DESIGNATIONS = [
+    "BRANCH MANAGER",
+    "BRANCH OFFICER",
+    "BLOCK DEVELOPMENT OFFICER",
+    "Area Sales Manager-DDS",
+    "Sales Manager-SMBG",
+    "Sales Manager (DDS)",
+    "LOAN OFFICER SR",
+    "Collection Executive",
+    "Assistant Manager - Learning and Development",
+    "Asst. Branch Manager JLL",
+    "BUSINESS DEVELOPMENT EXECUTIVE",
+    "Credit Executive",
+    "Team Leader",
+    "SR.CLUSTER OPERATION MANAGER",
+    "ASSISTANT SALES MANAGER",
+    "Sales Manager - TASC",
+    "RELATIONSHIP MANAGER - TASC",
+    "Customer Service Manager",
+    "Sr. Executive - HO Operation",
+    "Collection Manager",
+    "AREA SALES MANAGER - TASC",
+    "MIS Executive",
+    "RELATIONSHIP OFFICER - DDS",
+    "TRAINER-CASA",
+    "Assistant Manager - Operations",
+    "RELATIONSHIP MANAGER - INSURANCE",
+]
 
 
 def validate_access():

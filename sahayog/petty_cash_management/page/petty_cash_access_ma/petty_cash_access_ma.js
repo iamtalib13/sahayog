@@ -101,13 +101,162 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 .perm-card-email { font-size: 12px; color: #57606a; }
                 
                 /* Colorful Tags - Perfectly Centered Text & Increased Size */
-                .perm-tag-badge { 
+                /* .perm-tag-badge { 
                     display: inline-flex; align-items: center; justify-content: center;
                     font-size: 13px; font-weight: 600; padding: 0 12px; height: 26px; 
                     line-height: 1; border-radius: 13px; 
+                } */
+               .perm-tag-badge {
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 12px;
+                    font-weight: 600;
+                    padding: 0 10px;
+                    min-width: 42px;
+                    height: 26px;
+                    line-height: 1;
+                    border-radius: 13px;
+                    white-space: nowrap;
                 }
-                .tag-bm { background: #e8fdf0; color: #2f9d58; border: 1px solid #A6EFC0; }
-                .tag-bom { background: #e7f5ff; color: #007be0; border: 1px solid #A7D7FD; }
+
+                /*.tag-bm { background: #e8fdf0; color: #2f9d58; border: 1px solid #A6EFC0; }
+                .tag-bom { background: #e7f5ff; color: #007be0; border: 1px solid #A7D7FD; }*/
+                /* Branch / Office */
+                    .tag-bm {
+                        background: #e8fdf0;
+                        color: #2f9d58;
+                        border: 1px solid #a6efc0;
+                    }
+
+                    .tag-bo {
+                        background: #e7f5ff;
+                        color: #007be0;
+                        border: 1px solid #a7d7fd;
+                    }
+
+                    .tag-bdo {
+                        background: #fff4e5;
+                        color: #b45309;
+                        border: 1px solid #fed7aa;
+                    }
+
+                    .tag-abm-jll {
+                        background: #f3e8ff;
+                        color: #7e22ce;
+                        border: 1px solid #d8b4fe;
+                    }
+
+                    /* Sales */
+                    .tag-asm-dds,
+                    .tag-asm-tasc,
+                    .tag-asm {
+                        background: #e0f2fe;
+                        color: #0369a1;
+                        border: 1px solid #bae6fd;
+                    }
+
+                    .tag-sm-smbg,
+                    .tag-sm-dds,
+                    .tag-sm-tasc {
+                        background: #fef3c7;
+                        color: #92400e;
+                        border: 1px solid #fde68a;
+                    }
+
+                    .tag-bde {
+                        background: #ecfccb;
+                        color: #3f6212;
+                        border: 1px solid #bef264;
+                    }
+
+                    /* Loan / Credit */
+                    .tag-lo-sr {
+                        background: #fce7f3;
+                        color: #be185d;
+                        border: 1px solid #f9a8d4;
+                    }
+
+                    .tag-cre {
+                        background: #fee2e2;
+                        color: #b91c1c;
+                        border: 1px solid #fecaca;
+                    }
+
+                    /* Collection */
+                    .tag-ce,
+                    .tag-cm {
+                        background: #fff7ed;
+                        color: #c2410c;
+                        border: 1px solid #fed7aa;
+                    }
+
+                    /* Management */
+                    .tag-am-ld,
+                    .tag-am-ops {
+                        background: #eef2ff;
+                        color: #4338ca;
+                        border: 1px solid #c7d2fe;
+                    }
+
+                    .tag-tl {
+                        background: #f0fdf4;
+                        color: #15803d;
+                        border: 1px solid #bbf7d0;
+                    }
+
+                    .tag-scom {
+                        background: #f5f3ff;
+                        color: #6d28d9;
+                        border: 1px solid #ddd6fe;
+                    }
+
+                    /* Relationship */
+                    .tag-rm-tasc,
+                    .tag-rm-ins,
+                    .tag-ro-dds {
+                        background: #fdf2f8;
+                        color: #9d174d;
+                        border: 1px solid #fbcfe8;
+                    }
+
+                    /* Customer Service */
+                    .tag-csm {
+                        background: #ecfeff;
+                        color: #0e7490;
+                        border: 1px solid #a5f3fc;
+                    }
+
+                    /* Operations */
+                    .tag-se-ho {
+                        background: #f1f5f9;
+                        color: #334155;
+                        border: 1px solid #cbd5e1;
+                    }
+
+                    /* MIS */
+                    .tag-mis {
+                        background: #f0fdfa;
+                        color: #0f766e;
+                        border: 1px solid #99f6e4;
+                    }
+
+                    /* Training */
+                    .tag-tr-casa {
+                        background: #fefce8;
+                        color: #854d0e;
+                        border: 1px solid #fde68a;
+                    }
+
+                    .designation-meta {
+                        max-width: 350px;
+                        white-space: nowrap;
+                        overflow: hidden;
+                        text-overflow: ellipsis;
+                        cursor: default;
+                    }
+
+
                 
                 .search-highlight { background: #fff2ac; padding: 0; border-radius: 2px; }
 
@@ -169,7 +318,13 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                                 <div class="perm-card-info">
                                     <div class="perm-card-top">
                                         <div class="perm-card-name" v-html="highlight(emp.employee_name, searchQuery)"></div>
-                                        <span class="perm-tag-badge" :class="getTagClass(emp.designation)">[[ getShortTag(emp.designation) ]]</span>
+                                        <span 
+                                            class="perm-tag-badge" 
+                                            :class="getTagClass(emp.designation)"
+                                            :title="emp.designation">
+                                            [[ getShortTag(emp.designation) ]]
+                                        </span>
+
                                     </div>
                                     <div class="perm-card-email" v-html="highlight(emp.user_id, searchQuery)"></div>
                                 </div>
@@ -210,14 +365,29 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                                                 [[ selectedEmp.petty_cash_branch || 'N/A' ]] - [[ selectedEmp.branch_name || 'N/A' ]]
                                             </div>
+                                            <!-- Designation -->
+                                            <div class="meta-item designation-meta" :title="selectedEmp.designation">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M20 7h-5V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"></path>
+                                                    <path d="M9 7h6"></path>
+                                                    <path d="M8 12h8"></path>
+                                                    <path d="M8 16h5"></path>
+                                                </svg>
+                                                [[ selectedEmp.designation ]]
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 <!-- Right Corner Badge -->
                                 <div style="margin-top: 4px;">
-                                    <span class="perm-tag-badge" :class="getTagClass(selectedEmp.designation)">
+                                    
+                                    <span 
+                                        class="perm-tag-badge" 
+                                        :class="getTagClass(selectedEmp.designation)"
+                                        :title="selectedEmp.designation">
                                         [[ getShortTag(selectedEmp.designation) ]]
                                     </span>
+
                                 </div>
                             </div>
 
@@ -270,17 +440,84 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 return parts[0].substring(0, 2).toUpperCase();
             },
 
+            // getShortTag(designation) {
+            //     if (designation === "BRANCH MANAGER") return "BM";
+            //     if (designation === "Branch Operation Manager") return "BOM";
+            //     return designation;
+            // },
+
+            // getTagClass(designation) {
+            //     if (designation === "BRANCH MANAGER") return "tag-bm";
+            //     if (designation === "Branch Operation Manager") return "tag-bom";
+            //     return "";
+            // },
+
             getShortTag(designation) {
-                if (designation === "BRANCH MANAGER") return "BM";
-                if (designation === "Branch Operation Manager") return "BOM";
-                return designation;
+                const tagMap = {
+                    "BRANCH MANAGER": "BM",
+                    "BRANCH OFFICER": "BO",
+                    "BLOCK DEVELOPMENT OFFICER": "BDO",
+                    "Area Sales Manager-DDS": "ASM-DDS",
+                    "Sales Manager-SMBG": "SM-SMBG",
+                    "Sales Manager (DDS)": "SM-DDS",
+                    "LOAN OFFICER SR": "LO-SR",
+                    "Collection Executive": "CE",
+                    "Assistant Manager - Learning and Development": "AM-L&D",
+                    "Asst. Branch Manager JLL": "ABM-JLL",
+                    "BUSINESS DEVELOPMENT EXECUTIVE": "BDE",
+                    "Credit Executive": "CRE",
+                    "Team Leader": "TL",
+                    "SR.CLUSTER OPERATION MANAGER": "SCOM",
+                    "ASSISTANT SALES MANAGER": "ASM",
+                    "Sales Manager - TASC": "SM-TASC",
+                    "RELATIONSHIP MANAGER - TASC": "RM-TASC",
+                    "Customer Service Manager": "CSM",
+                    "Sr. Executive - HO Operation": "SE-HO",
+                    "Collection Manager": "CM",
+                    "AREA SALES MANAGER - TASC": "ASM-TASC",
+                    "MIS Executive": "MIS",
+                    "RELATIONSHIP OFFICER - DDS": "RO-DDS",
+                    "TRAINER-CASA": "TR-CASA",
+                    "Assistant Manager - Operations": "AM-OPS",
+                    "RELATIONSHIP MANAGER - INSURANCE": "RM-INS"
+                };
+
+                return tagMap[designation] || designation;
             },
 
             getTagClass(designation) {
-                if (designation === "BRANCH MANAGER") return "tag-bm";
-                if (designation === "Branch Operation Manager") return "tag-bom";
-                return "";
+                const classMap = {
+                    "BRANCH MANAGER": "tag-bm",
+                    "BRANCH OFFICER": "tag-bo",
+                    "BLOCK DEVELOPMENT OFFICER": "tag-bdo",
+                    "Area Sales Manager-DDS": "tag-asm-dds",
+                    "Sales Manager-SMBG": "tag-sm-smbg",
+                    "Sales Manager (DDS)": "tag-sm-dds",
+                    "LOAN OFFICER SR": "tag-lo-sr",
+                    "Collection Executive": "tag-ce",
+                    "Assistant Manager - Learning and Development": "tag-am-ld",
+                    "Asst. Branch Manager JLL": "tag-abm-jll",
+                    "BUSINESS DEVELOPMENT EXECUTIVE": "tag-bde",
+                    "Credit Executive": "tag-cre",
+                    "Team Leader": "tag-tl",
+                    "SR.CLUSTER OPERATION MANAGER": "tag-scom",
+                    "ASSISTANT SALES MANAGER": "tag-asm",
+                    "Sales Manager - TASC": "tag-sm-tasc",
+                    "RELATIONSHIP MANAGER - TASC": "tag-rm-tasc",
+                    "Customer Service Manager": "tag-csm",
+                    "Sr. Executive - HO Operation": "tag-se-ho",
+                    "Collection Manager": "tag-cm",
+                    "AREA SALES MANAGER - TASC": "tag-asm-tasc",
+                    "MIS Executive": "tag-mis",
+                    "RELATIONSHIP OFFICER - DDS": "tag-ro-dds",
+                    "TRAINER-CASA": "tag-tr-casa",
+                    "Assistant Manager - Operations": "tag-am-ops",
+                    "RELATIONSHIP MANAGER - INSURANCE": "tag-rm-ins"
+                };
+
+                return classMap[designation] || "";
             },
+
 
             loadEmployees() {
                 this.isLoading = true;
