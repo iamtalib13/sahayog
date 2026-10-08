@@ -756,6 +756,8 @@ def get_training_details(name):
     )
     r["participant_list"] = participants_list
     r["participants"] = len(participants_list)
+    # Ensure additional_to is included (new field for mail recipients)
+    r["additional_to"] = doc.additional_to or ""
     # Budget visible to all roles (writes stay L&D Admin-only).
     return r
 
@@ -1095,23 +1097,77 @@ def update_budget(training_name, budget_amount=None, actual_expense=None):
     return {"success": True}
 
 
-@frappe.whitelist()
-def update_training_emails(training_name, additional_cc=None):
-    """Save Additional CC emails from the Edit form (comma-separated).
-
-    Same permission as other training updates (Admin, or owner/trainer).
-    Invalid entries are dropped; empty string clears the CC list.
-    """
-    doc = frappe.get_doc("Training", training_name)
-    _ensure_can_update(doc)
+def _clean_emails(raw):
     clean = []
-    for part in str(additional_cc or "").replace(";", ",").split(","):
+    for part in str(raw or "").replace(";", ",").split(","):
         email = part.strip()
         if email and "@" in email and email not in clean:
             clean.append(email)
-    frappe.db.set_value("Training", training_name, "additional_cc", ", ".join(clean))
+    return clean
+
+
+@frappe.whitelist()
+def update_training_emails(training_name, additional_cc=None, additional_to=None):
+    """Save Additional CC / To emails from the Edit form (comma-separated).
+
+    Same permission as other training updates (Admin, or owner/trainer).
+    Invalid entries are dropped; empty string clears the list. Passing None
+    leaves that list unchanged.
+    """
+    doc = frappe.get_doc("Training", training_name)
+    _ensure_can_update(doc)
+    if additional_cc is not None:
+        frappe.db.set_value("Training", training_name, "additional_cc", ", ".join(_clean_emails(additional_cc)))
+    if additional_to is not None:
+        frappe.db.set_value("Training", training_name, "additional_to", ", ".join(_clean_emails(additional_to)))
     frappe.db.commit()
     return {"success": True}
+
+
+@frappe.whitelist()
+def get_mail_recipients(training_name):
+    """Preview who gets the invitation/closure mail, grouped by source.
+
+    Read-only — shows exactly what _get_invitation_emails() will send.
+    """
+    from sahayog.agent_and_bdo.ld_notifications import (
+        _get_branch_head_emails,
+        _parse_cc,
+        _trainer_email,
+    )
+    doc = frappe.get_doc("Training", training_name)
+    _ensure_can_update(doc)
+
+    participants = []
+    for p in frappe.db.get_all(
+        "Training Participant",
+        filters={"parent": training_name},
+        fields=["reference_doctype", "agent_employee", "full_name"],
+        order_by="idx asc",
+    ):
+        if (p.reference_doctype or "Employee") != "Employee" or not p.agent_employee:
+            continue
+        email = frappe.db.get_value("Employee", p.agent_employee, "company_email") \
+            or frappe.db.get_value("Employee", p.agent_employee, "personal_email")
+        if email:
+            participants.append({"name": p.full_name or p.agent_employee, "email": email})
+
+    branch_heads = [
+        {"branch": code, "email": email}
+        for code, email in _get_branch_head_emails(doc)
+    ]
+    trainer_email = _trainer_email(doc.trainer)
+    return {
+        "to": {
+            "participants": participants,
+            "branch_heads": branch_heads,
+            "manual": _parse_cc(doc.additional_to),
+        },
+        "cc": {
+            "trainer": trainer_email,
+            "manual": _parse_cc(doc.additional_cc),
+        },
+    }
 
 
 @frappe.whitelist()
