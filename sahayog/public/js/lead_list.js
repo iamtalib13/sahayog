@@ -189,7 +189,7 @@ function openBMVerificationModal(listview) {
 
     if (!is_page) {
     dialog.fields_dict.metrics_html.$wrapper.html(`
-      <div style="display:flex; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:12px; white-space:nowrap;">
+      <div style="display:flex; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:0; white-space:nowrap;">
         <span class="indicator-pill orange" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Total Pending: <b>${m.total_pending || 0}</b></span>
         <span class="indicator-pill red" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Today: <b>${m.today_pending || 0}</b></span>
         <span class="indicator-pill orange" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Yesterday: <b>${m.yesterday_pending || 0}</b></span>
@@ -272,12 +272,15 @@ function openBMVerificationModal(listview) {
   dialog.show();
   dialog.$wrapper.find('.modal-dialog').css({ 'max-width': '1400px', 'width': '98%' });
   (function () {
-    let $m = dialog.$wrapper.find('[data-fieldname="metrics_html"]');
-    let $sec = $m.closest('.form-section');
-    $sec.css({ 'display': 'flex', 'gap': '8px', 'align-items': 'flex-end', 'justify-content': 'space-between', 'flex-wrap': 'nowrap' });
-    $m.closest('.form-column').css({ 'flex': '1', 'min-width': '0' });
-    dialog.$wrapper.find('[data-fieldname="status_filter"]').closest('.form-column').css({ 'flex': '0 0 160px', 'max-width': '160px', 'margin-left': 'auto' });
-    dialog.$wrapper.find('[data-fieldname="search_text"]').closest('.form-column').css({ 'flex': '0 0 220px', 'max-width': '220px' });
+    dialog.$wrapper.find('.modal-header').css({ 'border-bottom': 'none', 'padding-bottom': '0' });
+    let $sec = dialog.$wrapper.find('[data-fieldname="metrics_html"]').closest('.form-section');
+    $sec.css({ 'display': 'flex', 'align-items': 'center', 'padding-top': '0', 'margin-top': '0' });
+    $sec.find('.form-column').css({ 'padding-left': '4px', 'padding-right': '4px' });
+    dialog.$wrapper.find('[data-fieldname="metrics_html"]').closest('.form-column').css({ 'flex': '1', 'min-width': '0', 'padding-right': '12px' });
+    dialog.$wrapper.find('[data-fieldname="status_filter"]').closest('.form-column').css({ 'flex': '0 0 150px', 'max-width': '150px', 'margin-left': 'auto', 'padding-right': '0' });
+    dialog.$wrapper.find('[data-fieldname="search_text"]').closest('.form-column').css({ 'flex': '0 0 320px', 'max-width': '320px', 'padding-left': '8px' });
+    dialog.$wrapper.find('[data-fieldname="status_filter"] .control-label').hide();
+    dialog.$wrapper.find('[data-fieldname="search_text"] .control-label').hide();
   })();
   loadVerificationData();
   dialog.fields_dict.search_text.$input.on('input', function() {
