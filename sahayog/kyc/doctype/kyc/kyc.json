@@ -1,0 +1,145 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "KYC-.#",
+ "creation": "2026-10-08 11:31:09.560405",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "status",
+  "applicat",
+  "account_type",
+  "applicant_name",
+  "aadhar_number",
+  "column_break_pdsj",
+  "branch_name",
+  "mobile_number",
+  "documents",
+  "id_proof",
+  "column_break_gxyp",
+  "address_proof",
+  "column_break_zwhw",
+  "pan_form_60",
+  "column_break_jplx",
+  "other_documents",
+  "column_break_qqxu",
+  "client_form"
+ ],
+ "fields": [
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "label": "Status",
+   "options": "pending\nsubmit"
+  },
+  {
+   "fieldname": "applicat",
+   "fieldtype": "Section Break",
+   "label": "Applicant Details"
+  },
+  {
+   "fieldname": "account_type",
+   "fieldtype": "Select",
+   "label": "Account Type"
+  },
+  {
+   "fieldname": "branch_name",
+   "fieldtype": "Link",
+   "label": "Branch Name",
+   "options": "Sahayog Branch"
+  },
+  {
+   "fieldname": "applicant_name",
+   "fieldtype": "Data",
+   "label": "Applicant Name"
+  },
+  {
+   "fieldname": "mobile_number",
+   "fieldtype": "Int",
+   "label": "Mobile Number"
+  },
+  {
+   "fieldname": "aadhar_number",
+   "fieldtype": "Int",
+   "label": "Aadhar Number"
+  },
+  {
+   "fieldname": "column_break_pdsj",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "documents",
+   "fieldtype": "Section Break",
+   "label": "Documents"
+  },
+  {
+   "fieldname": "id_proof",
+   "fieldtype": "Attach",
+   "label": "ID Proof"
+  },
+  {
+   "fieldname": "address_proof",
+   "fieldtype": "Attach",
+   "label": "Address Proof"
+  },
+  {
+   "fieldname": "pan_form_60",
+   "fieldtype": "Attach",
+   "label": "PAN / Form-60/61"
+  },
+  {
+   "fieldname": "other_documents",
+   "fieldtype": "Attach",
+   "label": "Other Documents"
+  },
+  {
+   "fieldname": "client_form",
+   "fieldtype": "Attach",
+   "label": "Client Form"
+  },
+  {
+   "fieldname": "column_break_gxyp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_zwhw",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_jplx",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_qqxu",
+   "fieldtype": "Column Break"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-08 11:54:35.767117",
+ "modified_by": "Administrator",
+ "module": "KYC",
+ "name": "KYC",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
