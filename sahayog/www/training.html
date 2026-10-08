@@ -9312,7 +9312,7 @@
               }
 
               var toP = ((r.to || {}).participants || []).map(function (p) {
-                return p.name + " <" + p.email + ">";
+                return p.email;
               });
               var toB = ((r.to || {}).branch_heads || []).map(function (b) {
                 return "Branch " + b.branch + " <" + b.email + ">";
@@ -9323,6 +9323,7 @@
                 boxEl.innerHTML =
                   group("To · Participants", toP, "mail-tag-to", "No participant emails on file") +
                   group("To · Branch Heads", toB, "mail-tag-to", "No branch-head email on file") +
+                  group("To · Manual", (r.to || {}).manual, "mail-tag-to", "None added") +
                   group("CC · Trainer", ccT, "mail-tag-cc", "No trainer email") +
                   group("CC · Manual", (r.cc || {}).manual, "mail-tag-cc", "None added");
 
