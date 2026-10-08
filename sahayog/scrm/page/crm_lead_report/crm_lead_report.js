@@ -1826,7 +1826,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           return `
             <tr style="border-bottom:1px solid #f3f4f6;">
               <td style="padding:8px;"><input type="checkbox" class="chk-lead-verify" value="${l.name}"></td>
-              <td style="padding:8px;"><a href="/app/lead/${l.name}" target="_blank" style="font-weight:bold;color:#2563eb;">${l.lead_name || l.name}</a><br><small style="color:#6b7280;">${l.name} • ${l.mobile_no || '-'} • ${l.source || '-'}</small><br><small style="color:#9ca3af;">${l.custom_employee_name || ''}${l.custom_employee_id ? ' ('+l.custom_employee_id+')' : ''}</small></td>
+              <td style="padding:8px;"><a href="/app/lead/${l.name}" target="_blank" style="font-weight:bold;color:#2563eb;">${l.lead_name || '-'}</a><br><small style="color:#6b7280;">${l.name}</small><br><small style="color:#6b7280;">${l.mobile_no || '-'} • ${l.source || '-'}</small></td>
+              <td style="padding:8px;">${l.custom_employee_name || '-'}<br><small style="color:#6b7280;">${l.custom_employee_id || ''}</small></td>
               <td style="padding:8px;font-size:11px;">${prodHtml}</td>
               <td style="padding:8px;font-weight:bold;white-space:nowrap;">₹${Number(total||0).toLocaleString('en-IN')}</td>
               <td style="padding:8px;font-size:11px;">${cDate}</td>
@@ -1842,6 +1843,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 <tr>
                   <th style="width:30px;"><input type="checkbox" id="chk-select-all-leads"></th>
                   <th>Customer</th>
+                  <th>Employee</th>
                   <th>Products</th>
                   <th>Total</th>
                   <th>Created</th>
