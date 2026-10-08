@@ -95,8 +95,9 @@ function openBMVerificationModal(listview) {
     size: "extra-large",
     fields: [
       { fieldtype: "HTML", fieldname: "metrics_html" },
+      { fieldtype: "Column Break" },
       {
-        label: __("Filter Status"),
+        label: __("Status"),
         fieldname: "status_filter",
         fieldtype: "Select",
         options: ["Pending", "Verified", "Rejected", "All"],
@@ -107,16 +108,19 @@ function openBMVerificationModal(listview) {
           loadVerificationData();
         }
       },
+      { fieldtype: "Column Break" },
       {
-        label: __("Search (Employee / CRM ID / Customer / Product / Amount)"),
+        label: __("Search"),
         fieldname: "search_text",
         fieldtype: "Data",
+        placeholder: "Employee / CRM / Customer / Product / Amt",
         onchange() {
           search_text = dialog.get_value("search_text") || "";
           current_start = 0;
           loadVerificationData();
         }
       },
+      { fieldtype: "Section Break" },
       { fieldtype: "HTML", fieldname: "leads_table_html" }
     ],
     primary_action_label: __("Verify Selected"),
@@ -185,11 +189,11 @@ function openBMVerificationModal(listview) {
 
     if (!is_page) {
     dialog.fields_dict.metrics_html.$wrapper.html(`
-      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
-        <span class="indicator-pill orange" style="font-size:12px; padding:6px 14px;">Total Pending: <b>${m.total_pending || 0}</b></span>
-        <span class="indicator-pill red" style="font-size:12px; padding:6px 14px;">Today: <b>${m.today_pending || 0}</b></span>
-        <span class="indicator-pill orange" style="font-size:12px; padding:6px 14px;">Yesterday: <b>${m.yesterday_pending || 0}</b></span>
-        <span class="indicator-pill gray" style="font-size:12px; padding:6px 14px;">Older: <b>${m.older_pending || 0}</b></span>
+      <div style="display:flex; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:12px; white-space:nowrap;">
+        <span class="indicator-pill orange" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Total Pending: <b>${m.total_pending || 0}</b></span>
+        <span class="indicator-pill red" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Today: <b>${m.today_pending || 0}</b></span>
+        <span class="indicator-pill orange" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Yesterday: <b>${m.yesterday_pending || 0}</b></span>
+        <span class="indicator-pill gray" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Older: <b>${m.older_pending || 0}</b></span>
       </div>
     `);
     }
@@ -266,6 +270,15 @@ function openBMVerificationModal(listview) {
   }
 
   dialog.show();
+  dialog.$wrapper.find('.modal-dialog').css({ 'max-width': '1400px', 'width': '98%' });
+  (function () {
+    let $m = dialog.$wrapper.find('[data-fieldname="metrics_html"]');
+    let $sec = $m.closest('.form-section');
+    $sec.css({ 'display': 'flex', 'gap': '8px', 'align-items': 'flex-end', 'justify-content': 'space-between', 'flex-wrap': 'nowrap' });
+    $m.closest('.form-column').css({ 'flex': '1', 'min-width': '0' });
+    dialog.$wrapper.find('[data-fieldname="status_filter"]').closest('.form-column').css({ 'flex': '0 0 160px', 'max-width': '160px', 'margin-left': 'auto' });
+    dialog.$wrapper.find('[data-fieldname="search_text"]').closest('.form-column').css({ 'flex': '0 0 220px', 'max-width': '220px' });
+  })();
   loadVerificationData();
   dialog.fields_dict.search_text.$input.on('input', function() {
     clearTimeout(search_timer);
