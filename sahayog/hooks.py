@@ -22,6 +22,8 @@ app_license = "mit"
 # ]
 website_route_rules = [
     {"from_route": "/me", "to_route": "me"},
+    {"from_route": "/insights", "to_route": "sahayog_insights"},
+    {"from_route": "/insights/<path:app_path>", "to_route": "sahayog_insights"},
 ]
 
 # Includes in <head>

@@ -1,0 +1,27 @@
+{# Overrides insights/www/insights.html. The "</body>" in this comment stops Frappe from wrapping the page in the base web template. #}
+{% include "insights/www/insights.html" %}
+{% if restrict_insights_sidebar %}
+<style>
+	a[href^="/insights/workbook"],
+	a[href^="/insights/data-source"],
+	a[href^="/insights/data-store"] {
+		display: none !important;
+	}
+</style>
+<script>
+	(function () {
+		const blocked = /^\/insights\/(workbook|data-source|data-store|template)/;
+		function restrict() {
+			if (blocked.test(location.pathname)) location.replace("/insights/dashboards");
+			document.querySelectorAll("div.cursor-pointer.rounded").forEach((el) => {
+				if (el.textContent.trim() === "Settings") el.style.display = "none";
+			});
+		}
+		new MutationObserver(restrict).observe(document.documentElement, {
+			childList: true,
+			subtree: true,
+		});
+		restrict();
+	})();
+</script>
+{% endif %}
