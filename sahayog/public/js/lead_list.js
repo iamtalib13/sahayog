@@ -166,8 +166,13 @@ function openBMVerificationModal(listview) {
     }
   });
 
-  async function loadVerificationData() {
-    dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:20px;"><i class="fa fa-spinner fa-spin fa-2x text-muted"></i></div>');
+  async function loadVerificationData(is_page=false) {
+    if (!is_page) {
+      dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:20px;"><i class="fa fa-spinner fa-spin fa-2x text-muted"></i></div>');
+    } else {
+      dialog.$wrapper.find('.btn-prev-leads,.btn-next-leads').prop('disabled', true);
+      dialog.$wrapper.find('.leads-page-status').text('Loading...');
+    }
     let res = await frappe.call({
       method: "sahayog.scrm.controller.lead.lead.get_bm_lead_verification_data",
       args: { status: selected_status, start: current_start, page_length: page_len, search: search_text }
@@ -178,6 +183,7 @@ function openBMVerificationModal(listview) {
     total_count = res.message.total_count || 0;
     let search_pending = res.message.search_pending || 0;
 
+    if (!is_page) {
     dialog.fields_dict.metrics_html.$wrapper.html(`
       <div style="display:flex; gap:12px; margin-bottom:15px;">
         <div style="flex:1; background:#fef3c7; color:#92400e; padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">
@@ -198,6 +204,7 @@ function openBMVerificationModal(listview) {
         </div>
       </div>
     `);
+    }
 
     if (leads.length === 0) {
       let empty_search = search_text ? `<div style="margin-bottom:8px;padding:6px 10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:12px;">Search '${search_text}' me <b>${search_pending}</b> pending mile.</div>` : '';
@@ -246,7 +253,7 @@ function openBMVerificationModal(listview) {
         </table>
       </div>
       <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 2px;font-size:12px;">
-        <span class="text-muted">Showing ${show_from}-${show_to} of ${total_count}</span>
+        <span class="text-muted leads-page-status">Showing ${show_from}-${show_to} of ${total_count}</span>
         <div style="display:flex;gap:6px;">
           <button class="btn btn-xs btn-default btn-prev-leads" ${current_start === 0 ? 'disabled' : ''}>Prev</button>
           <button class="btn btn-xs btn-default btn-next-leads" ${(current_start + page_len) >= total_count ? 'disabled' : ''}>Next (20)</button>
@@ -261,12 +268,12 @@ function openBMVerificationModal(listview) {
     dialog.$wrapper.find('.btn-prev-leads').on('click', function() {
       if (current_start === 0) return;
       current_start = Math.max(0, current_start - page_len);
-      loadVerificationData();
+      loadVerificationData(true);
     });
     dialog.$wrapper.find('.btn-next-leads').on('click', function() {
       if ((current_start + page_len) >= total_count) return;
       current_start += page_len;
-      loadVerificationData();
+      loadVerificationData(true);
     });
   }
 
