@@ -9,9 +9,7 @@ frappe.ui.form.on("Branch Visit Review", {
 			frm.set_df_property("summary_section", "hidden", 1);
 			frm.set_df_property("section_break_mibr", "hidden", 1);
 		}
-		if (!frm.doc.visited_by) {
-			frm.set_value("visited_by", "3130");
-		}
+		load_visit_details_designations(frm);
 		set_visit_details_access(frm);
 		set_visitor_signoff_access(frm);
 		set_branch_head_signoff_access(frm);
@@ -102,6 +100,27 @@ const VISIT_DETAILS_FIELDS = [
 	"template",
 ];
 
+let visit_designations = ["Cluster Head", "Regional Head (RH)", "Zonal Head (ZH)"];
+let visit_designations_loaded = false;
+
+function load_visit_details_designations(frm) {
+	frm.set_query("visited_by", function () {
+		return { filters: { designation: ["in", visit_designations] } };
+	});
+	if (visit_designations_loaded) {
+		return;
+	}
+	visit_designations_loaded = true;
+	frappe.call({
+		method: "sahayog.branch_visit_review.api.get_visit_details_designations",
+		callback: function (r) {
+			if (r.message && r.message.length) {
+				visit_designations = r.message;
+			}
+		},
+	});
+}
+
 function set_visit_details_access(frm) {
 	let set_read_only = function (value) {
 		VISIT_DETAILS_FIELDS.forEach(function (field) {
@@ -117,7 +136,7 @@ function set_visit_details_access(frm) {
 		return;
 	}
 	if (!frm.doc.visited_by) {
-		set_read_only(1);
+		set_read_only(0);
 		return;
 	}
 	frappe.call({
