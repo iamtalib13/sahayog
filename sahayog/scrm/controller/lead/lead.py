@@ -424,10 +424,11 @@ def validate_lead_conversion_verification(doc, method=None):
 
 
 @frappe.whitelist()
-def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None, start=0, page_length=20):
+def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None, start=0, page_length=20, search=None):
     """Fetch leads for Branch BM verification grouped by day with day-wise tracking metrics.
     Includes Lead Product child rows (product + amount) so BM can verify without opening each lead.
-    Supports 20-20 batch pagination via start/page_length.
+    Supports 20-20 batch pagination via start/page_length + search across
+    employee name/id, CRM id, customer name, product name, amount.
     """
     user = frappe.session.user
 
@@ -444,7 +445,33 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
 
     start = int(start or 0)
     page_length = int(page_length or 20)
-    total_count = frappe.db.count("Lead", filters)
+    search = (search or "").strip()
+    or_filters = None
+
+    if search:
+        like = f"%{search}%"
+        prod_parents = frappe.db.sql(
+            """SELECT DISTINCT parent FROM `tabLead Product`
+               WHERE product LIKE %(s)s OR product_name LIKE %(s)s
+               OR CAST(product_amount AS CHAR) LIKE %(s)s""",
+            {"s": like},
+            pluck=True,
+        )
+        or_filters = [
+            ["name", "like", like],
+            ["lead_name", "like", like],
+            ["custom_employee_name", "like", like],
+            ["custom_employee_id", "like", like],
+            ["mobile_no", "like", like],
+        ]
+        if prod_parents:
+            or_filters.append(["name", "in", prod_parents])
+
+    if or_filters:
+        total_names = frappe.get_all("Lead", filters=filters, or_filters=or_filters, fields=["name"], limit_page_length=2000)
+        total_count = len(total_names)
+    else:
+        total_count = frappe.db.count("Lead", filters)
 
     leads = frappe.get_all(
         "Lead",
@@ -454,6 +481,7 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
             "custom_verified_by", "custom_verified_on", "custom_verification_remarks"
         ],
         filters=filters,
+        or_filters=or_filters,
         order_by="creation desc",
         limit_start=start,
         limit_page_length=page_length
@@ -515,13 +543,20 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
         else:
             older_count += 1
 
+    total_pending = today_count + yesterday_count + older_count
+    if search and or_filters:
+        search_pending = len(frappe.get_all("Lead", filters=pending_filters, or_filters=or_filters, fields=["name"], limit_page_length=2000))
+    else:
+        search_pending = total_pending
+
     return {
         "leads": leads,
         "total_count": total_count,
         "start": start,
         "page_length": page_length,
+        "search_pending": search_pending,
         "metrics": {
-            "total_pending": today_count + yesterday_count + older_count,
+            "total_pending": total_pending,
             "today_pending": today_count,
             "yesterday_pending": yesterday_count,
             "older_pending": older_count,
