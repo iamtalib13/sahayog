@@ -87,3 +87,8 @@ def can_edit_visit_details(visited_by=None, user=None):
 @frappe.whitelist()
 def can_user_edit_visit_details(visited_by=None):
     return can_edit_visit_details(visited_by)
+
+
+@frappe.whitelist()
+def get_visit_details_designations():
+    return list(VISIT_DETAILS_DESIGNATIONS)
