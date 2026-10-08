@@ -64,3 +64,26 @@ def can_sign_branch_head(branch=None, user=None):
 @frappe.whitelist()
 def can_branch_head_sign_off(branch=None):
     return can_sign_branch_head(branch)
+
+
+VISIT_DETAILS_DESIGNATIONS = ("Cluster Head", "Regional Head (RH)", "Zonal Head (ZH)")
+
+
+def can_edit_visit_details(visited_by=None, user=None):
+    user = user or frappe.session.user
+    if user == "Administrator":
+        return True
+    if can_sign_visitor(visited_by, user):
+        return True
+    return bool(
+        frappe.db.get_value(
+            "Employee",
+            {"user_id": user, "designation": ("in", VISIT_DETAILS_DESIGNATIONS)},
+            "name",
+        )
+    )
+
+
+@frappe.whitelist()
+def can_user_edit_visit_details(visited_by=None):
+    return can_edit_visit_details(visited_by)
