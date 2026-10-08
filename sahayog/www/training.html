@@ -531,10 +531,9 @@
         gap: 6px;
       }
       .today-panel-title .tp-date {
-        font-weight: 400;
-        font-size: 10.5px;
-        color: var(--ink-3);
-        margin-left: auto;
+        font-weight: 600;
+        font-size: 11px;
+        color: var(--ink-2);
         text-transform: none;
         letter-spacing: 0;
       }
@@ -1040,7 +1039,7 @@
         width: 100%;
         min-width: 0;
         cursor: pointer;
-        border-left: 2px solid transparent;
+        border-left: 3px solid transparent;
       }
       .event-chip {
         transition:
@@ -1106,12 +1105,17 @@
       }
       .event-more {
         font-size: 11px;
+        font-weight: 600;
         color: var(--accent-ink);
-        padding: 1px 5px;
+        background: var(--accent-soft);
+        border-radius: 999px;
+        padding: 2px 9px;
         cursor: pointer;
+        align-self: flex-start;
       }
       .event-more:hover {
-        text-decoration: underline;
+        background: #e2e8fd;
+        text-decoration: none;
       }
 
       /* Week view */
@@ -4997,7 +5001,6 @@
           <div class="today-panel sidebar-section" id="todayPanel" style="display:none;">
             <div class="today-panel-title">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-              Today
               <span class="tp-date" id="todayDateLabel"></span>
             </div>
             <div id="todayCards"></div>
@@ -7367,6 +7370,9 @@
               var meta = STATUS_META[st];
               var row = document.createElement("button");
               row.className = "more-row";
+              /* Status-tinted row like calendar chips: soft bg + color bar */
+              row.style.background = meta.soft;
+              row.style.borderLeft = "3px solid " + meta.color;
               /* Sub-line tells repeat program names apart: trainer · branches */
               var subBits = [];
               var trName = ev.trainer || ev.trainer_name || "";
@@ -12258,9 +12264,8 @@
           var pill = document.getElementById("todayPill");
           var pillText = document.getElementById("todayPillText");
           if (pill) {
-            if (pillText)
-              pillText.textContent =
-                "Today · " + todayEvs.length;
+            /* Number only ("Today" already sits next to it as a button) */
+            if (pillText) pillText.textContent = String(todayEvs.length);
             pill.style.display = "";
             pill.title =
               todayEvs.length === 1
@@ -12284,6 +12289,7 @@
           shown.forEach(function (ev) {
             var st       = statusOf(ev) || "upcoming";
             var isPulse  = st === "inprogress";
+            var cardMeta = (typeof STATUS_META !== "undefined" && STATUS_META[st]) || null;
             var name     = ev.training_program || "—";
             var loc      = ev.training_location || "";
             var trName   = ev.trainer || ev.trainer_name || "";
@@ -12292,7 +12298,11 @@
             if (loc) tipBits.push(loc);
 
             html +=
-              '<button class="today-card" data-tname="' + esc(ev.name || "") + '" title="' + esc(name + (tipBits.length ? " — " + tipBits.join(", ") : "")) + '">' +
+              '<button class="today-card" data-tname="' + esc(ev.name || "") + '" title="' + esc(name + (tipBits.length ? " — " + tipBits.join(", ") : "")) + '"' +
+                (cardMeta
+                  ? ' style="background:' + cardMeta.soft + ';border-left:3px solid ' + cardMeta.color + ';"'
+                  : '') +
+                '>' +
                 '<div class="today-card-top">' +
                   '<span class="tp-dot ' + st + (isPulse ? " pulse" : "") + '"></span>' +
                   '<span class="today-card-name">' + esc(name) + '</span>' +
