@@ -32,6 +32,7 @@
   "column_break_status",
   "status",
    "trainer_remarks",
+   "additional_to",
    "additional_cc",
    "column_break_kvin",
   "training_delivered",
@@ -243,6 +244,12 @@
     "fieldname": "additional_cc",
     "fieldtype": "Small Text",
     "label": "Additional CC Emails"
+   },
+   {
+    "description": "Comma-separated emails that always go in To (extra officers, division heads).",
+    "fieldname": "additional_to",
+    "fieldtype": "Small Text",
+    "label": "Additional To Emails"
    },
    {
     "default": "0",
