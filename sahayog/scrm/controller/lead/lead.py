@@ -468,8 +468,7 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
             or_filters.append(["name", "in", prod_parents])
 
     if or_filters:
-        total_names = frappe.get_all("Lead", filters=filters, or_filters=or_filters, fields=["name"], limit_page_length=2000)
-        total_count = len(total_names)
+        total_count = len(frappe.get_all("Lead", filters=filters, or_filters=or_filters, fields=["name"], limit_page_length=100000))
     else:
         total_count = frappe.db.count("Lead", filters)
 
@@ -512,7 +511,7 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
         if not l.get("mobile_no") and l.get("phone"):
             l["mobile_no"] = l.get("phone")
 
-    # Day-wise pending tracking stats (global, not paginated)
+    # Day-wise pending tracking stats - exact counts via COUNT (no fetch cap)
     today_str = frappe.utils.today()
     yesterday_str = frappe.utils.add_days(today_str, -1)
 
@@ -523,29 +522,26 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
     if from_date and to_date:
         pending_filters["creation"] = ["between", [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]]
 
-    pending_leads = frappe.get_all(
-        "Lead",
-        fields=["creation"],
-        filters=pending_filters,
-        limit_page_length=2000
-    )
+    total_pending = frappe.db.count("Lead", pending_filters)
 
-    today_count = 0
-    yesterday_count = 0
-    older_count = 0
+    def _count_for_day(day):
+        day_from, day_to = f"{day} 00:00:00", f"{day} 23:59:59"
+        if from_date and to_date:
+            eff_from = max(f"{from_date} 00:00:00", day_from)
+            eff_to = min(f"{to_date} 23:59:59", day_to)
+            if eff_from > eff_to:
+                return 0
+            day_from, day_to = eff_from, eff_to
+        f = dict(pending_filters)
+        f["creation"] = ["between", [day_from, day_to]]
+        return frappe.db.count("Lead", f)
 
-    for pl in pending_leads:
-        c_date = str(pl.creation).split()[0] if pl.creation else ""
-        if c_date == today_str:
-            today_count += 1
-        elif c_date == yesterday_str:
-            yesterday_count += 1
-        else:
-            older_count += 1
+    today_count = _count_for_day(today_str)
+    yesterday_count = _count_for_day(yesterday_str)
+    older_count = total_pending - today_count - yesterday_count
 
-    total_pending = today_count + yesterday_count + older_count
     if search and or_filters:
-        search_pending = len(frappe.get_all("Lead", filters=pending_filters, or_filters=or_filters, fields=["name"], limit_page_length=2000))
+        search_pending = len(frappe.get_all("Lead", filters=pending_filters, or_filters=or_filters, fields=["name"], limit_page_length=100000))
     else:
         search_pending = total_pending
 
