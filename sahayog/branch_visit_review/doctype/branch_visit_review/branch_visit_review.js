@@ -5,10 +5,12 @@ frappe.ui.form.on("Branch Visit Review", {
 	refresh(frm) {
 		if (frappe.session.user !== "Administrator") {
 			frm.set_df_property("review_section", "hidden", 1);
+			frm.set_df_property("action_section", "hidden", 1);
+			frm.set_df_property("summary_section", "hidden", 1);
+			frm.set_df_property("section_break_mibr", "hidden", 1);
 		}
-		if (!frm.doc.visited_by) {
-			frm.set_value("visited_by", "3130");
-		}
+		load_visit_details_designations(frm);
+		set_visit_details_access(frm);
 		set_visitor_signoff_access(frm);
 		set_branch_head_signoff_access(frm);
 		if (frm.doc.template) {
@@ -66,6 +68,7 @@ frappe.ui.form.on("Branch Visit Review", {
 		}
 	},
 	visited_by(frm) {
+		set_visit_details_access(frm);
 		set_visitor_signoff_access(frm);
 	},
 	overall_assessment(frm) {
@@ -83,6 +86,66 @@ function update_overall_badge(frm) {
 	if ($select.length) {
 		$select.val(frm.doc.overall_assessment || "");
 	}
+}
+
+const VISIT_DETAILS_FIELDS = [
+	"branch",
+	"branch_code",
+	"region",
+	"zone",
+	"visit_date",
+	"visited_by",
+	"branch_head",
+	"visit_duration",
+	"template",
+];
+
+let visit_designations = ["Cluster Head", "Regional Head (RH)", "Zonal Head (ZH)"];
+let visit_designations_loaded = false;
+
+function load_visit_details_designations(frm) {
+	frm.set_query("visited_by", function () {
+		return { filters: { designation: ["in", visit_designations] } };
+	});
+	if (visit_designations_loaded) {
+		return;
+	}
+	visit_designations_loaded = true;
+	frappe.call({
+		method: "sahayog.branch_visit_review.api.get_visit_details_designations",
+		callback: function (r) {
+			if (r.message && r.message.length) {
+				visit_designations = r.message;
+			}
+		},
+	});
+}
+
+function set_visit_details_access(frm) {
+	let set_read_only = function (value) {
+		VISIT_DETAILS_FIELDS.forEach(function (field) {
+			frm.set_df_property(field, "read_only", value);
+		});
+	};
+	if (frm.doc.docstatus) {
+		set_read_only(1);
+		return;
+	}
+	if (frappe.session.user === "Administrator") {
+		set_read_only(0);
+		return;
+	}
+	if (!frm.doc.visited_by) {
+		set_read_only(0);
+		return;
+	}
+	frappe.call({
+		method: "sahayog.branch_visit_review.api.can_user_edit_visit_details",
+		args: { visited_by: frm.doc.visited_by },
+		callback: function (r) {
+			set_read_only(!!r.message ? 0 : 1);
+		},
+	});
 }
 
 function set_visitor_signoff_access(frm) {
