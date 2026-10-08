@@ -85,6 +85,8 @@ frappe.listview_settings["Lead"] = {
 
 function openBMVerificationModal(listview) {
   let selected_status = "Pending";
+  let search_text = "";
+  let search_timer = null;
   let current_start = 0;
   const page_len = 20;
   let total_count = 0;
@@ -101,6 +103,16 @@ function openBMVerificationModal(listview) {
         default: "Pending",
         onchange() {
           selected_status = dialog.get_value("status_filter");
+          current_start = 0;
+          loadVerificationData();
+        }
+      },
+      {
+        label: __("Search (Employee / CRM ID / Customer / Product / Amount)"),
+        fieldname: "search_text",
+        fieldtype: "Data",
+        onchange() {
+          search_text = dialog.get_value("search_text") || "";
           current_start = 0;
           loadVerificationData();
         }
@@ -158,12 +170,13 @@ function openBMVerificationModal(listview) {
     dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:20px;"><i class="fa fa-spinner fa-spin fa-2x text-muted"></i></div>');
     let res = await frappe.call({
       method: "sahayog.scrm.controller.lead.lead.get_bm_lead_verification_data",
-      args: { status: selected_status, start: current_start, page_length: page_len }
+      args: { status: selected_status, start: current_start, page_length: page_len, search: search_text }
     });
     if (!res.message) return;
     let m = res.message.metrics || {};
     let leads = res.message.leads || [];
     total_count = res.message.total_count || 0;
+    let search_pending = res.message.search_pending || 0;
 
     dialog.fields_dict.metrics_html.$wrapper.html(`
       <div style="display:flex; gap:12px; margin-bottom:15px;">
@@ -187,7 +200,8 @@ function openBMVerificationModal(listview) {
     `);
 
     if (leads.length === 0) {
-      dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:25px;color:#6b7280;">No leads found for this verification status.</div>');
+      let empty_search = search_text ? `<div style="margin-bottom:8px;padding:6px 10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:12px;">Search '${search_text}' me <b>${search_pending}</b> pending mile.</div>` : '';
+      dialog.fields_dict.leads_table_html.$wrapper.html(empty_search + '<div style="text-align:center;padding:25px;color:#6b7280;">No leads found for this verification status.</div>');
       return;
     }
 
@@ -212,7 +226,9 @@ function openBMVerificationModal(listview) {
 
     let show_from = total_count === 0 ? 0 : current_start + 1;
     let show_to = Math.min(current_start + page_len, total_count);
+    let search_info = search_text ? `<div style="margin-bottom:8px;padding:6px 10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:12px;">Search '${search_text}' me <b>${search_pending}</b> pending / <b>${total_count}</b> records.</div>` : '';
     dialog.fields_dict.leads_table_html.$wrapper.html(`
+      ${search_info}
       <div style="max-height:350px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px;">
         <table class="table table-bordered table-sm" style="margin:0; font-size:12px;">
           <thead style="background:#f9fafb; position:sticky; top:0;">
@@ -256,4 +272,12 @@ function openBMVerificationModal(listview) {
 
   dialog.show();
   loadVerificationData();
+  dialog.fields_dict.search_text.$input.on('input', function() {
+    clearTimeout(search_timer);
+    search_timer = setTimeout(() => {
+      search_text = dialog.get_value("search_text") || "";
+      current_start = 0;
+      loadVerificationData();
+    }, 500);
+  });
 }
