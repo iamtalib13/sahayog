@@ -1816,23 +1816,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
         if (!is_page) {
         dialog.fields_dict.metrics_html.$wrapper.html(`
-          <div style="display:flex; gap:12px; margin-bottom:15px;">
-            <div style="flex:1; background:#fef3c7; color:#92400e; padding:10px 14px; border-radius:8px; border-left:4px solid #f59e0b;">
-              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Total Pending</div>
-              <div style="font-size:20px; font-weight:bold;">${m.total_pending || 0}</div>
-            </div>
-            <div style="flex:1; background:#fee2e2; color:#991b1b; padding:10px 14px; border-radius:8px; border-left:4px solid #ef4444;">
-              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Today's Pending</div>
-              <div style="font-size:20px; font-weight:bold;">${m.today_pending || 0}</div>
-            </div>
-            <div style="flex:1; background:#ffedd5; color:#9a3412; padding:10px 14px; border-radius:8px; border-left:4px solid #f97316;">
-              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Yesterday's Pending</div>
-              <div style="font-size:20px; font-weight:bold;">${m.yesterday_pending || 0}</div>
-            </div>
-            <div style="flex:1; background:#f3f4f6; color:#374151; padding:10px 14px; border-radius:8px; border-left:4px solid #6b7280;">
-              <div style="font-size:11px; font-weight:bold; text-transform:uppercase;">Older Pending</div>
-              <div style="font-size:20px; font-weight:bold;">${m.older_pending || 0}</div>
-            </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+            <span class="indicator-pill orange" style="font-size:12px; padding:6px 14px;">Total Pending: <b>${m.total_pending || 0}</b></span>
+            <span class="indicator-pill red" style="font-size:12px; padding:6px 14px;">Today: <b>${m.today_pending || 0}</b></span>
+            <span class="indicator-pill orange" style="font-size:12px; padding:6px 14px;">Yesterday: <b>${m.yesterday_pending || 0}</b></span>
+            <span class="indicator-pill gray" style="font-size:12px; padding:6px 14px;">Older: <b>${m.older_pending || 0}</b></span>
           </div>
         `);
         }
