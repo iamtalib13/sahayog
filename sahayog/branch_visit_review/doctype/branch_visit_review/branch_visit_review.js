@@ -5,6 +5,9 @@ frappe.ui.form.on("Branch Visit Review", {
 	refresh(frm) {
 		if (frappe.session.user !== "Administrator") {
 			frm.set_df_property("review_section", "hidden", 1);
+			frm.set_df_property("action_section", "hidden", 1);
+			frm.set_df_property("summary_section", "hidden", 1);
+			frm.set_df_property("section_break_mibr", "hidden", 1);
 		}
 		if (!frm.doc.visited_by) {
 			frm.set_value("visited_by", "3130");
