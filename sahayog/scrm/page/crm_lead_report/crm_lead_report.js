@@ -1712,7 +1712,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       let selected_status = "Pending";
       let dialog = new frappe.ui.Dialog({
         title: __("BM Lead Verification"),
-        size: "large",
+        size: "extra-large",
         fields: [
           {
             fieldtype: "HTML",
