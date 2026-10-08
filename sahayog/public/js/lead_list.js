@@ -13,11 +13,11 @@ frappe.listview_settings["Lead"] = {
 
     listview.page.add_inner_button(__("Today's Lead Report"), function () {
       frappe.set_route("query-report", "Lead Report");
-    });
+    }, __("BM Action"));
 
     listview.page.add_inner_button(__("BM Lead Verification"), function () {
       openBMVerificationModal(listview);
-    });
+    }, __("BM Action"));
 
     if (is_privileged) {
       listview.page.add_inner_button(__("Generate Fast Report"), function () {
