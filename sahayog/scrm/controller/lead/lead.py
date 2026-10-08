@@ -424,10 +424,14 @@ def validate_lead_conversion_verification(doc, method=None):
 
 
 @frappe.whitelist()
-def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None):
-    """Fetch leads for Branch BM verification grouped by day with day-wise tracking metrics."""
+def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None, start=0, page_length=20, search=None):
+    """Fetch leads for Branch BM verification grouped by day with day-wise tracking metrics.
+    Includes Lead Product child rows (product + amount) so BM can verify without opening each lead.
+    Supports 20-20 batch pagination via start/page_length + search across
+    employee name/id, CRM id, customer name, product name, amount.
+    """
     user = frappe.session.user
-    
+
     if not sol_id and user != "Administrator":
         sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
 
@@ -439,41 +443,116 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
     if from_date and to_date:
         filters["creation"] = ["between", [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]]
 
+    start = int(start or 0)
+    page_length = int(page_length or 20)
+    search = (search or "").strip()
+    or_filters = None
+
+    if search:
+        like = f"%{search}%"
+        prod_parents = frappe.db.sql(
+            """SELECT DISTINCT parent FROM `tabLead Product`
+               WHERE product LIKE %(s)s OR product_name LIKE %(s)s
+               OR CAST(product_amount AS CHAR) LIKE %(s)s""",
+            {"s": like},
+            pluck=True,
+        )
+        or_filters = [
+            ["name", "like", like],
+            ["lead_name", "like", like],
+            ["custom_employee_name", "like", like],
+            ["custom_employee_id", "like", like],
+            ["mobile_no", "like", like],
+        ]
+        if prod_parents:
+            or_filters.append(["name", "in", prod_parents])
+
+    if or_filters:
+        total_count = len(frappe.get_all("Lead", filters=filters, or_filters=or_filters, fields=["name"], limit_page_length=100000))
+    else:
+        total_count = frappe.db.count("Lead", filters)
+
     leads = frappe.get_all(
         "Lead",
         fields=[
-            "name", "lead_name", "mobile_no", "status", "source", "sol_id", "creation",
+            "name", "lead_name", "mobile_no", "phone", "status", "source", "sol_id", "creation",
             "custom_employee_name", "custom_employee_id", "custom_verification_status",
             "custom_verified_by", "custom_verified_on", "custom_verification_remarks"
         ],
         filters=filters,
+        or_filters=or_filters,
         order_by="creation desc",
-        limit_page_length=500
+        limit_start=start,
+        limit_page_length=page_length
     )
 
-    # Day-wise pending tracking stats
+    # Bulk-fetch products for all leads in one query
+    lead_names = [l.name for l in leads]
+    products_map = {}
+    if lead_names:
+        products = frappe.get_all(
+            "Lead Product",
+            filters={"parent": ["in", lead_names]},
+            fields=["parent", "product", "product_name", "product_amount"],
+            order_by="idx asc"
+        )
+        for p in products:
+            products_map.setdefault(p.parent, []).append({
+                "product": p.product or "-",
+                "product_name": p.product_name or p.product or "-",
+                "amount": p.product_amount or 0,
+            })
+
+    for l in leads:
+        plist = products_map.get(l.name, [])
+        l["products"] = plist
+        l["total_amount"] = sum((p.get("amount") or 0) for p in plist)
+        # contact fallback: mobile_no else phone
+        if not l.get("mobile_no") and l.get("phone"):
+            l["mobile_no"] = l.get("phone")
+
+    # Day-wise pending tracking stats - exact counts via COUNT (no fetch cap)
     today_str = frappe.utils.today()
     yesterday_str = frappe.utils.add_days(today_str, -1)
 
-    today_count = 0
-    yesterday_count = 0
-    older_count = 0
+    pending_filters = {}
+    if sol_id:
+        pending_filters["sol_id"] = sol_id
+    pending_filters["custom_verification_status"] = "Pending"
+    if from_date and to_date:
+        pending_filters["creation"] = ["between", [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]]
 
-    for l in leads:
-        c_date = str(l.creation).split()[0] if l.creation else ""
-        v_status = l.get("custom_verification_status") or "Pending"
-        if v_status == "Pending":
-            if c_date == today_str:
-                today_count += 1
-            elif c_date == yesterday_str:
-                yesterday_count += 1
-            else:
-                older_count += 1
+    total_pending = frappe.db.count("Lead", pending_filters)
+
+    def _count_for_day(day):
+        day_from, day_to = f"{day} 00:00:00", f"{day} 23:59:59"
+        if from_date and to_date:
+            eff_from = max(f"{from_date} 00:00:00", day_from)
+            eff_to = min(f"{to_date} 23:59:59", day_to)
+            if eff_from > eff_to:
+                return 0
+            day_from, day_to = eff_from, eff_to
+        f = dict(pending_filters)
+        f["creation"] = ["between", [day_from, day_to]]
+        return frappe.db.count("Lead", f)
+
+    today_count = _count_for_day(today_str)
+    yesterday_count = _count_for_day(yesterday_str)
+    older_count = total_pending - today_count - yesterday_count
+
+    if search and or_filters:
+        search_pending = len(frappe.get_all("Lead", filters=pending_filters, or_filters=or_filters, fields=["name"], limit_page_length=100000))
+    else:
+        search_pending = total_pending
 
     return {
         "leads": leads,
+        "total_count": total_count,
+        "start": start,
+        "page_length": page_length,
+        "search_pending": search_pending,
         "metrics": {
-            "total_pending": today_count + yesterday_count + older_count,
+            "total_pending": total_pending,
             "today_pending": today_count,
             "yesterday_pending": yesterday_count,
             "older_pending": older_count,
