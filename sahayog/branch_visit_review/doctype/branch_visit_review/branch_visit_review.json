@@ -42,6 +42,7 @@
  ],
  "fields": [
   {
+   "collapsible": 1,
    "fieldname": "visit_details_section",
    "fieldtype": "Section Break",
    "label": "Visit Details"
@@ -223,7 +224,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-08 15:26:29.436863",
+ "modified": "2026-10-08 15:52:41.798812",
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
  "name": "Branch Visit Review",
