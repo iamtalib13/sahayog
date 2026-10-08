@@ -425,7 +425,9 @@ def validate_lead_conversion_verification(doc, method=None):
 
 @frappe.whitelist()
 def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None):
-    """Fetch leads for Branch BM verification grouped by day with day-wise tracking metrics."""
+    """Fetch leads for Branch BM verification grouped by day with day-wise tracking metrics.
+    Includes Lead Product child rows (product + amount) so BM can verify without opening each lead.
+    """
     user = frappe.session.user
     
     if not sol_id and user != "Administrator":
@@ -442,7 +444,7 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
     leads = frappe.get_all(
         "Lead",
         fields=[
-            "name", "lead_name", "mobile_no", "status", "source", "sol_id", "creation",
+            "name", "lead_name", "mobile_no", "phone", "status", "source", "sol_id", "creation",
             "custom_employee_name", "custom_employee_id", "custom_verification_status",
             "custom_verified_by", "custom_verified_on", "custom_verification_remarks"
         ],
@@ -450,6 +452,31 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
         order_by="creation desc",
         limit_page_length=500
     )
+
+    # Bulk-fetch products for all leads in one query
+    lead_names = [l.name for l in leads]
+    products_map = {}
+    if lead_names:
+        products = frappe.get_all(
+            "Lead Product",
+            filters={"parent": ["in", lead_names]},
+            fields=["parent", "product", "product_name", "product_amount"],
+            order_by="idx asc"
+        )
+        for p in products:
+            products_map.setdefault(p.parent, []).append({
+                "product": p.product or "-",
+                "product_name": p.product_name or p.product or "-",
+                "amount": p.product_amount or 0,
+            })
+
+    for l in leads:
+        plist = products_map.get(l.name, [])
+        l["products"] = plist
+        l["total_amount"] = sum((p.get("amount") or 0) for p in plist)
+        # contact fallback: mobile_no else phone
+        if not l.get("mobile_no") and l.get("phone"):
+            l["mobile_no"] = l.get("phone")
 
     # Day-wise pending tracking stats
     today_str = frappe.utils.today()
