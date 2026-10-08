@@ -1820,12 +1820,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         let rowsHtml = leads.map(l => {
           let badgeClass = l.custom_verification_status === "Verified" ? "background:#dcfce7;color:#166534;" : (l.custom_verification_status === "Rejected" ? "background:#fee2e2;color:#991b1b;" : "background:#fef3c7;color:#92400e;");
           let cDate = l.creation ? frappe.datetime.str_to_user(l.creation) : "-";
+          let prods = l.products || [];
+          let prodHtml = prods.length ? prods.map(p => `<div style="white-space:nowrap;">${p.product_name || p.product}<b style="float:right;margin-left:10px;">₹${Number(p.amount||0).toLocaleString('en-IN')}</b></div>`).join('') : '<span style="color:#9ca3af;">-</span>';
+          let total = l.total_amount != null ? l.total_amount : prods.reduce((s,p) => s + Number(p.amount||0), 0);
           return `
             <tr style="border-bottom:1px solid #f3f4f6;">
               <td style="padding:8px;"><input type="checkbox" class="chk-lead-verify" value="${l.name}"></td>
-              <td style="padding:8px;"><a href="/app/lead/${l.name}" target="_blank" style="font-weight:bold;color:#2563eb;">${l.name}</a><br><small style="color:#6b7280;">${l.lead_name || ''}</small></td>
-              <td style="padding:8px;">${l.mobile_no || '-'}</td>
-              <td style="padding:8px;">${l.custom_employee_name || '-'}<br><small style="color:#6b7280;">(${l.custom_employee_id || '-'})</small></td>
+              <td style="padding:8px;"><a href="/app/lead/${l.name}" target="_blank" style="font-weight:bold;color:#2563eb;">${l.lead_name || l.name}</a><br><small style="color:#6b7280;">${l.name} • ${l.mobile_no || '-'} • ${l.source || '-'}</small><br><small style="color:#9ca3af;">${l.custom_employee_name || ''}${l.custom_employee_id ? ' ('+l.custom_employee_id+')' : ''}</small></td>
+              <td style="padding:8px;font-size:11px;">${prodHtml}</td>
+              <td style="padding:8px;font-weight:bold;white-space:nowrap;">₹${Number(total||0).toLocaleString('en-IN')}</td>
               <td style="padding:8px;font-size:11px;">${cDate}</td>
               <td style="padding:8px;"><span style="padding:2px 8px;border-radius:12px;font-weight:bold;font-size:11px;${badgeClass}">${l.custom_verification_status || 'Pending'}</span></td>
             </tr>
@@ -1838,11 +1841,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
               <thead style="background:#f9fafb; position:sticky; top:0;">
                 <tr>
                   <th style="width:30px;"><input type="checkbox" id="chk-select-all-leads"></th>
-                  <th>Lead ID / Name</th>
-                  <th>Mobile</th>
-                  <th>Employee</th>
-                  <th>Created On</th>
-                  <th>Verification</th>
+                  <th>Customer</th>
+                  <th>Products</th>
+                  <th>Total</th>
+                  <th>Created</th>
+                  <th>Status</th>
                 </tr>
               </thead>
               <tbody>${rowsHtml}</tbody>
