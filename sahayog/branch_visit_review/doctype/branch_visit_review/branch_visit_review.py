@@ -7,6 +7,7 @@ from frappe.model.document import Document
 from frappe.utils import now_datetime
 
 from sahayog.branch_visit_review.api import (
+	VISIT_DETAILS_DESIGNATIONS,
 	can_edit_visit_details,
 	can_sign_branch_head,
 	can_sign_visitor,
@@ -56,9 +57,22 @@ class BranchVisitReview(Document):
 	# end: auto-generated types
 
 	def validate(self):
+		self.validate_visited_by_designation()
 		self.validate_visit_details_edit()
 		self.validate_visitor_signoff()
 		self.validate_branch_head_signoff()
+
+	def validate_visited_by_designation(self):
+		if not self.visited_by:
+			return
+		designation = frappe.db.get_value("Employee", self.visited_by, "designation")
+		if designation not in VISIT_DETAILS_DESIGNATIONS:
+			frappe.throw(
+				_("Visited By must be a {0}.").format(
+					", ".join(VISIT_DETAILS_DESIGNATIONS)
+				),
+				frappe.ValidationError,
+			)
 
 	def validate_visit_details_edit(self):
 		if not self.get_doc_before_save() or frappe.session.user == "Administrator":
