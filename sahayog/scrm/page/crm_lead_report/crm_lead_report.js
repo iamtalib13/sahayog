@@ -1710,6 +1710,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     openBMVerificationDialog() {
       let self = this;
       let selected_status = "Pending";
+      let current_start = 0;
+      const page_len = 20;
+      let total_count = 0;
       let dialog = new frappe.ui.Dialog({
         title: __("BM Lead Verification"),
         size: "extra-large",
@@ -1726,6 +1729,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             default: "Pending",
             onchange() {
               selected_status = dialog.get_value("status_filter");
+              current_start = 0;
               loadVerificationData();
             }
           },
@@ -1785,11 +1789,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:20px;"><i class="fa fa-spinner fa-spin fa-2x text-muted"></i></div>');
         let res = await frappe.call({
           method: "sahayog.scrm.controller.lead.lead.get_bm_lead_verification_data",
-          args: { status: selected_status }
+          args: { status: selected_status, start: current_start, page_length: page_len }
         });
         if (!res.message) return;
         let m = res.message.metrics || {};
         let leads = res.message.leads || [];
+        total_count = res.message.total_count || 0;
 
         dialog.fields_dict.metrics_html.$wrapper.html(`
           <div style="display:flex; gap:12px; margin-bottom:15px;">
@@ -1836,6 +1841,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           `;
         }).join('');
 
+        let show_from = total_count === 0 ? 0 : current_start + 1;
+        let show_to = Math.min(current_start + page_len, total_count);
         dialog.fields_dict.leads_table_html.$wrapper.html(`
           <div style="max-height:350px; overflow-y:auto; border:1px solid #e5e7eb; border-radius:6px;">
             <table class="table table-bordered table-sm" style="margin:0; font-size:12px;">
@@ -1853,11 +1860,28 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
               <tbody>${rowsHtml}</tbody>
             </table>
           </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 2px;font-size:12px;">
+            <span class="text-muted">Showing ${show_from}-${show_to} of ${total_count}</span>
+            <div style="display:flex;gap:6px;">
+              <button class="btn btn-xs btn-default btn-prev-leads" ${current_start === 0 ? 'disabled' : ''}>Prev</button>
+              <button class="btn btn-xs btn-default btn-next-leads" ${(current_start + page_len) >= total_count ? 'disabled' : ''}>Next (20)</button>
+            </div>
+          </div>
         `);
 
         dialog.$wrapper.find('#chk-select-all-leads').on('change', function() {
           let checked = $(this).is(':checked');
           dialog.$wrapper.find('.chk-lead-verify').prop('checked', checked);
+        });
+        dialog.$wrapper.find('.btn-prev-leads').on('click', function() {
+          if (current_start === 0) return;
+          current_start = Math.max(0, current_start - page_len);
+          loadVerificationData();
+        });
+        dialog.$wrapper.find('.btn-next-leads').on('click', function() {
+          if ((current_start + page_len) >= total_count) return;
+          current_start += page_len;
+          loadVerificationData();
         });
       }
 

@@ -424,12 +424,13 @@ def validate_lead_conversion_verification(doc, method=None):
 
 
 @frappe.whitelist()
-def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None):
+def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None, start=0, page_length=20):
     """Fetch leads for Branch BM verification grouped by day with day-wise tracking metrics.
     Includes Lead Product child rows (product + amount) so BM can verify without opening each lead.
+    Supports 20-20 batch pagination via start/page_length.
     """
     user = frappe.session.user
-    
+
     if not sol_id and user != "Administrator":
         sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
 
@@ -441,6 +442,10 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
     if from_date and to_date:
         filters["creation"] = ["between", [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]]
 
+    start = int(start or 0)
+    page_length = int(page_length or 20)
+    total_count = frappe.db.count("Lead", filters)
+
     leads = frappe.get_all(
         "Lead",
         fields=[
@@ -450,7 +455,8 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
         ],
         filters=filters,
         order_by="creation desc",
-        limit_page_length=500
+        limit_start=start,
+        limit_page_length=page_length
     )
 
     # Bulk-fetch products for all leads in one query
@@ -478,27 +484,42 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
         if not l.get("mobile_no") and l.get("phone"):
             l["mobile_no"] = l.get("phone")
 
-    # Day-wise pending tracking stats
+    # Day-wise pending tracking stats (global, not paginated)
     today_str = frappe.utils.today()
     yesterday_str = frappe.utils.add_days(today_str, -1)
+
+    pending_filters = {}
+    if sol_id:
+        pending_filters["sol_id"] = sol_id
+    pending_filters["custom_verification_status"] = "Pending"
+    if from_date and to_date:
+        pending_filters["creation"] = ["between", [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]]
+
+    pending_leads = frappe.get_all(
+        "Lead",
+        fields=["creation"],
+        filters=pending_filters,
+        limit_page_length=2000
+    )
 
     today_count = 0
     yesterday_count = 0
     older_count = 0
 
-    for l in leads:
-        c_date = str(l.creation).split()[0] if l.creation else ""
-        v_status = l.get("custom_verification_status") or "Pending"
-        if v_status == "Pending":
-            if c_date == today_str:
-                today_count += 1
-            elif c_date == yesterday_str:
-                yesterday_count += 1
-            else:
-                older_count += 1
+    for pl in pending_leads:
+        c_date = str(pl.creation).split()[0] if pl.creation else ""
+        if c_date == today_str:
+            today_count += 1
+        elif c_date == yesterday_str:
+            yesterday_count += 1
+        else:
+            older_count += 1
 
     return {
         "leads": leads,
+        "total_count": total_count,
+        "start": start,
+        "page_length": page_length,
         "metrics": {
             "total_pending": today_count + yesterday_count + older_count,
             "today_pending": today_count,
