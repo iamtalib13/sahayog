@@ -174,6 +174,45 @@ def ensure_serial_no_exists(serial_no, item_code):
 
 
 @frappe.whitelist()
+def delete_serial_no(serial_no):
+    """
+    Delete a Serial No that is not linked to any Asset or stock transaction.
+    Returns {"status": "success"|"error", "message": str}
+    """
+    serial_no = (serial_no or "").strip()
+    if not serial_no:
+        return {"status": "error", "message": "Serial No is required."}
+
+    if not frappe.db.exists("Serial No", serial_no):
+        return {"status": "error", "message": f"Serial No {serial_no} not found."}
+
+    if not frappe.has_permission("Serial No", ptype="delete"):
+        return {"status": "error", "message": "Not permitted to delete Serial No."}
+
+    asset = frappe.db.get_value("Asset", {"serial_no": serial_no}, "name")
+    if asset:
+        return {
+            "status": "error",
+            "message": f"Cannot delete {serial_no}: it is linked to Asset {asset}.",
+        }
+
+    if frappe.db.exists("Serial and Batch Entry", {"serial_no": serial_no}):
+        return {
+            "status": "error",
+            "message": f"Cannot delete {serial_no}: it is used in a stock transaction.",
+        }
+
+    try:
+        frappe.delete_doc("Serial No", serial_no, ignore_permissions=True)
+        frappe.db.commit()
+    except Exception as e:
+        frappe.db.rollback()
+        return {"status": "error", "message": f"Cannot delete {serial_no}: {str(e)}"}
+
+    return {"status": "success", "message": f"Serial No {serial_no} deleted."}
+
+
+@frappe.whitelist()
 def update_asset_serial_no(asset_name, serial_no):
     """
     Updates the serial_no field on an Asset (works for draft and submitted).
