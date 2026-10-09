@@ -9210,6 +9210,22 @@
                 <span>Bulk Actions</span>
               </div>
               <button
+                v-if="activeItem === 'Serial No' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="
+                  background: linear-gradient(135deg, #f87171, #dc2626) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
+                  margin-right: 8px;
+                  font-weight: 700;
+                "
+                @click="bulkDeleteSerials()"
+              >
+                <i class="fas fa-trash"></i>
+                <span>Delete ([[ selectedRows.length ]])</span>
+              </button>
+              <button
                 v-if="hasMore"
                 class="btn-load-more"
                 @click="loadMore()"
@@ -9328,12 +9344,15 @@
             <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
               Serial Nos ([[ assetAvailabilityModalData.serials.length ]])
             </div>
-            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" @click="showAssetAvailabilityModal = false; navigateTo('Serial No'); openRecord({name: sn.name, item_code: sn.item_code})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
-              <div>
+            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" @click="showAssetAvailabilityModal = false; navigateTo('Serial No'); openRecord({name: sn.name, item_code: sn.item_code})" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
+              <div style="flex: 1; min-width: 0;">
                 <div style="font-weight: 600; color: #369696;">[[ sn.name ]]</div>
                 <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
               </div>
-              <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
+              <div style="font-size: 0.75rem; color: #999; flex-shrink: 0;">[[ sn.warehouse || '-' ]]</div>
+              <button class="btn-action" @click.stop="deleteAvailabilitySerial(sn)" title="Delete Serial No" style="flex-shrink: 0;">
+                <i class="fas fa-trash-alt"></i>
+              </button>
             </div>
           </div>
           <!-- Available Assets Section -->
@@ -14285,6 +14304,84 @@
         }
         this.assetAvailabilityModalData = { serials: serials, assets: assets, title: item.item_name };
         this.showAssetAvailabilityModal = true;
+      },
+
+      deleteAvailabilitySerial(sn) {
+        this.showConfirm(
+          "Delete Serial No",
+          `Are you sure you want to delete Serial No <b>${sn.name}</b>? This cannot be undone.`,
+          async () => {
+            try {
+              const res = await frappe.call({
+                method: "sahayog.procurement.api.asset_utils.delete_serial_no",
+                args: { serial_no: sn.name },
+              });
+              const result = res.message || {};
+              if (result.status === "success") {
+                frappe.show_alert(result.message, 5);
+                this.assetAvailabilityModalData.serials = (this.assetAvailabilityModalData.serials || []).filter(s => s.name !== sn.name);
+                this.availableSerials = (this.availableSerials || []).filter(s => s.name !== sn.name);
+                if (!(this.assetAvailabilityModalData.serials || []).length && !(this.assetAvailabilityModalData.assets || []).length) {
+                  this.showAssetAvailabilityModal = false;
+                }
+                await this.fetchAssetAvailability();
+              } else {
+                frappe.msgprint(result.message || "Delete failed");
+              }
+            } catch (e) {
+              console.error("Delete serial error:", e);
+              frappe.msgprint(e.message || "Delete failed");
+            }
+          },
+          [],
+          {},
+          "Delete",
+        );
+      },
+
+      bulkDeleteSerials() {
+        const names = [...this.selectedRows];
+        if (!names.length) return;
+        this.showConfirm(
+          "Delete Serial Nos",
+          `Are you sure you want to delete ${names.length} selected serial no(s)? This cannot be undone.`,
+          async () => {
+            this.loading = true;
+            let deleted = 0;
+            const failed = [];
+            for (const name of names) {
+              try {
+                const res = await frappe.call({
+                  method: "sahayog.procurement.api.asset_utils.delete_serial_no",
+                  args: { serial_no: name },
+                });
+                if (res.message && res.message.status === "success") {
+                  deleted++;
+                } else {
+                  failed.push(`${name}: ${res.message ? res.message.message : "failed"}`);
+                }
+              } catch (e) {
+                failed.push(`${name}: ${e.message || "failed"}`);
+              }
+            }
+            let msg = `${deleted} serial no(s) deleted`;
+            if (failed.length) {
+              msg += `, ${failed.length} failed`;
+              frappe.msgprint(
+                `${deleted} deleted, ${failed.length} failed:\n` +
+                  failed.slice(0, 10).join("\n") +
+                  (failed.length > 10 ? "\n..." : ""),
+              );
+            }
+            frappe.show_alert(msg, failed.length ? 8 : 5);
+            this.selectedRows = [];
+            await this.fetchData(this.currentView.doctype);
+            this.loading = false;
+          },
+          [],
+          {},
+          "Delete",
+        );
       },
 
       async openItemWiseSerials(item) {
