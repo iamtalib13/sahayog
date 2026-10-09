@@ -9328,17 +9328,15 @@
             <div style="padding: 10px 20px; background: var(--bg-main); font-weight: 700; font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-color);">
               Serial Nos ([[ assetAvailabilityModalData.serials.length ]])
             </div>
-            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" @click="showAssetAvailabilityModal = false; navigateTo('Serial No'); openRecord({name: sn.name, item_code: sn.item_code})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
-              <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
-                <button class="btn-action" @click.stop="deleteAvailabilitySerial(sn)" title="Delete Serial No" style="flex-shrink: 0;">
-                  <i class="fas fa-trash-alt"></i>
-                </button>
-                <div style="min-width: 0;">
-                  <div style="font-weight: 600; color: #369696;">[[ sn.name ]]</div>
-                  <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
-                </div>
+            <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" @click="showAssetAvailabilityModal = false; navigateTo('Serial No'); openRecord({name: sn.name, item_code: sn.item_code})" style="display: flex; align-items: center; gap: 8px; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
+              <div style="flex: 1; min-width: 0;">
+                <div style="font-weight: 600; color: #369696;">[[ sn.name ]]</div>
+                <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
               </div>
-              <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
+              <div style="font-size: 0.75rem; color: #999; flex-shrink: 0;">[[ sn.warehouse || '-' ]]</div>
+              <button class="btn-action" @click.stop="deleteAvailabilitySerial(sn)" title="Delete Serial No" style="flex-shrink: 0;">
+                <i class="fas fa-trash-alt"></i>
+              </button>
             </div>
           </div>
           <!-- Available Assets Section -->
