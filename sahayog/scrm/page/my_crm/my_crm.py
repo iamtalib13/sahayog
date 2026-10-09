@@ -102,7 +102,7 @@ def _get_lead_data(limit, offset, search_term, since=None):
 
     leads = frappe.get_list(
         "Lead",
-        fields=["name", "lead_name", "first_name", "mobile_no", "email_id", "status", "source", "modified"],
+        fields=["name", "lead_name", "first_name", "mobile_no", "email_id", "status", "source", "modified", "custom_verification_status"],
         filters=filters,
         or_filters=or_filters,
         order_by="modified desc, name desc",
