@@ -60,6 +60,7 @@ class Training(Document):
         self._validate_no_holiday_sunday()
         self._validate_participant_types()
         self._validate_completed_budget()
+        self._validate_checks_require_participants()
 
     def _sync_geographies(self):
         if self.get("geographies"):
@@ -168,6 +169,18 @@ class Training(Document):
                 frappe.throw(
                     _("{0} is mandatory (minimum ₹1) when training is Completed.").format(label)
                 )
+
+    def _validate_checks_require_participants(self):
+        # Any completion check needs participants; agent trainings additionally
+        # need every agent's attendance marked (Present/Absent).
+        if not any(self.get(f) for f in COMPLETION_FIELDS):
+            return
+        parts = self.get("participants") or []
+        if not parts:
+            frappe.throw(_("Add participants before marking completion."))
+        agents = [p for p in parts if (p.reference_doctype or "Employee") == "Agent"]
+        if agents and any((p.attendance_status or "") not in ("Present", "Absent") for p in agents):
+            frappe.throw(_("Mark attendance for all swayamsevikas before marking completion."))
 
     def _validate_participant_types(self):
         if self.get("participants"):

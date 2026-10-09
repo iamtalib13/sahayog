@@ -1515,6 +1515,15 @@
       .check-item.done .ck-val {
         color: #15803d;
       }
+      /* Why completion checks are locked (no participants / attendance) */
+      .checks-lock-hint {
+        font-size: 11.5px;
+        color: #b45309;
+        background: var(--orange-soft);
+        border-radius: var(--radius-sm);
+        padding: 6px 9px;
+        margin-top: 6px;
+      }
       .progress-row {
         display: flex;
         align-items: center;
@@ -3909,6 +3918,11 @@
       }
       .budget-edit input:focus {
         border-color: var(--accent);
+      }
+      .budget-edit input:disabled {
+        background: var(--surface-2);
+        color: var(--ink-3);
+        cursor: not-allowed;
       }
       .budget-edit-foot {
         display: flex;
@@ -6854,12 +6868,76 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;");
         }
-        /* Display label for participant types — stored value stays "Agent". */
+        /* Budget is the LAST step: inputs unlock only when all 5 checks are
+           ticked (staged counts). Read-only ones (locked/completed) untouched. */
+        function refreshBudgetInputs(ev) {
+          var ready = completionScore(ev) === 5;
+          var hint = ready
+            ? "Fill before marking complete (min ₹1 each)"
+            : "Complete all checks first — budget is the last step";
+          ["drw-budget-amount", "drw-actual-expense", "edit-budget-amount", "edit-actual-expense"].forEach(
+            function (id) {
+              var el = document.getElementById(id);
+              if (!el || el.readOnly) return;
+              el.disabled = !ready;
+              el.title = ready ? "" : hint;
+            },
+          );
+          document.querySelectorAll(".budget-edit-foot .budget-hint").forEach(function (h) {
+            var box = h.closest(".drawer-section");
+            if (box && box.querySelector("input[readonly]")) return;
+            h.textContent = hint;
+          });
+        }
         function ptLabel(t) {
           return t === "Agent" ? "SwayamSevika" : "Employee";
         }
         function ptPlural(t) {
           return t === "Agent" ? "SwayamSevikas" : "Employees";
+        }
+        /* Completion checks need participants; agent trainings additionally
+           need every swayamsevika's attendance marked. Returns "" or a reason. */
+        function checksLockedReason(ev) {
+          var list = ev.participant_list || [];
+          if (!list.length)
+            return "Add participants before marking completion.";
+          var agents = list.filter(function (p) {
+            return (p.reference_doctype || "Employee") === "Agent";
+          });
+          if (agents.length) {
+            var pending = agents.filter(function (p) {
+              return p.attendance_status !== "Present" && p.attendance_status !== "Absent";
+            });
+            if (pending.length)
+              return "Mark attendance for all swayamsevikas before marking completion.";
+          }
+          return "";
+        }
+        /* Re-evaluate check locks after participant_list arrives late.
+           Only touches locks it owns (dataset.lockOwned) — never enables
+           inputs disabled for other reasons (role, completed). */
+        function applyCheckLock(inp, reason) {
+          if (reason) {
+            inp.disabled = true;
+            inp.title = reason;
+            inp.dataset.lockOwned = "1";
+          } else if (inp.dataset.lockOwned) {
+            inp.disabled = false;
+            inp.title = "";
+            delete inp.dataset.lockOwned;
+          }
+        }
+        function refreshCheckLocks(ev) {
+          var reason = checksLockedReason(ev);
+          document
+            .querySelectorAll("#drawerBody .check-item input, #nt-edit-extra .check-item input")
+            .forEach(function (inp) {
+              applyCheckLock(inp, reason);
+            });
+          document.querySelectorAll(".checks-lock-hint").forEach(function (h) {
+            h.textContent = reason;
+            h.style.display = reason ? "" : "none";
+          });
         }
         function fmtTime(t) {
           if (!t) return "";
@@ -8175,12 +8253,10 @@
           state.currentEvent = ev;
           var r = role();
           var editable = mode === "edit" && r.canEdit;
-          /* Completed trainings are fully read-only, except budget top-up
-             while a budget field is still empty. */
+          /* Completed trainings are fully locked in the portal
+             (desk stays as L&D Admin override, e.g. backlog budgets). */
           var isDone = completionScore(ev) === 5;
           var canEditDrawer = editable && !isDone;
-          var budgetOpen = (state.role === "ld_admin" || isOwnCompletedTraining(ev)) &&
-            (ev.budget_amount == null || ev.budget_amount === "" || ev.actual_expense == null || ev.actual_expense === "");
           var st = statusOf(ev);
           var meta = STATUS_META[st];
           var score = completionScore(ev);
@@ -8214,7 +8290,7 @@
             (ev.is_adhoc ? ' <span class="chip chip-gray">Ad-hoc</span>' : "") +
             "</div>" +
             "</div>" +
-            (canEditDrawer || (isDone && budgetOpen)
+            (canEditDrawer
               ? '<button class="btn btn-primary" id="drawerSaveTop" style="height:30px;padding:0 14px;font-size:12.5px;flex-shrink:0;">Save</button>'
               : "") +
             '<button class="icon-btn" id="drawerClose" title="Close">' +
@@ -8311,12 +8387,17 @@
 
           var checkList = CHECK_FIELDS.map(function (f) {
             var on = !!ev[f.key];
+            var lockReason = checksLockedReason(ev);
             var input = canEditDrawer
               ? '<input type="checkbox" ' +
                 (on ? "checked" : "") +
                 ' data-field="' +
                 f.key +
-                '" />'
+                '"' +
+                (lockReason
+                  ? ' disabled title="' + esc(lockReason) + '" data-lock-owned="1"'
+                  : "") +
+                " />"
               : "";
             return (
               '<label class="check-item' +
@@ -8336,6 +8417,7 @@
           body +=
             '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' +
             checkList +
+            '<div class="checks-lock-hint" style="display:none"></div>' +
             "</div>";
 
           /* View mode (e.g. Team Training drawer): show participant names +
@@ -8347,29 +8429,33 @@
           }
 
           if (r.showBudget) {
-            /* Budget inputs: L&D Admin + own-trainer after 5/5 checks (also
-               on completed trainings while a field is still empty);
-               everyone else sees values read-only. Filled values lock. */
+            /* Budget inputs: L&D Admin anytime + own trainer any time BEFORE
+               completion (editable until Completed, then locked). Everyone
+               else sees read-only values. Desk stays as admin override. */
             var drwBfilled = ev.budget_amount != null && ev.budget_amount !== "";
             var drwAfilled = ev.actual_expense != null && ev.actual_expense !== "";
-            if ((editable || isDone) && (state.role === "ld_admin" || isOwnCompletedTraining(ev))) {
+            var drwBlocked = isDone;
+            if ((editable || isDone) && (state.role === "ld_admin" || isOwnTraining(ev))) {
+              var drwReady = completionScore(ev) === 5;
               body +=
                 '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
                 '<label>Budget Amount (₹)<input id="drw-budget-amount" type="number" step="0.01" min="1" value="' +
                 (ev.budget_amount == null ? "" : ev.budget_amount) +
                 '"' +
-                (drwBfilled ? " readonly" : "") +
+                (drwBlocked ? " readonly" : drwReady ? "" : " disabled") +
                 " /></label>" +
                 '<label>Actual Expense (₹)<input id="drw-actual-expense" type="number" step="0.01" min="1" value="' +
                 (ev.actual_expense == null ? "" : ev.actual_expense) +
                 '"' +
-                (drwAfilled ? " readonly" : "") +
+                (drwBlocked ? " readonly" : drwReady ? "" : " disabled") +
                 " /></label>" +
                 "</div>" +
                 '<div class="budget-edit-foot">' +
-                '<span class="budget-hint">Saved with Save Changes' +
-                (completionScore(ev) === 5 ? " · Required for completed trainings (min ₹1 each)" : "") +
+                '<span class="budget-hint">' +
+                (isDone
+                  ? "Locked — completed trainings cannot be edited here"
+                  : "Complete all checks first — budget is the last step") +
                 "</span>" +
                 "</div></div>";
             } else {
@@ -8406,7 +8492,7 @@
           actionsEl.innerHTML = "";
           actionsEl.style.display = "none";
 
-          if (canEditDrawer || (isDone && budgetOpen)) {
+          if (canEditDrawer) {
             var saveTop = document.getElementById("drawerSaveTop");
             if (saveTop) saveTop.onclick = saveDrawerChanges;
           }
@@ -8434,6 +8520,8 @@
           drawer.classList.add("open");
           drawer.setAttribute("aria-hidden", "false");
           fillAttendanceSection(ev, editable && !isDone);
+          /* Participant list may arrive late — fix check locks when it does */
+          refreshCheckLocks(ev);
         }
 
         /* ----- Calendar modal attendance (edit mode): summary + popover ----- */
@@ -8662,6 +8750,8 @@
           }
           var pctEl = document.getElementById("drw-progress-pct");
           if (pctEl) pctEl.textContent = pct + "%";
+          /* 5th staged check unlocks budget (last step) */
+          refreshBudgetInputs(ev);
         }
 
         function metaRow(k, v) {
@@ -8856,6 +8946,7 @@
                 ev.participant_list.length ? isAgt0 : undefined,
               );
             }
+            refreshCheckLocks(ev);
             return;
           }
           api("get_training_details", { name: ev.name })
@@ -8875,6 +8966,7 @@
                   ev.participant_list.length ? isAgt : undefined,
                 );
               }
+              refreshCheckLocks(ev);
             })
             .catch(function () {
               var b = document.getElementById("drw-attendance");
@@ -8922,6 +9014,8 @@
                         s.innerHTML = attendanceSummaryHTML(
                           attendanceSummary(ev.participant_list),
                         );
+                      /* Attendance progress may unlock completion checks */
+                      refreshCheckLocks(ev);
                     })
                     .catch(function (e) {
                       row.querySelectorAll(".att-btn").forEach(function (b) {
@@ -8974,6 +9068,8 @@
             var pct = extra.querySelector(".progress-pct");
             if (pct) pct.textContent = Math.round((score / 5) * 100) + "%";
           }
+          /* 5th staged check unlocks budget (last step) */
+          refreshBudgetInputs(ev);
         }
         function saveDrawerChanges() {
           var ev = state.currentEvent;
@@ -9018,14 +9114,20 @@
             );
           }
 
-          if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
+          var canBudget = state.role === "ld_admin" || isOwnTraining(ev);
+          var budgetTasks = [];
+          if (canBudget) {
             var b = document.getElementById("drw-budget-amount");
             var a = document.getElementById("drw-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
-            /* Completed trainings: both budget fields mandatory, min ₹1 */
-            if ((b || a) && completionScore(ev) === 5 && (isNaN(bv) || bv < 1 || isNaN(av) || av < 1)) {
-              showToast("Budget Amount and Actual Expense are required (min ₹1) for completed trainings.");
+            var stagedScore = completionScore(ev);
+            var wouldComplete = wasScore < 5 && stagedScore === 5;
+            /* Completing needs budget first (min ₹1 each) — inputs or stored */
+            var effB = b && !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
+            var effA = a && !isNaN(av) ? av : parseFloat(ev.actual_expense);
+            if (wouldComplete && (isNaN(effB) || effB < 1 || isNaN(effA) || effA < 1)) {
+              showToast("Fill Budget Amount and Actual Expense (min ₹1 each) before marking complete.");
               return;
             }
             var bStr = isNaN(bv) ? "" : bv;
@@ -9034,7 +9136,7 @@
               String(bStr) !== String(base.budget) ||
               String(aStr) !== String(base.expense)
             ) {
-              tasks.push(
+              budgetTasks.push(
                 api("update_budget", {
                   training_name: ev.name,
                   budget_amount: isNaN(bv) ? null : bv,
@@ -9047,12 +9149,26 @@
             }
           }
 
-          if (!tasks.length) {
+          if (!tasks.length && !budgetTasks.length) {
             closeDrawer();
             return;
           }
 
-          Promise.all(tasks)
+          /* Confirm before locking: completing cannot be undone here */
+          if (wasScore < 5 && completionScore(ev) === 5) {
+            if (
+              !confirm(
+                "Mark this training as Completed? Completed trainings get locked (only budget top-up stays, via L&D Admin on desk).",
+              )
+            )
+              return;
+          }
+
+          /* Budget first (the completing check reads stored budget) */
+          Promise.all(budgetTasks)
+            .then(function () {
+              return Promise.all(tasks);
+            })
             .then(function () {
               render();
               renderTrainings();
@@ -9545,6 +9661,8 @@
                 inp.readOnly = !r.canEdit;
               },
             );
+            /* Apply participant/attendance lock to the staged checkboxes */
+            refreshCheckLocks(ev);
           }
           addModal.classList.add("open");
           refreshModalAttendanceRow(ev);
@@ -9571,12 +9689,17 @@
             "%</span></div></div>";
           var checkList = CHECK_FIELDS.map(function (f) {
             var on = !!ev[f.key];
+            var lockReason = checksLockedReason(ev);
             var input = r.canEdit && score !== 5
               ? '<input type="checkbox" ' +
                 (on ? "checked" : "") +
                 ' data-field="' +
                 f.key +
-                '" />'
+                '"' +
+                (lockReason
+                  ? ' disabled title="' + esc(lockReason) + '" data-lock-owned="1"'
+                  : "") +
+                " />"
               : "";
             return (
               '<label class="check-item' +
@@ -9594,30 +9717,34 @@
           var statusHtml =
             '<div class="drawer-section ee-card"><div class="drawer-section-title">Training Status</div>' +
             checkList +
+            '<div class="checks-lock-hint" style="display:none"></div>' +
             "</div>";
           if (r.showBudget) {
-            /* Budget inputs: editable only while empty — filled values stay read-only. */
+            /* Budget inputs: L&D Admin anytime + own trainer any time BEFORE
+               completion (editable until Completed, then locked). */
             var budgetHtml;
             var bFilled = ev.budget_amount != null && ev.budget_amount !== "";
             var aFilled = ev.actual_expense != null && ev.actual_expense !== "";
-            if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
+            if (state.role === "ld_admin" || isOwnTraining(ev)) {
+              var doneLock = score === 5;
+              var eeReady = score === 5;
               budgetHtml =
                 '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
                 '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="1" value="' +
                 (ev.budget_amount == null ? "" : ev.budget_amount) +
                 '"' +
-                (bFilled ? " readonly" : "") +
+                (doneLock ? " readonly" : eeReady ? "" : " disabled") +
                 " /></label>" +
                 '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="1" value="' +
                 (ev.actual_expense == null ? "" : ev.actual_expense) +
                 '"' +
-                (aFilled ? " readonly" : "") +
+                (doneLock ? " readonly" : eeReady ? "" : " disabled") +
                 " /></label>" +
                 "</div>" +
-                (completionScore(ev) === 5
-                  ? '<div class="budget-edit-foot"><span class="budget-hint">Required for completed trainings (min ₹1 each)</span></div>'
-                  : "") +
+                (doneLock
+                  ? '<div class="budget-edit-foot"><span class="budget-hint">Locked — completed trainings cannot be edited here</span></div>'
+                  : '<div class="budget-edit-foot"><span class="budget-hint">Complete all checks first — budget is the last step</span></div>') +
                 "</div>";
             } else {
               budgetHtml =
@@ -9716,7 +9843,9 @@
           var beforeGeo = ((ev.geographies || []).map(function (g) { return g.branch || ""; }).filter(Boolean).sort().join("|"));
           var afterGeo = ((state.selectedGeographies || []).map(function (g) { return (g.branch || "").trim(); }).filter(Boolean).sort().join("|"));
           var geoChanged = beforeGeo !== afterGeo;
-          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged)) {
+          var adhocVal = document.getElementById("new-adhoc").checked ? 1 : 0;
+          var adhocChanged = !isDoneSave && adhocVal !== (ev.is_adhoc ? 1 : 0);
+          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged || adhocChanged)) {
             if (!fromDate) {
               showToast("From Date is required");
               return;
@@ -9733,12 +9862,12 @@
                 var iso = cur.toISOString().slice(0, 10);
                 if (_hols2[iso]) {
                   showToast(
-                    "Cannot schedule on Holiday (" + _hols2[iso] + "): " + iso,
+                    "Cannot schedule on Holiday (" + _hols2[iso] + "): " + fmtSlash(iso),
                   );
                   return true;
                 }
                 if (cur.getDay() === 0) {
-                  showToast("Cannot schedule on Sunday: " + iso);
+                  showToast("Cannot schedule on Sunday: " + fmtSlash(iso));
                   return true;
                 }
                 cur.setDate(cur.getDate() + 1);
@@ -9769,6 +9898,7 @@
                 training_location: trainingLocation || null,
                 number_of_participants: expChanged ? expVal : null,
                 geographies: geoChanged ? JSON.stringify(state.selectedGeographies) : null,
+                is_adhoc: adhocChanged ? adhocVal : null,
               }).then(function () {
                 ev.from_date = fromDate;
                 ev.to_date = toDate;
@@ -9777,6 +9907,7 @@
                 ev.time = startTime;
                 ev.training_type = trainingType;
                 ev.training_location = trainingLocation;
+                ev.is_adhoc = adhocVal;
                 if (expChanged) ev.number_of_participants = expVal;
                 /* ev.geographies refreshes from the get_training_details
                    refetch after save — no manual merge needed. */
@@ -9846,29 +9977,50 @@
               };
             }
           }
-          if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
+          var canBudgetEdit = state.role === "ld_admin" || isOwnTraining(ev);
+          var budgetTasks = [];
+          if (canBudgetEdit) {
             var b = document.getElementById("edit-budget-amount");
             var a = document.getElementById("edit-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
-            /* Completed trainings: both budget fields mandatory, min ₹1 */
-            if ((b || a) && completionScore(ev) === 5 && (isNaN(bv) || bv < 1 || isNaN(av) || av < 1)) {
-              showToast("Budget Amount and Actual Expense are required (min ₹1) for completed trainings.");
+            /* Completing needs budget first (min ₹1 each) — inputs or stored */
+            var effB = b && !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
+            var effA = a && !isNaN(av) ? av : parseFloat(ev.actual_expense);
+            if (wasScore < 5 && completionScore(ev) === 5 && (isNaN(effB) || effB < 1 || isNaN(effA) || effA < 1)) {
+              showToast("Fill Budget Amount and Actual Expense (min ₹1 each) before marking complete.");
               return;
             }
-            tasks.push(
-              api("update_budget", {
-                training_name: ev.name,
-                budget_amount: isNaN(bv) ? null : bv,
-                actual_expense: isNaN(av) ? null : av,
-              }).then(function () {
-                ev.budget_amount = isNaN(bv) ? null : bv;
-                ev.actual_expense = isNaN(av) ? null : av;
-              }),
-            );
+            if (b || a) {
+              var bStr = isNaN(bv) ? "" : bv;
+              var aStr = isNaN(av) ? "" : av;
+              var baseB = ev.budget_amount == null ? "" : ev.budget_amount;
+              var baseA = ev.actual_expense == null ? "" : ev.actual_expense;
+              if (String(bStr) !== String(baseB) || String(aStr) !== String(baseA)) {
+                budgetTasks.push(
+                  api("update_budget", {
+                    training_name: ev.name,
+                    budget_amount: isNaN(bv) ? null : bv,
+                    actual_expense: isNaN(av) ? null : av,
+                  }).then(function () {
+                    ev.budget_amount = isNaN(bv) ? null : bv;
+                    ev.actual_expense = isNaN(av) ? null : av;
+                  }),
+                );
+              }
+            }
+          }
+          /* Confirm before locking: completing cannot be undone here */
+          if (wasScore < 5 && completionScore(ev) === 5) {
+            if (
+              !confirm(
+                "Mark this training as Completed? Completed trainings get locked (further changes only on desk by L&D Admin).",
+              )
+            )
+              return;
           }
           // Serialized writes: doc.save() inside sync/flush throws TimestampMismatch
-          // if parallel set_value calls bump `modified` first. Order: flush, sync, rest.
+          // if parallel set_value calls bump `modified` first. Order: flush, sync, budget, rest.
           state.savingTraining = true;
           var flushP = dialogFn.flushAttStaged
             ? dialogFn.flushAttStaged()
@@ -9876,6 +10028,9 @@
           flushP
             .then(function () {
               return doSync ? doSync() : true;
+            })
+            .then(function () {
+              return Promise.all(budgetTasks);
             })
             .then(function () {
               return Promise.all(tasks);
@@ -10075,12 +10230,12 @@
               var iso = cur.toISOString().slice(0, 10);
               if (_hols[iso]) {
                 showToast(
-                  "Cannot schedule on Holiday (" + _hols[iso] + "): " + iso,
+                  "Cannot schedule on Holiday (" + _hols[iso] + "): " + fmtSlash(iso),
                 );
                 return iso;
               }
               if (cur.getDay() === 0) {
-                showToast("Cannot schedule on Sunday: " + iso);
+                showToast("Cannot schedule on Sunday: " + fmtSlash(iso));
                 return iso;
               }
               cur.setDate(cur.getDate() + 1);
@@ -11557,6 +11712,21 @@
               pCount.classList.toggle("has", n > 0);
             }
             if (pDropCount) pDropCount.textContent = n + " selected";
+            /* Participant add/remove may lock/unlock completion checks */
+            if (
+              state.dialogMode === "edit" &&
+              state.currentEvent &&
+              document.getElementById("addModal").classList.contains("open")
+            ) {
+              refreshCheckLocks({
+                participant_list: (state.selectedParticipants || []).map(function (p) {
+                  return {
+                    reference_doctype: p.reference_doctype,
+                    attendance_status: p.attendance_status || "",
+                  };
+                }),
+              });
+            }
           }
 
           function openPop() {

@@ -941,6 +941,30 @@ def update_training_status(training_name, field, value):
     doc = frappe.get_doc("Training", training_name)
     _ensure_can_update(doc)
 
+    if field in COMPLETION_FIELDS and int(bool(value)):
+        # Completion needs participants; agent trainings additionally need
+        # every agent's attendance marked (employees have no attendance step).
+        parts = frappe.db.get_all(
+            "Training Participant",
+            filters={"parent": training_name},
+            fields=["reference_doctype", "attendance_status"],
+        )
+        if not parts:
+            frappe.throw(_("Add participants before marking completion."))
+        agents = [p for p in parts if (p.reference_doctype or "Employee") == "Agent"]
+        if agents and any((p.attendance_status or "") not in ("Present", "Absent") for p in agents):
+            frappe.throw(_("Mark attendance for all swayamsevikas before marking completion."))
+        # Completing (this tick makes 5/5) needs budget filled first (min ₹1
+        # each) — no completion without budget.
+        eff = {f: doc.get(f) for f in COMPLETION_FIELDS}
+        eff[field] = 1
+        if all(eff.values()):
+            for fld, label in (("budget_amount", _("Budget Amount")), ("actual_expense", _("Actual Expense"))):
+                if not doc.get(fld) or frappe.utils.flt(doc.get(fld)) < 1:
+                    frappe.throw(
+                        _("Fill {0} (minimum ₹1) before marking complete.").format(label)
+                    )
+
     if field == "trainer_remarks":
         frappe.db.set_value("Training", training_name, "trainer_remarks", value)
     else:
@@ -1080,8 +1104,9 @@ def sync_participants(training_name, participants=None):
 
 @frappe.whitelist()
 def update_budget(training_name, budget_amount=None, actual_expense=None):
-    """Budget/expense capture — L&D Admin, plus the assigned trainer (owner or
-    trainer match) after all 5 completion checks are ticked.
+    """Budget/expense capture — L&D Admin anytime; assigned trainer (owner or
+    trainer match) on their own trainings, any time BEFORE completion.
+    Completed trainings are locked in the portal (desk stays as override).
 
     On a Completed training (all 5 checks) both fields are mandatory with a
     minimum of ₹1 — enforced here (set_value bypasses doc validation).
@@ -1091,7 +1116,6 @@ def update_budget(training_name, budget_amount=None, actual_expense=None):
     else:
         _doc = frappe.get_doc("Training", training_name)
         _ensure_can_update(_doc)
-        _require_completed(_doc)
     if budget_amount is None and actual_expense is None:
         # Nothing to change (DB columns are NOT NULL) — don't touch stored values
         return {"success": True}
@@ -2465,7 +2489,7 @@ def _replace_geographies(training_name, geographies):
 
 
 @frappe.whitelist()
-def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None):
+def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None, is_adhoc=None):
     """
     Reschedule a training — L&D Admin can change anything; a trainer can
     reschedule only their own trainings (created by them or assigned to them).
@@ -2510,6 +2534,8 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
             frappe.throw(_("Number of Participants must be a whole number."))
         if updates["number_of_participants"] < 0:
             frappe.throw(_("Number of Participants cannot be negative."))
+    if is_adhoc is not None:
+        updates["is_adhoc"] = 1 if str(is_adhoc).strip().lower() in ("1", "true", "yes") else 0
 
     # New date => new invitation cycle: capture the old date BEFORE writing,
     # so the 10 AM invitation cron picks the rescheduled training up again.
@@ -2731,8 +2757,9 @@ def bulk_upload_training(month=None):
             # Sunday check
             import datetime as _dt
             _td = frappe.utils.getdate(training_date)
+            _td_disp = f"{training_date[8:10]}/{training_date[5:7]}/{training_date[0:4]}"
             if _td.weekday() == 6:
-                errors.append(f"Row {i}: Training Date '{training_date}' is a Sunday — trainings cannot be scheduled on Sundays")
+                errors.append(f"Row {i}: Training Date '{_td_disp}' is a Sunday — trainings cannot be scheduled on Sundays")
                 continue
             # Holiday check — use uploader's state-wise holiday list
             _STATE_PREFIX_BU = {
@@ -2761,7 +2788,7 @@ def bulk_upload_training(month=None):
                 )
                 if _hol_row:
                     _hdesc = (_hol_row[0].description or "Holiday").strip()
-                    errors.append(f"Row {i}: Training Date '{training_date}' is a Holiday ({_hdesc}) — trainings cannot be scheduled on holidays")
+                    errors.append(f"Row {i}: Training Date '{_td_disp}' is a Holiday ({_hdesc}) — trainings cannot be scheduled on holidays")
                     continue
             if not program:
                 errors.append(f"Row {i}: Program Name / Training Title is required")
