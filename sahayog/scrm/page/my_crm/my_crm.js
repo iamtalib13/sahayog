@@ -639,6 +639,8 @@ class MyCRM {
         .mycrm-status-badge.not-interested { background: #ffebee; color: #d32f2f; }
         .mycrm-status-badge.open { background: #fff3e0; color: #f57c00; }
         .mycrm-status-badge.closed { background: #e8f5e9; color: #388e3c; }
+        .mycrm-status-badge.bm-verified { background: #e8f5e9; color: #2e7d32; }
+        .mycrm-status-badge.bm-pending { background: #fff3e0; color: #e65100; }
 
         .mycrm-count {
           position: sticky;
@@ -1796,7 +1798,8 @@ async editAppointment(name) {
 // UI implementation of a WhatsApp-style card
 renderWhatsAppCard(item) {
     const modified = frappe.datetime.comment_when(item.modified);
-    let name, message, statusClass, statusText, avatar, amountDisplay = "";
+    let name, message, statusClass, statusText, avatar, bmBadge, amountDisplay = "";
+    bmBadge = "";
 
     if (this.state.section === "lead") {
       name = item.lead_name || `${item.first_name || ""} ${item.last_name || ""}`.trim() || "Unnamed";
@@ -1825,6 +1828,8 @@ renderWhatsAppCard(item) {
       message = details.join(" • ") || "No details";
       statusClass = (item.status || "lead").toLowerCase().replace(" ", "-");
       statusText = item.status || "Lead";
+      const bmVerified = (item.custom_verification_status || "Pending") === "Verified";
+      bmBadge = `<span class="mycrm-status-badge ${bmVerified ? "bm-verified" : "bm-pending"}" style="margin-right: 6px; font-size: 10px; padding: 2px 8px; border-radius: 10px; white-space: nowrap;">${bmVerified ? "BM Verified" : "BM Pending"}</span>`;
     } else {
       name = item.customer_name || "Unnamed";
       avatar = name.charAt(0).toUpperCase();
@@ -1867,7 +1872,7 @@ renderWhatsAppCard(item) {
                 
                 <div class="mycrm-message" style="font-size: 13px; color: #4b5563; display: flex; justify-content: space-between; align-items: flex-end;">
                     <span style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${message}</span>
-                    <span class="mycrm-status-badge ${statusClass}" style="margin-left: 8px; font-size: 10px; padding: 2px 8px; border-radius: 10px; white-space: nowrap;">${statusText}</span>
+                    ${bmBadge}<span class="mycrm-status-badge ${statusClass}" style="margin-left: 8px; font-size: 10px; padding: 2px 8px; border-radius: 10px; white-space: nowrap;">${statusText}</span>
                 </div>
             </div>
         </div>
