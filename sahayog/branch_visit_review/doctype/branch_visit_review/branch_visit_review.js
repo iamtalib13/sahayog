@@ -135,10 +135,6 @@ function set_visit_details_access(frm) {
 		set_read_only(0);
 		return;
 	}
-	if (!frm.doc.visited_by) {
-		set_read_only(0);
-		return;
-	}
 	frappe.call({
 		method: "sahayog.branch_visit_review.api.can_user_edit_visit_details",
 		args: { visited_by: frm.doc.visited_by },
