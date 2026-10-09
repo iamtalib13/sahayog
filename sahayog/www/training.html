@@ -6874,16 +6874,32 @@
             .replace(/'/g, "&#39;");
         }
         /* Budget is the LAST step: inputs unlock only when all 5 checks are
-           ticked (staged counts). Read-only ones (locked/completed) untouched. */
+           ticked (staged counts). Readonly only when training is SAVED as completed. */
         function refreshBudgetInputs(ev) {
-          var ready = completionScore(ev) === 5;
+          var stagedScore = completionScore(ev);
+          /* Use the persisted base score (not staged) to decide readonly lock.
+             Budget must remain editable until the save actually completes. */
+          var savedScore = CHECK_FIELDS.filter(function (f) {
+            var base = state.drawerBase || state.editBase || { checks: {} };
+            return (base.checks && base.checks[f.key]) || 0;
+          }).length;
+          var isSavedDone = savedScore === 5;
+          var ready = stagedScore === 5;
           var hint = ready
             ? "Fill before marking complete (min ₹1 each)"
             : "Complete all checks first — budget is the last step";
           ["drw-budget-amount", "drw-actual-expense", "edit-budget-amount", "edit-actual-expense"].forEach(
             function (id) {
               var el = document.getElementById(id);
-              if (!el || el.readOnly) return;
+              if (!el) return;
+              /* Only lock readonly if training is already SAVED as completed */
+              if (isSavedDone) {
+                el.readOnly = true;
+                el.disabled = false;
+                el.title = "Locked — completed training";
+                return;
+              }
+              if (el.readOnly) return;
               el.disabled = !ready;
               el.title = ready ? "" : hint;
             },
@@ -7019,6 +7035,42 @@
         function isOwnCompletedTraining(ev) {
           if (!ev || completionScore(ev) !== 5) return false;
           return isOwnTraining(ev);
+        }
+
+        /**
+         * Pre-flight check before allowing a save that would complete the training (5/5).
+         * Mirrors backend update_training_status() validations so errors are caught
+         * on the client before any API call fires.
+         *
+         * Returns null if OK, or an error message string if blocked.
+         */
+        function validateBeforeComplete(ev, budgetInputId, expenseInputId) {
+          /* 1. Participants required — check all available sources */
+          var parts = (state.selectedParticipants && state.selectedParticipants.length)
+            ? state.selectedParticipants
+            : (ev.participant_list || []);
+          /* Also accept a non-zero participants count on ev as proof */
+          var hasParticipants = parts.length > 0 || (ev.participants && ev.participants > 0);
+          if (!hasParticipants) {
+            return "Add participants before marking this training as complete.";
+          }
+          /* 2. Budget + expense required (for roles that can edit budget) */
+          var canBudget = state.role === "ld_admin" || isOwnTraining(ev);
+          if (canBudget) {
+            var bEl = budgetInputId ? document.getElementById(budgetInputId) : null;
+            var aEl = expenseInputId ? document.getElementById(expenseInputId) : null;
+            var bv = bEl ? parseFloat(bEl.value) : NaN;
+            var av = aEl ? parseFloat(aEl.value) : NaN;
+            var effB = bEl && !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
+            var effA = aEl && !isNaN(av) ? av : parseFloat(ev.actual_expense);
+            if (isNaN(effB) || effB < 1) {
+              return "Fill Budget Amount (min ₹1) before marking complete.";
+            }
+            if (isNaN(effA) || effA < 1) {
+              return "Fill Actual Expense (min ₹1) before marking complete.";
+            }
+          }
+          return null;
         }
         function evStart(ev) {
           return ev.from_date || ev.date || "";
@@ -9082,6 +9134,7 @@
             closeDrawer();
             return;
           }
+          if (state.savingDrawer) return; /* in-flight guard — prevent double clicks */
           /* Completed trainings are read-only — only budget may be saved.
              NOTE: staged (unsaved) checks must not count — base decides. */
           var wasScore = CHECK_FIELDS.filter(function (f) {
@@ -9090,6 +9143,15 @@
           var isDoneSave = wasScore === 5;
           var base = state.drawerBase || { checks: {} };
           var tasks = [];
+
+          /* Early validation — before any API tasks are queued.
+             If saving would complete (5/5), run all pre-flight checks. */
+          var stagedScoreEarly = completionScore(ev);
+          var wouldCompleteEarly = wasScore < 5 && stagedScoreEarly === 5;
+          if (wouldCompleteEarly) {
+            var errEarly = validateBeforeComplete(ev, "drw-budget-amount", "drw-actual-expense");
+            if (errEarly) { showToast(errEarly); return; }
+          }
 
           if (!isDoneSave) {
             CHECK_FIELDS.forEach(function (f) {
@@ -9121,20 +9183,11 @@
 
           var canBudget = state.role === "ld_admin" || isOwnTraining(ev);
           var budgetTasks = [];
-          if (canBudget) {
+          if (canBudget && !isDoneSave) {
             var b = document.getElementById("drw-budget-amount");
             var a = document.getElementById("drw-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
-            var stagedScore = completionScore(ev);
-            var wouldComplete = wasScore < 5 && stagedScore === 5;
-            /* Completing needs budget first (min ₹1 each) — inputs or stored */
-            var effB = b && !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
-            var effA = a && !isNaN(av) ? av : parseFloat(ev.actual_expense);
-            if (wouldComplete && (isNaN(effB) || effB < 1 || isNaN(effA) || effA < 1)) {
-              showToast("Fill Budget Amount and Actual Expense (min ₹1 each) before marking complete.");
-              return;
-            }
             var bStr = isNaN(bv) ? "" : bv;
             var aStr = isNaN(av) ? "" : av;
             if (
@@ -9170,11 +9223,13 @@
           }
 
           /* Budget first (the completing check reads stored budget) */
+          state.savingDrawer = true;
           Promise.all(budgetTasks)
             .then(function () {
               return Promise.all(tasks);
             })
             .then(function () {
+              state.savingDrawer = false;
               render();
               renderTrainings();
               showToast("Training updated");
@@ -9183,6 +9238,7 @@
               }
             })
             .catch(function (e) {
+              state.savingDrawer = false;
               showToast("Could not save changes: " + e.message);
             });
         }
@@ -9795,6 +9851,18 @@
           var isDoneSave = wasScore === 5;
           // In-flight guard: double-clicks would race parallel writers on the same doc
           if (state.savingTraining) return;
+
+          /* Early validation — before any tasks are queued.
+             If saving would complete the training (5/5), run all pre-flight checks. */
+          if (!isDoneSave) {
+            var stagedScoreEdit = completionScore(ev);
+            var wouldCompleteEdit = wasScore < 5 && stagedScoreEdit === 5;
+            if (wouldCompleteEdit) {
+              var errEdit = validateBeforeComplete(ev, "edit-budget-amount", "edit-actual-expense");
+              if (errEdit) { showToast(errEdit); return; }
+            }
+          }
+
           var tasks = [];
           // Schedule changes — single Save handles reschedule (dialog shows DD/MM/YYYY, API uses ISO)
           var fromRaw = (
@@ -9984,18 +10052,11 @@
           }
           var canBudgetEdit = state.role === "ld_admin" || isOwnTraining(ev);
           var budgetTasks = [];
-          if (canBudgetEdit) {
+          if (canBudgetEdit && !isDoneSave) {
             var b = document.getElementById("edit-budget-amount");
             var a = document.getElementById("edit-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
-            /* Completing needs budget first (min ₹1 each) — inputs or stored */
-            var effB = b && !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
-            var effA = a && !isNaN(av) ? av : parseFloat(ev.actual_expense);
-            if (wasScore < 5 && completionScore(ev) === 5 && (isNaN(effB) || effB < 1 || isNaN(effA) || effA < 1)) {
-              showToast("Fill Budget Amount and Actual Expense (min ₹1 each) before marking complete.");
-              return;
-            }
             if (b || a) {
               var bStr = isNaN(bv) ? "" : bv;
               var aStr = isNaN(av) ? "" : av;
@@ -10026,6 +10087,14 @@
           }
           // Serialized writes: doc.save() inside sync/flush throws TimestampMismatch
           // if parallel set_value calls bump `modified` first. Order: flush, sync, budget, rest.
+          if (!tasks.length && !budgetTasks.length) {
+            if (isDoneSave) {
+              showToast("This training is completed and locked — no changes can be made here.");
+            } else {
+              showToast("No changes to save.");
+            }
+            return;
+          }
           state.savingTraining = true;
           var flushP = dialogFn.flushAttStaged
             ? dialogFn.flushAttStaged()
