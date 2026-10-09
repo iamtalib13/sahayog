@@ -4297,9 +4297,9 @@
       /* Toast */
       .toast {
         position: fixed;
-        bottom: 22px;
+        top: 68px;
         left: 50%;
-        transform: translateX(-50%) translateY(20px);
+        transform: translateX(-50%) translateY(-20px);
         background: #1c1d21;
         color: #fff;
         padding: 9px 16px;
@@ -5218,7 +5218,7 @@
         .toast {
           left: 12px;
           right: 12px;
-          transform: translateX(0) translateY(20px);
+          transform: translateX(0) translateY(-20px);
           text-align: center;
         }
         .toast.show {
@@ -8356,19 +8356,21 @@
               body +=
                 '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
-                '<label>Budget Amount (₹)<input id="drw-budget-amount" type="number" step="0.01" min="0" value="' +
+                '<label>Budget Amount (₹)<input id="drw-budget-amount" type="number" step="0.01" min="1" value="' +
                 (ev.budget_amount == null ? "" : ev.budget_amount) +
                 '"' +
                 (drwBfilled ? " readonly" : "") +
                 " /></label>" +
-                '<label>Actual Expense (₹)<input id="drw-actual-expense" type="number" step="0.01" min="0" value="' +
+                '<label>Actual Expense (₹)<input id="drw-actual-expense" type="number" step="0.01" min="1" value="' +
                 (ev.actual_expense == null ? "" : ev.actual_expense) +
                 '"' +
                 (drwAfilled ? " readonly" : "") +
                 " /></label>" +
                 "</div>" +
                 '<div class="budget-edit-foot">' +
-                '<span class="budget-hint">Saved with Save Changes</span>' +
+                '<span class="budget-hint">Saved with Save Changes' +
+                (completionScore(ev) === 5 ? " · Required for completed trainings (min ₹1 each)" : "") +
+                "</span>" +
                 "</div></div>";
             } else {
               body +=
@@ -8934,33 +8936,6 @@
             });
         }
 
-        function toggleStatus(ev, field, value) {
-          var val = value ? 1 : 0;
-          ev[field] = val;
-          api("update_training_status", {
-            training_name: ev.name,
-            field: field,
-            value: val,
-          })
-            .then(function (res) {
-              if (res && res.status) ev.status = res.status;
-              refreshTrainingSurface(ev);
-              render();
-              showToast(
-                "Training " +
-                  (statusOf(ev) === "completed"
-                    ? "marked complete"
-                    : "status updated"),
-              );
-            })
-            .catch(function (e) {
-              ev[field] = val ? 0 : 1;
-              refreshTrainingSurface(ev);
-              render();
-              showToast("Update failed: " + e.message);
-            });
-        }
-
         function refreshTrainingSurface(ev) {
           if (
             state.dialogMode === "edit" &&
@@ -8972,14 +8947,46 @@
           }
         }
 
+        /* Stage a completion check in the edit dialog (saved on Save only).
+           Mirrors stageCheck for the drawer; never calls the API directly. */
+        function stageEditCheck(ev, field, checked) {
+          ev[field] = checked ? 1 : 0;
+          var extra = document.getElementById("nt-edit-extra");
+          if (extra) {
+            var inp = extra.querySelector('input[data-field="' + field + '"]');
+            var label = inp ? inp.closest("label") : null;
+            if (label) {
+              label.classList.toggle("done", !!checked);
+              var val = label.querySelector(".ck-val");
+              if (val) val.textContent = checked ? "Yes" : "No";
+            }
+            var score = completionScore(ev);
+            var tg = document.getElementById("ee-toggle");
+            if (tg) {
+              var tt = tg.querySelector(".drawer-section-title");
+              if (tt) tt.textContent = "Training Completion · " + score + "/5";
+            }
+            var fill = extra.querySelector(".progress-fill");
+            if (fill) {
+              fill.style.width = Math.round((score / 5) * 100) + "%";
+              fill.classList.toggle("complete", score === 5);
+            }
+            var pct = extra.querySelector(".progress-pct");
+            if (pct) pct.textContent = Math.round((score / 5) * 100) + "%";
+          }
+        }
         function saveDrawerChanges() {
           var ev = state.currentEvent;
           if (!ev) {
             closeDrawer();
             return;
           }
-          /* Completed trainings are read-only — only budget may be saved. */
-          var isDoneSave = completionScore(ev) === 5;
+          /* Completed trainings are read-only — only budget may be saved.
+             NOTE: staged (unsaved) checks must not count — base decides. */
+          var wasScore = CHECK_FIELDS.filter(function (f) {
+            return (state.drawerBase && state.drawerBase.checks[f.key]) || 0;
+          }).length;
+          var isDoneSave = wasScore === 5;
           var base = state.drawerBase || { checks: {} };
           var tasks = [];
 
@@ -9016,6 +9023,11 @@
             var a = document.getElementById("drw-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
+            /* Completed trainings: both budget fields mandatory, min ₹1 */
+            if ((b || a) && completionScore(ev) === 5 && (isNaN(bv) || bv < 1 || isNaN(av) || av < 1)) {
+              showToast("Budget Amount and Actual Expense are required (min ₹1) for completed trainings.");
+              return;
+            }
             var bStr = isNaN(bv) ? "" : bv;
             var aStr = isNaN(av) ? "" : av;
             if (
@@ -9368,6 +9380,11 @@
         function fillEditDialog(ev) {
           var r = role();
           setDialogMode("edit", ev);
+          /* Snapshot saved checks — dialog stages until Save (never auto-saves) */
+          state.editBase = { checks: {} };
+          CHECK_FIELDS.forEach(function (f) {
+            state.editBase.checks[f.key] = ev[f.key] || 0;
+          });
           var f = function (id, v) {
             var el = document.getElementById(id);
             if (el) el.value = v == null ? "" : v;
@@ -9517,7 +9534,7 @@
                 .querySelectorAll(".check-item input")
                 .forEach(function (inp) {
                   inp.onchange = function () {
-                    toggleStatus(ev, inp.dataset.field, inp.checked);
+                    stageEditCheck(ev, inp.dataset.field, inp.checked);
                   };
                 });
             }
@@ -9587,17 +9604,21 @@
               budgetHtml =
                 '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
-                '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' +
+                '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="1" value="' +
                 (ev.budget_amount == null ? "" : ev.budget_amount) +
                 '"' +
                 (bFilled ? " readonly" : "") +
                 " /></label>" +
-                '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="0" value="' +
+                '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="1" value="' +
                 (ev.actual_expense == null ? "" : ev.actual_expense) +
                 '"' +
                 (aFilled ? " readonly" : "") +
                 " /></label>" +
-                "</div></div>";
+                "</div>" +
+                (completionScore(ev) === 5
+                  ? '<div class="budget-edit-foot"><span class="budget-hint">Required for completed trainings (min ₹1 each)</span></div>'
+                  : "") +
+                "</div>";
             } else {
               budgetHtml =
                 '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
@@ -9635,7 +9656,11 @@
             return;
           }
           // Completed trainings are read-only — only budget may still be saved.
-          var isDoneSave = completionScore(ev) === 5;
+          // NOTE: staged (unsaved) checks must not count — base decides.
+          var wasScore = CHECK_FIELDS.filter(function (f) {
+            return (state.editBase && state.editBase.checks[f.key]) || 0;
+          }).length;
+          var isDoneSave = wasScore === 5;
           // In-flight guard: double-clicks would race parallel writers on the same doc
           if (state.savingTraining) return;
           var tasks = [];
@@ -9771,6 +9796,22 @@
             );
           }
           /* additional_cc is saved directly from the Mail Recipients dialog — no save needed here */
+          /* Staged completion checks (edit dialog stages until Save) */
+          if (!isDoneSave) {
+            CHECK_FIELDS.forEach(function (f) {
+              var cur = ev[f.key] || 0;
+              var was = (state.editBase && state.editBase.checks[f.key]) || 0;
+              if (cur !== was) {
+                tasks.push(
+                  api("update_training_status", {
+                    training_name: ev.name,
+                    field: f.key,
+                    value: cur,
+                  }),
+                );
+              }
+            });
+          }
           // Sync added/removed participants on Save (no locks)
           var doSync = null;
           {
@@ -9810,6 +9851,11 @@
             var a = document.getElementById("edit-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
+            /* Completed trainings: both budget fields mandatory, min ₹1 */
+            if ((b || a) && completionScore(ev) === 5 && (isNaN(bv) || bv < 1 || isNaN(av) || av < 1)) {
+              showToast("Budget Amount and Actual Expense are required (min ₹1) for completed trainings.");
+              return;
+            }
             tasks.push(
               api("update_budget", {
                 training_name: ev.name,
@@ -9855,6 +9901,21 @@
         }
         function closeModal(id) {
           document.getElementById(id).classList.remove("open");
+          /* Discard staged (unsaved) completion checks on edit-dialog close */
+          if (
+            id === "addModal" &&
+            state.dialogMode === "edit" &&
+            !state.savingTraining &&
+            state.currentEvent &&
+            state.editBase
+          ) {
+            var cev = state.currentEvent;
+            CHECK_FIELDS.forEach(function (f) {
+              cev[f.key] = state.editBase.checks[f.key] || 0;
+            });
+            state.editBase = null;
+            render();
+          }
         }
 
         /* ---- Reschedule mode (temporarily disabled — Save already handles schedule changes)

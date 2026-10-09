@@ -59,6 +59,7 @@ class Training(Document):
         self._validate_geographies()
         self._validate_no_holiday_sunday()
         self._validate_participant_types()
+        self._validate_completed_budget()
 
     def _sync_geographies(self):
         if self.get("geographies"):
@@ -151,6 +152,22 @@ class Training(Document):
             if d_str in holiday_map:
                 frappe.throw(_("Training cannot be scheduled on Holiday ({0}): {1}").format(holiday_map[d_str], d_disp))
             curr = frappe.utils.add_days(curr, 1)
+
+    def _validate_completed_budget(self):
+        # Completed = all 5 checks ticked -> both budget fields mandatory, min ₹1.
+        # (Completion itself is never blocked: the portal ticks checks via
+        # set_value which bypasses validate; desk completions are done by
+        # L&D Admin who can fill budget on the same form.)
+        if not all(self.get(f) for f in COMPLETION_FIELDS):
+            return
+        for fld, label in (
+            ("budget_amount", _("Budget Amount")),
+            ("actual_expense", _("Actual Expense")),
+        ):
+            if not self.get(fld) or frappe.utils.flt(self.get(fld)) < 1:
+                frappe.throw(
+                    _("{0} is mandatory (minimum ₹1) when training is Completed.").format(label)
+                )
 
     def _validate_participant_types(self):
         if self.get("participants"):

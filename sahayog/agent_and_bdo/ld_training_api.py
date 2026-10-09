@@ -1081,7 +1081,11 @@ def sync_participants(training_name, participants=None):
 @frappe.whitelist()
 def update_budget(training_name, budget_amount=None, actual_expense=None):
     """Budget/expense capture — L&D Admin, plus the assigned trainer (owner or
-    trainer match) after all 5 completion checks are ticked."""
+    trainer match) after all 5 completion checks are ticked.
+
+    On a Completed training (all 5 checks) both fields are mandatory with a
+    minimum of ₹1 — enforced here (set_value bypasses doc validation).
+    """
     if _is_admin():
         pass
     else:
@@ -1091,6 +1095,15 @@ def update_budget(training_name, budget_amount=None, actual_expense=None):
     if budget_amount is None and actual_expense is None:
         # Nothing to change (DB columns are NOT NULL) — don't touch stored values
         return {"success": True}
+    doc = frappe.get_doc("Training", training_name)
+    if all(doc.get(f) for f in COMPLETION_FIELDS):
+        eff_b = budget_amount if budget_amount is not None else doc.get("budget_amount")
+        eff_a = actual_expense if actual_expense is not None else doc.get("actual_expense")
+        for val, label in ((eff_b, _("Budget Amount")), (eff_a, _("Actual Expense"))):
+            if val is None or val == "" or frappe.utils.flt(val) < 1:
+                frappe.throw(
+                    _("{0} is mandatory (minimum ₹1) when training is Completed.").format(label)
+                )
     frappe.db.set_value("Training", training_name, "budget_amount", budget_amount)
     frappe.db.set_value("Training", training_name, "actual_expense", actual_expense)
     frappe.db.commit()
