@@ -186,6 +186,7 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
             l.custom_district,
             l.custom_region,
             l.custom_zone,
+            l.custom_verification_status,
             COALESCE(lp.product, '-') as product_code,
             COALESCE(lp.product_name, '-') as product_name,
             COALESCE(lp.product_amount, 0) as amount,
@@ -884,7 +885,8 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             DATE_FORMAT(l.modified, '%d-%m-%Y %H:%i:%s') as last_modified,
             CONCAT(TIMESTAMPDIFF(DAY, l.creation, NOW()), ' Days') as lead_age,
             IFNULL(l.lead_owner, ''),
-            IFNULL(COALESCE(e.status, e_owner.status), 'Active') as emp_status
+            IFNULL(COALESCE(e.status, e_owner.status), 'Active') as emp_status,
+            IFNULL(l.custom_verification_status, 'Pending') as bm_verification
         FROM `tabLead` l
         LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
         LEFT JOIN `tabEmployee` e ON (LOWER(e.user_id) = LOWER(l.lead_owner) OR e.employee_number = l.lead_owner)
@@ -902,7 +904,8 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
         "Product Code", "Product Name", "Amount",
         "Employee Name", "Employee ID", "Designation",
         "SOL ID", "Branch", "District", "Region", "Zone",
-        "Created On", "Last Modified", "Lead Age", "Owner Email", "Employee Status"
+        "Created On", "Last Modified", "Lead Age", "Owner Email", "Employee Status",
+        "BM Verification"
     ]
 
     new_leads_map = {}
@@ -1163,7 +1166,8 @@ def download_fast_lead_report(from_date, to_date, filters=None):
         "Product Code", "Product Name", "Amount",
         "Employee Name", "Employee ID", "Designation",
         "SOL ID", "Branch", "District", "Region", "Zone",
-        "Created On", "Last Modified", "Lead Age", "Owner Email", "Employee Status"
+        "Created On", "Last Modified", "Lead Age", "Owner Email", "Employee Status",
+        "BM Verification"
     ]
 
     if target_path and os.path.exists(target_path):
@@ -1273,7 +1277,8 @@ def download_fast_lead_report(from_date, to_date, filters=None):
                 last_modified_str,
                 lead_age_str,
                 r.get("lead_owner") or "",
-                "Active"
+                "Active",
+                r.get("custom_verification_status") or "Pending"
             ]
             matching_rows.append(row)
 
