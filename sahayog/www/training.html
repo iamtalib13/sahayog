@@ -3924,6 +3924,11 @@
         color: var(--ink-3);
         cursor: not-allowed;
       }
+      /* Locked (readonly) budget on completed trainings must LOOK locked */
+      .budget-edit input[readonly] {
+        background: var(--surface-2);
+        color: var(--ink-3);
+      }
       .budget-edit-foot {
         display: flex;
         align-items: center;
