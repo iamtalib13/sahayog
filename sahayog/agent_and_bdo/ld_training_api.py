@@ -1119,10 +1119,10 @@ def update_budget(training_name, budget_amount=None, actual_expense=None):
         return {"success": True}
     doc = frappe.get_doc("Training", training_name)
     if all(doc.get(f) for f in COMPLETION_FIELDS):
-        # Already Completed: portal budget is fully locked (any change —
-        # even valid values — is rejected). Desk form stays as L&D Admin
-        # override (validate() only demands presence there).
-        frappe.throw(_("Completed trainings are locked. Budget changes are only possible on desk by L&D Admin."))
+        # Already Completed: portal budget is fully locked — silently ignore
+        # (readonly inputs on the portal prevent accidental changes; desk stays
+        # available to L&D Admin as override via validate()).
+        return {"success": True, "skipped": "completed"}
     # Not completed yet: free entry (the completing save fills budget first,
     # and the 5th-check gate demands it) — desk validate() enforces presence.
     frappe.db.set_value("Training", training_name, "budget_amount", budget_amount)
