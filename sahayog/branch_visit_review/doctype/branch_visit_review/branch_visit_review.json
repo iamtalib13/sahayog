@@ -42,7 +42,6 @@
  ],
  "fields": [
   {
-   "collapsible": 1,
    "fieldname": "visit_details_section",
    "fieldtype": "Section Break",
    "label": "Visit Details"
