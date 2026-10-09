@@ -9210,6 +9210,22 @@
                 <span>Bulk Actions</span>
               </div>
               <button
+                v-if="activeItem === 'Serial No' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="
+                  background: linear-gradient(135deg, #f87171, #dc2626) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4) !important;
+                  margin-right: 8px;
+                  font-weight: 700;
+                "
+                @click="bulkDeleteSerials()"
+              >
+                <i class="fas fa-trash"></i>
+                <span>Delete ([[ selectedRows.length ]])</span>
+              </button>
+              <button
                 v-if="hasMore"
                 class="btn-load-more"
                 @click="loadMore()"
@@ -14316,6 +14332,51 @@
               console.error("Delete serial error:", e);
               frappe.msgprint(e.message || "Delete failed");
             }
+          },
+          [],
+          {},
+          "Delete",
+        );
+      },
+
+      bulkDeleteSerials() {
+        const names = [...this.selectedRows];
+        if (!names.length) return;
+        this.showConfirm(
+          "Delete Serial Nos",
+          `Are you sure you want to delete ${names.length} selected serial no(s)? This cannot be undone.`,
+          async () => {
+            this.loading = true;
+            let deleted = 0;
+            const failed = [];
+            for (const name of names) {
+              try {
+                const res = await frappe.call({
+                  method: "sahayog.procurement.api.asset_utils.delete_serial_no",
+                  args: { serial_no: name },
+                });
+                if (res.message && res.message.status === "success") {
+                  deleted++;
+                } else {
+                  failed.push(`${name}: ${res.message ? res.message.message : "failed"}`);
+                }
+              } catch (e) {
+                failed.push(`${name}: ${e.message || "failed"}`);
+              }
+            }
+            let msg = `${deleted} serial no(s) deleted`;
+            if (failed.length) {
+              msg += `, ${failed.length} failed`;
+              frappe.msgprint(
+                `${deleted} deleted, ${failed.length} failed:\n` +
+                  failed.slice(0, 10).join("\n") +
+                  (failed.length > 10 ? "\n..." : ""),
+              );
+            }
+            frappe.show_alert(msg, failed.length ? 8 : 5);
+            this.selectedRows = [];
+            await this.fetchData(this.currentView.doctype);
+            this.loading = false;
           },
           [],
           {},
