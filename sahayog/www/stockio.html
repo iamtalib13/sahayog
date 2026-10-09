@@ -9329,9 +9329,14 @@
               Serial Nos ([[ assetAvailabilityModalData.serials.length ]])
             </div>
             <div v-for="sn in assetAvailabilityModalData.serials" :key="sn.name" @click="showAssetAvailabilityModal = false; navigateTo('Serial No'); openRecord({name: sn.name, item_code: sn.item_code})" style="display: flex; justify-content: space-between; align-items: center; padding: 12px 20px; border-bottom: 1px solid var(--border-color); cursor: pointer; transition: background 0.15s;" onmouseover="this.style.background='rgba(54,150,150,0.05)'" onmouseout="this.style.background='transparent'">
-              <div>
-                <div style="font-weight: 600; color: #369696;">[[ sn.name ]]</div>
-                <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
+              <div style="display: flex; align-items: center; gap: 8px; min-width: 0;">
+                <button class="btn-action" @click.stop="deleteAvailabilitySerial(sn)" title="Delete Serial No" style="flex-shrink: 0;">
+                  <i class="fas fa-trash-alt"></i>
+                </button>
+                <div style="min-width: 0;">
+                  <div style="font-weight: 600; color: #369696;">[[ sn.name ]]</div>
+                  <div style="font-size: 0.8rem; color: #999;">[[ sn.item_code ]]</div>
+                </div>
               </div>
               <div style="font-size: 0.75rem; color: #999;">[[ sn.warehouse || '-' ]]</div>
             </div>
@@ -14285,6 +14290,39 @@
         }
         this.assetAvailabilityModalData = { serials: serials, assets: assets, title: item.item_name };
         this.showAssetAvailabilityModal = true;
+      },
+
+      deleteAvailabilitySerial(sn) {
+        this.showConfirm(
+          "Delete Serial No",
+          `Are you sure you want to delete Serial No <b>${sn.name}</b>? This cannot be undone.`,
+          async () => {
+            try {
+              const res = await frappe.call({
+                method: "sahayog.procurement.api.asset_utils.delete_serial_no",
+                args: { serial_no: sn.name },
+              });
+              const result = res.message || {};
+              if (result.status === "success") {
+                frappe.show_alert(result.message, 5);
+                this.assetAvailabilityModalData.serials = (this.assetAvailabilityModalData.serials || []).filter(s => s.name !== sn.name);
+                this.availableSerials = (this.availableSerials || []).filter(s => s.name !== sn.name);
+                if (!(this.assetAvailabilityModalData.serials || []).length && !(this.assetAvailabilityModalData.assets || []).length) {
+                  this.showAssetAvailabilityModal = false;
+                }
+                await this.fetchAssetAvailability();
+              } else {
+                frappe.msgprint(result.message || "Delete failed");
+              }
+            } catch (e) {
+              console.error("Delete serial error:", e);
+              frappe.msgprint(e.message || "Delete failed");
+            }
+          },
+          [],
+          {},
+          "Delete",
+        );
       },
 
       async openItemWiseSerials(item) {
