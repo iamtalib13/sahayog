@@ -27,7 +27,7 @@
    "fieldtype": "Dynamic Link",
    "ignore_user_permissions": 1,
    "in_list_view": 1,
-   "label": "Employee / Agent",
+   "label": "Employee / SwayamSevika",
    "mandatory_depends_on": "eval:doc.reference_doctype",
    "options": "reference_doctype",
    "read_only_depends_on": "eval:!doc.reference_doctype"

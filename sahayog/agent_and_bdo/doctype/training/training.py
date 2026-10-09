@@ -156,7 +156,7 @@ class Training(Document):
         if self.get("participants"):
             types = {p.reference_doctype or "Employee" for p in self.participants if p.agent_employee}
             if len(types) > 1:
-                frappe.throw(_("A training cannot have mixed participants. Please select either Employees or Agents only."))
+                frappe.throw(_("A training cannot have mixed participants. Please select either Employees or SwayamSevikas only."))
 
     def set_trainer_from_user(self):
         # System Manager / Administrator may create trainings without a linked Employee

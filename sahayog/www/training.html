@@ -6177,7 +6177,7 @@
                         Employee
                       </button>
                       <button type="button" id="p-type-agent" class="btn">
-                        Agent
+                        SwayamSevika
                       </button>
                     </div>
                     <div class="nt-pop-wrap fx-search-wrap">
@@ -6388,11 +6388,11 @@
                       >
                         <option value="">All</option>
                         <option value="Employee">Employees</option>
-                        <option value="Agent">Agents</option>
+                        <option value="Agent">SwayamSevikas</option>
                       </select>
                       <span class="c none" id="emp-selected-count">0 emp</span>
                       <span class="c none" id="agent-selected-count"
-                        >0 agents</span
+                        >0 swayamsevikas</span
                       >
                       <label class="nt-ptable-search">
                         <input id="nt-part-search" autocomplete="off" />
@@ -6853,6 +6853,13 @@
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;");
+        }
+        /* Display label for participant types — stored value stays "Agent". */
+        function ptLabel(t) {
+          return t === "Agent" ? "SwayamSevika" : "Employee";
+        }
+        function ptPlural(t) {
+          return t === "Agent" ? "SwayamSevikas" : "Employees";
         }
         function fmtTime(t) {
           if (!t) return "";
@@ -8754,7 +8761,7 @@
               "</div>"
             );
           }
-          /* View mode for Agents: compact 2-column chips (dot = status). Fits dozens
+          /* View mode for SwayamSevikas: compact 2-column chips (dot = status). Fits dozens
              of participants in ~168px with internal scroll. */
           if (!editable) {
             return (
@@ -8785,7 +8792,7 @@
               "</div>"
             );
           }
-          /* Edit mode for Agents: full rows with Present/Absent buttons. */
+          /* Edit mode for SwayamSevikas: full rows with Present/Absent buttons. */
           return (
             '<div class="att-list">' +
             list
@@ -9144,7 +9151,7 @@
           var pte = document.getElementById("p-type-employee");
           if (pte) pte.textContent = "Employees";
           var pta = document.getElementById("p-type-agent");
-          if (pta) pta.textContent = "Agents";
+          if (pta) pta.textContent = "SwayamSevikas";
           var agenda = document.getElementById("new-agenda");
           if (agenda) {
             agenda.value = "";
@@ -11277,7 +11284,7 @@
             }
             if (pSearch) {
               pSearch.placeholder =
-                type === "Agent" ? "Search agents..." : "Search employees...";
+                type === "Agent" ? "Search swayamsevikas..." : "Search employees...";
               if (!keepQuery) pSearch.value = "";
             }
             // Hardening: toggle must always leave the popover open with results
@@ -11462,7 +11469,7 @@
                 return (
                   '<span class="participant-chip">' +
                   (isAgent
-                    ? '<span style="font-size:10px;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 5px;margin-right:3px">Agent</span>'
+                    ? '<span style="font-size:10px;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 5px;margin-right:3px">SwayamSevika</span>'
                     : "") +
                   esc(displayName) +
                   idSuffix +
@@ -11483,7 +11490,7 @@
               pBtnEmp.textContent = "Employees" + (ne ? " (" + ne + ")" : "");
             if (pBtnAgent)
               pBtnAgent.textContent =
-                "Agents" + (n - ne ? " (" + (n - ne) + ")" : "");
+                "SwayamSevikas" + (n - ne ? " (" + (n - ne) + ")" : "");
             if (pCount) {
               pCount.textContent = n ? pLabel() : "Add participants";
               pCount.classList.toggle("has", n > 0);
@@ -11513,7 +11520,7 @@
               return p.reference_doctype !== type;
             });
             if (otherType) {
-              showToast("Cannot mix Employees and Agents. Please remove existing " + otherType.reference_doctype + "s first.");
+              showToast("Cannot mix Employees and SwayamSevikas. Please remove existing " + ptPlural(otherType.reference_doctype) + " first.");
               return;
             }
             var key = type + ":" + val;
@@ -11773,7 +11780,7 @@
                 return p.reference_doctype !== type;
               });
               if (otherType) {
-                showToast("Cannot mix Employees and Agents. Please unselect existing " + otherType.reference_doctype + "s first.");
+                showToast("Cannot mix Employees and SwayamSevikas. Please unselect existing " + ptPlural(otherType.reference_doctype) + " first.");
                 return;
               }
               state.selectedParticipants.push({
@@ -11829,7 +11836,7 @@
           ) {
             var tag =
               type === "Agent"
-                ? '<span class="role-tag agent">Agent</span>'
+                ? '<span class="role-tag agent">SwayamSevika</span>'
                 : '<span class="role-tag emp">Employee</span>';
             return (
               '<tr data-type="' +
@@ -11996,7 +12003,7 @@
             var disabled = state.dialogMode === "edit";
             var q = (partSearch ? partSearch.value : "").trim().toLowerCase();
             var tf = partType ? partType.value : "";
-            // Unified list: employees + agents, selected frozen at top (stable)
+            // Unified list: employees + swayamsevikas, selected frozen at top (stable)
             var rows = [];
             if (!tf || tf === "Employee") {
               (state.allEmployees || []).forEach(function (e) {
@@ -12068,7 +12075,7 @@
               empCount.classList.toggle("none", !ne);
             }
             if (agentCount) {
-              agentCount.textContent = na ? na + " agents" : "0 agents";
+              agentCount.textContent = na ? na + " swayamsevikas" : "0 swayamsevikas";
               agentCount.classList.toggle("none", !na);
             }
             if (totalCount)
@@ -12517,10 +12524,10 @@
           var fileInput = document.getElementById("participant-csv-file");
           var statusEl = document.getElementById("participant-csv-status");
 
-          /* Download sample template — two columns: Emp ID + Agent ID */
+          /* Download sample template — two columns: Emp ID + SwayamSevika ID */
           if (templateBtn) {
             templateBtn.addEventListener("click", function () {
-              var csv = "Emp ID,Agent ID\r\n12565,\r\n12664,\r\n,AGT001\r\n";
+              var csv = "Emp ID,SwayamSevika ID\r\n12565,\r\n12664,\r\n,AGT001\r\n";
               var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
               var a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
@@ -12569,12 +12576,14 @@
                   return h.trim().toLowerCase();
                 });
                 var empCol = header.indexOf("emp id");
+                /* Old template used "Agent ID" — still accepted */
                 var agentCol = header.indexOf("agent id");
+                if (agentCol === -1) agentCol = header.indexOf("swayamsevika id");
 
                 if (empCol === -1 && agentCol === -1) {
                   if (statusEl)
                     statusEl.textContent =
-                      "Columns 'Emp ID' or 'Agent ID' not found. Download template first.";
+                      "Columns 'Emp ID' or 'SwayamSevika ID' not found. Download template first.";
                   return;
                 }
 
@@ -12634,7 +12643,7 @@
                       agent_employee: id,
                       full_name: fullName,
                     });
-                    // Auto-add participant's branch (employees + agents alike)
+                    // Auto-add participant's branch (employees + swayamsevikas alike)
                     if (dialogFn.autoAddBranch) {
                       if (type === "Employee" && item.sahayog_branch) {
                         dialogFn.autoAddBranch(item.sahayog_branch);
@@ -12662,7 +12671,7 @@
                     return true;
                   }
 
-                  /* Emp ID and/or Agent ID — each valid ID becomes a participant */
+                  /* Emp ID and/or SwayamSevika ID — each valid ID becomes a participant */
                   tryAdd("Employee", empId);
                   tryAdd("Agent", agentId);
                 });
@@ -12673,7 +12682,7 @@
                 var msg =
                   added + " participant" + (added === 1 ? "" : "s") + " added";
                 if (addedEmp && addedAgt)
-                  msg += " (" + addedEmp + " emp + " + addedAgt + " agents)";
+                  msg += " (" + addedEmp + " emp + " + addedAgt + " swayamsevikas)";
                 if (skipped) msg += ", " + skipped + " already present";
                 if (notFound.length)
                   msg +=

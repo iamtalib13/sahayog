@@ -986,7 +986,7 @@ def update_participant_attendance(training_name, participant_name, attendance_st
     if not row:
         frappe.throw(_("Participant not found in this training."))
     if (row.reference_doctype or "Employee") != "Agent":
-        frappe.throw(_("Attendance marking is only applicable for Agents."))
+        frappe.throw(_("Attendance marking is only applicable for SwayamSevikas."))
 
     # Direct set_value: avoids re-running full doc validations (e.g. the
     # Sunday/holiday schedule check) for an attendance-only change.
@@ -1037,7 +1037,7 @@ def sync_participants(training_name, participants=None):
             types.add(ref_type)
 
     if len(types) > 1:
-        frappe.throw(_("A training cannot have mixed participants. Please select either Employees or Agents only."))
+        frappe.throw(_("A training cannot have mixed participants. Please select either Employees or SwayamSevikas only."))
 
     existing_rows = frappe.db.get_all(
         "Training Participant",
@@ -2356,7 +2356,7 @@ def get_trainer_options(enabled_only=True):
 
 @frappe.whitelist()
 def get_agent_options(enabled_only=True):
-    """Agents to pick as participants in the Add Training form.
+    """SwayamSevikas to pick as participants in the Add Training form.
     Filters by agent_status = 'live' (case-insensitive) when enabled_only is truthy.
     """
     if enabled_only:
