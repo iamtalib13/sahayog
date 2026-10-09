@@ -1106,10 +1106,8 @@ def sync_participants(training_name, participants=None):
 def update_budget(training_name, budget_amount=None, actual_expense=None):
     """Budget/expense capture — L&D Admin anytime; assigned trainer (owner or
     trainer match) on their own trainings, any time BEFORE completion.
-    Completed trainings are locked in the portal (desk stays as override).
-
-    On a Completed training (all 5 checks) both fields are mandatory with a
-    minimum of ₹1 — enforced here (set_value bypasses doc validation).
+    Completed trainings are fully locked via portal (desk validate() still
+    demands both fields ≥₹1 there).
     """
     if _is_admin():
         pass
@@ -1121,13 +1119,12 @@ def update_budget(training_name, budget_amount=None, actual_expense=None):
         return {"success": True}
     doc = frappe.get_doc("Training", training_name)
     if all(doc.get(f) for f in COMPLETION_FIELDS):
-        eff_b = budget_amount if budget_amount is not None else doc.get("budget_amount")
-        eff_a = actual_expense if actual_expense is not None else doc.get("actual_expense")
-        for val, label in ((eff_b, _("Budget Amount")), (eff_a, _("Actual Expense"))):
-            if val is None or val == "" or frappe.utils.flt(val) < 1:
-                frappe.throw(
-                    _("{0} is mandatory (minimum ₹1) when training is Completed.").format(label)
-                )
+        # Already Completed: portal budget is fully locked (any change —
+        # even valid values — is rejected). Desk form stays as L&D Admin
+        # override (validate() only demands presence there).
+        frappe.throw(_("Completed trainings are locked. Budget changes are only possible on desk by L&D Admin."))
+    # Not completed yet: free entry (the completing save fills budget first,
+    # and the 5th-check gate demands it) — desk validate() enforces presence.
     frappe.db.set_value("Training", training_name, "budget_amount", budget_amount)
     frappe.db.set_value("Training", training_name, "actual_expense", actual_expense)
     frappe.db.commit()
