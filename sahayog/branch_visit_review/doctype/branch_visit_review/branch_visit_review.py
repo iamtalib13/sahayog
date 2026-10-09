@@ -75,7 +75,7 @@ class BranchVisitReview(Document):
 			)
 
 	def validate_visit_details_edit(self):
-		if not self.get_doc_before_save() or frappe.session.user == "Administrator":
+		if frappe.session.user == "Administrator":
 			return
 
 		if not any(self.has_value_changed(field) for field in VISIT_DETAILS_FIELDS):
