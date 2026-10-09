@@ -873,25 +873,22 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             IFNULL(lp.product, ''),
             IFNULL(lp.product_name, ''),
             IFNULL(lp.product_amount, 0),
-            IFNULL(COALESCE(e.employee_name, e_owner.employee_name, l.custom_employee_name), ''),
-            IFNULL(COALESCE(e.employee_number, e_owner.employee_number, l.custom_employee_id), ''),
-            IFNULL(COALESCE(e.designation, e_owner.designation, l.custom_designation), ''),
+            IFNULL(l.custom_employee_name, ''),
+            IFNULL(l.custom_employee_id, ''),
+            IFNULL(l.custom_designation, ''),
             IFNULL(l.sol_id, ''),
-            IFNULL(sb.branch, ''),
-            IFNULL(sb.district, ''),
-            IFNULL(sb.region, ''),
-            IFNULL(sb.zone, ''),
+            IFNULL(l.custom_branch, ''),
+            IFNULL(l.custom_district, ''),
+            IFNULL(l.custom_region, ''),
+            IFNULL(l.custom_zone, ''),
             DATE_FORMAT(l.creation, '%d-%m-%Y %H:%i:%s') as created_on,
             DATE_FORMAT(l.modified, '%d-%m-%Y %H:%i:%s') as last_modified,
             CONCAT(TIMESTAMPDIFF(DAY, l.creation, NOW()), ' Days') as lead_age,
             IFNULL(l.lead_owner, ''),
-            IFNULL(COALESCE(e.status, e_owner.status), 'Active') as emp_status,
+            'Active' as emp_status,
             IFNULL(l.custom_verification_status, 'Pending') as bm_verification
         FROM `tabLead` l
         LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
-        LEFT JOIN `tabEmployee` e ON (LOWER(e.user_id) = LOWER(l.lead_owner) OR e.employee_number = l.lead_owner)
-        LEFT JOIN `tabEmployee` e_owner ON (LOWER(e_owner.user_id) = LOWER(l.owner) OR e_owner.employee_number = l.owner)
-        LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = l.sol_id
         WHERE {where_clause}
         ORDER BY l.creation DESC
     """.format(where_clause=where_clause)
