@@ -36,7 +36,48 @@ def get_user_report_preference_record(user):
     else:
         names = frappe.get_all("Report Preference", filters={"user": user}, pluck="name")
     
-    if not names: return None
+    if not names:
+        # Fallback for Branch Manager if Report Preference is not configured
+        emp = frappe.db.get_value(
+            "Employee",
+            {"user_id": user, "status": "Active"},
+            ["name", "designation", "sol_id", "sahayog_branch"],
+            as_dict=True
+        ) or frappe.db.get_value(
+            "Employee",
+            {"user_id": user},
+            ["name", "designation", "sol_id", "sahayog_branch"],
+            as_dict=True
+        )
+        if emp and (emp.get("designation") or "").strip().upper() == "BRANCH MANAGER":
+            bm_sol = emp.get("sol_id") or emp.get("sahayog_branch")
+            if bm_sol:
+                bm_sol_str = str(bm_sol).strip()
+                sb = frappe.db.get_value(
+                    "Sahayog Branch",
+                    {"sol_id": bm_sol_str},
+                    ["sol_id", "branch", "zone", "region"],
+                    as_dict=True
+                ) or frappe.db.get_value(
+                    "Sahayog Branch",
+                    {"name": bm_sol_str},
+                    ["sol_id", "branch", "zone", "region"],
+                    as_dict=True
+                )
+                branch_title = sb.get("branch") if sb else "Unknown"
+                sol_val = str(sb.get("sol_id") or bm_sol_str)
+                zone_list = [sb.get("zone")] if sb and sb.get("zone") else []
+                region_list = [sb.get("region")] if sb and sb.get("region") else []
+
+                return [{
+                    "user": user,
+                    "product": [],
+                    "source": [],
+                    "zone": zone_list,
+                    "region": region_list,
+                    "sol_id": [{"value": sol_val, "label": f"{sol_val} - {branch_title}"}],
+                }]
+        return None
 
     for name in names:
         doc = frappe.get_doc("Report Preference", name)
