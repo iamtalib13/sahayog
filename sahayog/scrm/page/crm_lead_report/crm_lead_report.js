@@ -904,7 +904,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <div class="crm-top-actions-bar">
                         <div class="d-flex align-items-center" style="gap: 10px;">
                             <span class="font-weight-bold text-dark" style="font-size: 13px;">CRM Leads Report</span>
-                            <span class="crm-soft-pill blue">{{ (master_month || today.substring(0,7)) }}</span>
+                            <span class="crm-soft-pill blue">{{ activePeriodLabel }}</span>
                         </div>
 
                         <div class="d-flex align-items-center" style="gap: 8px;">
@@ -1426,6 +1426,24 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       const lastDay = new Date(year, month, 0).getDate();
 
       return `${year}-${String(month).padStart(2, "0")}-${lastDay}`;
+    },
+    get activePeriodLabel() {
+      const formatDate = (d) => {
+        if (!d) return "";
+        const parts = String(d).split("-");
+        if (parts.length === 3) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        return d;
+      };
+
+      if (this.employee_from_date && this.employee_to_date) {
+        if (this.employee_from_date === this.employee_to_date) {
+          return formatDate(this.employee_from_date);
+        }
+        return `${formatDate(this.employee_from_date)} to ${formatDate(this.employee_to_date)}`;
+      }
+      return this.master_month || this.today.substring(0, 7);
     },
     get today() {
       return frappe.datetime.nowdate();
