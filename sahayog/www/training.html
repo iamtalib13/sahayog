@@ -7223,13 +7223,16 @@
         function role() {
           return ROLES[state.role];
         }
+        /* Portal build stamp — bump on every release so testers can confirm
+           which version they run (kills cached-JS confusion). */
+        var LD_BUILD = "2026-10-10d";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
           badge.textContent = r.label;
           badge.className = "role-badge " + r.badge;
           document.getElementById("headerSub").textContent = r.sub;
-          document.getElementById("sidebarFooter").textContent = r.label;
+          document.getElementById("sidebarFooter").textContent = r.label + " · build " + LD_BUILD;
           var addBtn = document.getElementById("btn-add-training");
           if (addBtn) addBtn.style.display = r.canAdd ? "inline-flex" : "none";
           var bulkBtnEl = document.getElementById("btn-bulk-upload");
