@@ -906,7 +906,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             <button class="btn btn-xs btn-default border font-weight-bold" @click="goToLeadList">
                                 Lead List
                             </button>
-                            <button class="btn btn-xs btn-default border font-weight-bold" @click="show_analytics = !show_analytics">
+                            <button class="btn btn-xs btn-default border font-weight-bold" @click="toggleAnalytics()">
                                 {{ show_analytics ? 'Hide Insights' : 'Insights' }}
                             </button>
                             <button class="btn btn-xs btn-default border font-weight-bold" @click="openLeadTransferDialog">
@@ -2338,7 +2338,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     async fetchEmployeePerformance() {
       this.employee_report_loading = true;
       this.employee_error_message = null;
-      this.fetchAnalytics();
+      if (this.show_analytics) {
+        this.fetchAnalytics();
+      }
 
       try {
         let res = await frappe.call({
@@ -2369,6 +2371,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.employee_error_message = error.message || "Error fetching data.";
       } finally {
         this.employee_report_loading = false;
+      }
+    },
+    toggleAnalytics() {
+      this.show_analytics = !this.show_analytics;
+      if (this.show_analytics && !this.analytics_data.top_branches?.length) {
+        this.fetchAnalytics();
       }
     },
     async fetchAnalytics() {
