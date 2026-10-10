@@ -61,6 +61,7 @@ class Training(Document):
         self._validate_participant_types()
         self._validate_completed_budget()
         self._validate_checks_require_participants()
+        self._validate_budget_cap()
 
     def _sync_geographies(self):
         if self.get("geographies"):
@@ -187,6 +188,16 @@ class Training(Document):
             types = {p.reference_doctype or "Employee" for p in self.participants if p.agent_employee}
             if len(types) > 1:
                 frappe.throw(_("A training cannot have mixed participants. Please select either Employees or SwayamSevikas only."))
+
+    def _validate_budget_cap(self):
+        # Actual Expense can never exceed Budget Amount (when both are set).
+        b = self.get("budget_amount")
+        a = self.get("actual_expense")
+        if b in (None, "") or a in (None, ""):
+            return
+        if frappe.utils.flt(a) > frappe.utils.flt(b):
+            frappe.throw(_("Actual Expense (₹{0}) cannot exceed Budget Amount (₹{1}).").format(
+                frappe.utils.fmt_money(a), frappe.utils.fmt_money(b)))
 
     def set_trainer_from_user(self):
         # System Manager / Administrator may create trainings without a linked Employee

@@ -9267,6 +9267,14 @@
             var a = document.getElementById("drw-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
+            /* Cap: Actual must never exceed Budget (only when inputs are
+               visible — otherwise the user cannot fix it here). */
+            var capB = !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
+            var capA = !isNaN(av) ? av : parseFloat(ev.actual_expense);
+            if ((b || a) && !isNaN(capB) && !isNaN(capA) && capA > capB) {
+              showToast("Actual Expense cannot exceed Budget Amount.");
+              return;
+            }
             var bStr = isNaN(bv) ? "" : bv;
             var aStr = isNaN(av) ? "" : av;
             if (
@@ -10149,6 +10157,14 @@
             var a = document.getElementById("edit-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
+            /* Cap: Actual must never exceed Budget (only when inputs are
+               visible — otherwise the user cannot fix it here). */
+            var capB = !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
+            var capA = !isNaN(av) ? av : parseFloat(ev.actual_expense);
+            if ((b || a) && !isNaN(capB) && !isNaN(capA) && capA > capB) {
+              showToast("Actual Expense cannot exceed Budget Amount.");
+              return;
+            }
             if (b || a) {
               var bStr = isNaN(bv) ? "" : bv;
               var aStr = isNaN(av) ? "" : av;

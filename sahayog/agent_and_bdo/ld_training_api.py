@@ -1125,6 +1125,12 @@ def update_budget(training_name, budget_amount=None, actual_expense=None):
         return {"success": True, "skipped": "completed"}
     # Not completed yet: free entry (the completing save fills budget first,
     # and the 5th-check gate demands it) — desk validate() enforces presence.
+    # Cap: Actual Expense can never exceed Budget Amount (combined values).
+    eff_b = budget_amount if budget_amount is not None else doc.get("budget_amount")
+    eff_a = actual_expense if actual_expense is not None else doc.get("actual_expense")
+    if eff_b not in (None, "") and eff_a not in (None, ""):
+        if frappe.utils.flt(eff_a) > frappe.utils.flt(eff_b):
+            frappe.throw(_("Actual Expense cannot exceed Budget Amount."))
     frappe.db.set_value("Training", training_name, "budget_amount", budget_amount)
     frappe.db.set_value("Training", training_name, "actual_expense", actual_expense)
     frappe.db.commit()
