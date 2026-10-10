@@ -559,12 +559,14 @@
       border-color: var(--primary);
     }
 
-    /* Taskflow dropdown */
-    #taskflow-link {
+    /* Taskflow & CRM dropdown */
+    #taskflow-link,
+    #crm-link {
       position: relative;
     }
 
-    .taskflow-dropdown {
+    .taskflow-dropdown,
+    .crm-dropdown {
       position: absolute;
       top: calc(100% + 4px);
       left: 50%;
@@ -573,30 +575,35 @@
       border: 1px solid #e5e7eb;
       border-radius: 12px;
       box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-      min-width: 140px;
+      min-width: 160px;
       z-index: 50;
       overflow: hidden;
     }
 
-    .taskflow-dropdown a {
-      display: block;
-      padding: 0.6rem 1.25rem;
+    .taskflow-dropdown a,
+    .crm-dropdown a {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0.65rem 1rem;
       font-size: 0.78rem;
       font-weight: 600;
       color: var(--text);
       text-decoration: none;
-      text-align: center;
+      text-align: left;
       white-space: nowrap;
       transition:
         background-color 0.15s ease,
         color 0.15s ease;
     }
 
-    .taskflow-dropdown a:first-child {
+    .taskflow-dropdown a:not(:last-child),
+    .crm-dropdown a:not(:last-child) {
       border-bottom: 1px solid #f3f4f6;
     }
 
-    .taskflow-dropdown a:hover {
+    .taskflow-dropdown a:hover,
+    .crm-dropdown a:hover {
       background: var(--primary-light);
       color: var(--primary);
     }
@@ -752,12 +759,22 @@
           <span class="icon-label">TTUM Maker</span>
         </a>
         <!-- CRM -->
-        <a class="icon-item" id="crm-link" href="#" role="link" tabindex="0">
+        <div class="icon-item" id="crm-link" role="button" tabindex="0">
           <div class="icon-circle bg-[#d0e8ff] text-[#2563eb]">
             <i class="fas fa-users"></i>
           </div>
           <span class="icon-label">CRM</span>
-        </a>
+          <div id="crm-dropdown" class="crm-dropdown hidden">
+            <a href="/app/my-crm/" class="crm-option">
+              <i class="fas fa-user-circle text-blue-500"></i>
+              <span>My CRM</span>
+            </a>
+            <a href="/app/crm-lead-report" class="crm-option">
+              <i class="fas fa-chart-bar text-green-500"></i>
+              <span>CRM Lead Report</span>
+            </a>
+          </div>
+        </div>
         <!-- Agent Management -->
         <a class="icon-item" href="/app/agent-management" role="link" tabindex="0">
           <div class="icon-circle bg-[#e6f7ff] text-[#0284c7]">
@@ -1271,22 +1288,20 @@
 
     fetchEmployeeDetails();
 
-    function openCRMModal(event) {
+    function toggleCRMDropdown(event) {
       event.preventDefault();
       event.stopPropagation();
-      document.getElementById("crm-modal").classList.remove("hidden");
+      const dropdown = document.getElementById("crm-dropdown");
+      if (dropdown) {
+        dropdown.classList.toggle("hidden");
+      }
+      closeTaskflowDropdown();
     }
 
-    function closeCRMModal() {
-      document.getElementById("crm-modal").classList.add("hidden");
-    }
-
-    function navigateCRM(url) {
-      closeCRMModal();
-      if (window.top) {
-        window.top.location.href = url;
-      } else {
-        window.location.href = url;
+    function closeCRMDropdown() {
+      const dropdown = document.getElementById("crm-dropdown");
+      if (dropdown) {
+        dropdown.classList.add("hidden");
       }
     }
 
@@ -1309,6 +1324,7 @@
       if (dropdown) {
         dropdown.classList.toggle("hidden");
       }
+      closeCRMDropdown();
     }
 
     function closeTaskflowDropdown() {
@@ -1322,7 +1338,7 @@
       const iconItems = document.querySelectorAll(".icon-item");
       iconItems.forEach((item) => {
         if (item.id === "crm-link") {
-          item.addEventListener("click", openCRMModal);
+          item.addEventListener("click", toggleCRMDropdown);
         } else {
           item.addEventListener("click", handleLinkClick);
         }
@@ -1334,16 +1350,19 @@
         pendingLink.addEventListener("click", handleLinkClick);
       }
 
-      // Add listeners for taskflow dropdown options
-      document.querySelectorAll(".taskflow-option").forEach((opt) => {
+      // Add listeners for taskflow & CRM dropdown options
+      document.querySelectorAll(".taskflow-option, .crm-option").forEach((opt) => {
         opt.addEventListener("click", handleLinkClick);
       });
 
-      // Close modal when clicking outside
+      // Close dropdowns when clicking outside
       window.addEventListener("click", function (event) {
-        const modal = document.getElementById("crm-modal");
-        if (event.target === modal) {
-          closeCRMModal();
+        const crmDropdown = document.getElementById("crm-dropdown");
+        const crmTrigger = document.getElementById("crm-link");
+        if (crmDropdown && crmTrigger && !crmDropdown.classList.contains("hidden")) {
+          if (!crmTrigger.contains(event.target)) {
+            closeCRMDropdown();
+          }
         }
 
         const dropdown = document.getElementById("taskflow-dropdown");
@@ -1358,6 +1377,7 @@
       document.addEventListener("keydown", function (e) {
         if (e.key === "Escape") {
           closeTaskflowDropdown();
+          closeCRMDropdown();
         }
       });
 
@@ -1647,47 +1667,6 @@
       }
     });
   </script>
-  <div id="crm-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black bg-opacity-50">
-    <div class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl transform transition-all">
-      <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">
-        Choose CRM View
-      </h3>
-      <div class="grid grid-cols-1 gap-4">
-        <button onclick="navigateCRM('/app/my-crm/')"
-          class="flex items-center justify-between p-4 bg-blue-50 hover:bg-blue-100 rounded-xl border border-blue-200 transition-colors group">
-          <div class="flex items-center">
-            <div
-              class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center text-white mr-4 shadow-md group-hover:scale-110 transition-transform">
-              <i class="fas fa-user-circle text-xl"></i>
-            </div>
-            <div class="text-left">
-              <span class="block font-semibold text-blue-900">Portal</span>
-              <span class="text-xs text-blue-600">Open My CRM</span>
-            </div>
-          </div>
-          <i class="fas fa-chevron-right text-blue-300"></i>
-        </button>
-        <button onclick="navigateCRM('/app/crm-lead-report')"
-          class="flex items-center justify-between p-4 bg-green-50 hover:bg-green-100 rounded-xl border border-green-200 transition-colors group">
-          <div class="flex items-center">
-            <div
-              class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center text-white mr-4 shadow-md group-hover:scale-110 transition-transform">
-              <i class="fas fa-chart-bar text-xl"></i>
-            </div>
-            <div class="text-left">
-              <span class="block font-semibold text-green-900">Dashboard</span>
-              <span class="text-xs text-green-600">CRM Lead Report</span>
-            </div>
-          </div>
-          <i class="fas fa-chevron-right text-green-300"></i>
-        </button>
-      </div>
-      <button onclick="closeCRMModal()"
-        class="mt-6 w-full py-3 text-gray-500 font-medium hover:text-gray-700 transition-colors">
-        Cancel
-      </button>
-    </div>
-  </div>
 </body>
 
 </html>
