@@ -14,7 +14,7 @@ class BranchVisitActionItem(Document):
 		from frappe.types import DF
 
 		action_item: DF.Data | None
-		owner: DF.Data | None
+		responsible: DF.Data | None
 		priority: DF.Literal["", "High", "Medium", "Low"]
 		proof: DF.Attach | None
 		resolution_notes: DF.Data | None

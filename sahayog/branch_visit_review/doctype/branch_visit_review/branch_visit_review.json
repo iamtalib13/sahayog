@@ -30,6 +30,7 @@
   "areas_requiring_attention",
   "signoff_section",
   "visitor_signoff",
+  "visitor_name",
   "visitor_signed_at",
   "column_break_signoff",
   "branch_head_signoff",
@@ -148,6 +149,13 @@
    "fieldname": "visitor_signoff",
    "fieldtype": "Check",
    "label": "Visitor Sign-Off"
+  },
+  {
+   "fetch_from": "visited_by.employee_name",
+   "fieldname": "visitor_name",
+   "fieldtype": "Data",
+   "label": "Visitor Name",
+   "read_only": 1
   },
   {
    "fieldname": "visitor_signed_at",

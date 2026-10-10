@@ -7,7 +7,7 @@
  "engine": "InnoDB",
  "field_order": [
   "action_item",
-  "owner",
+  "responsible",
   "priority",
   "tat",
   "status",
@@ -24,7 +24,7 @@
   },
   {
    "columns": 2,
-   "fieldname": "owner",
+   "fieldname": "responsible",
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Responsible"
