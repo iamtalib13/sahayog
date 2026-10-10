@@ -413,7 +413,8 @@ function render_checklist(frm, template) {
 						let emp = employees.find(function (e) { return e.name === item.owner; });
 						if (emp && emp.employee_name) owner_display = emp.employee_name + "(" + emp.name + ")";
 					}
-					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + (item.action_item || "") + "</td><td><div class='employee-search-wrapper' data-value='" + (item.owner || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
+					let action_display = item.action_item || "<span style='color:#8a93a5;'>Click to add details&hellip;</span>";
+					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.owner || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
@@ -538,11 +539,13 @@ function render_checklist(frm, template) {
 				frm.set_value("overall_assessment", $(this).val());
 			});
 
-			frm.fields_dict.checklist.$wrapper.on("click", ".action-row-add, .add-action-row", function () {
-				open_action_item_dialog(frm, null, {});
+			frm.fields_dict.checklist.$wrapper.off("click.bvr-add").on("click.bvr-add", ".action-row-add, .add-action-row", function () {
+				frm.add_child("action_items", { priority: "Medium", status: "Open" });
+				frm.refresh_field("action_items");
+				render_checklist(frm, frm.doc.template);
 			});
 
-			frm.fields_dict.checklist.$wrapper.on("click", ".remove-action-row", function () {
+			frm.fields_dict.checklist.$wrapper.off("click.bvr-remove").on("click.bvr-remove", ".remove-action-row", function () {
 				let $row = $(this).closest("tr");
 				let idx = $row.index();
 				if (frm.doc.action_items && frm.doc.action_items[idx]) {
@@ -552,7 +555,7 @@ function render_checklist(frm, template) {
 				$row.remove();
 			});
 
-			frm.fields_dict.checklist.$wrapper.on("click", ".action-row-edit", function (e) {
+			frm.fields_dict.checklist.$wrapper.off("click.bvr-edit").on("click.bvr-edit", ".action-row-edit", function (e) {
 				if ($(e.target).closest(".employee-search-wrapper, .bvr-btn-remove").length) {
 					return;
 				}
@@ -584,7 +587,7 @@ function render_checklist(frm, template) {
 				}
 			});
 
-			frm.fields_dict.checklist.$wrapper.on("click", ".employee-option", function () {
+			frm.fields_dict.checklist.$wrapper.off("click.bvr-emp").on("click.bvr-emp", ".employee-option", function () {
 				let $wrapper = $(this).closest(".employee-search-wrapper");
 				let $row = $wrapper.closest("tr");
 				let name = $(this).data("name");
@@ -599,7 +602,7 @@ function render_checklist(frm, template) {
 				}
 			});
 
-			frm.fields_dict.checklist.$wrapper.on("click", function (e) {
+			frm.fields_dict.checklist.$wrapper.off("click.bvr-dd").on("click.bvr-dd", function (e) {
 				if (!$(e.target).closest(".employee-search-wrapper").length) {
 					frm.fields_dict.checklist.$wrapper.find(".employee-dropdown").hide();
 				}
