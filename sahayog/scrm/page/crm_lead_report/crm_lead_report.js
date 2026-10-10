@@ -552,77 +552,79 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     background: #f3f4f6;
 }
 /* Horizontal Funnel Styling - No White Gaps */
-/* Horizontal Funnel Styling - Gap Fixed */
+/* Modern Frappe UI Metric Cards */
 .funnel-container {
-    display: flex;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
     width: 100%;
-    gap: 0;
-    margin-bottom: 25px;
-    background: #fff; /* Base background taaki niche se kuch na dikhe */
-    border-radius: 8px;
-    overflow: hidden;
+    margin-bottom: 16px;
+    background: transparent;
 }
 
 .funnel-stage {
-    position: relative;
-    flex: 1;
-    height: 90px;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 14px 16px;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    padding-left: 38px; /* Arrow ke liye thodi zyada space */
-    padding-right: 15px;
-    
-    /* Yahan 92% aur 8% use kiya hai perfect interlocking ke liye */
-    clip-path: polygon(0% 0%, 92% 0%, 100% 50%, 92% 100%, 0% 100%, 8% 50%);
-    
-    /* Negative margin ko thoda aur badhaya hai overlap cover karne ke liye */
-    margin-right: -22px; 
-    border: none !important;
-    outline: none;
+    justify-content: space-between;
+    transition: all 0.15s ease;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    position: relative;
 }
 
-.funnel-stage:first-child {
-    /* Pehla wala box piche se flat rahega */
-    clip-path: polygon(0% 0%, 92% 0%, 100% 50%, 92% 100%, 0% 100%);
-    padding-left: 20px;
+.funnel-stage:hover {
+    border-color: #cbd5e1;
+    box-shadow: 0 3px 6px -1px rgba(0, 0, 0, 0.06);
 }
 
-.funnel-stage:last-child {
-    /* Aakhri wala box aage se flat rahega */
-    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, 8% 50%);
-    margin-right: 0;
+.funnel-stage.total-leads { border-left: 3px solid #3b82f6; }
+.funnel-stage.follow-ups { border-left: 3px solid #f59e0b; }
+.funnel-stage.converted { border-left: 3px solid #10b981; }
+.funnel-stage.not-interested { border-left: 3px solid #ef4444; }
+
+.funnel-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
 }
 
-/* Colors with better saturation */
-.funnel-stage.total-leads { background: #eff6ff; z-index: 4; border-left: 5px solid #3b82f6 !important; }
-.funnel-stage.follow-ups { background: #fefce8; z-index: 3; border-left: 5px solid #eab308 !important; }
-.funnel-stage.converted { background: #f0fdf4; z-index: 2; border-left: 5px solid #10b981 !important; }
-.funnel-stage.not-interested { background: #fef2f2; z-index: 1; border-left: 5px solid #ef4444 !important; }
-
-/* Isse stages ke beech ek halki line dikhegi jo unhe 'connected' dikhayegi white space ki jagah */
-.funnel-stage::after {
-    content: "";
-    position: absolute;
-    right: 0;
-    top: 0;
-    width: 1px;
-    height: 100%;
-    background: rgba(0,0,0,0.03);
-    z-index: 5;
+.funnel-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: #4b5563;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin: 0;
 }
 
-/* Text styles */
-.funnel-amount { font-size: 19px; font-weight: 800; color: #111827; }
-.funnel-label { font-size: 10px; text-transform: uppercase; color: #6b7280; font-weight: 700; margin-bottom: 2px; }
-.funnel-sub { font-size: 11px; color: #4b5563; }
-.funnel-percentage { 
-    position: absolute; 
-    top: 8px; 
-    right: 25px; 
-    font-size: 11px; 
-    font-weight: 800; 
-    color: rgba(0,0,0,0.15); 
+.funnel-percentage-pill {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+}
+
+.funnel-stage.total-leads .funnel-percentage-pill { background: #eff6ff; color: #1d4ed8; }
+.funnel-stage.follow-ups .funnel-percentage-pill { background: #fefce8; color: #b45309; }
+.funnel-stage.converted .funnel-percentage-pill { background: #f0fdf4; color: #15803d; }
+.funnel-stage.not-interested .funnel-percentage-pill { background: #fef2f2; color: #b91c1c; }
+
+.funnel-amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.funnel-sub {
+    font-size: 11px;
+    color: #6b7280;
+    font-weight: 500;
 }
 .export-dropdown {
     position: relative;
@@ -922,16 +924,18 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         </div>
                     </div>
 
-                    <!-- Funnel Summary Cards -->
-                    <div class="funnel-container" style="margin-bottom: 0;">
+                    <!-- Summary Metric Cards (Frappe UI Style) -->
+                    <div class="funnel-container">
                         <div v-for="stage in funnelStages" :key="stage.label" :class="['funnel-stage', stage.class]">
-                            <span class="funnel-percentage" v-if="stage.percentage !== undefined">{{ stage.percentage }}%</span>
-                            <div class="funnel-label">{{ stage.label }}</div>
+                            <div class="funnel-card-header">
+                                <span class="funnel-label">{{ stage.label }}</span>
+                                <span class="funnel-percentage-pill" v-if="stage.percentage !== undefined">{{ stage.percentage }}%</span>
+                            </div>
                             <div class="funnel-amount">
-                                <small style="font-size: 12px;">₹</small>{{ (stage.amount || 0).toLocaleString('en-IN') }}
+                                ₹{{ (stage.amount || 0).toLocaleString('en-IN') }}
                             </div>
                             <div class="funnel-sub">
-                                {{ stage.count }} <span style="font-size: 9px; color: #9ca3af;">leads</span>
+                                {{ (stage.count || 0).toLocaleString('en-IN') }} leads
                             </div>
                         </div>
                     </div>
