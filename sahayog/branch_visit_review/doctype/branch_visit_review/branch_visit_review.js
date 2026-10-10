@@ -248,82 +248,129 @@ function bindCustomEvents(frm, $row, cat, $area) {
 	});
 }
 
+function bvr_escape(value) {
+	return (value || "").toString().replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
 function open_action_item_dialog(frm, idx, item) {
 	let is_add = idx === null || idx === undefined;
-	let d = new frappe.ui.Dialog({
-		title: is_add ? __("Add Action Item") : __("Edit Action Item"),
-		fields: [
-			{
-				fieldname: "action_item",
-				label: "Action Item",
-				fieldtype: "Data",
-				reqd: 1,
-				default: item.action_item || "",
-			},
-			{
-				fieldname: "owner",
-				label: "Responsible",
-				fieldtype: "Link",
-				options: "Employee",
-				default: item.owner || "",
-			},
-			{
-				fieldname: "priority",
-				label: "Priority",
-				fieldtype: "Select",
-				options: ["High", "Medium", "Low"],
-				default: item.priority || "Medium",
-			},
-			{
-				fieldname: "tat",
-				label: "Target Date (TAT)",
-				fieldtype: "Date",
-				default: item.tat || "",
-			},
-			{
-				fieldname: "status",
-				label: "Status",
-				fieldtype: "Select",
-				options: ["Open", "In Progress", "Resolved"],
-				default: item.status || "Open",
-			},
-			{
-				fieldname: "resolution_notes",
-				label: "Resolution Notes",
-				fieldtype: "Small Text",
-				default: item.resolution_notes || "",
-			},
-		],
-		primary_action_label: __("Save"),
-		primary_action(values) {
-			if (!values.action_item) {
-				frappe.msgprint(__("Action Item is required"));
-				return;
-			}
-			let row_values = {
-				action_item: values.action_item,
-				owner: values.owner,
-				priority: values.priority,
-				tat: values.tat,
-				status: values.status,
-				resolution_notes: values.resolution_notes,
+	$(".bvr-modal-overlay").remove();
+
+	let select_options = function (options, selected) {
+		let html = "";
+		options.forEach(function (opt) {
+			html += "<option value='" + opt + "'" + (selected === opt ? " selected" : "") + ">" + opt + "</option>";
+		});
+		return html;
+	};
+
+	let modal_html = "";
+	modal_html += "<div class='bvr-modal-overlay'>";
+	modal_html += "<div class='bvr-modal'>";
+	modal_html += "<div class='bvr-modal-header'><h5>" + (is_add ? "Add Action Item" : "Edit Action Item") + "</h5><button class='bvr-modal-close' title='Close' type='button'>&times;</button></div>";
+	modal_html += "<div class='bvr-modal-body'>";
+	modal_html += "<div class='bvr-modal-field'><label>Action Item <span class='bvr-req'>*</span></label><input type='text' class='form-control bvr-modal-input' data-field='action_item' placeholder='Enter action item' value=\"" + bvr_escape(item.action_item) + "\"></div>";
+	modal_html += "<div class='bvr-modal-field'><label>Responsible</label><div class='employee-search-wrapper bvr-modal-emp' data-value='" + bvr_escape(item.owner) + "'><input type='text' class='form-control bvr-modal-input employee-search-input' placeholder='Search employee' autocomplete='off' value=''><div class='employee-dropdown' style='display:none;'></div></div></div>";
+	modal_html += "<div class='bvr-modal-grid'>";
+	modal_html += "<div class='bvr-modal-field'><label>Priority</label><select class='form-control bvr-modal-input' data-field='priority'>" + select_options(["High", "Medium", "Low"], item.priority || "Medium") + "</select></div>";
+	modal_html += "<div class='bvr-modal-field'><label>Target Date (TAT)</label><input type='date' class='form-control bvr-modal-input' data-field='tat' value='" + bvr_escape(item.tat) + "'></div>";
+	modal_html += "<div class='bvr-modal-field'><label>Status</label><select class='form-control bvr-modal-input' data-field='status'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select></div>";
+	modal_html += "</div>";
+	modal_html += "<div class='bvr-modal-field'><label>Resolution Notes</label><textarea class='form-control bvr-modal-input' data-field='resolution_notes' rows='3' placeholder='Enter notes'>" + bvr_escape(item.resolution_notes) + "</textarea></div>";
+	modal_html += "</div>";
+	modal_html += "<div class='bvr-modal-footer'><button class='bvr-modal-btn bvr-modal-btn-cancel' type='button'>Cancel</button><button class='bvr-modal-btn bvr-modal-btn-save' type='button'>Save</button></div>";
+	modal_html += "</div></div>";
+
+	$("body").append(modal_html);
+
+	let $overlay = $(".bvr-modal-overlay");
+	let close_modal = function () {
+		$overlay.remove();
+		$(document).off("keydown.bvr-modal");
+	};
+	$overlay.on("click", function (e) {
+		if ($(e.target).is(".bvr-modal-overlay")) {
+			close_modal();
+		}
+	});
+	$overlay.find(".bvr-modal-close, .bvr-modal-btn-cancel").on("click", close_modal);
+	$(document).on("keydown.bvr-modal", function (e) {
+		if (e.key === "Escape") {
+			close_modal();
+		}
+	});
+
+	let $emp_wrapper = $overlay.find(".bvr-modal-emp");
+	let $emp_input = $emp_wrapper.find(".employee-search-input");
+	let $emp_dd = $emp_wrapper.find(".employee-dropdown");
+
+	frappe.call({
+		method: "sahayog.branch_visit_review.api.get_employee_list",
+		callback: function (r) {
+			let employees = r.message || [];
+			let label_for = function (emp) {
+				return emp.employee_name ? emp.employee_name + "(" + emp.name + ")" : emp.name;
 			};
-			if (is_add) {
-				frm.add_child("action_items", row_values);
-			} else {
-				frm.doc.action_items[idx].action_item = row_values.action_item;
-				frm.doc.action_items[idx].owner = row_values.owner;
-				frm.doc.action_items[idx].priority = row_values.priority;
-				frm.doc.action_items[idx].tat = row_values.tat;
-				frm.doc.action_items[idx].status = row_values.status;
-				frm.doc.action_items[idx].resolution_notes = row_values.resolution_notes;
+			if (item.owner) {
+				let emp = employees.find(function (e) { return e.name === item.owner; });
+				$emp_input.val(emp ? label_for(emp) : item.owner);
 			}
-			frm.refresh_field("action_items");
-			d.hide();
-			render_checklist(frm, frm.doc.template);
+			$emp_input.on("focus keyup", function () {
+				let query = $(this).val().toLowerCase();
+				let filtered = employees.filter(function (emp) {
+					return label_for(emp).toLowerCase().indexOf(query) > -1;
+				});
+				if (filtered.length > 0) {
+					let options_html = "";
+					filtered.forEach(function (emp) {
+						options_html += "<div class='employee-option' data-name='" + bvr_escape(emp.name) + "'>" + bvr_escape(label_for(emp)) + "</div>";
+					});
+					$emp_dd.html(options_html).show();
+				} else {
+					$emp_dd.html("<div class='employee-no-result'>No results</div>").show();
+				}
+			});
+			$emp_dd.on("click", ".employee-option", function () {
+				$emp_input.val($(this).text());
+				$emp_wrapper.data("value", $(this).attr("data-name"));
+				$emp_dd.hide();
+			});
+			$emp_input.on("blur", function () {
+				let val = $(this).val();
+				let emp = employees.find(function (e) { return label_for(e) === val || e.name === val; });
+				$emp_wrapper.data("value", emp ? emp.name : val);
+			});
 		},
 	});
-	d.show();
+
+	$overlay.find(".bvr-modal-btn-save").on("click", function () {
+		let action_item = ($overlay.find("[data-field='action_item']").val() || "").trim();
+		if (!action_item) {
+			frappe.msgprint(__("Action Item is required"));
+			$overlay.find("[data-field='action_item']").focus();
+			return;
+		}
+		let row_values = {
+			action_item: action_item,
+			owner: $emp_wrapper.data("value") || "",
+			priority: $overlay.find("[data-field='priority']").val() || "Medium",
+			tat: $overlay.find("[data-field='tat']").val() || "",
+			status: $overlay.find("[data-field='status']").val() || "Open",
+			resolution_notes: $overlay.find("[data-field='resolution_notes']").val() || "",
+		};
+		if (is_add) {
+			frm.add_child("action_items", row_values);
+		} else {
+			Object.keys(row_values).forEach(function (key) {
+				frm.doc.action_items[idx][key] = row_values[key];
+			});
+		}
+		frm.refresh_field("action_items");
+		close_modal();
+		render_checklist(frm, frm.doc.template);
+	});
+
+	$overlay.find("[data-field='action_item']").focus();
 }
 
 function render_checklist(frm, template) {
@@ -521,6 +568,30 @@ function render_checklist(frm, template) {
 				.bvr-tabs .leadership-field textarea { width: 100%; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; padding: 10px 12px; font-size: 13px; resize: vertical; background: #fff; transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box; }
 				.bvr-tabs .leadership-field textarea:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); outline: none; }
 				.bvr-tabs .tab-content-review { padding: 4px 0; }
+				.bvr-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); z-index: 2000; display: flex; align-items: flex-start; justify-content: center; padding: 60px 16px 16px; }
+				.bvr-modal { background: #fff; border-radius: 12px; width: 560px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }
+				.bvr-modal-header { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #f0f2ff 0%, #e8ebff 100%); border-left: 4px solid #5e64ff; padding: 12px 16px; }
+				.bvr-modal-header h5 { margin: 0; font-size: 14px; font-weight: 700; color: #16181d; }
+				.bvr-modal-close { background: transparent; border: none; font-size: 22px; line-height: 1; color: #6c7680; cursor: pointer; padding: 0 4px; }
+				.bvr-modal-close:hover { color: #e74c3c; }
+				.bvr-modal-body { padding: 16px; }
+				.bvr-modal-field { margin-bottom: 14px; }
+				.bvr-modal-field label { display: block; font-size: 12px; font-weight: 600; color: #4a5568; margin-bottom: 5px; }
+				.bvr-modal-field .bvr-req { color: #e74c3c; }
+				.bvr-modal-input { border-radius: 6px; border: 1px solid #e2e8f0; font-size: 13px; padding: 8px 10px; width: 100%; box-sizing: border-box; }
+				.bvr-modal-input:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); outline: none; }
+				.bvr-modal-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+				.bvr-modal .employee-search-wrapper { position: relative; }
+				.bvr-modal .employee-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 2100; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); max-height: 200px; overflow-y: auto; margin-top: 2px; }
+				.bvr-modal .employee-dropdown .employee-option { padding: 8px 12px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #f5f5f5; }
+				.bvr-modal .employee-dropdown .employee-option:hover { background: #f0f1ff; color: #5e64ff; }
+				.bvr-modal .employee-dropdown .employee-no-result { padding: 8px 12px; color: #999; font-size: 12px; }
+				.bvr-modal-footer { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 16px; border-top: 1px solid #edf0f4; background: #f8f9fb; }
+				.bvr-modal-btn { border: none; border-radius: 8px; padding: 8px 18px; font-weight: 600; font-size: 12px; cursor: pointer; letter-spacing: 0.3px; transition: all 0.2s; }
+				.bvr-modal-btn-cancel { background: #fff; color: #4a5568; border: 1px solid #e2e8f0; }
+				.bvr-modal-btn-cancel:hover { background: #f5f6ff; }
+				.bvr-modal-btn-save { background: #5e64ff; color: #fff; box-shadow: 0 2px 6px rgba(94,100,255,0.3); }
+				.bvr-modal-btn-save:hover { background: #4c53d0; }
 			</style>`;
 			frm.fields_dict.checklist.$wrapper.find("style").remove();
 			frm.fields_dict.checklist.$wrapper.prepend(style);
