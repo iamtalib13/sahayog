@@ -1841,10 +1841,18 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         let to_date = dialog.get_value("to_date");
         let res = await frappe.call({
           method: "sahayog.scrm.controller.lead.lead.get_bm_lead_verification_data",
-          args: { status: selected_status, from_date: from_date, to_date: to_date, start: current_start, page_length: page_len, search: search_text }
+          args: {
+            status: selected_status,
+            from_date: from_date,
+            to_date: to_date,
+            start: current_start,
+            page_length: page_len,
+            search: search_text,
+            include_metrics: is_page ? 0 : 1
+          }
         });
         if (!res.message) return;
-        let m = res.message.metrics || {};
+        let m = res.message.metrics;
         let leads = res.message.leads || [];
         total_count = res.message.total_count || 0;
         function renderHeaderMetrics(m) {
@@ -1870,16 +1878,25 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           `);
 
           let cur_from = dialog.get_value("from_date");
+          let cur_to = dialog.get_value("to_date");
           let monthText = "";
-          if (cur_from) {
+          if (cur_from && cur_to) {
+            let d1 = frappe.datetime.str_to_obj(cur_from);
+            let d2 = frappe.datetime.str_to_obj(cur_to);
+            let m1 = d1.toLocaleString('default', { month: 'long', year: 'numeric' });
+            let m2 = d2.toLocaleString('default', { month: 'long', year: 'numeric' });
+            monthText = (m1 === m2) ? m1 : `${m1} – ${m2}`;
+          } else if (cur_from) {
             let d = frappe.datetime.str_to_obj(cur_from);
             monthText = d.toLocaleString('default', { month: 'long', year: 'numeric' });
           }
           $hdr.find('.bm-header-month').remove();
-          dialog.set_title(`${__("BM Lead Verification")} <span style="font-size:14px;font-weight:600;color:var(--text-muted,#6b7280);margin-left:6px;">(${monthText})</span>`);
+          dialog.set_title(`${__("BM Lead Verification")} <span style="font-size:13px;font-weight:600;color:var(--text-muted,#6b7280);margin-left:6px;">(${monthText})</span>`);
         }
 
-        renderHeaderMetrics(m);
+        if (m) {
+          renderHeaderMetrics(m);
+        }
 
         function updateSelectionCount() {
           let count = dialog.$wrapper.find('.chk-lead-verify:checked').length;
