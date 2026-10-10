@@ -1715,6 +1715,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       let current_start = 0;
       const page_len = 20;
       let total_count = 0;
+      const default_from_date = frappe.datetime.month_start();
+      const default_to_date = frappe.datetime.month_end();
       let dialog = new frappe.ui.Dialog({
         title: __("BM Lead Verification"),
         size: "extra-large",
@@ -1722,6 +1724,28 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           {
             fieldtype: "HTML",
             fieldname: "metrics_html"
+          },
+          { fieldtype: "Column Break" },
+          {
+            label: "From",
+            fieldname: "from_date",
+            fieldtype: "Date",
+            default: default_from_date,
+            onchange() {
+              current_start = 0;
+              loadVerificationData();
+            }
+          },
+          { fieldtype: "Column Break" },
+          {
+            label: "To",
+            fieldname: "to_date",
+            fieldtype: "Date",
+            default: default_to_date,
+            onchange() {
+              current_start = 0;
+              loadVerificationData();
+            }
           },
           { fieldtype: "Column Break" },
           {
@@ -1764,16 +1788,21 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             frappe.msgprint(__("Please select at least one lead to verify."));
             return;
           }
-          frappe.show_alert({ message: __("Verifying leads..."), indicator: "orange" });
-          let res = await frappe.call({
-            method: "sahayog.scrm.controller.lead.lead.verify_branch_leads",
-            args: { lead_names: selected, action: "Verified" }
-          });
-          if (res.message && res.message.status === "success") {
-            frappe.show_alert({ message: __(`${res.message.count} Leads Verified successfully!`), indicator: "green" });
-            self.fetchBMPendingCount();
-            loadVerificationData();
-          }
+          frappe.confirm(
+            __(`Are you sure you want to verify <b>${selected.length}</b> lead(s)?`),
+            async () => {
+              frappe.show_alert({ message: __("Verifying leads..."), indicator: "orange" });
+              let res = await frappe.call({
+                method: "sahayog.scrm.controller.lead.lead.verify_branch_leads",
+                args: { lead_names: selected, action: "Verified" }
+              });
+              if (res.message && res.message.status === "success") {
+                frappe.show_alert({ message: __(`${res.message.count} Leads Verified successfully!`), indicator: "green" });
+                self.fetchBMPendingCount();
+                loadVerificationData();
+              }
+            }
+          );
         },
         secondary_action_label: __("Reject Selected"),
         secondary_action: async () => {
@@ -1808,28 +1837,72 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           dialog.$wrapper.find('.btn-prev-leads,.btn-next-leads').prop('disabled', true);
           dialog.$wrapper.find('.leads-page-status').text('Loading...');
         }
+        let from_date = dialog.get_value("from_date");
+        let to_date = dialog.get_value("to_date");
         let res = await frappe.call({
           method: "sahayog.scrm.controller.lead.lead.get_bm_lead_verification_data",
-          args: { status: selected_status, start: current_start, page_length: page_len, search: search_text }
+          args: { status: selected_status, from_date: from_date, to_date: to_date, start: current_start, page_length: page_len, search: search_text }
         });
         if (!res.message) return;
         let m = res.message.metrics || {};
         let leads = res.message.leads || [];
         total_count = res.message.total_count || 0;
-        let search_pending = res.message.search_pending || 0;
+        function renderHeaderMetrics(m) {
+          let $hdr = dialog.$wrapper.find('.modal-header');
+          let $metrics = $hdr.find('.bm-header-metrics');
+          if (!$metrics.length) {
+            $metrics = $('<div class="bm-header-metrics" style="display:inline-flex;align-items:center;gap:6px;margin-left:14px;flex-wrap:wrap;"></div>');
+            $hdr.find('.modal-title').after($metrics);
+          }
+          $metrics.html(`
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:#fff7ed;color:#c2410c;border:1px solid #ffedd5;">
+              Pending: <b>${m.total_pending || 0}</b>
+            </span>
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:#fef2f2;color:#b91c1c;border:1px solid #fee2e2;">
+              Today: <b>${m.today_pending || 0}</b>
+            </span>
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:#fefce8;color:#a16207;border:1px solid #fef9c3;">
+              Yesterday: <b>${m.yesterday_pending || 0}</b>
+            </span>
+            <span style="font-size:11px;font-weight:600;padding:2px 8px;border-radius:12px;background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;">
+              Older: <b>${m.older_pending || 0}</b>
+            </span>
+          `);
 
-        if (!is_page) {
-        dialog.fields_dict.metrics_html.$wrapper.html(`
-          <div style="display:flex; gap:8px; flex-wrap:nowrap; width:100%; margin-bottom:0; white-space:nowrap;">
-            <span class="indicator-pill orange" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Total Pending: <b>${m.total_pending || 0}</b></span>
-            <span class="indicator-pill red" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Today: <b>${m.today_pending || 0}</b></span>
-            <span class="indicator-pill orange" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Yesterday: <b>${m.yesterday_pending || 0}</b></span>
-            <span class="indicator-pill gray" style="font-size:12px; padding:6px 8px; flex:1 1 0; text-align:center;">Older: <b>${m.older_pending || 0}</b></span>
-          </div>
-        `);
+          let cur_from = dialog.get_value("from_date");
+          let monthText = "";
+          if (cur_from) {
+            let d = frappe.datetime.str_to_obj(cur_from);
+            monthText = d.toLocaleString('default', { month: 'long', year: 'numeric' });
+          }
+          $hdr.find('.bm-header-month').remove();
+          dialog.set_title(`${__("BM Lead Verification")} <span style="font-size:14px;font-weight:600;color:var(--text-muted,#6b7280);margin-left:6px;">(${monthText})</span>`);
+        }
+
+        renderHeaderMetrics(m);
+
+        function updateSelectionCount() {
+          let count = dialog.$wrapper.find('.chk-lead-verify:checked').length;
+          let total_visible = dialog.$wrapper.find('.chk-lead-verify').length;
+          let $badge = dialog.$wrapper.find('.leads-selected-badge');
+          let $btnPrimary = dialog.get_primary_btn();
+          let $btnSecondary = dialog.get_secondary_btn();
+
+          if (count > 0) {
+            $badge.show();
+            dialog.$wrapper.find('.leads-selected-count').text(count);
+            $btnPrimary.text(`${__("Verify Selected")} (${count})`);
+            $btnSecondary.text(`${__("Reject Selected")} (${count})`);
+          } else {
+            $badge.hide();
+            $btnPrimary.text(__("Verify Selected"));
+            $btnSecondary.text(__("Reject Selected"));
+          }
+          dialog.$wrapper.find('#chk-select-all-leads').prop('checked', total_visible > 0 && count === total_visible);
         }
 
         if (leads.length === 0) {
+          updateSelectionCount();
           let empty_search = search_text ? `<div style="margin-bottom:8px;padding:6px 10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:12px;">Search '${search_text}' me <b>${search_pending}</b> pending mile.</div>` : '';
           dialog.fields_dict.leads_table_html.$wrapper.html(empty_search + '<div style="text-align:center;padding:25px;color:#6b7280;">No leads found for this verification status.</div>');
           return;
@@ -1876,7 +1949,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             </table>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 2px;font-size:12px;">
-            <span class="text-muted leads-page-status">Showing ${show_from}-${show_to} of ${total_count}</span>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <span class="text-muted leads-page-status">Showing ${show_from}-${show_to} of ${total_count}</span>
+              <span class="leads-selected-badge" style="display:none;background:#eff6ff;color:#1d4ed8;font-weight:600;padding:2px 8px;border-radius:12px;border:1px solid #bfdbfe;">
+                Selected: <b class="leads-selected-count">0</b>
+              </span>
+            </div>
             <div style="display:flex;gap:6px;">
               <button class="btn btn-xs btn-default btn-prev-leads" ${current_start === 0 ? 'disabled' : ''}>Prev</button>
               <button class="btn btn-xs btn-default btn-next-leads" ${(current_start + page_len) >= total_count ? 'disabled' : ''}>Next (20)</button>
@@ -1884,9 +1962,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           </div>
         `);
 
-        dialog.$wrapper.find('#chk-select-all-leads').on('change', function() {
+        updateSelectionCount();
+
+        dialog.$wrapper.find('#chk-select-all-leads').off('change').on('change', function() {
           let checked = $(this).is(':checked');
           dialog.$wrapper.find('.chk-lead-verify').prop('checked', checked);
+          updateSelectionCount();
+        });
+
+        dialog.$wrapper.find('.chk-lead-verify').off('change').on('change', function() {
+          updateSelectionCount();
         });
         dialog.$wrapper.find('.btn-prev-leads').on('click', function() {
           if (current_start === 0) return;
@@ -1901,17 +1986,54 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       }
 
       dialog.show();
-      dialog.$wrapper.find('.modal-dialog').css({ 'max-width': '1400px', 'width': '98%' });
+      dialog.$wrapper.find('.modal-dialog').css({ 'max-width': '1300px', 'width': '96%' });
+      dialog.$wrapper.find('.modal-content').css({
+        'border-radius': '12px',
+        'box-shadow': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        'border': '1px solid var(--border-color, #e2e8f0)',
+        'overflow': 'hidden'
+      });
+      dialog.$wrapper.css({
+        'backdrop-filter': 'blur(4px)',
+        '-webkit-backdrop-filter': 'blur(4px)'
+      });
       (function () {
-        dialog.$wrapper.find('.modal-header').css({ 'border-bottom': 'none', 'padding-bottom': '0' });
-        let $sec = dialog.$wrapper.find('[data-fieldname="metrics_html"]').closest('.form-section');
-        $sec.css({ 'display': 'flex', 'align-items': 'center', 'padding-top': '0', 'margin-top': '0' });
-        $sec.find('.form-column').css({ 'padding-left': '4px', 'padding-right': '4px' });
-        dialog.$wrapper.find('[data-fieldname="metrics_html"]').closest('.form-column').css({ 'flex': '1', 'min-width': '0', 'padding-right': '12px' });
-        dialog.$wrapper.find('[data-fieldname="status_filter"]').closest('.form-column').css({ 'flex': '0 0 150px', 'max-width': '150px', 'margin-left': 'auto', 'padding-right': '0' });
-        dialog.$wrapper.find('[data-fieldname="search_text"]').closest('.form-column').css({ 'flex': '0 0 320px', 'max-width': '320px', 'padding-left': '8px' });
-        dialog.$wrapper.find('[data-fieldname="status_filter"] .control-label').hide();
-        dialog.$wrapper.find('[data-fieldname="search_text"] .control-label').hide();
+        dialog.$wrapper.find('.modal-header').css({
+          'padding': '14px 20px',
+          'border-bottom': '1px solid var(--border-color, #e5e7eb)',
+          'background': 'var(--fg-color, #ffffff)',
+          'display': 'flex',
+          'align-items': 'center',
+          'flex-wrap': 'wrap',
+          'gap': '8px'
+        });
+        dialog.$wrapper.find('.modal-title').css({
+          'font-size': '15px',
+          'font-weight': '600',
+          'color': 'var(--text-color, #111827)',
+          'margin-right': '4px'
+        });
+        dialog.$wrapper.find('.modal-footer').css({
+          'padding': '12px 20px',
+          'border-top': '1px solid var(--border-color, #e5e7eb)',
+          'background': 'var(--fg-color, #ffffff)'
+        });
+        let $sec = dialog.$wrapper.find('[data-fieldname="from_date"]').closest('.form-section');
+        $sec.css({ 'padding': '10px 0 4px 0', 'margin-top': '0' });
+        $sec.find('.form-column').css({ 'padding-left': '6px', 'padding-right': '6px' });
+        dialog.$wrapper.find('[data-fieldname="metrics_html"]').closest('.form-column').hide();
+        dialog.$wrapper.find('.control-label').css({
+          'font-size': '11px',
+          'font-weight': '500',
+          'color': 'var(--text-muted, #64748b)',
+          'margin-bottom': '4px',
+          'display': 'block'
+        });
+        dialog.$wrapper.find('.frappe-control input, .frappe-control select').css({
+          'height': '32px',
+          'font-size': '12px',
+          'border-radius': '6px'
+        });
       })();
       loadVerificationData();
       dialog.fields_dict.search_text.$input.on('input', function() {
