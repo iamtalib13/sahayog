@@ -8480,13 +8480,10 @@
             '<div class="checks-lock-hint" style="display:none"></div>' +
             "</div>";
 
-          /* View mode (e.g. Team Training drawer): show participant names +
-             attendance ticks. Reuses the existing attendance section renderer;
-             fillAttendanceSection() below populates it (instant when the
-             opener pre-fetched participant_list, fetched otherwise). */
-          if (!canEditDrawer) {
-            body += attendanceSectionHTML(ev, false);
-          }
+          /* Participants section in BOTH modes (edit needs it for attendance
+             marking + check unlocking; view stays read-only). The box lets
+             fillAttendanceSection() fetch details when the opener had none. */
+          body += attendanceSectionHTML(ev, canEditDrawer);
 
           if (r.showBudget) {
             /* Budget inputs: L&D Admin anytime + own trainer any time BEFORE
@@ -9237,28 +9234,30 @@
             CHECK_FIELDS.forEach(function (f) {
               var cur = ev[f.key] || 0;
               if (cur !== (base.checks[f.key] || 0)) {
-                tasks.push(
-                  api("update_training_status", {
+                /* Lazy factory — the API must fire only on execution,
+                   never while building (Cancel/validation must stop it). */
+                tasks.push(function () {
+                  return api("update_training_status", {
                     training_name: ev.name,
                     field: f.key,
                     value: cur,
-                  }),
-                );
+                  });
+                });
               }
             });
           }
 
           var rem = (document.getElementById("drw-remarks") || {}).value || "";
           if (!isDoneSave && rem !== (base.remarks || "")) {
-            tasks.push(
-              api("update_training_status", {
+            tasks.push(function () {
+              return api("update_training_status", {
                 training_name: ev.name,
                 field: "trainer_remarks",
                 value: rem,
               }).then(function () {
                 ev.trainer_remarks = rem;
-              }),
-            );
+              });
+            });
           }
 
           var canBudget = state.role === "ld_admin" || isOwnTraining(ev);
@@ -9274,16 +9273,16 @@
               String(bStr) !== String(base.budget) ||
               String(aStr) !== String(base.expense)
             ) {
-              budgetTasks.push(
-                api("update_budget", {
+              budgetTasks.push(function () {
+                return api("update_budget", {
                   training_name: ev.name,
                   budget_amount: isNaN(bv) ? null : bv,
                   actual_expense: isNaN(av) ? null : av,
                 }).then(function () {
                   ev.budget_amount = isNaN(bv) ? null : bv;
                   ev.actual_expense = isNaN(av) ? null : av;
-                }),
-              );
+                });
+              });
             }
           }
 
@@ -9302,11 +9301,20 @@
               return;
           }
 
-          /* Budget first (the completing check reads stored budget) */
+          /* Budget first (the completing check reads stored budget).
+             Factories run here — never before (Cancel must send nothing). */
           state.savingDrawer = true;
-          Promise.all(budgetTasks)
+          Promise.all(
+            budgetTasks.map(function (fn) {
+              return fn();
+            }),
+          )
             .then(function () {
-              return Promise.all(tasks);
+              return Promise.all(
+                tasks.map(function (fn) {
+                  return fn();
+                }),
+              );
             })
             .then(function () {
               state.savingDrawer = false;
@@ -10044,8 +10052,8 @@
                 return;
               }
             }
-            tasks.push(
-              api("update_training_schedule", {
+            tasks.push(function () {
+              return api("update_training_schedule", {
                 name: ev.name,
                 from_date: fromDate,
                 to_date: toDate,
@@ -10068,20 +10076,20 @@
                 if (expChanged) ev.number_of_participants = expVal;
                 /* ev.geographies refreshes from the get_training_details
                    refetch after save — no manual merge needed. */
-              }),
-            );
+              });
+            });
           }
           var val = (document.getElementById("new-agenda") || {}).value || "";
           if (!isDoneSave && (ev.trainer_remarks || "") !== val) {
-            tasks.push(
-              api("update_training_status", {
+            tasks.push(function () {
+              return api("update_training_status", {
                 training_name: ev.name,
                 field: "trainer_remarks",
                 value: val,
               }).then(function () {
                 ev.trainer_remarks = val;
-              }),
-            );
+              });
+            });
           }
           /* additional_cc is saved directly from the Mail Recipients dialog — no save needed here */
           /* Staged completion checks (edit dialog stages until Save) */
@@ -10090,13 +10098,13 @@
               var cur = ev[f.key] || 0;
               var was = (state.editBase && state.editBase.checks[f.key]) || 0;
               if (cur !== was) {
-                tasks.push(
-                  api("update_training_status", {
+                tasks.push(function () {
+                  return api("update_training_status", {
                     training_name: ev.name,
                     field: f.key,
                     value: cur,
-                  }),
-                );
+                  });
+                });
               }
             });
           }
@@ -10147,16 +10155,16 @@
               var baseB = ev.budget_amount == null ? "" : ev.budget_amount;
               var baseA = ev.actual_expense == null ? "" : ev.actual_expense;
               if (String(bStr) !== String(baseB) || String(aStr) !== String(baseA)) {
-                budgetTasks.push(
-                  api("update_budget", {
+                budgetTasks.push(function () {
+                  return api("update_budget", {
                     training_name: ev.name,
                     budget_amount: isNaN(bv) ? null : bv,
                     actual_expense: isNaN(av) ? null : av,
                   }).then(function () {
                     ev.budget_amount = isNaN(bv) ? null : bv;
                     ev.actual_expense = isNaN(av) ? null : av;
-                  }),
-                );
+                  });
+                });
               }
             }
           }
@@ -10194,10 +10202,18 @@
               return doSync ? doSync() : true;
             })
             .then(function () {
-              return Promise.all(budgetTasks);
+              return Promise.all(
+                budgetTasks.map(function (fn) {
+                  return fn();
+                }),
+              );
             })
             .then(function () {
-              return Promise.all(tasks);
+              return Promise.all(
+                tasks.map(function (fn) {
+                  return fn();
+                }),
+              );
             })
             .then(function () {
               state.savingTraining = false;
