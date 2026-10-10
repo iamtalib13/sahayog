@@ -455,43 +455,44 @@
     }
 
     .search-inline-input {
-      height: 30px;
-      width: 140px;
-      padding: 0 24px 0 28px;
-      border-radius: 50px;
-      border: 1px solid #e2e8f0;
-      background: #ffffff;
-      font-size: 0.78rem;
+      height: 32px;
+      width: 260px;
+      padding: 0 28px 0 32px;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      background: #f8fafc;
+      font-size: 0.8rem;
       font-weight: 500;
-      color: #1e293b;
+      color: #0f172a;
       outline: none;
       transition: all 0.2s ease;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
     }
 
     .search-inline-input:focus {
-      width: 190px;
+      width: 300px;
+      background: #ffffff;
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
     }
 
     .search-inline-input::placeholder {
       color: #94a3b8;
-      font-weight: 500;
+      font-weight: 400;
     }
 
     .search-inline-icon {
       position: absolute;
-      left: 10px;
-      font-size: 11px;
+      left: 11px;
+      font-size: 12px;
       color: #94a3b8;
       pointer-events: none;
     }
 
     .search-inline-clear {
       position: absolute;
-      right: 7px;
-      background: #f1f5f9;
+      right: 8px;
+      background: #e2e8f0;
       border: none;
       border-radius: 50%;
       width: 16px;
@@ -507,8 +508,8 @@
     }
 
     .search-inline-clear:hover {
-      background: #e2e8f0;
-      color: #1e293b;
+      background: #cbd5e1;
+      color: #0f172a;
     }
 
     @media (max-width: 640px) {
@@ -527,27 +528,11 @@
       }
 
       .search-inline-input {
-        width: 115px !important;
+        width: 160px !important;
       }
 
       .search-inline-input:focus {
-        width: 140px !important;
-      }
-    }
-
-    @media (max-width: 640px) {
-      .tab-bar {
-        gap: 0.35rem !important;
-        margin-bottom: 0.25rem !important;
-        overflow-x: auto !important;
-        flex-wrap: nowrap !important;
-        -webkit-overflow-scrolling: touch !important;
-        scrollbar-width: none !important;
-        padding-bottom: 4px !important;
-      }
-
-      .tab-bar::-webkit-scrollbar {
-        display: none !important;
+        width: 190px !important;
       }
     }
 
