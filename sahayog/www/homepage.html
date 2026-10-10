@@ -1294,10 +1294,23 @@
       event.preventDefault();
       event.stopPropagation();
       const dropdown = document.getElementById("crm-dropdown");
-      if (dropdown) {
-        dropdown.classList.toggle("hidden");
-      }
+      const trigger = document.getElementById("crm-link");
+      if (!dropdown || !trigger) return;
+
+      const isHidden = dropdown.classList.contains("hidden");
       closeTaskflowDropdown();
+
+      if (isHidden) {
+        const rect = trigger.getBoundingClientRect();
+        dropdown.style.position = "fixed";
+        dropdown.style.top = `${rect.bottom + 6}px`;
+        dropdown.style.left = `${rect.left + rect.width / 2}px`;
+        dropdown.style.transform = "translateX(-50%)";
+        dropdown.style.zIndex = "999999";
+        dropdown.classList.remove("hidden");
+      } else {
+        dropdown.classList.add("hidden");
+      }
     }
 
     function closeCRMDropdown() {
@@ -1375,6 +1388,9 @@
           }
         }
       });
+
+      window.addEventListener("scroll", closeCRMDropdown, true);
+      window.addEventListener("resize", closeCRMDropdown);
 
       document.addEventListener("keydown", function (e) {
         if (e.key === "Escape") {
