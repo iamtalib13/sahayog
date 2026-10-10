@@ -8715,9 +8715,19 @@
           if (saveBtn) saveBtn.disabled = Object.keys(attPopDirty).length === 0;
         }
         function saveAttPop(ev) {
+          /* Sel-list marks (Mark-all popup excluded) ride along too */
+          var selFlush =
+            dialogFn.flushAttStaged
+              ? dialogFn.flushAttStaged()
+              : Promise.resolve(true);
+          selFlush.then(function () {
+            saveAttPopCore(ev);
+          });
+        }
+        function saveAttPopCore(ev) {
           var keys = Object.keys(attPopDirty);
           if (!keys.length) {
-            closeAttPop();
+            showToast("No attendance changes to save yet.");
             return;
           }
           var wanted = {};
@@ -8733,7 +8743,8 @@
             var p = (ev.participant_list || []).find(function (x) {
               return attRowKey(x) === key;
             });
-            if (!p || !p.name) return Promise.resolve({ key: key, ok: false });
+            if (!p || !p.name)
+              return Promise.resolve({ key: key, ok: false, skipped: true });
             return api("update_participant_attendance", {
               training_name: ev.name,
               participant_name: p.name,
@@ -8752,6 +8763,7 @@
           });
           Promise.all(tasks).then(function (results) {
             var failed = {};
+            var skippedNew = 0;
             results.forEach(function (r) {
               if (r.ok) {
                 var p = (ev.participant_list || []).find(function (x) {
@@ -8760,6 +8772,7 @@
                 if (p) p.attendance_status = wanted[r.key];
               } else {
                 failed[r.key] = true;
+                if (r.skipped) skippedNew++;
               }
             });
             var keep = {};
@@ -8777,7 +8790,11 @@
                 attendanceSummary(ev.participant_list || []),
               );
             if (Object.keys(failed).length) {
-              showToast("Some updates failed — kept previous state for those");
+              showToast(
+                skippedNew === Object.keys(failed).length
+                  ? "Save new participants first (dialog Save), then mark attendance."
+                  : "Some updates failed — kept previous state for those",
+              );
               openAttPop(ev, true);
             } else {
               showToast("Attendance saved");
@@ -8800,7 +8817,8 @@
             var p = (ev.participant_list || []).find(function (x) {
               return attRowKey(x) === key;
             });
-            if (!p || !p.name) return Promise.resolve({ key: key, ok: false });
+            if (!p || !p.name)
+              return Promise.resolve({ key: key, ok: false, skipped: true });
             return api("update_participant_attendance", {
               training_name: ev.name,
               participant_name: p.name,
@@ -8815,6 +8833,7 @@
           });
           return Promise.all(tasks).then(function (results) {
             var failed = {};
+            var skippedNew = 0;
             results.forEach(function (r) {
               if (r.ok) {
                 var p = (ev.participant_list || []).find(function (x) {
@@ -8823,6 +8842,7 @@
                 if (p) p.attendance_status = wanted[r.key];
               } else {
                 failed[r.key] = true;
+                if (r.skipped) skippedNew++;
               }
             });
             var keep = {};
@@ -8830,8 +8850,11 @@
               if (failed[k]) keep[k] = wanted[k];
             });
             attPopDirty = keep;
-            if (Object.keys(failed).length)
-              showToast("Some attendance updates failed — retry from Mark Attendance");
+            if (Object.keys(failed).length) {
+              if (skippedNew === Object.keys(failed).length)
+                showToast("Save new participants first (dialog Save), then mark attendance.");
+              else showToast("Some attendance updates failed — retry from Mark Attendance");
+            }
             return true;
           });
         }
