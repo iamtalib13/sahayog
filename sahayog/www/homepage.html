@@ -581,25 +581,28 @@
       border-color: var(--primary);
     }
 
-    /* Taskflow & CRM dropdown */
-    #taskflow-link,
+    /* CRM dropdown */
     #crm-link {
       position: relative;
     }
 
-    .taskflow-dropdown,
     .crm-dropdown {
       position: absolute;
       top: calc(100% + 4px);
       left: 50%;
       transform: translateX(-50%);
-      background: white;
-      border: 1px solid #e5e7eb;
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
       border-radius: 12px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-      min-width: 160px;
-      z-index: 50;
+      box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+      min-width: 175px;
+      z-index: 1000;
       overflow: hidden;
+      display: block;
+    }
+
+    .crm-dropdown.hidden {
+      display: none !important;
     }
 
     .taskflow-dropdown a,
@@ -1311,23 +1314,8 @@
       event.preventDefault();
       event.stopPropagation();
       const dropdown = document.getElementById("crm-dropdown");
-      const trigger = document.getElementById("crm-link");
-      if (!dropdown || !trigger) return;
-
-      const isHidden = dropdown.classList.contains("hidden");
-      closeTaskflowDropdown();
-
-      if (isHidden) {
-        const rect = trigger.getBoundingClientRect();
-        dropdown.style.position = "fixed";
-        dropdown.style.top = `${rect.bottom + 6}px`;
-        dropdown.style.left = `${rect.left + rect.width / 2}px`;
-        dropdown.style.transform = "translateX(-50%)";
-        dropdown.style.zIndex = "999999";
-        dropdown.classList.remove("hidden");
-      } else {
-        dropdown.classList.add("hidden");
-      }
+      if (!dropdown) return;
+      dropdown.classList.toggle("hidden");
     }
 
     function closeCRMDropdown() {
@@ -1349,23 +1337,6 @@
       }
     }
 
-    function toggleTaskflowDropdown(event) {
-      event.preventDefault();
-      event.stopPropagation();
-      const dropdown = document.getElementById("taskflow-dropdown");
-      if (dropdown) {
-        dropdown.classList.toggle("hidden");
-      }
-      closeCRMDropdown();
-    }
-
-    function closeTaskflowDropdown() {
-      const dropdown = document.getElementById("taskflow-dropdown");
-      if (dropdown) {
-        dropdown.classList.add("hidden");
-      }
-    }
-
     document.addEventListener("DOMContentLoaded", function () {
       const iconItems = document.querySelectorAll(".icon-item");
       iconItems.forEach((item) => {
@@ -1382,8 +1353,8 @@
         pendingLink.addEventListener("click", handleLinkClick);
       }
 
-      // Add listeners for taskflow & CRM dropdown options
-      document.querySelectorAll(".taskflow-option, .crm-option").forEach((opt) => {
+      // Add listeners for CRM dropdown options
+      document.querySelectorAll(".crm-option").forEach((opt) => {
         opt.addEventListener("click", handleLinkClick);
       });
 
@@ -1396,22 +1367,10 @@
             closeCRMDropdown();
           }
         }
-
-        const dropdown = document.getElementById("taskflow-dropdown");
-        const trigger = document.getElementById("taskflow-link");
-        if (dropdown && trigger && !dropdown.classList.contains("hidden")) {
-          if (!trigger.contains(event.target)) {
-            closeTaskflowDropdown();
-          }
-        }
       });
-
-      window.addEventListener("scroll", closeCRMDropdown, true);
-      window.addEventListener("resize", closeCRMDropdown);
 
       document.addEventListener("keydown", function (e) {
         if (e.key === "Escape") {
-          closeTaskflowDropdown();
           closeCRMDropdown();
         }
       });
