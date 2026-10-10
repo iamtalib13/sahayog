@@ -10165,7 +10165,9 @@
           // Serialized writes: doc.save() inside sync/flush throws TimestampMismatch
           // if parallel set_value calls bump `modified` first. Order: flush, att-pop, sync, budget, rest.
           var hasAttPop = Object.keys(attPopDirty).length > 0;
-          if (!tasks.length && !budgetTasks.length && !hasAttPop) {
+          var hasSelAtt =
+            dialogFn.attDirtyCount ? dialogFn.attDirtyCount() > 0 : false;
+          if (!tasks.length && !budgetTasks.length && !hasAttPop && !hasSelAtt) {
             if (isDoneSave) {
               showToast("This training is completed and locked — no changes can be made here.");
             } else {
@@ -12807,6 +12809,13 @@
             }
           }
           // Flush staged attendance (called by dialog Save in edit mode)
+          dialogFn.attDirtyCount = function () {
+            try {
+              return attDirtyList(state.selectedParticipants).length;
+            } catch (e) {
+              return 0;
+            }
+          };
           dialogFn.flushAttStaged = function () {
             var ev = state.currentEvent;
             var dirty = attDirtyList(state.selectedParticipants);
