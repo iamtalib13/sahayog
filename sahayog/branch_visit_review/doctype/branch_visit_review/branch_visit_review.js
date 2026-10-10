@@ -270,7 +270,7 @@ function open_action_item_dialog(frm, idx, item) {
 	modal_html += "<div class='bvr-modal-header'><h5>" + (is_add ? "Add Action Item" : "Edit Action Item") + "</h5><button class='bvr-modal-close' title='Close' type='button'>&times;</button></div>";
 	modal_html += "<div class='bvr-modal-body'>";
 	modal_html += "<div class='bvr-modal-field'><label>Action Item <span class='bvr-req'>*</span></label><input type='text' class='form-control bvr-modal-input' data-field='action_item' placeholder='Enter action item' value=\"" + bvr_escape(item.action_item) + "\"></div>";
-	modal_html += "<div class='bvr-modal-field'><label>Responsible</label><div class='employee-search-wrapper bvr-modal-emp' data-value='" + bvr_escape(item.owner) + "'><input type='text' class='form-control bvr-modal-input employee-search-input' placeholder='Search employee' autocomplete='off' value=''><div class='employee-dropdown' style='display:none;'></div></div></div>";
+	modal_html += "<div class='bvr-modal-field'><label>Responsible</label><div class='employee-search-wrapper bvr-modal-emp' data-value='" + bvr_escape(item.responsible) + "'><input type='text' class='form-control bvr-modal-input employee-search-input' placeholder='Search employee' autocomplete='off' value=''><div class='employee-dropdown' style='display:none;'></div></div></div>";
 	modal_html += "<div class='bvr-modal-grid'>";
 	modal_html += "<div class='bvr-modal-field'><label>Priority</label><select class='form-control bvr-modal-input' data-field='priority'>" + select_options(["High", "Medium", "Low"], item.priority || "Medium") + "</select></div>";
 	modal_html += "<div class='bvr-modal-field'><label>Target Date (TAT)</label><input type='date' class='form-control bvr-modal-input' data-field='tat' value='" + bvr_escape(item.tat) + "'></div>";
@@ -311,9 +311,9 @@ function open_action_item_dialog(frm, idx, item) {
 			let label_for = function (emp) {
 				return emp.employee_name ? emp.employee_name + "(" + emp.name + ")" : emp.name;
 			};
-			if (item.owner) {
-				let emp = employees.find(function (e) { return e.name === item.owner; });
-				$emp_input.val(emp ? label_for(emp) : item.owner);
+			if (item.responsible) {
+				let emp = employees.find(function (e) { return e.name === item.responsible; });
+				$emp_input.val(emp ? label_for(emp) : item.responsible);
 			}
 			$emp_input.on("focus keyup", function () {
 				let query = $(this).val().toLowerCase();
@@ -352,7 +352,7 @@ function open_action_item_dialog(frm, idx, item) {
 		}
 		let row_values = {
 			action_item: action_item,
-			owner: $emp_wrapper.data("value") || "",
+			responsible: $emp_wrapper.data("value") || "",
 			priority: $overlay.find("[data-field='priority']").val() || "Medium",
 			tat: $overlay.find("[data-field='tat']").val() || "",
 			status: $overlay.find("[data-field='status']").val() || "Open",
@@ -455,13 +455,13 @@ function render_checklist(frm, template) {
 			let action_html = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th><th style='width:130px;'>Target Date</th><th style='width:110px;'>Status</th><th>Resolution Notes</th><th style='width:40px;'></th></tr></thead><tbody>";
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
-					let owner_display = item.owner || "";
-					if (item.owner) {
-						let emp = employees.find(function (e) { return e.name === item.owner; });
+					let owner_display = item.responsible || "";
+					if (item.responsible) {
+						let emp = employees.find(function (e) { return e.name === item.responsible; });
 						if (emp && emp.employee_name) owner_display = emp.employee_name + "(" + emp.name + ")";
 					}
 					let action_display = item.action_item || "<span style='color:#8a93a5;'>Click to add details&hellip;</span>";
-					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.owner || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
+					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.responsible || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
@@ -681,7 +681,7 @@ function render_checklist(frm, template) {
 				$wrapper.find(".employee-dropdown").hide();
 				let idx = $row.index();
 				if (frm.doc.action_items && frm.doc.action_items[idx]) {
-					frm.doc.action_items[idx].owner = name;
+					frm.doc.action_items[idx].responsible = name;
 					frm.refresh_field("action_items");
 				}
 			});
