@@ -52,6 +52,7 @@ class BranchVisitReview(Document):
 		visit_duration: DF.Literal["", "Full Day", "Half Day"]
 		visited_by: DF.Link | None
 		visitor_signoff: DF.Check
+		visitor_name: DF.Data | None
 		visitor_signed_at: DF.Datetime | None
 
 	# end: auto-generated types
