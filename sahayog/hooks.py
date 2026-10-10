@@ -239,6 +239,7 @@ permission_query_conditions = {
     "Loan Application": "sahayog.permissions.get_loan_application_permission",
     "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.get_permission_query_conditions",
     "Agent Lead": "sahayog.scrm.doctype.agent_lead.agent_lead.get_permission_query_conditions",
+    "COM Visit Tracker": "sahayog.branch_score_card.doctype.com_visit_tracker.com_visit_tracker.get_permission_query_conditions",
 }
 #
 # has_permission = {
@@ -255,6 +256,7 @@ has_permission = {
     "Loan Application": "sahayog.permissions.has_loan_application_permission",
     "MAC Activity": "sahayog.scrm.doctype.mac_activity.mac_activity.has_permission",
     "Agent Lead": "sahayog.scrm.doctype.agent_lead.agent_lead.has_permission",
+    "COM Visit Tracker": "sahayog.branch_score_card.doctype.com_visit_tracker.com_visit_tracker.has_permission",
 }
 
 # DocType Class
@@ -447,6 +449,9 @@ doc_events = {
         "on_update": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
         "on_submit": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
     },
+    "Report Preference": {
+        "on_update": "sahayog.branch_score_card.doctype.com_visit_tracker.com_visit_tracker.ensure_trackers_for_preference",
+    },
     "Unfrozen Security Deposit Account Opening": {
         "on_update": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
         "on_submit": "sahayog.branch_score_card.doctype.branch_score_card.branch_score_card.trigger_score_card_creation",
@@ -531,6 +536,7 @@ scheduler_events = {
     "daily": [
         "sahayog.sahayog.doctype.sahayog_branch.sahayog_branch.auto_create_sahayog_branches_from_finacle",
         "sahayog.sahayog.doctype.bank_eod.bank_eod.create_daily_bank_eod",
+        "sahayog.branch_score_card.doctype.com_visit_tracker.com_visit_tracker.create_yearly_trackers",
     ],
     # --- Example blocks below: Uncomment if/when needed ---
     # "all": [
