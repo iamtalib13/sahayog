@@ -442,14 +442,27 @@ function render_checklist(frm, template) {
 			});
 			overall_html += "</select></span>";
 
+			let active_tab = "review";
+			let $cw = frm.fields_dict.checklist.$wrapper;
+			if ($cw.find(".tab-content-action").is(":visible")) {
+				active_tab = "action";
+			} else if ($cw.find(".tab-content-leadership").is(":visible")) {
+				active_tab = "leadership";
+			}
+			let li_active = {
+				review: active_tab === "review" ? "active" : "",
+				action: active_tab === "action" ? "active" : "",
+				leadership: active_tab === "leadership" ? "active" : "",
+			};
+
 			let tabs_html = "<div class='bvr-tabs'><div class='bvr-tab-bar'><ul class='nav nav-tabs'>";
-			tabs_html += "<li class='active'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
-			tabs_html += "<li><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
-			tabs_html += "<li><a class='tab-leadership' style='cursor:pointer;'>Leadership Assessment</a></li>";
+			tabs_html += "<li class='" + li_active.review + "'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
+			tabs_html += "<li class='" + li_active.action + "'><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
+			tabs_html += "<li class='" + li_active.leadership + "'><a class='tab-leadership' style='cursor:pointer;'>Leadership Assessment</a></li>";
 			tabs_html += "</ul>" + overall_html + "</div>";
-			tabs_html += "<div class='tab-content-review'>" + checklist_html + "</div>";
-			tabs_html += "<div class='tab-content-action' style='display:none;'>" + action_html + "</div>";
-			tabs_html += "<div class='tab-content-leadership' style='display:none;'>" + leadership_html + "</div></div>";
+			tabs_html += "<div class='tab-content-review' style='display:" + (active_tab === "review" ? "block" : "none") + ";'>" + checklist_html + "</div>";
+			tabs_html += "<div class='tab-content-action' style='display:" + (active_tab === "action" ? "block" : "none") + ";'>" + action_html + "</div>";
+			tabs_html += "<div class='tab-content-leadership' style='display:" + (active_tab === "leadership" ? "block" : "none") + ";'>" + leadership_html + "</div></div>";
 
 			frm.fields_dict.checklist.$wrapper.html(tabs_html);
 
