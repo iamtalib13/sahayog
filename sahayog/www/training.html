@@ -9296,7 +9296,7 @@
           if (wasScore < 5 && completionScore(ev) === 5) {
             if (
               !confirm(
-                "Mark this training as Completed? Completed trainings get locked (only budget top-up stays, via L&D Admin on desk).",
+                "Mark this training as Completed? Completed trainings get locked (further changes only on desk by L&D Admin).",
               )
             )
               return;
@@ -9312,7 +9312,11 @@
               state.savingDrawer = false;
               render();
               renderTrainings();
-              showToast("Training updated");
+              showToast(
+                wasScore < 5 && completionScore(ev) === 5
+                  ? "Training marked Completed — locked."
+                  : "Training updated",
+              );
               if (state.currentEvent && state.currentEvent.name === ev.name) {
                 openDrawer(ev);
               }
@@ -10198,7 +10202,11 @@
             .then(function () {
               state.savingTraining = false;
               loadData(true);
-              showToast("Training updated");
+              showToast(
+                wasScore < 5 && completionScore(ev) === 5
+                  ? "Training marked Completed — locked."
+                  : "Training updated",
+              );
               return api("get_training_details", { name: ev.name });
             })
             .then(function (d) {
