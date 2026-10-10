@@ -9117,6 +9117,10 @@
                     return attRowKey(x) === key;
                   });
                   if (!p || attStatusOf(p) === want) return;
+                  if (!p.name) {
+                    showToast("Reload this training first (unsaved participant rows cannot be marked).");
+                    return;
+                  }
                   row.querySelectorAll(".att-btn").forEach(function (b) {
                     b.disabled = true;
                   });
