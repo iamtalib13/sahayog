@@ -1054,8 +1054,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                     <td style="padding-left: 14px;">
                                         <input type="checkbox" :value="emp.employee_id" :checked="selected_row_ids.includes(emp.employee_id)" @change="toggleRowSelect(emp.employee_id)">
                                     </td>
-                                    <td>
-                                        <div style="font-weight: 600; color: #0f172a;">{{ emp.employee_name || 'N/A' }}</div>
+                                    <td style="cursor: pointer;" @click="openBMVerificationDialog(emp)">
+                                        <div style="font-weight: 600; color: #2563eb;" class="text-hover-underline">{{ emp.employee_name || 'N/A' }}</div>
                                         <small class="text-muted">{{ emp.employee_id }} • {{ emp.designation || 'Staff' }}</small>
                                     </td>
                                     <td>
@@ -1065,8 +1065,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                             <span class="crm-soft-pill blue" style="font-size:10px;">{{ emp.region || 'N/A' }}</span>
                                         </div>
                                     </td>
-                                    <td>
-                                        <span class="font-weight-bold">{{ emp.total_leads || 0 }}</span>
+                                    <td style="cursor: pointer;" @click="openBMVerificationDialog(emp)">
+                                        <span class="font-weight-bold text-primary">{{ emp.total_leads || 0 }}</span>
                                     </td>
                                     <td>
                                         <span class="text-muted">{{ emp.total_followups || 0 }}</span>
@@ -1831,18 +1831,20 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       });
     },
 
-    openBMVerificationDialog() {
+    openBMVerificationDialog(emp=null) {
       let self = this;
-      let selected_status = "Pending";
+      let target_emp_id = (emp && emp.employee_id) ? emp.employee_id : null;
+      let target_emp_name = (emp && emp.employee_name) ? emp.employee_name : null;
+      let selected_status = emp ? "All" : "Pending";
       let search_text = "";
       let search_timer = null;
       let current_start = 0;
       const page_len = 20;
       let total_count = 0;
-      const default_from_date = frappe.datetime.month_start();
-      const default_to_date = frappe.datetime.month_end();
+      const default_from_date = this.employee_from_date || frappe.datetime.month_start();
+      const default_to_date = this.employee_to_date || frappe.datetime.month_end();
       let dialog = new frappe.ui.Dialog({
-        title: __("BM Lead Verification"),
+        title: target_emp_name ? `${__("BM Verification")} - ${target_emp_name}` : __("BM Lead Verification"),
         size: "extra-large",
         fields: [
           {
@@ -1877,7 +1879,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             fieldname: "status_filter",
             fieldtype: "Select",
             options: ["Pending", "Verified", "Rejected", "All"],
-            default: "Pending",
+            default: selected_status,
             onchange() {
               selected_status = dialog.get_value("status_filter");
               current_start = 0;
@@ -1972,7 +1974,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             start: current_start,
             page_length: page_len,
             search: search_text,
-            include_metrics: is_page ? 0 : 1
+            include_metrics: is_page ? 0 : 1,
+            employee_id: target_emp_id
           }
         });
         if (!res.message) return;
@@ -2015,7 +2018,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             monthText = d.toLocaleString('default', { month: 'long', year: 'numeric' });
           }
           $hdr.find('.bm-header-month').remove();
-          dialog.set_title(`${__("BM Lead Verification")} <span style="font-size:13px;font-weight:600;color:var(--text-muted,#6b7280);margin-left:6px;">(${monthText})</span>`);
+          let baseTitle = target_emp_name ? `${__("BM Verification")} - ${target_emp_name}` : __("BM Lead Verification");
+          dialog.set_title(`${baseTitle} <span style="font-size:13px;font-weight:600;color:var(--text-muted,#6b7280);margin-left:6px;">(${monthText})</span>`);
         }
 
         if (m) {

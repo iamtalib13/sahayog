@@ -415,20 +415,23 @@ def validate_lead_conversion_verification(doc, method=None):
 
 
 @frappe.whitelist()
-def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None, start=0, page_length=20, search=None, include_metrics=1):
+def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None, to_date=None, start=0, page_length=20, search=None, include_metrics=1, employee_id=None):
     """Fetch leads for Branch BM verification grouped by day with day-wise tracking metrics.
     Includes Lead Product child rows (product + amount) so BM can verify without opening each lead.
     Supports 20-20 batch pagination via start/page_length + search across
     employee name/id, CRM id, customer name, product name, amount.
+    Supports filtering by specific employee_id.
     """
     user = frappe.session.user
 
-    if not sol_id and user != "Administrator":
+    if not sol_id and user != "Administrator" and not employee_id:
         sol_id = frappe.db.get_value("Employee", {"user_id": user}, "sol_id")
 
     filters = {}
     if sol_id:
         filters["sol_id"] = sol_id
+    if employee_id:
+        filters["custom_employee_id"] = employee_id
     if status and status != "All":
         filters["custom_verification_status"] = status
     if from_date and to_date:
@@ -514,6 +517,9 @@ def get_bm_lead_verification_data(sol_id=None, status="Pending", from_date=None,
         if sol_id:
             conditions.append("sol_id = %(sol_id)s")
             values["sol_id"] = sol_id
+        if employee_id:
+            conditions.append("custom_employee_id = %(emp_id)s")
+            values["emp_id"] = employee_id
         if from_date and to_date:
             conditions.append("creation BETWEEN %(from_dt)s AND %(to_dt)s")
             values["from_dt"] = f"{from_date} 00:00:00"
