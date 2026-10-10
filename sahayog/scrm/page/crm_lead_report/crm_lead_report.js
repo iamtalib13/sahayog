@@ -55,7 +55,105 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             margin: 0 !important;
             float: none !important;
         }
-        #crm-app { padding: 10px; background-color: transparent; }
+        #crm-app { padding: 8px 12px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        .crm-layout-container { display: flex; gap: 14px; align-items: flex-start; min-height: calc(100vh - 120px); }
+        .crm-sidebar {
+            width: 250px; min-width: 250px; background: #ffffff;
+            border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03); position: sticky; top: 12px;
+            max-height: calc(100vh - 140px); overflow-y: auto; transition: all 0.25s ease;
+        }
+        .crm-sidebar-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding-bottom: 10px; margin-bottom: 12px; border-bottom: 1px solid #edf2f7;
+        }
+        .crm-sidebar-title { font-size: 12px; font-weight: 700; color: #1e293b; text-transform: uppercase; letter-spacing: 0.5px; }
+        .crm-sidebar-reset { font-size: 11px; font-weight: 600; color: #3b82f6; cursor: pointer; text-decoration: none; }
+        .crm-sidebar-reset:hover { text-decoration: underline; }
+        .crm-filter-group { margin-bottom: 14px; }
+        .crm-filter-label { font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.3px; }
+        .crm-sidebar-select, .crm-sidebar-input {
+            width: 100%; height: 32px; font-size: 12px; border: 1px solid #cbd5e1;
+            border-radius: 6px; padding: 0 8px; background: #ffffff; color: #0f172a;
+        }
+        .crm-sidebar-select:focus, .crm-sidebar-input:focus { border-color: #3b82f6; outline: none; }
+        .crm-main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
+        .crm-top-actions-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+            padding: 8px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .crm-filter-capsules-bar {
+            display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+            padding: 8px 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .crm-capsule-box {
+            position: relative; display: inline-flex; align-items: center;
+            background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 6px;
+            height: 30px; padding: 0 8px; min-width: 130px;
+        }
+        .crm-capsule-box input {
+            border: none; background: transparent; font-size: 12px; color: #1e293b;
+            width: 100%; outline: none; padding-right: 14px;
+        }
+        .crm-capsule-box .crm-approx-icon {
+            position: absolute; right: 6px; font-size: 11px; color: #94a3b8; pointer-events: none;
+        }
+        .crm-btn-filter-pill {
+            display: inline-flex; align-items: center; gap: 5px; height: 30px;
+            padding: 0 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+            cursor: pointer; border: 1px solid #cbd5e1; background: #ffffff; color: #334155;
+            transition: all 0.15s; margin-left: auto;
+        }
+        .crm-btn-filter-pill.active { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
+        .crm-table-container {
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden;
+        }
+        .crm-list-table { width: 100%; border-collapse: collapse; margin: 0; font-size: 12.5px; }
+        .crm-list-table thead th {
+            background: #f8fafc; color: #475569; font-weight: 600; font-size: 11px;
+            text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0; text-align: left; white-space: nowrap;
+        }
+        .crm-list-table tbody tr {
+            border-bottom: 1px solid #f1f5f9; transition: background-color 0.15s ease;
+        }
+        .crm-list-table tbody tr:hover { background-color: #f8fafc; }
+        .crm-list-table tbody td {
+            padding: 10px 12px; vertical-align: middle; color: #1e293b;
+        }
+        .crm-soft-pill {
+            display: inline-flex; align-items: center; padding: 2px 8px;
+            border-radius: 12px; font-size: 11px; font-weight: 600; line-height: 1.4;
+        }
+        .crm-soft-pill.blue { background: #eff6ff; color: #1d4ed8; border: 1px solid #dbeafe; }
+        .crm-soft-pill.green { background: #ecfdf5; color: #047857; border: 1px solid #a7f3d0; }
+        .crm-soft-pill.yellow { background: #fefce8; color: #a16207; border: 1px solid #fef08a; }
+        .crm-soft-pill.red { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+        .crm-soft-pill.gray { background: #f1f5f9; color: #475569; border: 1px solid #e2e8f0; }
+        .crm-bottom-pagination-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
+            padding: 8px 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .crm-page-limit-pills { display: inline-flex; align-items: center; gap: 4px; }
+        .crm-limit-pill {
+            padding: 3px 10px; border-radius: 5px; font-size: 11px; font-weight: 600;
+            cursor: pointer; border: 1px solid #cbd5e1; background: #ffffff; color: #475569;
+            transition: all 0.15s;
+        }
+        .crm-limit-pill:hover { background: #f1f5f9; }
+        .crm-limit-pill.active {
+            background: #0f172a; color: #ffffff; border-color: #0f172a;
+        }
+        .crm-btn-load-more {
+            background: #ffffff; border: 1px solid #cbd5e1; color: #0f172a;
+            font-size: 12px; font-weight: 600; padding: 4px 14px; border-radius: 6px;
+            cursor: pointer; transition: all 0.15s;
+        }
+        .crm-btn-load-more:hover { background: #f8fafc; border-color: #94a3b8; }
         .ui-section-card { margin-bottom: 8px; border: 1px solid #d1d8dd; }
        .section-header { 
           background: #ffffff; 
@@ -620,39 +718,37 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             <div v-if="report_info && report_info.is_admin" class="admin-master-report-bar mb-2 py-1 px-3 rounded shadow-xs d-flex align-items-center justify-content-between" style="background: #f8fafc; border: 1px solid #e2e8f0; font-size: 11px; height: 38px;">
                 <div class="d-flex align-items-center" style="gap: 10px; overflow: hidden; white-space: nowrap;">
                     <span class="font-weight-bold text-dark" style="font-size: 11px;">
-                        <i class="fa fa-shield text-primary mr-1"></i> Admin Report:
+                        Admin Report:
                     </span>
                     <span :class="['badge', report_info.status === 'Ready' ? 'badge-success' : 'badge-warning']" style="font-size: 10px; padding: 2px 6px;">
-                        {{ report_info.status === 'Ready' ? '🟢 Ready' : '⏳ ' + report_info.status }}
+                        {{ report_info.status === 'Ready' ? 'Ready' : report_info.status }}
                     </span>
                     <span class="text-muted" v-if="report_info.active_filename">
                         Active: <code class="text-primary font-weight-bold" style="font-size: 11px;">{{ report_info.active_filename }}</code> ({{ report_info.size_mb }}MB)
                     </span>
                     <span class="text-info font-weight-bold" v-if="report_info.backup_exists" title="Backup file active for live downloads during rebuild">
-                        | 🛡️ Backup Active ({{ report_info.backup_size_mb }}MB)
+                        | Backup Active ({{ report_info.backup_size_mb }}MB)
                     </span>
                     <span class="text-muted" v-if="report_info.last_generated_at">
-                        | <i class="fa fa-clock-o text-secondary"></i> {{ report_info.last_generated_at }}
+                        | {{ report_info.last_generated_at }}
                     </span>
                 </div>
 
                 <div class="d-flex align-items-center" style="gap: 6px; flex-shrink: 0;">
                     <button class="btn btn-xs btn-default font-weight-bold border" 
                             @click="show_server_files_modal = true" title="View all CSV report files stored on server">
-                        <i class="fa fa-folder-open text-warning mr-1"></i> Files
+                        Files
                     </button>
 
                     <button class="btn btn-xs btn-primary font-weight-bold" 
                             @click="syncIncrementalReport" 
                             :disabled="report_info.status === 'Generating'" title="Manually sync latest 3-day lead data in-place">
-                        <i class="fa fa-bolt mr-1" :class="{'fa-spin': report_info.status === 'Generating' && active_report_action === 'sync'}"></i> 
                         {{ (report_info.status === 'Generating' && active_report_action === 'sync') ? 'Syncing...' : 'Generate' }}
                     </button>
 
                     <button class="btn btn-xs btn-outline-danger font-weight-bold" 
                             @click="confirmRebuildReport" 
                             :disabled="report_info.status === 'Generating'" title="Rebuild full baseline report cleanly with backup fallback">
-                        <i class="fa fa-refresh mr-1" :class="{'fa-spin': report_info.status === 'Generating' && active_report_action === 'rebuild'}"></i> 
                         {{ (report_info.status === 'Generating' && active_report_action === 'rebuild') ? 'Building...' : 'Rebuild' }}
                     </button>
                 </div>
@@ -662,8 +758,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             <div v-if="show_server_files_modal" class="modal-backdrop-custom d-flex align-items-center justify-content-center" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 1050;" @click.self="show_server_files_modal = false">
                 <div class="bg-white rounded p-4 shadow-lg" style="width: 750px; max-width: 90%; max-height: 80vh; overflow-y: auto;">
                     <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
-                        <h5 class="m-0 font-weight-bold text-dark"><i class="fa fa-server text-primary mr-2"></i> Server Lead Report Files</h5>
-                        <button class="btn btn-sm btn-link text-muted" @click="show_server_files_modal = false"><i class="fa fa-times fa-lg"></i></button>
+                        <h5 class="m-0 font-weight-bold text-dark">Server Lead Report Files</h5>
+                        <button class="btn btn-sm btn-link text-muted" @click="show_server_files_modal = false">✕</button>
                     </div>
                     
                     <table class="table table-bordered table-striped table-hover table-sm" style="font-size: 13px;">
@@ -682,14 +778,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 <td>{{ f.size_mb }} MB</td>
                                 <td>{{ f.modified_at }}</td>
                                 <td>
-                                    <span v-if="f.is_info" class="badge badge-secondary px-2 py-1">⚙️ Metadata</span>
-                                    <span v-else-if="f.is_active" class="badge badge-success px-2 py-1">🟢 Active</span>
-                                    <span v-else-if="f.is_backup" class="badge badge-info px-2 py-1">🛡️ Backup</span>
+                                    <span v-if="f.is_info" class="badge badge-secondary px-2 py-1">Metadata</span>
+                                    <span v-else-if="f.is_active" class="badge badge-success px-2 py-1">Active</span>
+                                    <span v-else-if="f.is_backup" class="badge badge-info px-2 py-1">Backup</span>
                                     <span v-else class="badge badge-secondary px-2 py-1">Archived</span>
                                 </td>
                                 <td class="text-center">
                                     <a :href="f.file_url" target="_blank" download class="btn btn-xs btn-primary font-weight-bold">
-                                        <i class="fa fa-download mr-1"></i> Download
+                                        Download
                                     </a>
                                 </td>
                             </tr>
@@ -704,354 +800,320 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 </div>
             </div>
 
-            <div class="ui-section-card">
-               <div class="section-header">
-                    <div class="header-controls" style="flex: 1; justify-content: flex-start; gap: 12px; flex-wrap: nowrap;">
-                        <div v-for="key in ['zone', 'region', 'sol_id', 'product', 'source']" 
-                            class="d-flex align-items-center filter-pill-header" 
-                            style="cursor: pointer; gap: 6px;" 
-                            @click="active_popup = key">
-                            
-                            <span style="font-size:11px; font-weight:700; color:#4b5563; text-transform: uppercase; letter-spacing: 0.5px;">
-                                {{ key.replace('_', ' ') }}
-                            </span>
-                            <i class="fa fa-filter" style="font-size: 10px; color: #05a15d;"></i>
+            <!-- Main Modern CRM Layout -->
+            <div class="crm-layout-container">
+                <!-- Left Sidebar: Filter Controls -->
+                <div v-show="show_sidebar" class="crm-sidebar">
+                    <div class="crm-sidebar-header">
+                        <span class="crm-sidebar-title">Filters</span>
+                        <a href="javascript:void(0)" class="crm-sidebar-reset" @click="resetAllFilters">Reset</a>
+                    </div>
+
+                    <div class="crm-filter-group">
+                        <label class="crm-filter-label">Period</label>
+                        <select v-model="date_range_mode" @change="onDateRangeModeChange" class="crm-sidebar-select">
+                            <option value="Monthly">Monthly</option>
+                            <option value="Quarterly">Quarterly</option>
+                            <option value="Yearly">Yearly</option>
+                            <option value="Custom Range">Custom Range</option>
+                        </select>
+                    </div>
+
+                    <div v-if="date_range_mode === 'Monthly'" class="crm-filter-group">
+                        <label class="crm-filter-label">Month</label>
+                        <input type="month" v-model="master_month" @change="onMasterMonthChange" :max="today.substring(0,7)" class="crm-sidebar-input">
+                    </div>
+
+                    <div v-if="date_range_mode === 'Quarterly'" class="crm-filter-group">
+                        <label class="crm-filter-label">Quarter</label>
+                        <div class="d-flex" style="gap: 6px;">
+                            <select v-model="selected_year" @change="onYearChange" class="crm-sidebar-select" style="flex: 1;">
+                                <option v-for="y in available_years" :key="y" :value="y">{{ y }}</option>
+                            </select>
+                            <select v-model="selected_quarter" @change="onQuarterChange" class="crm-sidebar-select" style="flex: 1;">
+                                <option value="Q1">Q1 (Jan-Mar)</option>
+                                <option value="Q2">Q2 (Apr-Jun)</option>
+                                <option value="Q3">Q3 (Jul-Sep)</option>
+                                <option value="Q4">Q4 (Oct-Dec)</option>
+                            </select>
                         </div>
                     </div>
 
-                    <div class="header-controls">
-                        <div class="d-flex align-items-center" style="gap: 10px; flex-wrap: wrap;">
-                            <div class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">PERIOD:</span>
-                                <select v-model="date_range_mode" @change="onDateRangeModeChange" class="select-input" style="font-weight: bold; padding: 3px 6px;">
-                                    <option value="Monthly">Monthly</option>
-                                    <option value="Quarterly">Quarterly</option>
-                                    <option value="Yearly">Yearly</option>
-                                    <option value="Custom Range">Custom Range</option>
-                                </select>
-                            </div>
+                    <div v-if="date_range_mode === 'Yearly'" class="crm-filter-group">
+                        <label class="crm-filter-label">Year</label>
+                        <select v-model="selected_year" @change="onYearChange" class="crm-sidebar-select">
+                            <option v-for="y in available_years" :key="y" :value="y">{{ y }}</option>
+                        </select>
+                    </div>
 
-                            <div v-if="date_range_mode === 'Monthly'" class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">MONTH:</span>
-                                <input 
-                                type="month" 
-                                v-model="master_month" 
-                                @change="onMasterMonthChange"
-                                :max="today.substring(0,7)"
-                                class="select-input">
-                            </div>
+                    <div class="crm-filter-group">
+                        <label class="crm-filter-label">From Date</label>
+                        <input type="date" v-model="employee_from_date" @change="onDateChange" class="crm-sidebar-input">
+                    </div>
 
-                            <div v-if="date_range_mode === 'Quarterly'" class="d-flex align-items-center" style="gap: 6px;">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280;">YEAR:</span>
-                                <select v-model="selected_year" @change="onYearChange" class="select-input">
-                                    <option v-for="y in available_years" :key="y" :value="y">{{ y }}</option>
-                                </select>
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280;">QUARTER:</span>
-                                <select v-model="selected_quarter" @change="onQuarterChange" class="select-input">
-                                    <option value="Q1">Q1 (Jan - Mar)</option>
-                                    <option value="Q2">Q2 (Apr - Jun)</option>
-                                    <option value="Q3">Q3 (Jul - Sep)</option>
-                                    <option value="Q4">Q4 (Oct - Dec)</option>
-                                </select>
-                            </div>
+                    <div class="crm-filter-group">
+                        <label class="crm-filter-label">To Date</label>
+                        <input type="date" v-model="employee_to_date" @change="onDateChange" class="crm-sidebar-input">
+                    </div>
 
-                            <div v-if="date_range_mode === 'Yearly'" class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">YEAR:</span>
-                                <select v-model="selected_year" @change="onYearChange" class="select-input">
-                                    <option v-for="y in available_years" :key="y" :value="y">{{ y }}</option>
-                                </select>
-                            </div>
-
-                            <div class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">FROM:</span>
-                               <input 
-                                type="date"
-                                v-model="employee_from_date"
-                                @change="onDateChange"
-                                class="select-input">
-                            </div>
-                            <div class="d-flex align-items-center">
-                                <span style="font-size:10px; font-weight:bold; color:#6b7280; margin-right:4px;">TO:</span>
-                                <input 
-                                type="date"
-                                v-model="employee_to_date"
-                                @change="onDateChange"
-                                class="select-input">
-                            </div>
-                        </div>
-
-                        <div class="d-flex align-items-center" style="gap: 6px;">
-                            <button v-if="totalLeadsInReport > 0" class="btn-generate-sm"
-                                    @click="openDownloadDialog" 
-                                    :disabled="loading">
-                                <i class="fa fa-download mr-1"></i> DOWNLOAD
+                    <div class="crm-filter-group">
+                        <label class="crm-filter-label">Zone & Region</label>
+                        <div class="d-flex" style="gap: 6px;">
+                            <button class="btn btn-xs btn-default w-100 font-weight-bold" @click="active_popup = 'zone'">
+                                Zone ({{ selected.zone.length }})
+                            </button>
+                            <button class="btn btn-xs btn-default w-100 font-weight-bold" @click="active_popup = 'region'">
+                                Region ({{ selected.region.length }})
                             </button>
                         </div>
                     </div>
+
+                    <div class="crm-filter-group">
+                        <label class="crm-filter-label">Branch (SOL ID)</label>
+                        <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'sol_id'">
+                            <span class="text-truncate">{{ selected.sol_id.length ? selected.sol_id.length + ' Selected' : 'All Branches' }}</span>
+                            <span class="text-muted" style="font-size: 10px;">›</span>
+                        </button>
+                    </div>
+
+                    <div class="crm-filter-group">
+                        <label class="crm-filter-label">Product</label>
+                        <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'product'">
+                            <span class="text-truncate">{{ selected.product.length ? selected.product.length + ' Selected' : 'All Products' }}</span>
+                            <span class="text-muted" style="font-size: 10px;">›</span>
+                        </button>
+                    </div>
+
+                    <div class="crm-filter-group">
+                        <label class="crm-filter-label">Source</label>
+                        <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'source'">
+                            <span class="text-truncate">{{ selected.source.length ? selected.source.length + ' Selected' : 'All Sources' }}</span>
+                            <span class="text-muted" style="font-size: 10px;">›</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="section-body">
-                    <div class="filter-grid">
-                        <div v-for="key in ['zone', 'region']" :key="key" class="filter-column">
-                            <span class="filter-label">{{ key }}</span>
-                           <div class="mini-chip-list">
-                           <div v-for="opt in filter_data[key]" 
-                            :class="['mini-chip', isSelected(key, opt) ? 'active' : '']"
-                            @click="toggleFilter(key, opt)">
-                            {{ formatDisplayText(key, opt) }}
-                        </div>
-                        </div>
+                <!-- Right Main Area -->
+                <div class="crm-main-area">
+                    <!-- Top Actions Bar -->
+                    <div class="crm-top-actions-bar">
+                        <div class="d-flex align-items-center" style="gap: 10px;">
+                            <span class="font-weight-bold text-dark" style="font-size: 13px;">CRM Leads Report</span>
+                            <span class="crm-soft-pill blue">{{ (master_month || today.substring(0,7)) }}</span>
                         </div>
 
-                        <div v-for="key in ['sol_id', 'product', 'source'].filter(k => filter_data[k] && filter_data[k].length > 0)" :key="key" class="filter-column">
-                            <span class="filter-label">{{ (key || '').replace('_', ' ') }}</span>
-                            <div class="custom-dropdown">
-                               <div class="dropdown-select">
-                                    <input type="text"
-                                    v-model="search_query[key]"
-                                    :placeholder="getDisplayText(key)"
-                                    class="dropdown-input"
-                                    @focus="active_dropdown = key"
-                                    @click.stop>
-                                    <i class="fa fa-caret-down text-muted"></i>
-                                </div>
-                                <div :class="['dropdown-list', active_dropdown === key ? 'show' : '']">
-                                   <div class="dropdown-item"
-                                    v-for="opt in getFilteredOptions(active_dropdown)"
+                        <div class="d-flex align-items-center" style="gap: 8px;">
+                            <button class="btn btn-xs btn-default border font-weight-bold" @click="goToLeadList">
+                                Lead List
+                            </button>
+                            <button class="btn btn-xs btn-default border font-weight-bold" @click="show_analytics = !show_analytics">
+                                {{ show_analytics ? 'Hide Insights' : 'Insights' }}
+                            </button>
+                            <button class="btn btn-xs btn-default border font-weight-bold" @click="openLeadTransferDialog">
+                                Reassign
+                            </button>
+                            <button class="btn btn-xs btn-default border font-weight-bold" style="background:#e0e7ff; color:#3730a3;" @click="openBMVerificationDialog">
+                                BM Verification
+                                <span v-if="bm_pending_count > 0" class="badge badge-danger ml-1">{{ bm_pending_count }}</span>
+                            </button>
+                            <button v-if="totalLeadsInReport > 0" class="btn btn-xs btn-dark font-weight-bold" @click="openDownloadDialog" :disabled="loading">
+                                Export
+                            </button>
+                        </div>
+                    </div>
 
-                                    @click.stop="toggleFilter(key, opt.value || opt)">
-                                                    <input type="checkbox" :checked="isSelected(key, opt.value || opt)">
-                                     <span>{{ opt.label || opt }}</span>
-                                    </div>
-                                </div>
+                    <!-- Funnel Summary Cards -->
+                    <div class="funnel-container" style="margin-bottom: 0;">
+                        <div v-for="stage in funnelStages" :key="stage.label" :class="['funnel-stage', stage.class]">
+                            <span class="funnel-percentage" v-if="stage.percentage !== undefined">{{ stage.percentage }}%</span>
+                            <div class="funnel-label">{{ stage.label }}</div>
+                            <div class="funnel-amount">
+                                <small style="font-size: 12px;">₹</small>{{ (stage.amount || 0).toLocaleString('en-IN') }}
+                            </div>
+                            <div class="funnel-sub">
+                                {{ stage.count }} <span style="font-size: 9px; color: #9ca3af;">leads</span>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- Performance Insights Grid -->
+                    <div class="analytics-grid" v-if="!analytics_loading && show_analytics">
+                        <div class="analytics-card">
+                            <div class="analytics-title">Top 5 Branches</div>
+                            <table class="mini-table">
+                                <thead><tr><th>Branch</th><th>Leads</th><th>Conv %</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="(b, i) in analytics_data.top_branches" :key="i">
+                                        <td><span :class="['rank-badge', i < 3 ? 'top-3-rank' : '']">{{i+1}}</span> {{b.branch}}</td>
+                                        <td><b>{{b.total_leads}}</b></td>
+                                        <td><span class="crm-soft-pill green">{{b.conversion_rate}}%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="analytics-card">
+                            <div class="analytics-title">Top 10 Performers</div>
+                            <div style="max-height: 250px; overflow-y: auto;">
+                                <table class="mini-table">
+                                    <thead><tr><th>Employee</th><th>Leads</th><th>Conv %</th></tr></thead>
+                                    <tbody>
+                                        <tr v-for="(e, i) in analytics_data.top_employees" :key="i">
+                                            <td><span :class="['rank-badge', i < 3 ? 'top-3-rank' : '']">{{i+1}}</span> {{e.employee_name}}</td>
+                                            <td><b>{{e.total_leads}}</b></td>
+                                            <td><span class="crm-soft-pill green">{{e.conversion_rate}}%</span></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="analytics-card">
+                            <div class="analytics-title">Lowest CRM Usage</div>
+                            <table class="mini-table">
+                                <thead><tr><th>Branch</th><th>Follow-ups</th><th>Usage %</th></tr></thead>
+                                <tbody>
+                                    <tr v-for="(b, i) in analytics_data.lowest_usage_branches" :key="i">
+                                        <td>{{b.branch}}</td>
+                                        <td>{{b.followups}}</td>
+                                        <td><span class="crm-soft-pill red">{{b.usage_percent}}%</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Capsule Filter Inputs Bar (Matches Screenshot) -->
+                    <div class="crm-filter-capsules-bar">
+                        <div class="crm-capsule-box" style="width: 130px;">
+                            <input type="text" v-model="capsule_id" placeholder="ID">
+                            <span class="crm-approx-icon">≈</span>
+                        </div>
+                        <div class="crm-capsule-box" style="width: 170px;">
+                            <input type="text" v-model="capsule_name" placeholder="Employee Name">
+                            <span class="crm-approx-icon">≈</span>
+                        </div>
+                        <div class="crm-capsule-box" style="width: 160px;">
+                            <input type="text" v-model="capsule_branch" placeholder="Branch / SOL">
+                            <span class="crm-approx-icon">≈</span>
+                        </div>
+                        <div class="crm-capsule-box" style="width: 150px;">
+                            <input type="text" v-model="capsule_rating" placeholder="Rating / Status">
+                            <span class="crm-approx-icon">≈</span>
+                        </div>
+
+                        <div class="crm-btn-filter-pill" :class="{ active: show_sidebar }" @click="show_sidebar = !show_sidebar">
+                            Filter <span v-if="show_sidebar">✕</span>
+                        </div>
+
+                        <span class="text-muted font-weight-bold ml-2" style="font-size: 11px;">
+                            {{ paginatedEmployees.length }} of {{ filteredEmployees.length }}
+                        </span>
+                    </div>
+
+                    <!-- Loading / Error / Empty States -->
+                    <div v-if="employee_report_loading" class="loading-spinner-dsr">
+                        <div class="spinner-dsr"></div>
+                        <span>Loading Performance Data...</span>
+                    </div>
+                    <div v-else-if="employee_error_message" class="alert alert-danger text-center p-3">
+                        {{ employee_error_message }}
+                    </div>
+                    <div v-else-if="filteredEmployees.length === 0" class="empty-state-dsr">
+                        <p class="text-muted font-weight-bold">No records found matching filters.</p>
+                    </div>
+
+                    <!-- Minimalist List View Data Table -->
+                    <div v-else class="crm-table-container">
+                        <table class="crm-list-table">
+                            <thead>
+                                <tr>
+                                    <th style="width: 36px; padding-left: 14px;">
+                                        <input type="checkbox" @change="toggleSelectAll" :checked="selected_row_ids.length > 0 && selected_row_ids.length === paginatedEmployees.length">
+                                    </th>
+                                    <th>Employee Name</th>
+                                    <th>Branch</th>
+                                    <th>Total Leads</th>
+                                    <th>Follow-ups</th>
+                                    <th>Not Interested</th>
+                                    <th>Converted</th>
+                                    <th>Amount (₹)</th>
+                                    <th>Qualification</th>
+                                    <th>Rating</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="emp in paginatedEmployees" :key="emp.employee_id">
+                                    <td style="padding-left: 14px;">
+                                        <input type="checkbox" :value="emp.employee_id" :checked="selected_row_ids.includes(emp.employee_id)" @change="toggleRowSelect(emp.employee_id)">
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 600; color: #0f172a;">{{ emp.employee_name || 'N/A' }}</div>
+                                        <small class="text-muted">{{ emp.employee_id }} • {{ emp.designation || 'Staff' }}</small>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight: 500;">{{ emp.sol_id }} - {{ emp.branch || 'N/A' }}</div>
+                                        <div style="display:flex; gap: 4px; margin-top: 3px;">
+                                            <span class="crm-soft-pill gray" style="font-size:10px;">{{ emp.zone || 'N/A' }}</span>
+                                            <span class="crm-soft-pill blue" style="font-size:10px;">{{ emp.region || 'N/A' }}</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="font-weight-bold">{{ emp.total_leads || 0 }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ emp.total_followups || 0 }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-muted">{{ emp.total_not_interested || 0 }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="crm-soft-pill green">{{ emp.total_converted || 0 }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="font-weight-bold" style="color: #047857;">
+                                            ₹{{ (emp.converted_amount || 0).toLocaleString('en-IN') }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span :class="['crm-soft-pill', getLeadStatus(emp.total_leads).class === 'badge-pastel-green' ? 'green' : (getLeadStatus(emp.total_leads).class === 'badge-pastel-red' ? 'red' : 'yellow')]">
+                                            {{ getLeadStatus(emp.total_leads).label }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span :class="['crm-soft-pill', getEnhancedRating(emp).class === 'badge-pastel-green' ? 'green' : (getEnhancedRating(emp).class === 'badge-pastel-red' ? 'red' : 'blue')]">
+                                            {{ getEnhancedRating(emp).label }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Bottom Pagination Bar (Matches Screenshot) -->
+                    <div class="crm-bottom-pagination-bar" v-if="filteredEmployees.length > 0">
+                        <div class="crm-page-limit-pills">
+                            <span v-for="limit in [20, 100, 500, 2500]" 
+                                  :key="limit"
+                                  class="crm-limit-pill" 
+                                  :class="{ active: page_size === limit }"
+                                  @click="setPageSize(limit)">
+                                {{ limit }}
+                            </span>
+                        </div>
+
+                        <div class="text-muted" style="font-size: 11.5px; font-weight: 500;">
+                            Showing <b>{{ paginatedEmployees.length ? 1 : 0 }}</b> - <b>{{ paginatedEmployees.length }}</b> of <b>{{ filteredEmployees.length }}</b> records
+                        </div>
+
+                        <button class="crm-btn-load-more" 
+                                @click="loadMore" 
+                                :disabled="paginatedEmployees.length >= filteredEmployees.length">
+                            Load More
+                        </button>
                     </div>
                 </div>
             </div>
-
-            <div class="ui-section-card"> 
-               <div class="header-title mb-3">Employee Wise Performance</div>
-                <div class="tab-content" style="padding:20px; min-height:300px;">
-                    <div>
-                       
-
-                        <!-- Summary Metric Cards -->
-                        <div class="funnel-container">
-                            <div v-for="stage in funnelStages" 
-                                :key="stage.label" 
-                                :class="['funnel-stage', stage.class]">
-                                
-                                <span class="funnel-percentage" v-if="stage.percentage !== undefined">{{ stage.percentage }}%</span>
-                                <div class="funnel-label">{{ stage.label }}</div>
-                                <div class="funnel-amount">
-                                    <small style="font-size: 12px;">₹</small>{{ (stage.amount || 0).toLocaleString('en-IN') }}
-                                </div>
-                                <div class="funnel-sub">
-                                    {{ stage.count }} <span style="font-size: 9px; color: #9ca3af;">leads</span>
-                                </div>
-                            </div>
-                        </div>
-                     <div class="analytics-section-header mt-4">
-                        <div class="header-title" style="margin:0;">Performance Insights</div>
-
-                            <div style="display:flex; gap:8px;">
-                                <button class="btn-toggle-analytics"
-                                        @click="goToLeadList">
-                                    <i class="fa fa-list>" style="margin-right:5px;"></i>Lead List
-                                </button>
-                                <button class="btn-toggle-analytics"
-                                        @click="show_analytics = !show_analytics">
-                                    <i :class="['fa', show_analytics ? 'fa-eye-slash' : 'fa-eye']"
-                                      style="margin-right:5px;"></i>
-                                    {{ show_analytics ? 'Hide Analytics' : 'Show Analytics' }}
-                                </button>
-
-                               <button 
-                                    class="btn-toggle-analytics"
-                                    @click="openLeadTransferDialog">
-                                    <i class="fa fa-exchange"></i>
-                                    Lead Transfer
-                                </button>
-
-                               <button 
-                                    class="btn-toggle-analytics"
-                                    style="background: #e0e7ff; color: #3730a3; margin-left: 6px; position: relative;"
-                                    @click="openBMVerificationDialog">
-                                    <i class="fa fa-check-square"></i>
-                                    BM Verification
-                                    <span v-if="bm_pending_count > 0" 
-                                          style="background: #ef4444; color: white; padding: 2px 7px; border-radius: 10px; font-size: 11px; margin-left: 5px; font-weight: bold; display: inline-block;">
-                                        {{ bm_pending_count }}
-                                    </span>
-                                </button>
-                            </div>
-                        </div>
-                    
-                        <div class="analytics-grid" v-if="!analytics_loading && show_analytics">
-                            <div class="analytics-card">
-                                <div class="analytics-title"><i class="fa fa-university text-primary"></i> Top 5 Branches</div>
-                                <table class="mini-table">
-                                    <thead><tr><th>Branch</th><th>Leads</th><th>Conv %</th></tr></thead>
-                                    <tbody>
-                                        <tr v-for="(b, i) in analytics_data.top_branches" :key="i">
-                                            <td><span :class="['rank-badge', i < 3 ? 'top-3-rank' : '']">{{i+1}}</span> {{b.branch}}</td>
-                                            <td><b>{{b.total_leads}}</b></td>
-                                            <td><span class="badge-pastel-green">{{b.conversion_rate}}%</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            <div class="analytics-card">
-                                <div class="analytics-title"><i class="fa fa-users text-success"></i> Top 10 Performers</div>
-                                <div style="max-height: 250px; overflow-y: auto;">
-                                    <table class="mini-table">
-                                        <thead><tr><th>Employee</th><th>Leads</th><th>Conv %</th></tr></thead>
-                                        <tbody>
-                                            <tr v-for="(e, i) in analytics_data.top_employees" :key="i">
-                                                <td><span :class="['rank-badge', i < 3 ? 'top-3-rank' : '']">{{i+1}}</span> {{e.employee_name}}</td>
-                                                <td><b>{{e.total_leads}}</b></td>
-                                                <td><span class="badge-pastel-green">{{e.conversion_rate}}%</span></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <div class="analytics-card">
-                                <div class="analytics-title"><i class="fa fa-exclamation-circle text-danger"></i> Lowest CRM Usage</div>
-                                <table class="mini-table">
-                                    <thead><tr><th>Branch</th><th>Follow-ups</th><th>Usage %</th></tr></thead>
-                                    <tbody>
-                                        <tr v-for="(b, i) in analytics_data.lowest_usage_branches" :key="i">
-                                            <td>{{b.branch}}</td>
-                                            <td>{{b.followups}}</td>
-                                            <td><span class="badge-pastel-red">{{b.usage_percent}}%</span></td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                        <div v-if="active_tab === 'transfer'" style="padding:20px">
-
-                        <div class="card p-3">
-
-                            <h5>Lead Reassignment</h5>
-
-                            <div class="row">
-
-                                <div class="col-md-6">
-                                    <label>Target Employee (Resigned)</label>
-                                    <input type="text" v-model="lead_transfer.target_employee" class="form-control">
-                                </div>
-
-                                <div class="col-md-6">
-                                    <label>Source Employee (New Owner)</label>
-                                    <input type="text" v-model="lead_transfer.source_employee" class="form-control">
-                                </div>
-
-                            </div>
-
-                            <button
-                                class="btn btn-danger mt-3"
-                                @click="transferLeads"
-                                :disabled="transfer_loading"
-                            >
-                                Transfer Leads
-                            </button>
-
-                        </div>
-
-                    </div>
-                        <!-- Loading/Error/Empty States -->
-                        <div v-if="employee_report_loading" class="loading-spinner-dsr">
-                            <div class="spinner-dsr"></div>
-                            <span>Loading Employee Performance Data...</span>
-                        </div>
-                        <div v-else-if="employee_error_message" class="alert alert-danger text-center p-3">
-                            <i class="fa fa-exclamation-triangle mr-2"></i> {{ employee_error_message }}
-                        </div>
-                        <div v-else-if="employee_performance_data.length === 0" class="empty-state-dsr">
-                            <i class="fa fa-table fa-2x mb-3" style="color:#d1d8dd"></i>
-                            <p>No employee performance data found for the selected period.</p>
-                        </div>
-                        <!-- Employee Performance Table -->
-                        <div v-else class="table-responsive-dsr">
-                            <table class="dsr-table">
-                               <thead>
-                                    <tr>
-                                      <th>Employee ID</th>
-                                      <th>Employee Name</th>
-                                      <th>Branch</th> 
-                                      <th>Total Leads</th> <th>Follow-ups</th>
-                                      <th>Not Interested</th> 
-                                      <th>Converted</th>
-                                      <th style="color: #05a15d;">Amount (₹)</th> 
-                                      <th>Qualification</th>
-                                      <th>Rating</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                 <tr v-for="emp in filteredEmployees" :key="emp.employee_id">
-                                    <td><span style="font-weight:bold;">{{ emp.employee_id || 'N/A' }}</span></td>
-                                    <td>
-                                        <div style="font-weight: 600;">{{ emp.employee_name || 'N/A' }}</div>
-                                        <span class="emp-info-sub">{{ emp.designation || 'N/A' }}</span>
-                                    </td>
-                                    
-                                    <td>
-                                        <div style="font-weight: 600; color: #1f2937;">
-                                            {{ emp.sol_id }} - {{ emp.branch || 'N/A' }}
-                                        </div>
-                                        <div class="status-cell-container" style="margin-top: 5px; gap: 5px;">
-                                            <span class="dsr-badge badge-pastel-green">{{ emp.zone || 'N/A' }}</span>
-                                            <span class="dsr-badge bg-qualified">{{ emp.region || 'N/A' }}</span>
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        <span class="value-text">{{ emp.total_leads || 0 }}</span>
-                                    </td>
-                                    
-                                    <td>
-                                        <span class="value-text">{{ emp.total_followups || 0 }}</span>
-                                    </td>
-
-                                    <td>
-                                        <span class="value-text">{{ emp.total_not_interested || 0 }}</span>
-                                    </td>
-
-                                    <td>
-                                        <div class="status-cell-container">
-                                            <span class="value-text" style="color: #05a15d;">{{ emp.total_converted || 0 }}</span>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="amt-text">
-                                            {{ (emp.converted_amount || 0).toLocaleString('en-IN') }}
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div class="status-cell-container">
-                                            <span :class="['dsr-badge', getLeadStatus(emp.total_leads).class]">
-                                                {{ getLeadStatus(emp.total_leads).label }}
-                                            </span>
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        <div class="status-cell-container">
-                                            <span :class="['dsr-badge', getEnhancedRating(emp).class]">
-                                                {{ getEnhancedRating(emp).label }}
-                                            </span>
-                                        </div>
-                                    </td>
-                                </tr>
-                              </tbody>
-                            </table>
-                        </div>
-                     </div>
                <div class="filter-modal-overlay" v-if="active_popup" @click.self="active_popup = null">
                   <div class="filter-modal-content">
                       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -1134,6 +1196,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_report_loading: false,
     employee_error_message: null,
     employee_search_term: "",
+    show_sidebar: true,
+    capsule_id: "",
+    capsule_name: "",
+    capsule_branch: "",
+    capsule_rating: "",
+    page_size: 20,
+    page_limit: 20,
+    selected_row_ids: [],
     active_popup: null,
     hide_excluded_products: false,
     show_export_menu: false,
@@ -1279,12 +1349,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
               <div style="display: flex; flex-direction: column; gap: 10px; padding: 5px 0;">
                 <p style="font-size: 13px; color: #4b5563; margin-bottom: 5px;">Select an option below:</p>
                 <button id="btn-dl-todays-leads" class="btn btn-outline-primary text-left font-weight-bold" style="padding: 10px 14px; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
-                  <span><i class="fa fa-calendar-check-o text-success mr-2"></i> Today's Lead Records</span>
-                  <i class="fa fa-arrow-right text-muted"></i>
+                  <span>Today's Lead Records</span>
+                  <span class="text-muted">→</span>
                 </button>
                 <button id="btn-dl-filtered-past" class="btn btn-outline-info text-left font-weight-bold" style="padding: 10px 14px; font-size: 13px; display: flex; align-items: center; justify-content: space-between;">
-                  <span><i class="fa fa-filter text-info mr-2"></i> Download Filtered Previous Data</span>
-                  <i class="fa fa-download text-muted"></i>
+                  <span>Download Filtered Previous Data</span>
+                  <span class="text-muted">↓</span>
                 </button>
               </div>
             `
@@ -1377,17 +1447,64 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     get filteredEmployees() {
       if (!this.employee_performance_data) return [];
 
-      // Agar search box khali hai toh poora data dikhao
-      if (!this.employee_search_term) return this.employee_performance_data;
-
-      const term = this.employee_search_term.toLowerCase();
-
       return this.employee_performance_data.filter((emp) => {
-        return (
-          (emp.employee_id && emp.employee_id.toLowerCase().includes(term)) ||
-          (emp.employee_name && emp.employee_name.toLowerCase().includes(term))
-        );
+        if (this.capsule_id) {
+          const idVal = String(emp.employee_id || "").toLowerCase();
+          if (!idVal.includes(this.capsule_id.toLowerCase())) return false;
+        }
+        if (this.capsule_name) {
+          const nameVal = String(emp.employee_name || "").toLowerCase();
+          if (!nameVal.includes(this.capsule_name.toLowerCase())) return false;
+        }
+        if (this.capsule_branch) {
+          const brVal = String(emp.branch || "" + (emp.sol_id || "")).toLowerCase();
+          if (!brVal.includes(this.capsule_branch.toLowerCase())) return false;
+        }
+        if (this.capsule_rating) {
+          const ratTerm = this.capsule_rating.toLowerCase();
+          const rObj = this.getLeadStatus ? this.getLeadStatus(emp.total_leads) : {};
+          const qObj = this.getEnhancedRating ? this.getEnhancedRating(emp) : {};
+          const fullRating = `${rObj.label || ""} ${qObj.label || ""}`.toLowerCase();
+          if (!fullRating.includes(ratTerm)) return false;
+        }
+        if (this.employee_search_term) {
+          const term = this.employee_search_term.toLowerCase();
+          const combined = `${emp.employee_id || ""} ${emp.employee_name || ""} ${emp.branch || ""} ${emp.sol_id || ""}`.toLowerCase();
+          if (!combined.includes(term)) return false;
+        }
+        return true;
       });
+    },
+    get paginatedEmployees() {
+      return this.filteredEmployees.slice(0, this.page_limit);
+    },
+    setPageSize(n) {
+      this.page_size = n;
+      this.page_limit = n;
+    },
+    loadMore() {
+      this.page_limit += this.page_size;
+    },
+    toggleSelectAll(e) {
+      if (e.target.checked) {
+        this.selected_row_ids = this.paginatedEmployees.map((emp) => emp.employee_id || emp.name);
+      } else {
+        this.selected_row_ids = [];
+      }
+    },
+    toggleRowSelect(id) {
+      const idx = this.selected_row_ids.indexOf(id);
+      if (idx > -1) this.selected_row_ids.splice(idx, 1);
+      else this.selected_row_ids.push(id);
+    },
+    resetAllFilters() {
+      this.selected = { zone: [], region: [], sol_id: [], product: [], source: [] };
+      this.capsule_id = "";
+      this.capsule_name = "";
+      this.capsule_branch = "";
+      this.capsule_rating = "";
+      this.employee_search_term = "";
+      this.onFilterChange();
     },
     get totalLeadsInReport() {
       return this.filteredEmployees.reduce(
@@ -1832,7 +1949,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       async function loadVerificationData(is_page=false) {
         if (!is_page) {
-          dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:20px;"><i class="fa fa-spinner fa-spin fa-2x text-muted"></i></div>');
+          dialog.fields_dict.leads_table_html.$wrapper.html('<div style="text-align:center;padding:20px;color:#6b7280;font-weight:600;">Loading leads...</div>');
         } else {
           dialog.$wrapper.find('.btn-prev-leads,.btn-next-leads').prop('disabled', true);
           dialog.$wrapper.find('.leads-page-status').text('Loading...');
@@ -2241,7 +2358,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           if (!this.has_pref && frappe.session.user !== "Administrator") {
             page.set_intro(`
               <div style="background:#fef9c3; padding:6px; font-size:11px; border-left: 4px solid #facc15; border-radius: 4px; color: #854d0e;">
-                <i class="fa fa-info-circle mr-1"></i> Showing only your created leads (No Report Preference assigned)
+                Showing only your created leads (No Report Preference assigned)
               </div>
             `);
           } else {
@@ -2277,7 +2394,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     showNoLeadsMessage() {
       page.set_intro(`
         <div class="p-2" style="background-color: #fef2f2; border-left: 4px solid #ef4444; border-radius: 4px; font-size: 12px; color: #b91c1c;">
-          <i class="fa fa-info-circle mr-2"></i> <b>No Records Found:</b> There are no leads available for the selected month or applied filter criteria.
+          <b>No Records Found:</b> There are no leads available for the selected month or applied filter criteria.
         </div>
       `);
     },
@@ -2426,7 +2543,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <span style="flex: 1; color: ${isDisabled ? "#94a3b8" : "#334155"}; padding-left: 12px;">
                         ${b.branch || "-"}
                     </span>
-                    <i class="fa ${isDisabled ? "fa-toggle-off" : "fa-toggle-on"}" style="color: ${isDisabled ? "#cbd5e1" : "#05a15d"}; font-size: 16px;"></i>
+                    <span style="font-weight:bold; font-size: 12px; color: ${isDisabled ? "#94a3b8" : "#05a15d"};">${isDisabled ? "OFF" : "ON"}</span>
                 </div>
             `;
           })
