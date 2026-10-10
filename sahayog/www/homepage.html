@@ -584,6 +584,11 @@
     /* CRM dropdown */
     #crm-link {
       position: relative;
+      z-index: 50;
+    }
+
+    #crm-link:has(.crm-dropdown:not(.hidden)) {
+      z-index: 9999;
     }
 
     .crm-dropdown {
@@ -595,7 +600,7 @@
       border-radius: 12px;
       box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
       min-width: 175px;
-      z-index: 1000;
+      z-index: 99999;
       overflow: hidden;
       display: block;
     }
