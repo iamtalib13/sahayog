@@ -393,7 +393,11 @@ function render_checklist(frm, template) {
 				.bvr-tabs .category-header .bvr-btn-add { background: #5e64ff; color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 16px; line-height: 22px; text-align: center; cursor: pointer; padding: 0; transition: all 0.2s; box-shadow: 0 2px 4px rgba(94,100,255,0.3); flex-shrink: 0; }
 				.bvr-tabs .category-header .bvr-btn-add:hover { background: #4c53d0; transform: scale(1.1); box-shadow: 0 3px 8px rgba(94,100,255,0.4); }
 				.bvr-tabs .category-header .bvr-btn-add:active { transform: scale(0.95); }
-				.bvr-tabs table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+				.bvr-tabs table { width: 100%; border-collapse: separate; border-spacing: 0; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+				.bvr-tabs table thead th:first-child { border-top-left-radius: 7px; }
+				.bvr-tabs table thead th:last-child { border-top-right-radius: 7px; }
+				.bvr-tabs table tbody tr:last-child td:first-child { border-bottom-left-radius: 7px; }
+				.bvr-tabs table tbody tr:last-child td:last-child { border-bottom-right-radius: 7px; }
 				.bvr-tabs table thead th { background: #f1f3f9; color: #4a5568; font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: 0.6px; padding: 9px 12px; border-bottom: 2px solid #e2e8f0; white-space: nowrap; }
 				.bvr-tabs table tbody td { padding: 8px 12px; border-bottom: 1px solid #edf0f4; vertical-align: middle; font-size: 13px; }
 				.bvr-tabs table tbody tr:last-child td { border-bottom: none; }
@@ -406,7 +410,7 @@ function render_checklist(frm, template) {
 				.bvr-tabs .yesno-group input[type='radio'] { accent-color: #5e64ff; }
 				.bvr-tabs .employee-search-wrapper { position: relative; min-width: 170px; }
 				.bvr-tabs .employee-search-input { width: 100%; }
-				.bvr-tabs .employee-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 100; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); max-height: 200px; overflow-y: auto; margin-top: 2px; }
+				.bvr-tabs .employee-dropdown { position: absolute; top: 100%; left: 0; right: 0; z-index: 300; background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,0.12); max-height: 200px; overflow-y: auto; margin-top: 2px; }
 				.bvr-tabs .employee-dropdown .employee-option { padding: 8px 12px; cursor: pointer; font-size: 12px; border-bottom: 1px solid #f5f5f5; transition: background 0.15s; }
 				.bvr-tabs .employee-dropdown .employee-option:last-child { border-bottom: none; }
 				.bvr-tabs .employee-dropdown .employee-option:hover { background: #f0f1ff; color: #5e64ff; }
