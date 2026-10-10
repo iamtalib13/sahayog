@@ -21,7 +21,7 @@ class AuditandCompliance(Document):
         if self.audit_closure_table:
             for row in self.audit_closure_table:
                 if not row.recived_date:
-                    row.delay_in_closure = "Awaiting Receive Date"
+                    row.delay_in_closure = ""
                     row.compliance_report = "Pending"
                 elif row.report_published_date and row.recived_date:
                     if getdate(row.recived_date) < getdate(row.report_published_date):
@@ -36,7 +36,7 @@ class AuditandCompliance(Document):
             for row in self.com_visit_compliance:
                 if not row.date_of_closure:
                     row.status = "Pending"
-                    row.turnaround_time_days = "Awaiting date of closure"
+                    row.turnaround_time_days = ""
                 elif row.date_of_publish and row.date_of_closure:
                     if getdate(row.date_of_closure) < getdate(row.date_of_publish):
                         frappe.throw(
@@ -57,6 +57,69 @@ def generate_excel_response(columns, filename, sheet_name):
     frappe.response['filename'] = filename
     frappe.response['filecontent'] = output.getvalue()
     frappe.response['type'] = 'binary'
+
+
+def _parse_date(val):
+    """DD-MM-YYYY aur DD/MM/YYYY support. Excel ke real date cell ko bhi padhta hai."""
+    if hasattr(val, "year") and not isinstance(val, str):
+        return pd.Timestamp(val)
+    text = str(val).strip()
+    if " " in text:
+        text = text.split(" ")[0]
+    for fmt in ("%d-%m-%Y", "%d/%m/%Y"):
+        try:
+            return pd.to_datetime(text, format=fmt)
+        except ValueError:
+            pass
+    try:
+        return pd.to_datetime(text, format="%Y-%m-%d")
+    except ValueError:
+        frappe.throw(_("Invalid date: {0}. Use DD-MM-YYYY or DD/MM/YYYY.").format(text))
+
+
+_DERIVED = {
+    "audit_status": "audit_completed_date",
+    "compliance_report": "recived_date",
+    "delay_in_closure": "recived_date",
+    "status": "date_of_closure",
+    "turnaround_time_days": "date_of_closure",
+}
+
+
+def _blank(v):
+    return v is None or (isinstance(v, str) and not v.strip())
+
+
+def _same_date(a, b):
+    try:
+        return bool(a) and bool(b) and getdate(a) == getdate(b)
+    except Exception:
+        return False
+
+
+def _find_row(rows, month_name, date_field, date_val):
+    """Pehle month se, nahi mila to us table ki date se existing row dhoondho."""
+    key = (month_name or "").strip().lower()
+    for r in rows:
+        if (r.month or "").strip().lower() == key:
+            return r
+    for r in rows:
+        if _same_date(r.get(date_field), date_val):
+            return r
+    return None
+
+
+def _merge_row(row, data):
+    """Sirf Excel ki bhari hui values likho. Khaali cell existing value nahi mitayegi."""
+    for k, v in data.items():
+        if _blank(v):
+            continue
+        if k == "month" and not _blank(row.get("month")):
+            continue
+        driver = _DERIVED.get(k)
+        if driver and _blank(data.get(driver)):
+            continue
+        row.set(k, v)
 
 
 def get_financial_year(dt):
@@ -154,22 +217,18 @@ def process_audit_score_excel(file_url):
             created_records.add(parent_name)
 
         # Check if row for this month already exists to avoid duplicates
-        existing_row = None
-        for child_row in doc.audit_score_table:
-            if child_row.month == month_name:
-                existing_row = child_row
-                break
+        existing_row = _find_row(doc.audit_score_table, month_name, "audit_start_date", audit_start_date)
 
         row_data = {
             "month": month_name,
             "audit_start_date": audit_start_date,
             "audit_status": audit_status,
             "audit_completed_date": audit_completed_date,
-            "branch_score": float(row["Branch Score"]) if pd.notnull(row["Branch Score"]) else 0.0
+            "branch_score": float(row["Branch Score"]) if pd.notnull(row["Branch Score"]) else None
         }
 
         if existing_row:
-            existing_row.update(row_data)
+            _merge_row(existing_row, row_data)
         else:
             doc.append("audit_score_table", row_data)
 
@@ -226,7 +285,7 @@ def process_audit_closure_excel(file_url):
             compliance_report_status = "Received"
         else:
             compliance_report_status = "Pending"
-            delay_in_closure = "Awaiting Receive Date"
+            delay_in_closure = ""
 
         branch_name = frappe.db.get_value("Sahayog Branch", sol_id, "branch") or "Unknown"
         parent_name = f"{sol_id} - {branch_name} - {financial_year}"
@@ -245,11 +304,7 @@ def process_audit_closure_excel(file_url):
             doc.insert(ignore_permissions=True)
             created_records.add(parent_name)
 
-        existing_row = None
-        for child_row in doc.audit_closure_table:
-            if child_row.month == month_name:
-                existing_row = child_row
-                break
+        existing_row = _find_row(doc.audit_closure_table, month_name, "report_published_date", report_published_date)
 
         row_data = {
             "month": month_name,
@@ -260,7 +315,7 @@ def process_audit_closure_excel(file_url):
         }
 
         if existing_row:
-            existing_row.update(row_data)
+            _merge_row(existing_row, row_data)
         else:
             doc.append("audit_closure_table", row_data)
 
@@ -329,11 +384,7 @@ def process_com_visit_excel(file_url):
             created_records.add(parent_name)
 
         # Update existing month row or append new
-        existing_row = None
-        for child_row in doc.com_visit:
-            if child_row.month == month_name:
-                existing_row = child_row
-                break
+        existing_row = _find_row(doc.com_visit, month_name, "date_of_visit", date_of_visit)
 
         row_data = {
             "month": month_name,
@@ -342,7 +393,7 @@ def process_com_visit_excel(file_url):
         }
 
         if existing_row:
-            existing_row.update(row_data)
+            _merge_row(existing_row, row_data)
         else:
             doc.append("com_visit", row_data)
 
@@ -393,7 +444,7 @@ def process_com_visit_compliance_excel(file_url):
 
         # Default values when Date of Closure is not present
         date_of_closure = None
-        turnaround_time_days = "Awaiting date of closure"
+        turnaround_time_days = ""
         status = "Pending"
 
         # If Date of Closure is present, validate & update Status & Turnaround Time
@@ -437,11 +488,7 @@ def process_com_visit_compliance_excel(file_url):
             created_records.add(parent_name)
 
         # Check existing row by month
-        existing_row = None
-        for child_row in doc.com_visit_compliance:
-            if child_row.month == month_name:
-                existing_row = child_row
-                break
+        existing_row = _find_row(doc.com_visit_compliance, month_name, "date_of_publish", date_of_publish)
 
         row_data = {
             "month": month_name,
@@ -452,7 +499,7 @@ def process_com_visit_compliance_excel(file_url):
         }
 
         if existing_row:
-            existing_row.update(row_data)
+            _merge_row(existing_row, row_data)
         else:
             doc.append("com_visit_compliance", row_data)
 

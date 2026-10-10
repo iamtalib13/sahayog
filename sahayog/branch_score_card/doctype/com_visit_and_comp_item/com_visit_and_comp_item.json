@@ -1,0 +1,85 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-10-07 13:00:45.869051",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "month",
+  "visti_start_date",
+  "visit_complete_date",
+  "score_obtain",
+  "report_publish_date",
+  "report_closure_date",
+  "turnaround_days",
+  "risk_category"
+ ],
+ "fields": [
+  {
+   "fieldname": "month",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Month",
+   "options": "\nJanuary\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember"
+  },
+  {
+   "fieldname": "visti_start_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Visti Start Date"
+  },
+  {
+   "fieldname": "visit_complete_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Visit Complete Date"
+  },
+  {
+   "fieldname": "report_publish_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Report Publish Date"
+  },
+  {
+   "fieldname": "report_closure_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Report Closure Date"
+  },
+  {
+   "fieldname": "score_obtain",
+   "fieldtype": "Float",
+   "in_list_view": 1,
+   "label": "Score Obtain"
+  },
+  {
+   "fieldname": "risk_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Risk Category",
+   "options": "\nExcellent\nGood\nSatisfactory\nNeeds Improvement"
+  },
+  {
+   "fieldname": "turnaround_days",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Turnaround Days"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-10-09 14:49:11.098973",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "COM Visit and Comp Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

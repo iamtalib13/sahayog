@@ -1,0 +1,155 @@
+{
+ "actions": [],
+ "creation": "2026-10-07 12:47:22.489925",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sol_id",
+  "column_break_cogm",
+  "branch_name",
+  "column_break_fbze",
+  "district",
+  "state",
+  "column_break_eivy",
+  "zone",
+  "column_break_ngfp",
+  "region",
+  "section_break_axpj",
+  "com_name",
+  "column_break_wcoa",
+  "year",
+  "section_break_vqdx",
+  "save_widget",
+  "com_visit_tracker"
+ ],
+ "fields": [
+  {
+   "fieldname": "sol_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "SOL ID",
+   "options": "Sahayog Branch",
+   "reqd": 1,
+   "set_only_once": 1
+  },
+  {
+   "fetch_from": "sol_id.branch",
+   "fieldname": "branch_name",
+   "fieldtype": "Data",
+   "label": "Branch Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sol_id.zone",
+   "fieldname": "zone",
+   "fieldtype": "Data",
+   "label": "Zone",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sol_id.region",
+   "fieldname": "region",
+   "fieldtype": "Data",
+   "label": "Region",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "sol_id.cluster_operations_manager",
+   "fieldname": "com_name",
+   "fieldtype": "Data",
+   "label": "COM Name"
+  },
+  {
+   "fieldname": "column_break_cogm",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_fbze",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_eivy",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_ngfp",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "year",
+   "fieldtype": "Data",
+   "label": "Year",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_vqdx",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "com_visit_tracker",
+   "fieldtype": "Table",
+   "options": "COM Visit and Comp Item"
+  },
+  {
+   "fetch_from": "sol_id.district",
+   "fieldname": "district",
+   "fieldtype": "Data",
+   "label": "District",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_axpj",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_wcoa",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "save_widget",
+   "fieldtype": "HTML",
+   "label": "Save"
+  },
+  {
+   "fetch_from": "sol_id.state",
+   "fieldname": "state",
+   "fieldtype": "Data",
+   "label": "State",
+   "read_only": 1
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-09 17:19:19.786605",
+ "modified_by": "Administrator",
+ "module": "Branch Score Card",
+ "name": "COM Visit Tracker",
+ "naming_rule": "By script",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Employee",
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}
