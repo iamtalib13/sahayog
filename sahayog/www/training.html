@@ -8785,6 +8785,56 @@
             }
           });
         }
+        /* Flush popover-staged attendance (attPopDirty) so the dialog Save
+           button also persists marks made in "Mark Attendance" popup.
+           Never blocks the rest of the save; failures keep entries dirty. */
+        function flushAttPopStaged() {
+          var ev = state.currentEvent;
+          var keys = Object.keys(attPopDirty);
+          if (!ev || !ev.name || !keys.length) return Promise.resolve(true);
+          var wanted = {};
+          keys.forEach(function (k) {
+            wanted[k] = attPopDirty[k];
+          });
+          var tasks = keys.map(function (key) {
+            var p = (ev.participant_list || []).find(function (x) {
+              return attRowKey(x) === key;
+            });
+            if (!p || !p.name) return Promise.resolve({ key: key, ok: false });
+            return api("update_participant_attendance", {
+              training_name: ev.name,
+              participant_name: p.name,
+              attendance_status: wanted[key],
+            })
+              .then(function () {
+                return { key: key, ok: true };
+              })
+              .catch(function () {
+                return { key: key, ok: false };
+              });
+          });
+          return Promise.all(tasks).then(function (results) {
+            var failed = {};
+            results.forEach(function (r) {
+              if (r.ok) {
+                var p = (ev.participant_list || []).find(function (x) {
+                  return attRowKey(x) === r.key;
+                });
+                if (p) p.attendance_status = wanted[r.key];
+              } else {
+                failed[r.key] = true;
+              }
+            });
+            var keep = {};
+            Object.keys(wanted).forEach(function (k) {
+              if (failed[k]) keep[k] = wanted[k];
+            });
+            attPopDirty = keep;
+            if (Object.keys(failed).length)
+              showToast("Some attendance updates failed — retry from Mark Attendance");
+            return true;
+          });
+        }
 
         function stageCheck(ev, field, checked) {
           ev[field] = checked ? 1 : 0;
@@ -10086,8 +10136,9 @@
               return;
           }
           // Serialized writes: doc.save() inside sync/flush throws TimestampMismatch
-          // if parallel set_value calls bump `modified` first. Order: flush, sync, budget, rest.
-          if (!tasks.length && !budgetTasks.length) {
+          // if parallel set_value calls bump `modified` first. Order: flush, att-pop, sync, budget, rest.
+          var hasAttPop = Object.keys(attPopDirty).length > 0;
+          if (!tasks.length && !budgetTasks.length && !hasAttPop) {
             if (isDoneSave) {
               showToast("This training is completed and locked — no changes can be made here.");
             } else {
@@ -10100,6 +10151,9 @@
             ? dialogFn.flushAttStaged()
             : Promise.resolve(true);
           flushP
+            .then(function () {
+              return flushAttPopStaged();
+            })
             .then(function () {
               return doSync ? doSync() : true;
             })
@@ -10122,6 +10176,7 @@
                 }
                 fillEditDialog(ev);
               }
+              if (typeof closeAttPop === "function") closeAttPop();
             })
             .catch(function (e) {
               state.savingTraining = false;
