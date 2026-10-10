@@ -437,19 +437,91 @@
       border-left: 3px solid var(--primary);
     }
   </style>
-  <style>
+    /* Search Bar & Tab Bar Layout */
+    .controls-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-bottom: 0.85rem;
+    }
+
+    .search-container {
+      position: relative;
+      width: 100%;
+    }
+
+    .search-input-box {
+      width: 100%;
+      height: 38px;
+      padding: 0 36px 0 38px;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+      background: #f8fafc;
+      font-size: 0.84rem;
+      color: #1e293b;
+      outline: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+    }
+
+    .search-input-box:focus {
+      background: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .search-input-box::placeholder {
+      color: #94a3b8;
+      font-weight: 400;
+    }
+
+    .search-icon-left {
+      position: absolute;
+      left: 13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #94a3b8;
+      font-size: 0.82rem;
+      pointer-events: none;
+    }
+
+    .search-clear-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: #e2e8f0;
+      border: none;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #64748b;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0;
+    }
+
+    .search-clear-btn:hover {
+      background: #cbd5e1;
+      color: #334155;
+    }
+
     /* Tab bar */
     .tab-bar {
       display: flex;
       gap: 0.35rem;
-      margin-bottom: 0.65rem;
+      margin-bottom: 0.25rem;
       flex-wrap: wrap;
     }
 
     @media (max-width: 640px) {
       .tab-bar {
         gap: 0.35rem !important;
-        margin-bottom: 0.65rem !important;
+        margin-bottom: 0.25rem !important;
         overflow-x: auto !important;
         flex-wrap: nowrap !important;
         -webkit-overflow-scrolling: touch !important;
@@ -463,7 +535,7 @@
     }
 
     .tab-btn {
-      padding: 0.2rem 0.65rem;
+      padding: 0.25rem 0.75rem;
       border-radius: 50px;
       border: 1px solid #e5e7eb;
       background: white;
@@ -571,14 +643,20 @@
       </div>
     </header>
     <main class="app-main">
-      <div class="tab-bar">
-        <input type="text" id="search-input" class="tab-btn" placeholder="Search..."
-          style="outline: none; min-width: 90px; width: 90px" />
-        <button class="tab-btn active" data-tab="all">All</button>
-        <button class="tab-btn" data-tab="operations">Operations</button>
-        <button class="tab-btn" data-tab="l&d">L&D</button>
-        <button class="tab-btn" data-tab="loan">Loan</button>
-        <button class="tab-btn" data-tab="hr">HR</button>
+      <div class="controls-wrapper">
+        <div class="search-container">
+          <i class="fas fa-search search-icon-left"></i>
+          <input type="text" id="search-input" class="search-input-box" placeholder="Search services, tools, forms..." autocomplete="off" />
+          <button type="button" id="search-clear-btn" class="search-clear-btn" title="Clear">✕</button>
+        </div>
+
+        <div class="tab-bar">
+          <button class="tab-btn active" data-tab="all">All</button>
+          <button class="tab-btn" data-tab="operations">Operations</button>
+          <button class="tab-btn" data-tab="l&d">L&D</button>
+          <button class="tab-btn" data-tab="loan">Loan</button>
+          <button class="tab-btn" data-tab="hr">HR</button>
+        </div>
       </div>
       <div class="icon-grid">
         <!-- Tickets -->
@@ -1506,19 +1584,25 @@
       }, 2000);
     });
 
-    // Tab switching
+    // Tab switching & Search
     document.addEventListener("DOMContentLoaded", function () {
       const tabs = document.querySelectorAll(".tab-btn");
       const items = document.querySelectorAll(".icon-item");
       const searchInput = document.getElementById("search-input");
+      const clearBtn = document.getElementById("search-clear-btn");
 
       tabs.forEach((tab) => {
         tab.addEventListener("click", function () {
-          if (this === searchInput) return;
           tabs.forEach((t) => t.classList.remove("active"));
           this.classList.add("active");
 
           const target = this.dataset.tab;
+
+          // Clear search when switching tabs
+          if (searchInput.value) {
+            searchInput.value = "";
+            if (clearBtn) clearBtn.style.display = "none";
+          }
 
           items.forEach((item) => {
             if (target === "all") {
@@ -1530,27 +1614,37 @@
         });
       });
 
-      searchInput.addEventListener("input", function () {
-        const query = this.value.toLowerCase().trim();
-        tabs.forEach((t) => t.classList.remove("active"));
+      function performSearch(query) {
+        if (clearBtn) {
+          clearBtn.style.display = query ? "flex" : "none";
+        }
 
         if (query === "") {
-          document.querySelector('[data-tab="all"]').classList.add("active");
+          const activeTab = document.querySelector(".tab-btn.active")?.dataset.tab || "all";
           items.forEach((item) => {
-            item.style.display = "";
+            item.style.display = (activeTab === "all" || item.dataset.tab === activeTab) ? "" : "none";
           });
           return;
         }
 
-        document.querySelector('[data-tab="all"]').classList.add("active");
-
+        // Search across all items
         items.forEach((item) => {
-          const label = (
-            item.querySelector(".icon-label")?.textContent || ""
-          ).toLowerCase();
+          const label = (item.querySelector(".icon-label")?.textContent || "").toLowerCase();
           item.style.display = label.includes(query) ? "" : "none";
         });
+      }
+
+      searchInput.addEventListener("input", function () {
+        performSearch(this.value.toLowerCase().trim());
       });
+
+      if (clearBtn) {
+        clearBtn.addEventListener("click", function () {
+          searchInput.value = "";
+          performSearch("");
+          searchInput.focus();
+        });
+      }
     });
   </script>
   <div id="crm-modal" class="fixed inset-0 z-[100] hidden flex items-center justify-center bg-black bg-opacity-50">
