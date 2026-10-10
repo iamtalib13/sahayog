@@ -808,7 +808,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 <div v-show="show_sidebar" class="crm-sidebar">
                     <div class="crm-sidebar-header">
                         <span class="crm-sidebar-title">Filters</span>
-                        <a href="javascript:void(0)" class="crm-sidebar-reset" @click="resetAllFilters">Reset</a>
+                        <div class="d-flex align-items-center" style="gap: 10px;">
+                            <a href="javascript:void(0)" class="crm-sidebar-reset" @click="resetAllFilters">Reset</a>
+                            <button type="button" class="btn btn-xs btn-link text-muted p-0" style="font-size: 14px; line-height: 1; text-decoration: none;" @click="show_sidebar = false" title="Close Sidebar">✕</button>
+                        </div>
                     </div>
 
                     <div class="crm-filter-group">
@@ -1006,9 +1009,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             <span class="crm-approx-icon">≈</span>
                         </div>
 
-                        <div class="crm-btn-filter-pill" :class="{ active: show_sidebar }" @click="show_sidebar = !show_sidebar">
-                            Filter <span v-if="show_sidebar">✕</span>
-                        </div>
+                        <button type="button" class="crm-btn-filter-pill" :class="{ active: show_sidebar }" @click="show_sidebar = !show_sidebar" title="Toggle Filters Sidebar">
+                            <span>Filter</span>
+                        </button>
 
                         <span class="text-muted font-weight-bold ml-2" style="font-size: 11px;">
                             {{ paginatedEmployees.length }} of {{ filteredEmployees.length }}
