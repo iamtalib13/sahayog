@@ -438,85 +438,101 @@
     }
   </style>
   <style>
-    /* Search Bar & Tab Bar Layout */
-    .controls-wrapper {
+    /* Tab bar with inline search */
+    .tab-bar {
       display: flex;
-      flex-direction: column;
-      gap: 0.65rem;
-      margin-bottom: 0.85rem;
+      align-items: center;
+      gap: 0.4rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
     }
 
-    .search-container {
+    .search-inline-wrapper {
       position: relative;
-      width: 100%;
+      display: inline-flex;
+      align-items: center;
+      flex-shrink: 0;
     }
 
-    .search-input-box {
-      width: 100%;
-      height: 38px;
-      padding: 0 36px 0 38px;
-      border-radius: 10px;
-      border: 1px solid #e5e7eb;
-      background: #f8fafc;
-      font-size: 0.84rem;
+    .search-inline-input {
+      height: 30px;
+      width: 140px;
+      padding: 0 24px 0 28px;
+      border-radius: 50px;
+      border: 1px solid #e2e8f0;
+      background: #ffffff;
+      font-size: 0.78rem;
+      font-weight: 500;
       color: #1e293b;
       outline: none;
       transition: all 0.2s ease;
-      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
     }
 
-    .search-input-box:focus {
-      background: #ffffff;
+    .search-inline-input:focus {
+      width: 190px;
       border-color: var(--primary);
       box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
     }
 
-    .search-input-box::placeholder {
+    .search-inline-input::placeholder {
       color: #94a3b8;
-      font-weight: 400;
+      font-weight: 500;
     }
 
-    .search-icon-left {
+    .search-inline-icon {
       position: absolute;
-      left: 13px;
-      top: 50%;
-      transform: translateY(-50%);
+      left: 10px;
+      font-size: 11px;
       color: #94a3b8;
-      font-size: 0.82rem;
       pointer-events: none;
     }
 
-    .search-clear-btn {
+    .search-inline-clear {
       position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: #e2e8f0;
+      right: 7px;
+      background: #f1f5f9;
       border: none;
       border-radius: 50%;
-      width: 18px;
-      height: 18px;
+      width: 16px;
+      height: 16px;
       display: none;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      font-size: 9px;
       color: #64748b;
       cursor: pointer;
       line-height: 1;
       padding: 0;
     }
 
-    .search-clear-btn:hover {
-      background: #cbd5e1;
-      color: #334155;
+    .search-inline-clear:hover {
+      background: #e2e8f0;
+      color: #1e293b;
     }
 
-    /* Tab bar */
-    .tab-bar {
-      display: flex;
-      gap: 0.35rem;
-      margin-bottom: 0.25rem;
-      flex-wrap: wrap;
+    @media (max-width: 640px) {
+      .tab-bar {
+        gap: 0.35rem !important;
+        margin-bottom: 0.65rem !important;
+        overflow-x: auto !important;
+        flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch !important;
+        scrollbar-width: none !important;
+        padding-bottom: 4px !important;
+      }
+
+      .tab-bar::-webkit-scrollbar {
+        display: none !important;
+      }
+
+      .search-inline-input {
+        width: 115px !important;
+      }
+
+      .search-inline-input:focus {
+        width: 140px !important;
+      }
     }
 
     @media (max-width: 640px) {
@@ -651,20 +667,17 @@
       </div>
     </header>
     <main class="app-main">
-      <div class="controls-wrapper">
-        <div class="search-container">
-          <i class="fas fa-search search-icon-left"></i>
-          <input type="text" id="search-input" class="search-input-box" placeholder="Search..." title="Search" autocomplete="off" />
-          <button type="button" id="search-clear-btn" class="search-clear-btn" title="Clear">✕</button>
+      <div class="tab-bar">
+        <div class="search-inline-wrapper">
+          <i class="fas fa-search search-inline-icon"></i>
+          <input type="text" id="search-input" class="search-inline-input" placeholder="Search..." title="Search" autocomplete="off" />
+          <button type="button" id="search-clear-btn" class="search-inline-clear" title="Clear">✕</button>
         </div>
-
-        <div class="tab-bar">
-          <button class="tab-btn active" data-tab="all">All</button>
-          <button class="tab-btn" data-tab="operations">Operations</button>
-          <button class="tab-btn" data-tab="l&d">L&D</button>
-          <button class="tab-btn" data-tab="loan">Loan</button>
-          <button class="tab-btn" data-tab="hr">HR</button>
-        </div>
+        <button class="tab-btn active" data-tab="all">All</button>
+        <button class="tab-btn" data-tab="operations">Operations</button>
+        <button class="tab-btn" data-tab="l&d">L&D</button>
+        <button class="tab-btn" data-tab="loan">Loan</button>
+        <button class="tab-btn" data-tab="hr">HR</button>
       </div>
       <div class="icon-grid">
         <!-- Tickets -->
