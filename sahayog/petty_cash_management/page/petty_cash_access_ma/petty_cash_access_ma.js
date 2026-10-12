@@ -13,8 +13,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
             </svg>
             <h2 style="margin-top: 20px; color: #24292f;">Access Denied</h2>
             <p style="font-size: 14px; max-width: 400px; text-align: center; line-height: 1.6;">
-                You do not have the required permissions to access this page.
-                Please contact your <strong>Administrator</strong> if you believe this is an error.
+                You do not have the required permissions to access this page. Please contact the <strong>Petty Cash Team</strong> if you believe this is an error or would like to request access.
             </p>
             <button class="btn btn-default btn-sm" style="margin-top: 15px;" onclick="frappe.set_route('')">
                 Back to Home
