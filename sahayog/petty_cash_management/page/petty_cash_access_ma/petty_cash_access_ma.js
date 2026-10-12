@@ -607,7 +607,48 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 const current_branch_id = emp.petty_cash_branch || "";
                 const selected_branch_id = this.selectedBranch.branch_id;
 
-                if (current_branch_id && current_branch_id !== selected_branch_id) {
+                const existing_access_employee = this.selectedBranch.employees.find(
+                    row => row.has_branch_user_role
+                );
+
+                const employee_has_other_branch =
+                    current_branch_id && current_branch_id !== selected_branch_id;
+
+                if (employee_has_other_branch && existing_access_employee) {
+                    const current_branch_name = emp.branch_name || current_branch_id;
+                    const target_branch_name = this.selectedBranch.branch_name;
+                    const old_branch_employee_name = existing_access_employee.employee_name;
+                    const new_employee_name = emp.employee_name;
+
+                    frappe.confirm(
+                        `
+                <strong>${new_employee_name}</strong> already has Petty Cash access for
+                <strong>${current_branch_name}</strong>.<br><br>
+                <strong>${target_branch_name}</strong> already has Petty Cash access assigned to
+                <strong>${old_branch_employee_name}</strong>.<br><br>
+                Do you want to remove <strong>${old_branch_employee_name}</strong>'s access from
+                <strong>${target_branch_name}</strong> and assign
+                <strong>${new_employee_name}</strong> to <strong>${target_branch_name}</strong>?<br><br>
+                <strong>${new_employee_name}</strong>'s existing Branch User role will remain unchanged.
+                Only their Petty Cash Branch will be changed.
+            `,
+                        () => {
+                            this.reassignAndReplaceBranchEmployee(emp, existing_access_employee);
+                        },
+                        () => {
+                            frappe.show_alert({
+                                message: "No changes were made.",
+                                indicator: "orange"
+                            }, 3);
+                        },
+                        "Yes, Change and Replace",
+                        "No"
+                    );
+
+                    return;
+                }
+
+                if (employee_has_other_branch) {
                     const current_branch_name = emp.branch_name || current_branch_id;
                     const new_branch_name = this.selectedBranch.branch_name;
 
@@ -617,8 +658,8 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 <strong>${current_branch_name}</strong>.<br><br>
                 Do you want to change their branch to
                 <strong>${new_branch_name}</strong>?<br><br>
-                Their existing <strong>Branch User</strong> role will remain unchanged.
-                Only the <strong>Petty Cash Branch</strong> field will be updated.
+                Their existing Branch User role will remain unchanged.
+                Only the Petty Cash Branch field will be updated.
             `,
                         () => {
                             this.reassignEmployeeBranch(emp);
@@ -636,10 +677,6 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     return;
                 }
 
-                const existing_access_employee = this.selectedBranch.employees.find(
-                    row => row.has_branch_user_role
-                );
-
                 if (existing_access_employee) {
                     const old_employee_name = existing_access_employee.employee_name;
                     const new_employee_name = emp.employee_name;
@@ -651,8 +688,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 <strong>${old_employee_name}</strong>.<br><br>
                 Do you want to remove <strong>${old_employee_name}</strong>'s access and assign
                 this branch to <strong>${new_employee_name}</strong>?<br><br>
-                The existing employee's <strong>Petty Cash Branch</strong> and
-                <strong>Branch User</strong> role will be removed.
+                The existing employee's Petty Cash Branch and Branch User role will be removed.
             `,
                         () => {
                             this.replaceBranchEmployee(emp, existing_access_employee);
@@ -677,6 +713,46 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     user_id: emp.user_id,
                     petty_cash_branch: emp.petty_cash_branch || "",
                     has_branch_user_role: emp.has_branch_user_role || false
+                });
+            },
+
+            reassignAndReplaceBranchEmployee(newEmp, oldEmp) {
+                this.isUpdating = true;
+
+                frappe.call({
+                    method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.reassign_and_replace_branch_employee",
+                    args: {
+                        user_id: newEmp.user_id,
+                        branch_id: this.selectedBranch.branch_id
+                    },
+                    callback: (r) => {
+                        this.isUpdating = false;
+
+                        if (r.message) {
+                            this.selectedBranch.employees = this.selectedBranch.employees.filter(
+                                row => row.name !== oldEmp.name
+                            );
+
+                            this.selectedBranch.employees.push({
+                                name: newEmp.name,
+                                employee_name: newEmp.employee_name,
+                                designation: newEmp.designation,
+                                user_id: newEmp.user_id,
+                                petty_cash_branch: r.message.new_branch_id,
+                                has_branch_user_role: newEmp.has_branch_user_role || false
+                            });
+
+                            frappe.show_alert({
+                                message: `${oldEmp.employee_name}'s access was removed. ${newEmp.employee_name} moved from ${r.message.old_branch_name} to ${r.message.new_branch_name}.`,
+                                indicator: "green"
+                            }, 4);
+                        }
+
+                        this.loadBranches();
+                    },
+                    error: () => {
+                        this.isUpdating = false;
+                    }
                 });
             },
 

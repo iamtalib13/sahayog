@@ -698,3 +698,94 @@ def replace_branch_employee(user_id, branch_id):
         ),
         "role_status": role_status,
     }
+
+
+@frappe.whitelist()
+def reassign_and_replace_branch_employee(user_id, branch_id):
+    validate_access()
+
+    if not user_id:
+        frappe.throw(_("No User ID linked to this employee."))
+
+    if not branch_id:
+        frappe.throw(_("Please select a branch."))
+
+    branch = frappe.db.get_value(
+        "Sahayog Branch",
+        {"sol_id": branch_id},
+        ["name", "branch"],
+        as_dict=True,
+    )
+
+    if not branch:
+        frappe.throw(
+            _("Branch {0} does not exist.").format(frappe.bold(branch_id))
+        )
+
+    new_employee_name = frappe.db.get_value(
+        "Employee",
+        {"user_id": user_id},
+        "name",
+    )
+
+    if not new_employee_name:
+        frappe.throw(
+            _("No Employee is linked to user {0}.").format(
+                frappe.bold(user_id)
+            )
+        )
+
+    new_employee = frappe.get_doc("Employee", new_employee_name)
+
+    if new_employee.designation not in ELIGIBLE_DESIGNATIONS:
+        frappe.throw(
+            _(
+                "This employee is not eligible for Branch User access management."
+            )
+        )
+
+    existing_target_employee = get_existing_branch_employee(
+        branch_id=branch_id,
+        current_employee=new_employee.name,
+    )
+
+    if existing_target_employee:
+        remove_branch_access(existing_target_employee.name)
+
+    old_branch_id = new_employee.petty_cash_branch
+    old_branch_name = get_branch_label(old_branch_id) if old_branch_id else ""
+
+    new_employee.petty_cash_branch = branch_id
+    new_employee.save(ignore_permissions=True)
+
+    frappe.logger("petty_cash_access_ma").info(
+        {
+            "action_by": frappe.session.user,
+            "action_on": user_id,
+            "employee": new_employee.name,
+            "old_branch": old_branch_id,
+            "new_branch": branch_id,
+            "replaced_employee": (
+                existing_target_employee.name
+                if existing_target_employee
+                else None
+            ),
+            "status": "reassigned_and_replaced",
+        }
+    )
+
+    return {
+        "status": "reassigned_and_replaced",
+        "user_id": user_id,
+        "employee": new_employee.name,
+        "employee_name": new_employee.employee_name,
+        "old_branch_id": old_branch_id,
+        "old_branch_name": old_branch_name,
+        "new_branch_id": branch_id,
+        "new_branch_name": branch.branch or branch_id,
+        "replaced_employee": (
+            existing_target_employee.employee_name
+            if existing_target_employee
+            else None
+        ),
+    }
