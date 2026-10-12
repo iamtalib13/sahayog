@@ -6,34 +6,26 @@ from frappe.utils import cint
 ALLOWED_ROLES = ["HO Petty Cash Manager", "HO Petty Cash Verifier"]
 TARGET_ROLE = "Branch User"
 
-ELIGIBLE_DESIGNATIONS = [
-    "BRANCH MANAGER",
-    "BRANCH OFFICER",
-    "BLOCK DEVELOPMENT OFFICER",
-    "Area Sales Manager-DDS",
-    "Sales Manager-SMBG",
-    "Sales Manager (DDS)",
-    "LOAN OFFICER SR",
-    "Collection Executive",
-    "Assistant Manager - Learning and Development",
-    "Asst. Branch Manager JLL",
-    "BUSINESS DEVELOPMENT EXECUTIVE",
-    "Credit Executive",
-    "Team Leader",
-    "SR.CLUSTER OPERATION MANAGER",
-    "ASSISTANT SALES MANAGER",
-    "Sales Manager - TASC",
-    "RELATIONSHIP MANAGER - TASC",
-    "Customer Service Manager",
-    "Sr. Executive - HO Operation",
-    "Collection Manager",
-    "AREA SALES MANAGER - TASC",
-    "MIS Executive",
-    "RELATIONSHIP OFFICER - DDS",
-    "TRAINER-CASA",
-    "Assistant Manager - Operations",
-    "RELATIONSHIP MANAGER - INSURANCE",
-]
+
+def get_eligible_designations():
+    """Get eligible designations dynamically from Sahayog Settings."""
+    settings = frappe.get_cached_doc("Sahayog Settings")
+
+    designations = [
+        row.designations
+        for row in settings.get("allowed_access_manager_designations") or []
+        if row.designations
+    ]
+
+    if not designations:
+        frappe.throw(
+            _(
+                "No eligible designations are configured in Sahayog Settings. "
+                "Please add designations in the Petty Cash Management settings."
+            )
+        )
+
+    return designations
 
 
 def validate_access():
@@ -99,8 +91,15 @@ def get_branch_label(branch_id):
 def get_branch_access_data():
     validate_access()
 
+    eligible_designations = get_eligible_designations()
+
     all_branches = get_all_branches()
+
     employees = get_employees_with_branch_user_role()
+    employees = [
+        emp for emp in employees
+        if emp.designation in eligible_designations
+    ]
 
     employees_by_branch = {}
 
@@ -146,10 +145,12 @@ def get_branch_access_data():
 def search_eligible_employees(search_text=""):
     validate_access()
 
+    eligible_designations = get_eligible_designations()
+
     search_text = (search_text or "").strip()
 
     filters = {
-        "designation": ["in", ELIGIBLE_DESIGNATIONS],
+        "designation": ["in", eligible_designations],
         "user_id": ["is", "set"],
     }
 
@@ -203,23 +204,20 @@ def search_eligible_employees(search_text=""):
     return employees
 
 
-def validate_branch_assignment(user_id, branch_id, current_employee=None):
-    """Ensure only one employee is assigned to a branch."""
-    if not branch_id:
-        frappe.throw(_("Please select a branch."))
+def validate_employee_eligibility(employee):
+    """Validate that the employee designation is allowed in Sahayog Settings."""
+    eligible_designations = get_eligible_designations()
 
-    branch = frappe.db.get_value(
-        "Sahayog Branch",
-        {"sol_id": branch_id},
-        ["name", "branch"],
-        as_dict=True,
-    )
-
-    if not branch:
+    if employee.designation not in eligible_designations:
         frappe.throw(
-            _("Branch {0} does not exist.").format(frappe.bold(branch_id))
+            _(
+                "This employee is not eligible for Branch User access management."
+            )
         )
 
+
+def get_existing_branch_employee(branch_id, current_employee=None):
+    """Return the employee currently assigned to a branch, if any."""
     filters = {
         "petty_cash_branch": branch_id,
         "user_id": ["is", "set"],
@@ -228,139 +226,12 @@ def validate_branch_assignment(user_id, branch_id, current_employee=None):
     if current_employee:
         filters["name"] = ["!=", current_employee]
 
-    existing = frappe.db.get_value(
+    return frappe.db.get_value(
         "Employee",
         filters,
-        ["employee_name", "user_id"],
+        ["name", "employee_name", "user_id"],
         as_dict=True,
     )
-
-    if existing:
-        frappe.throw(
-            _(
-                "Branch {0} is already assigned to {1} ({2}). "
-                "Only one employee can have access to a branch."
-            ).format(
-                frappe.bold(branch.branch or branch_id),
-                frappe.bold(existing.employee_name),
-                frappe.bold(existing.user_id),
-            )
-        )
-
-
-def clear_user_access_cache(user_id):
-    """Clear cached permissions/session data for the updated user."""
-    frappe.clear_cache(user=user_id)
-    frappe.clear_cache()
-
-
-# @frappe.whitelist()
-# def toggle_branch_user_role(user_id, enable, branch_id=None):
-#     validate_access()
-
-#     if not user_id:
-#         frappe.throw(_("No User ID linked to this employee."))
-
-#     if user_id == "Administrator":
-#         frappe.throw(
-#             _("Administrator role access cannot be changed from this page.")
-#         )
-
-#     if not frappe.db.exists("User", user_id):
-#         frappe.throw(
-#             _("User {0} does not exist.").format(frappe.bold(user_id))
-#         )
-
-#     employee_name = frappe.db.get_value(
-#         "Employee",
-#         {"user_id": user_id},
-#         "name",
-#     )
-
-#     if not employee_name:
-#         frappe.throw(
-#             _("No Employee is linked to user {0}.").format(
-#                 frappe.bold(user_id)
-#             )
-#         )
-
-#     employee = frappe.get_doc("Employee", employee_name)
-
-#     if employee.designation not in ELIGIBLE_DESIGNATIONS:
-#         frappe.throw(
-#             _(
-#                 "This employee is not eligible for Branch User access management."
-#             )
-#         )
-
-#     enable = cint(frappe.parse_json(enable))
-#     branch_id = (branch_id or "").strip()
-
-#     if enable:
-#         validate_branch_assignment(
-#             user_id=user_id,
-#             branch_id=branch_id,
-#             current_employee=employee.name,
-#         )
-
-#         employee.petty_cash_branch = branch_id
-#     else:
-#         employee.petty_cash_branch = None
-
-#     employee.save(ignore_permissions=True)
-
-#     user = frappe.get_doc("User", user_id)
-#     current_roles = {row.role for row in user.roles if row.role}
-
-#     changed = False
-#     status = "unchanged"
-
-#     if enable:
-#         if TARGET_ROLE not in current_roles:
-#             user.append("roles", {"role": TARGET_ROLE})
-#             status = "added"
-#             changed = True
-#         else:
-#             status = "already_present"
-#     else:
-#         if TARGET_ROLE in current_roles:
-#             user.roles = [
-#                 row for row in user.roles if row.role != TARGET_ROLE
-#             ]
-#             status = "removed"
-#             changed = True
-#         else:
-#             status = "already_absent"
-
-#     if changed:
-#         user.save(ignore_permissions=True)
-#         clear_user_access_cache(user_id)
-
-#         frappe.logger("petty_cash_access_ma").info(
-#             {
-#                 "action_by": frappe.session.user,
-#                 "action_on": user_id,
-#                 "role": TARGET_ROLE,
-#                 "branch": branch_id if enable else None,
-#                 "status": status,
-#             }
-#         )
-
-#     if hasattr(frappe.local, "message_log"):
-#         frappe.local.message_log = []
-
-#     return {
-#         "status": status,
-#         "user_id": user_id,
-#         "employee": employee.name,
-#         "branch_id": employee.petty_cash_branch,
-#         "branch_name": (
-#             get_branch_label(employee.petty_cash_branch)
-#             if employee.petty_cash_branch
-#             else ""
-#         ),
-#         "role": TARGET_ROLE,
-#     }
 
 
 def remove_branch_access(employee_name):
@@ -392,27 +263,15 @@ def remove_branch_access(employee_name):
                 "employee": employee_name,
                 "role": TARGET_ROLE,
                 "branch": old_branch,
-                "status": "access_transferred_from",
+                "status": "access_removed",
             }
         )
 
 
-def get_existing_branch_employee(branch_id, current_employee=None):
-    """Return the employee currently assigned to a branch, if any."""
-    filters = {
-        "petty_cash_branch": branch_id,
-        "user_id": ["is", "set"],
-    }
-
-    if current_employee:
-        filters["name"] = ["!=", current_employee]
-
-    return frappe.db.get_value(
-        "Employee",
-        filters,
-        ["name", "employee_name", "user_id"],
-        as_dict=True,
-    )
+def clear_user_access_cache(user_id):
+    """Clear cached permissions/session data for the updated user."""
+    frappe.clear_cache(user=user_id)
+    frappe.clear_cache()
 
 
 @frappe.whitelist()
@@ -447,12 +306,7 @@ def toggle_branch_user_role(user_id, enable, branch_id=None):
 
     employee = frappe.get_doc("Employee", employee_name)
 
-    if employee.designation not in ELIGIBLE_DESIGNATIONS:
-        frappe.throw(
-            _(
-                "This employee is not eligible for Branch User access management."
-            )
-        )
+    validate_employee_eligibility(employee)
 
     enable = cint(frappe.parse_json(enable))
     branch_id = (branch_id or "").strip()
@@ -580,6 +434,8 @@ def reassign_employee_branch(user_id, branch_id):
 
     employee = frappe.get_doc("Employee", employee_name)
 
+    validate_employee_eligibility(employee)
+
     old_branch_id = employee.petty_cash_branch
     old_branch_name = get_branch_label(old_branch_id) if old_branch_id else ""
 
@@ -645,12 +501,7 @@ def replace_branch_employee(user_id, branch_id):
 
     new_employee = frappe.get_doc("Employee", new_employee_name)
 
-    if new_employee.designation not in ELIGIBLE_DESIGNATIONS:
-        frappe.throw(
-            _(
-                "This employee is not eligible for Branch User access management."
-            )
-        )
+    validate_employee_eligibility(new_employee)
 
     existing_employee = get_existing_branch_employee(
         branch_id=branch_id,
@@ -681,7 +532,9 @@ def replace_branch_employee(user_id, branch_id):
             "employee": new_employee.name,
             "role": TARGET_ROLE,
             "branch": branch_id,
-            "replaced_employee": existing_employee.name if existing_employee else None,
+            "replaced_employee": (
+                existing_employee.name if existing_employee else None
+            ),
             "status": "branch_employee_replaced",
         }
     )
@@ -737,12 +590,7 @@ def reassign_and_replace_branch_employee(user_id, branch_id):
 
     new_employee = frappe.get_doc("Employee", new_employee_name)
 
-    if new_employee.designation not in ELIGIBLE_DESIGNATIONS:
-        frappe.throw(
-            _(
-                "This employee is not eligible for Branch User access management."
-            )
-        )
+    validate_employee_eligibility(new_employee)
 
     existing_target_employee = get_existing_branch_employee(
         branch_id=branch_id,
