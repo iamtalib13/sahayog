@@ -87,19 +87,67 @@ def get_branch_label(branch_id):
     ) or "Unknown"
 
 
+# @frappe.whitelist()
+# def get_branch_access_data():
+#     validate_access()
+
+#     eligible_designations = get_eligible_designations()
+
+#     all_branches = get_all_branches()
+
+#     employees = get_employees_with_branch_user_role()
+#     employees = [
+#         emp for emp in employees
+#         if emp.designation in eligible_designations
+#     ]
+
+#     employees_by_branch = {}
+
+#     for emp in employees:
+#         branch_id = emp.petty_cash_branch
+
+#         if branch_id not in employees_by_branch:
+#             employees_by_branch[branch_id] = []
+
+#         employees_by_branch[branch_id].append(
+#             {
+#                 "name": emp.name,
+#                 "employee_name": emp.employee_name,
+#                 "designation": emp.designation,
+#                 "user_id": emp.user_id,
+#                 "petty_cash_branch": emp.petty_cash_branch,
+#                 "has_branch_user_role": True,
+#             }
+#         )
+
+#     branch_list = []
+
+#     for branch in all_branches:
+#         branch_id = branch.sol_id
+
+#         if not branch_id:
+#             continue
+
+#         branch_list.append(
+#             {
+#                 "branch_id": branch_id,
+#                 "branch_name": branch.branch or branch_id,
+#                 "employees": employees_by_branch.get(branch_id, []),
+#             }
+#         )
+
+#     branch_list.sort(key=lambda x: x["branch_name"].lower())
+
+#     return branch_list
+
+
 @frappe.whitelist()
 def get_branch_access_data():
     validate_access()
 
-    eligible_designations = get_eligible_designations()
-
     all_branches = get_all_branches()
 
     employees = get_employees_with_branch_user_role()
-    employees = [
-        emp for emp in employees
-        if emp.designation in eligible_designations
-    ]
 
     employees_by_branch = {}
 
@@ -274,6 +322,129 @@ def clear_user_access_cache(user_id):
     frappe.clear_cache()
 
 
+# @frappe.whitelist()
+# def toggle_branch_user_role(user_id, enable, branch_id=None):
+#     validate_access()
+
+#     if not user_id:
+#         frappe.throw(_("No User ID linked to this employee."))
+
+#     if user_id == "Administrator":
+#         frappe.throw(
+#             _("Administrator role access cannot be changed from this page.")
+#         )
+
+#     if not frappe.db.exists("User", user_id):
+#         frappe.throw(
+#             _("User {0} does not exist.").format(frappe.bold(user_id))
+#         )
+
+#     employee_name = frappe.db.get_value(
+#         "Employee",
+#         {"user_id": user_id},
+#         "name",
+#     )
+
+#     if not employee_name:
+#         frappe.throw(
+#             _("No Employee is linked to user {0}.").format(
+#                 frappe.bold(user_id)
+#             )
+#         )
+
+#     employee = frappe.get_doc("Employee", employee_name)
+
+#     validate_employee_eligibility(employee)
+
+#     enable = cint(frappe.parse_json(enable))
+#     branch_id = (branch_id or "").strip()
+
+#     if enable:
+#         if not branch_id:
+#             frappe.throw(_("Please select a branch."))
+
+#         branch = frappe.db.get_value(
+#             "Sahayog Branch",
+#             {"sol_id": branch_id},
+#             ["name", "branch"],
+#             as_dict=True,
+#         )
+
+#         if not branch:
+#             frappe.throw(
+#                 _("Branch {0} does not exist.").format(
+#                     frappe.bold(branch_id)
+#                 )
+#             )
+
+#         existing_employee = get_existing_branch_employee(
+#             branch_id=branch_id,
+#             current_employee=employee.name,
+#         )
+
+#         if existing_employee:
+#             remove_branch_access(existing_employee.name)
+
+#         employee.petty_cash_branch = branch_id
+#     else:
+#         employee.petty_cash_branch = None
+
+#     employee.save(ignore_permissions=True)
+
+#     user = frappe.get_doc("User", user_id)
+#     current_roles = {row.role for row in user.roles if row.role}
+
+#     changed = False
+#     status = "unchanged"
+
+#     if enable:
+#         if TARGET_ROLE not in current_roles:
+#             user.append("roles", {"role": TARGET_ROLE})
+#             status = "added"
+#             changed = True
+#         else:
+#             status = "already_present"
+#     else:
+#         if TARGET_ROLE in current_roles:
+#             user.roles = [
+#                 row for row in user.roles if row.role != TARGET_ROLE
+#             ]
+#             status = "removed"
+#             changed = True
+#         else:
+#             status = "already_absent"
+
+#     if changed:
+#         user.save(ignore_permissions=True)
+#         clear_user_access_cache(user_id)
+
+#         frappe.logger("petty_cash_access_ma").info(
+#             {
+#                 "action_by": frappe.session.user,
+#                 "action_on": user_id,
+#                 "role": TARGET_ROLE,
+#                 "branch": branch_id if enable else None,
+#                 "status": status,
+#             }
+#         )
+
+#     if hasattr(frappe.local, "message_log"):
+#         frappe.local.message_log = []
+
+#     return {
+#         "status": status,
+#         "user_id": user_id,
+#         "employee": employee.name,
+#         "branch_id": employee.petty_cash_branch,
+#         "branch_name": (
+#             get_branch_label(employee.petty_cash_branch)
+#             if employee.petty_cash_branch
+#             else ""
+#         ),
+#         "role": TARGET_ROLE,
+#     }
+
+
 @frappe.whitelist()
 def toggle_branch_user_role(user_id, enable, branch_id=None):
     validate_access()
@@ -306,12 +477,12 @@ def toggle_branch_user_role(user_id, enable, branch_id=None):
 
     employee = frappe.get_doc("Employee", employee_name)
 
-    validate_employee_eligibility(employee)
-
     enable = cint(frappe.parse_json(enable))
     branch_id = (branch_id or "").strip()
 
     if enable:
+        validate_employee_eligibility(employee)
+
         if not branch_id:
             frappe.throw(_("Please select a branch."))
 

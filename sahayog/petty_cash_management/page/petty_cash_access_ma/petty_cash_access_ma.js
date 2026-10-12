@@ -695,14 +695,44 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 return parts[0].substring(0, 2).toUpperCase();
             },
 
+            // loadBranches() {
+            //     this.isLoading = true;
+
+            //     frappe.call({
+            //         method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.get_branch_access_data",
+            //         callback: (r) => {
+            //             this.branchList = r.message || [];
+            //             this.filterBranches();
+            //             this.isLoading = false;
+            //         }
+            //     });
+            // },
+
             loadBranches() {
                 this.isLoading = true;
+
+                const selected_branch_id = this.selectedBranch
+                    ? this.selectedBranch.branch_id
+                    : null;
 
                 frappe.call({
                     method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.get_branch_access_data",
                     callback: (r) => {
                         this.branchList = r.message || [];
                         this.filterBranches();
+
+                        if (selected_branch_id) {
+                            const updated_branch = this.branchList.find(
+                                branch => branch.branch_id === selected_branch_id
+                            );
+
+                            if (updated_branch) {
+                                this.selectedBranch = updated_branch;
+                            } else {
+                                this.selectedBranch = null;
+                            }
+                        }
+
                         this.isLoading = false;
                     }
                 });
@@ -1021,11 +1051,67 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 });
             },
 
+            // toggleRole(emp) {
+            //     const enable = emp.has_branch_user_role;
+
+            //     if (enable && !this.selectedBranch) {
+            //         emp.has_branch_user_role = false;
+            //         return;
+            //     }
+
+            //     this.isUpdating = true;
+
+            //     frappe.call({
+            //         method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.toggle_branch_user_role",
+            //         args: {
+            //             user_id: emp.user_id,
+            //             enable: enable,
+            //             branch_id: enable ? this.selectedBranch.branch_id : ""
+            //         },
+            //         callback: (r) => {
+            //             this.isUpdating = false;
+
+            //             if (r.message) {
+            //                 const status = r.message.status;
+
+            //                 const messageMap = {
+            //                     added: "Petty Cash access added successfully",
+            //                     removed: "Petty Cash access removed successfully",
+            //                     already_present: "Petty Cash role is already assigned",
+            //                     already_absent: "Petty Cash role is already removed"
+            //                 };
+
+            //                 const indicatorMap = {
+            //                     added: "green",
+            //                     removed: "orange",
+            //                     already_present: "blue",
+            //                     already_absent: "blue"
+            //                 };
+
+            //                 frappe.show_alert({
+            //                     message: messageMap[status] || "Access updated successfully",
+            //                     indicator: indicatorMap[status] || "green"
+            //                 }, 3);
+            //             }
+
+            //             if (!enable) {
+            //                 this.removeEmployeeFromBranch(emp);
+            //             }
+
+            //             this.loadBranches();
+            //         },
+            //         error: () => {
+            //             this.isUpdating = false;
+            //             emp.has_branch_user_role = !emp.has_branch_user_role;
+            //         }
+            //     });
+            // },
+
             toggleRole(emp) {
                 const enable = emp.has_branch_user_role;
 
-                if (enable && !this.selectedBranch) {
-                    emp.has_branch_user_role = false;
+                if (!this.selectedBranch) {
+                    emp.has_branch_user_role = !emp.has_branch_user_role;
                     return;
                 }
 
@@ -1045,10 +1131,10 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                             const status = r.message.status;
 
                             const messageMap = {
-                                added: "Petty Cash access added successfully",
-                                removed: "Petty Cash access removed successfully",
-                                already_present: "Petty Cash role is already assigned",
-                                already_absent: "Petty Cash role is already removed"
+                                added: "Branch User access added successfully",
+                                removed: "Branch User access removed successfully",
+                                already_present: "Branch User role is already assigned",
+                                already_absent: "Branch User role is already removed"
                             };
 
                             const indicatorMap = {
@@ -1065,17 +1151,56 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                         }
 
                         if (!enable) {
-                            this.removeEmployeeFromBranch(emp);
+                            this.selectedBranch.employees = this.selectedBranch.employees.filter(
+                                row => row.name !== emp.name
+                            );
                         }
 
                         this.loadBranches();
                     },
-                    error: () => {
+                    // error: () => {
+                    //     this.isUpdating = false;
+                    //     emp.has_branch_user_role = !emp.has_branch_user_role;
+                    // }
+
+                    error: (r) => {
                         this.isUpdating = false;
                         emp.has_branch_user_role = !emp.has_branch_user_role;
+
+                        console.error("Branch User toggle failed:", r);
+
+                        let error_message = "Unknown error occurred while updating access.";
+
+                        if (r && r.exc) {
+                            error_message = r.exc;
+                        } else if (r && r.server_messages) {
+                            error_message = r.server_messages;
+                        } else if (r && r.message) {
+                            error_message = r.message;
+                        }
+
+                        frappe.msgprint({
+                            title: "Access Update Failed",
+                            indicator: "red",
+                            message: error_message
+                        });
                     }
                 });
             },
+
+            // removeEmployeeFromBranch(emp) {
+            //     this.selectedBranch.employees = this.selectedBranch.employees.filter(
+            //         row => row.name !== emp.name
+            //     );
+
+            //     if (!this.selectedBranch.employees.length) {
+            //         this.branchList = this.branchList.filter(
+            //             branch => branch.branch_id !== this.selectedBranch.branch_id
+            //         );
+            //         this.filterBranches();
+            //         this.selectedBranch = null;
+            //     }
+            // },
 
             removeEmployeeFromBranch(emp) {
                 this.selectedBranch.employees = this.selectedBranch.employees.filter(
