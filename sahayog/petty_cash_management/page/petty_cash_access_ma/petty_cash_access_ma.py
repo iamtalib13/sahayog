@@ -541,3 +541,68 @@ def toggle_branch_user_role(user_id, enable, branch_id=None):
         ),
         "role": TARGET_ROLE,
     }
+
+
+@frappe.whitelist()
+def reassign_employee_branch(user_id, branch_id):
+    validate_access()
+
+    if not user_id:
+        frappe.throw(_("No User ID linked to this employee."))
+
+    if not branch_id:
+        frappe.throw(_("Please select a branch."))
+
+    employee_name = frappe.db.get_value(
+        "Employee",
+        {"user_id": user_id},
+        "name",
+    )
+
+    if not employee_name:
+        frappe.throw(
+            _("No Employee is linked to user {0}.").format(
+                frappe.bold(user_id)
+            )
+        )
+
+    branch = frappe.db.get_value(
+        "Sahayog Branch",
+        {"sol_id": branch_id},
+        ["name", "branch"],
+        as_dict=True,
+    )
+
+    if not branch:
+        frappe.throw(
+            _("Branch {0} does not exist.").format(frappe.bold(branch_id))
+        )
+
+    employee = frappe.get_doc("Employee", employee_name)
+
+    old_branch_id = employee.petty_cash_branch
+    old_branch_name = get_branch_label(old_branch_id) if old_branch_id else ""
+
+    employee.petty_cash_branch = branch_id
+    employee.save(ignore_permissions=True)
+
+    frappe.logger("petty_cash_access_ma").info(
+        {
+            "action_by": frappe.session.user,
+            "action_on": user_id,
+            "employee": employee.name,
+            "old_branch": old_branch_id,
+            "new_branch": branch_id,
+            "status": "branch_reassigned",
+        }
+    )
+
+    return {
+        "status": "reassigned",
+        "user_id": user_id,
+        "employee": employee.name,
+        "old_branch_id": old_branch_id,
+        "old_branch_name": old_branch_name,
+        "new_branch_id": branch_id,
+        "new_branch_name": branch.branch or branch_id,
+    }

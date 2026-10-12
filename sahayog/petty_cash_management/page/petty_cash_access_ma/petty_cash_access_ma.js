@@ -562,6 +562,32 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 }, 300);
             },
 
+            // selectEmployee(emp) {
+            //     this.showPicker = false;
+            //     this.employeeSearch = "";
+
+            //     const already_added = this.selectedBranch.employees.some(
+            //         row => row.name === emp.name
+            //     );
+
+            //     if (already_added) {
+            //         frappe.show_alert({
+            //             message: `${emp.employee_name} is already shown in this branch.`,
+            //             indicator: "blue"
+            //         }, 3);
+            //         return;
+            //     }
+
+            //     this.selectedBranch.employees.push({
+            //         name: emp.name,
+            //         employee_name: emp.employee_name,
+            //         designation: emp.designation,
+            //         user_id: emp.user_id,
+            //         petty_cash_branch: emp.petty_cash_branch || "",
+            //         has_branch_user_role: emp.has_branch_user_role || false
+            //     });
+            // },
+
             selectEmployee(emp) {
                 this.showPicker = false;
                 this.employeeSearch = "";
@@ -578,6 +604,38 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     return;
                 }
 
+                const current_branch_id = emp.petty_cash_branch || "";
+                const selected_branch_id = this.selectedBranch.branch_id;
+
+                if (current_branch_id && current_branch_id !== selected_branch_id) {
+                    const current_branch_name = emp.branch_name || current_branch_id;
+                    const new_branch_name = this.selectedBranch.branch_name;
+
+                    frappe.confirm(
+                        `
+                <strong>${emp.employee_name}</strong> already has Petty Cash access for
+                <strong>${current_branch_name}</strong>.<br><br>
+                Do you want to change their branch to
+                <strong>${new_branch_name}</strong>?<br><br>
+                Their existing <strong>Petty Cash Branch</strong> role will remain unchanged.
+                Only the <strong>Petty Cash Branch</strong> field will be updated.
+            `,
+                        () => {
+                            this.reassignEmployeeBranch(emp);
+                        },
+                        () => {
+                            frappe.show_alert({
+                                message: "No changes were made.",
+                                indicator: "orange"
+                            }, 3);
+                        },
+                        "Yes, Change Branch",
+                        "No"
+                    );
+
+                    return;
+                }
+
                 this.selectedBranch.employees.push({
                     name: emp.name,
                     employee_name: emp.employee_name,
@@ -585,6 +643,45 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     user_id: emp.user_id,
                     petty_cash_branch: emp.petty_cash_branch || "",
                     has_branch_user_role: emp.has_branch_user_role || false
+                });
+            },
+
+            reassignEmployeeBranch(emp) {
+                this.isUpdating = true;
+
+                frappe.call({
+                    method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.reassign_employee_branch",
+                    args: {
+                        user_id: emp.user_id,
+                        branch_id: this.selectedBranch.branch_id
+                    },
+                    callback: (r) => {
+                        this.isUpdating = false;
+
+                        if (r.message) {
+                            emp.petty_cash_branch = r.message.new_branch_id;
+                            emp.branch_name = r.message.new_branch_name;
+
+                            this.selectedBranch.employees.push({
+                                name: emp.name,
+                                employee_name: emp.employee_name,
+                                designation: emp.designation,
+                                user_id: emp.user_id,
+                                petty_cash_branch: r.message.new_branch_id,
+                                has_branch_user_role: emp.has_branch_user_role || false
+                            });
+
+                            frappe.show_alert({
+                                message: `${emp.employee_name} moved from ${r.message.old_branch_name} to ${r.message.new_branch_name}.`,
+                                indicator: "green"
+                            }, 4);
+                        }
+
+                        this.loadBranches();
+                    },
+                    error: () => {
+                        this.isUpdating = false;
+                    }
                 });
             },
 
