@@ -606,3 +606,95 @@ def reassign_employee_branch(user_id, branch_id):
         "new_branch_id": branch_id,
         "new_branch_name": branch.branch or branch_id,
     }
+
+
+@frappe.whitelist()
+def replace_branch_employee(user_id, branch_id):
+    validate_access()
+
+    if not user_id:
+        frappe.throw(_("No User ID linked to this employee."))
+
+    if not branch_id:
+        frappe.throw(_("Please select a branch."))
+
+    branch = frappe.db.get_value(
+        "Sahayog Branch",
+        {"sol_id": branch_id},
+        ["name", "branch"],
+        as_dict=True,
+    )
+
+    if not branch:
+        frappe.throw(
+            _("Branch {0} does not exist.").format(frappe.bold(branch_id))
+        )
+
+    new_employee_name = frappe.db.get_value(
+        "Employee",
+        {"user_id": user_id},
+        "name",
+    )
+
+    if not new_employee_name:
+        frappe.throw(
+            _("No Employee is linked to user {0}.").format(
+                frappe.bold(user_id)
+            )
+        )
+
+    new_employee = frappe.get_doc("Employee", new_employee_name)
+
+    if new_employee.designation not in ELIGIBLE_DESIGNATIONS:
+        frappe.throw(
+            _(
+                "This employee is not eligible for Branch User access management."
+            )
+        )
+
+    existing_employee = get_existing_branch_employee(
+        branch_id=branch_id,
+        current_employee=new_employee.name,
+    )
+
+    if existing_employee:
+        remove_branch_access(existing_employee.name)
+
+    new_employee.petty_cash_branch = branch_id
+    new_employee.save(ignore_permissions=True)
+
+    user = frappe.get_doc("User", user_id)
+    current_roles = {row.role for row in user.roles if row.role}
+
+    role_status = "already_present"
+
+    if TARGET_ROLE not in current_roles:
+        user.append("roles", {"role": TARGET_ROLE})
+        role_status = "added"
+        user.save(ignore_permissions=True)
+        clear_user_access_cache(user_id)
+
+    frappe.logger("petty_cash_access_ma").info(
+        {
+            "action_by": frappe.session.user,
+            "action_on": user_id,
+            "employee": new_employee.name,
+            "role": TARGET_ROLE,
+            "branch": branch_id,
+            "replaced_employee": existing_employee.name if existing_employee else None,
+            "status": "branch_employee_replaced",
+        }
+    )
+
+    return {
+        "status": "replaced",
+        "user_id": user_id,
+        "employee": new_employee.name,
+        "employee_name": new_employee.employee_name,
+        "branch_id": branch_id,
+        "branch_name": branch.branch or branch_id,
+        "replaced_employee": (
+            existing_employee.employee_name if existing_employee else None
+        ),
+        "role_status": role_status,
+    }

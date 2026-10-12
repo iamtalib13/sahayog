@@ -617,7 +617,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 <strong>${current_branch_name}</strong>.<br><br>
                 Do you want to change their branch to
                 <strong>${new_branch_name}</strong>?<br><br>
-                Their existing <strong>Petty Cash Branch</strong> role will remain unchanged.
+                Their existing <strong>Branch User</strong> role will remain unchanged.
                 Only the <strong>Petty Cash Branch</strong> field will be updated.
             `,
                         () => {
@@ -636,6 +636,40 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     return;
                 }
 
+                const existing_access_employee = this.selectedBranch.employees.find(
+                    row => row.has_branch_user_role
+                );
+
+                if (existing_access_employee) {
+                    const old_employee_name = existing_access_employee.employee_name;
+                    const new_employee_name = emp.employee_name;
+                    const branch_name = this.selectedBranch.branch_name;
+
+                    frappe.confirm(
+                        `
+                <strong>${branch_name}</strong> already has Petty Cash access assigned to
+                <strong>${old_employee_name}</strong>.<br><br>
+                Do you want to remove <strong>${old_employee_name}</strong>'s access and assign
+                this branch to <strong>${new_employee_name}</strong>?<br><br>
+                The existing employee's <strong>Petty Cash Branch</strong> and
+                <strong>Branch User</strong> role will be removed.
+            `,
+                        () => {
+                            this.replaceBranchEmployee(emp, existing_access_employee);
+                        },
+                        () => {
+                            frappe.show_alert({
+                                message: "No changes were made.",
+                                indicator: "orange"
+                            }, 3);
+                        },
+                        "Yes, Replace Access",
+                        "No"
+                    );
+
+                    return;
+                }
+
                 this.selectedBranch.employees.push({
                     name: emp.name,
                     employee_name: emp.employee_name,
@@ -643,6 +677,46 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     user_id: emp.user_id,
                     petty_cash_branch: emp.petty_cash_branch || "",
                     has_branch_user_role: emp.has_branch_user_role || false
+                });
+            },
+
+            replaceBranchEmployee(newEmp, oldEmp) {
+                this.isUpdating = true;
+
+                frappe.call({
+                    method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.replace_branch_employee",
+                    args: {
+                        user_id: newEmp.user_id,
+                        branch_id: this.selectedBranch.branch_id
+                    },
+                    callback: (r) => {
+                        this.isUpdating = false;
+
+                        if (r.message) {
+                            this.selectedBranch.employees = this.selectedBranch.employees.filter(
+                                row => row.name !== oldEmp.name
+                            );
+
+                            this.selectedBranch.employees.push({
+                                name: newEmp.name,
+                                employee_name: newEmp.employee_name,
+                                designation: newEmp.designation,
+                                user_id: newEmp.user_id,
+                                petty_cash_branch: r.message.branch_id,
+                                has_branch_user_role: true
+                            });
+
+                            frappe.show_alert({
+                                message: `${oldEmp.employee_name}'s access was removed. ${newEmp.employee_name} is now assigned to ${r.message.branch_name}.`,
+                                indicator: "green"
+                            }, 4);
+                        }
+
+                        this.loadBranches();
+                    },
+                    error: () => {
+                        this.isUpdating = false;
+                    }
                 });
             },
 
