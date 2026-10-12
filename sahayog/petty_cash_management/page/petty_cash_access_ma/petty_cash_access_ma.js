@@ -37,129 +37,222 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
         page.main.html(`
             <style>
                 * { box-sizing: border-box; }
+            
+
                 #perm-root {
                     height: calc(100vh - 110px);
                     overflow: hidden;
                     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-                    color: #24292f;
-                    background: #f4f5f6;
+                    color: #1f2328;
+                    background:
+                        radial-gradient(circle at top left, rgba(9, 105, 218, 0.06), transparent 45%),
+                        radial-gradient(circle at bottom right, rgba(31, 136, 91, 0.05), transparent 45%),
+                        #f5f7fa;
                     padding: 16px;
-                    border-radius: 8px;
+                    border-radius: 10px;
                 }
 
-                #perm-root ::-webkit-scrollbar { width: 6px; height: 6px; }
+                #perm-root ::-webkit-scrollbar { width: 7px; height: 7px; }
                 #perm-root ::-webkit-scrollbar-track { background: transparent; }
-                #perm-root ::-webkit-scrollbar-thumb { background: #d0d7de; border-radius: 10px; }
-                #perm-root ::-webkit-scrollbar-thumb:hover { background: #aeb6c0; }
+                #perm-root ::-webkit-scrollbar-thumb {
+                    background: #c7ced6;
+                    border-radius: 20px;
+                }
+                #perm-root ::-webkit-scrollbar-thumb:hover { background: #a8b2bd; }
 
                 .perm-layout {
                     display: flex;
                     height: 100%;
-                    border: 1px solid #d0d7de;
-                    border-radius: 8px;
+                    border: 1px solid #d8dee4;
+                    border-radius: 12px;
                     background: #ffffff;
-                    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+                    box-shadow:
+                        0 1px 2px rgba(16, 24, 40, 0.04),
+                        0 12px 32px rgba(16, 24, 40, 0.06);
                     overflow: hidden;
                 }
 
-                .perm-pane { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-                .perm-main { width: 32%; border-right: 1px solid #d0d7de; background: #ffffff; }
-                .perm-sidebar { width: 68%; background: #fafbfc; position: relative; }
+                .perm-pane {
+                    display: flex;
+                    flex-direction: column;
+                    height: 100%;
+                    overflow: hidden;
+                }
 
-                .perm-pane-header {
-                    padding: 16px 20px;
-                    border-bottom: 1px solid #d0d7de;
-                    flex-shrink: 0;
+                .perm-main {
+                    width: 32%;
+                    min-width: 320px;
+                    border-right: 1px solid #e4e8ec;
                     background: #ffffff;
                 }
 
-                .perm-pane-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: #1f2328; }
-                .perm-pane-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px; }
-
-                .perm-search { position: relative; width: 100%; padding: 16px 20px; border-bottom: 1px solid #d0d7de; background: #ffffff; }
-                .perm-search input {
-                    width: 100%;
-                    padding: 8px 12px 8px 36px;
-                    border: 1px solid #d0d7de;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    background-color: #f6f8fa;
-                    color: #24292f;
-                    transition: all 0.2s;
+                .perm-sidebar {
+                    width: 68%;
+                    background: #fafbfc;
+                    position: relative;
                 }
-                .perm-search input:focus {
+
+                .perm-pane-header {
+                    padding: 18px 22px;
+                    border-bottom: 1px solid #e4e8ec;
+                    flex-shrink: 0;
+                    background: linear-gradient(180deg, #ffffff 0%, #fbfcfd 100%);
+                }
+
+                .perm-pane-header h3 {
+                    margin: 0;
+                    font-size: 16px;
+                    font-weight: 700;
+                    color: #101828;
+                    letter-spacing: -0.2px;
+                }
+
+                .perm-pane-content {
+                    flex: 1;
+                    overflow-y: auto;
+                    overflow-x: hidden;
+                    padding: 24px;
+                }
+
+                .perm-search {
+                    position: relative;
+                    width: 100%;
+                    padding: 16px 20px;
+                    border-bottom: 1px solid #e4e8ec;
+                    background: #ffffff;
+                }
+
+                .perm-search input,
+                .employee-picker input {
+                    width: 100%;
+                    padding: 10px 12px 10px 38px;
+                    border: 1px solid #d8dee4;
+                    border-radius: 8px;
+                    font-size: 14px;
+                    background-color: #f8fafc;
+                    color: #1f2328;
+                    transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+                }
+
+                .perm-search input:focus,
+                .employee-picker input:focus {
                     outline: none;
                     border-color: #0969da;
-                    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
                     background-color: #ffffff;
-                }
-                .perm-search-icon {
-                    position: absolute;
-                    left: 30px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: #57606a;
+                    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.12);
                 }
 
-                .perm-list { display: flex; flex-direction: column; overflow-y: auto; height: calc(100% - 70px); }
+                .perm-search-icon,
+                .picker-icon {
+                    position: absolute;
+                    left: 31px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #667085;
+                    pointer-events: none;
+                }
+
+                .picker-icon { left: 12px; }
+
+                .perm-list {
+                    display: flex;
+                    flex-direction: column;
+                    overflow-y: auto;
+                    height: calc(100% - 73px);
+                }
 
                 .perm-card {
                     display: flex;
                     align-items: center;
-                    gap: 12px;
-                    padding: 12px 20px;
-                    border-bottom: 1px solid #f0f3f6;
+                    gap: 14px;
+                    padding: 14px 20px;
+                    border-bottom: 1px solid #f1f4f7;
                     cursor: pointer;
-                    transition: all 0.15s ease;
+                    transition: background 0.15s ease, border-color 0.15s ease;
+                    position: relative;
                 }
-                .perm-card:hover { background: #f6f8fa; }
+
+                .perm-card:hover { background: #f8fafc; }
+
                 .perm-card.active {
-                    background: #eef3f8;
+                    background: #f0f6ff;
                     border-left: 3px solid #0969da;
                     padding-left: 17px;
                 }
 
-                .branch-avatar {
-                    width: 38px;
-                    height: 38px;
-                    border-radius: 8px;
+                .perm-card.active::after {
+                    content: "";
+                    position: absolute;
+                    right: 0;
+                    top: 0;
+                    bottom: 0;
+                    width: 3px;
                     background: #0969da;
-                    color: #fff;
+                    opacity: 0.08;
+                }
+
+                .branch-avatar {
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 10px;
+                    background: linear-gradient(135deg, #0969da, #218bff);
+                    color: #ffffff;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-size: 13px;
                     font-weight: 700;
                     flex-shrink: 0;
+                    box-shadow: 0 2px 6px rgba(9, 105, 218, 0.22);
                 }
 
-                .perm-card-info { flex: 1; min-width: 0; }
-                .perm-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; gap: 8px; }
+                .perm-card-info {
+                    flex: 1;
+                    min-width: 0;
+                }
+
+                .perm-card-top {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 3px;
+                    gap: 10px;
+                }
+
                 .perm-card-name {
                     font-size: 14px;
-                    font-weight: 600;
-                    color: #1f2328;
+                    font-weight: 650;
+                    color: #101828;
                     white-space: nowrap;
                     overflow: hidden;
                     text-overflow: ellipsis;
                 }
-                .perm-card-email { font-size: 12px; color: #57606a; }
+
+                .perm-card-email {
+                    font-size: 12px;
+                    color: #667085;
+                }
 
                 .access-count {
-                    font-size: 11px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    min-width: 30px;
+                    height: 24px;
+                    padding: 0 9px;
+                    font-size: 12px;
                     font-weight: 700;
-                    color: #0969da;
-                    background: #ddf4ff;
-                    border: 1px solid #a7d7fd;
-                    padding: 3px 8px;
+                    color: #05603a;
+                    background: #dcfce7;
+                    border: 1px solid #bbf7d0;
                     border-radius: 20px;
                     white-space: nowrap;
                 }
 
                 .perm-empty {
-                    padding: 40px 20px;
+                    padding: 48px 24px;
                     text-align: center;
-                    color: #57606a;
+                    color: #667085;
                     font-size: 14px;
                 }
 
@@ -171,9 +264,15 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     height: 100%;
                     padding: 64px 32px;
                     text-align: center;
-                    color: #57606a;
+                    color: #667085;
                 }
-                .perm-sidebar-empty svg { width: 48px; height: 48px; margin-bottom: 16px; color: #d0d7de; }
+
+                .perm-sidebar-empty svg {
+                    width: 52px;
+                    height: 52px;
+                    margin-bottom: 18px;
+                    color: #cbd5e1;
+                }
 
                 .profile-header-container {
                     display: flex;
@@ -182,33 +281,58 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     gap: 16px;
                 }
 
-                .profile-header { display: flex; gap: 16px; align-items: center; }
+                .profile-header {
+                    display: flex;
+                    gap: 16px;
+                    align-items: center;
+                }
+
                 .profile-avatar {
-                    width: 48px;
-                    height: 48px;
-                    border-radius: 8px;
-                    background: #0969da;
-                    color: #fff;
+                    width: 52px;
+                    height: 52px;
+                    border-radius: 12px;
+                    background: linear-gradient(135deg, #0969da, #218bff);
+                    color: #ffffff;
                     display: flex;
                     align-items: center;
                     justify-content: center;
                     font-size: 18px;
-                    font-weight: 600;
+                    font-weight: 700;
                     flex-shrink: 0;
+                    box-shadow: 0 4px 12px rgba(9, 105, 218, 0.22);
                 }
 
-                .profile-details h3 { margin: 0 0 6px 0; font-size: 18px; color: #1f2328; }
-                .profile-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: #57606a; }
-                .meta-item { display: flex; align-items: center; gap: 4px; }
-                .meta-item svg { color: #8c959f; }
+                .profile-details h3 {
+                    margin: 0 0 7px 0;
+                    font-size: 19px;
+                    font-weight: 700;
+                    color: #101828;
+                    letter-spacing: -0.2px;
+                }
+
+                .profile-meta {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 14px;
+                    font-size: 13px;
+                    color: #667085;
+                }
+
+                .meta-item {
+                    display: flex;
+                    align-items: center;
+                    gap: 5px;
+                }
+
+                .meta-item svg { color: #98a2b3; }
 
                 .perm-section {
                     margin-top: 24px;
                     background: #ffffff;
-                    border: 1px solid #d0d7de;
-                    border-radius: 8px;
+                    border: 1px solid #e4e8ec;
+                    border-radius: 10px;
                     overflow: hidden;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+                    box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
                 }
 
                 .perm-field {
@@ -219,118 +343,161 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     gap: 20px;
                 }
 
-                .perm-flabel { font-size: 15px; font-weight: 600; color: #24292f; margin: 0 0 4px 0; }
-                .perm-fdesc { font-size: 13px; color: #57606a; margin: 0; max-width: 80%; line-height: 1.4; }
+                .perm-flabel {
+                    font-size: 15px;
+                    font-weight: 650;
+                    color: #101828;
+                    margin: 0 0 4px 0;
+                }
 
-                .perm-toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
-                .perm-toggle input { opacity: 0; width: 0; height: 0; }
+                .perm-fdesc {
+                    font-size: 13px;
+                    color: #667085;
+                    margin: 0;
+                    max-width: 80%;
+                    line-height: 1.45;
+                }
+
+                .perm-toggle {
+                    position: relative;
+                    display: inline-block;
+                    width: 46px;
+                    height: 25px;
+                    flex-shrink: 0;
+                }
+
+                .perm-toggle input {
+                    opacity: 0;
+                    width: 0;
+                    height: 0;
+                }
+
                 .perm-slider {
                     position: absolute;
                     cursor: pointer;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background-color: #d1d8dd;
-                    transition: .3s;
-                    border-radius: 24px;
+                    inset: 0;
+                    background-color: #d8dee4;
+                    transition: background 0.2s ease;
+                    border-radius: 30px;
                 }
+
                 .perm-slider:before {
                     position: absolute;
                     content: "";
-                    height: 18px;
-                    width: 18px;
+                    height: 19px;
+                    width: 19px;
                     left: 3px;
                     bottom: 3px;
-                    background-color: white;
-                    transition: .3s;
+                    background-color: #ffffff;
+                    transition: transform 0.2s ease;
                     border-radius: 50%;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+                    box-shadow: 0 1px 3px rgba(16, 24, 40, 0.18);
                 }
-                .perm-toggle input:checked + .perm-slider { background-color: #2f9d58; }
-                .perm-toggle input:checked + .perm-slider:before { transform: translateX(20px); }
-                .perm-toggle.is-updating { opacity: 0.5; pointer-events: none; }
+
+                .perm-toggle input:checked + .perm-slider {
+                    background: linear-gradient(135deg, #16a34a, #22c55e);
+                }
+
+                .perm-toggle input:checked + .perm-slider:before {
+                    transform: translateX(21px);
+                }
+
+                .perm-toggle.is-updating {
+                    opacity: 0.55;
+                    pointer-events: none;
+                }
 
                 .employee-picker {
                     position: relative;
-                    margin-bottom: 20px;
-                }
-
-                .employee-picker input {
-                    width: 100%;
-                    padding: 10px 12px 10px 38px;
-                    border: 1px solid #d0d7de;
-                    border-radius: 6px;
-                    font-size: 14px;
-                    background: #f6f8fa;
-                }
-
-                .employee-picker input:focus {
-                    outline: none;
-                    border-color: #0969da;
-                    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
-                    background: #fff;
-                }
-
-                .picker-icon {
-                    position: absolute;
-                    left: 12px;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    color: #57606a;
+                    margin-bottom: 24px;
                 }
 
                 .picker-dropdown {
                     position: absolute;
-                    top: calc(100% + 6px);
+                    top: calc(100% + 7px);
                     left: 0;
                     right: 0;
-                    background: #fff;
-                    border: 1px solid #d0d7de;
-                    border-radius: 8px;
-                    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-                    max-height: 280px;
+                    background: #ffffff;
+                    border: 1px solid #e4e8ec;
+                    border-radius: 10px;
+                    box-shadow: 0 16px 40px rgba(16, 24, 40, 0.12);
+                    max-height: 290px;
                     overflow-y: auto;
-                    z-index: 20;
+                    z-index: 30;
                 }
 
                 .picker-item {
-                    padding: 12px 14px;
+                    padding: 13px 15px;
                     cursor: pointer;
-                    border-bottom: 1px solid #f0f3f6;
+                    border-bottom: 1px solid #f1f4f7;
+                    transition: background 0.12s ease;
                 }
-                .picker-item:hover { background: #f6f8fa; }
+
+                .picker-item:hover { background: #f8fafc; }
                 .picker-item:last-child { border-bottom: 0; }
 
-                .picker-name { font-size: 14px; font-weight: 600; color: #1f2328; }
-                .picker-meta { font-size: 12px; color: #57606a; margin-top: 2px; }
+                .picker-name {
+                    font-size: 14px;
+                    font-weight: 650;
+                    color: #101828;
+                }
+
+                .picker-meta {
+                    font-size: 12px;
+                    color: #667085;
+                    margin-top: 3px;
+                }
 
                 .assigned-employee {
-                    border: 1px solid #d0d7de;
-                    background: #fff;
-                    border-radius: 8px;
-                    padding: 16px;
+                    border: 1px solid #e4e8ec;
+                    background: #ffffff;
+                    border-radius: 10px;
+                    padding: 16px 18px;
                     margin-bottom: 14px;
                     display: flex;
                     justify-content: space-between;
                     align-items: center;
-                    gap: 16px;
+                    gap: 18px;
+                    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+                }
+
+                .assigned-employee:hover {
+                    border-color: #c7d7ea;
+                    box-shadow: 0 4px 14px rgba(16, 24, 40, 0.06);
                 }
 
                 .assigned-employee-info { min-width: 0; }
-                .assigned-name { font-size: 15px; font-weight: 600; color: #1f2328; }
-                .assigned-meta { font-size: 13px; color: #57606a; margin-top: 4px; }
+
+                .assigned-name {
+                    font-size: 15px;
+                    font-weight: 650;
+                    color: #101828;
+                }
+
+                .assigned-meta {
+                    font-size: 13px;
+                    color: #667085;
+                    margin-top: 4px;
+                }
 
                 .loading-overlay {
                     position: absolute;
-                    top: 0; left: 0; right: 0; bottom: 0;
-                    background: rgba(250,251,252,0.65);
+                    inset: 0;
+                    background: rgba(250, 251, 252, 0.72);
+                    backdrop-filter: blur(2px);
                     display: flex;
                     align-items: center;
                     justify-content: center;
-                    z-index: 10;
-                    font-weight: 500;
+                    z-index: 20;
+                    font-weight: 600;
                     color: #0969da;
                 }
 
-                .search-highlight { background: #fff2ac; padding: 0; border-radius: 2px; }
+                .search-highlight {
+                    background: #fff2ac;
+                    padding: 0;
+                    border-radius: 3px;
+                }
             </style>
 
             <div id="perm-root" v-scope @vue:mounted="init()">
@@ -359,7 +526,9 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                                 <div class="perm-card-info">
                                     <div class="perm-card-top">
                                         <div class="perm-card-name" v-html="highlight(branch.branch_name, branchSearch)"></div>
-                                        <span class="access-count">[[ branch.employees.length ]]</span>
+                                        <span class="access-count">
+    [[ branch.employees.filter(emp => emp.has_branch_user_role).length ]]
+</span>
                                     </div>
                                     <div class="perm-card-email">Branch ID: [[ branch.branch_id ]]</div>
                                 </div>
@@ -402,7 +571,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                                                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                                     <circle cx="12" cy="7" r="4"></circle>
                                                 </svg>
-                                                [[ selectedBranch.employees.length ]] User(s) Assigned
+                                                [[ selectedBranch.employees.filter(emp => emp.has_branch_user_role).length ]] Active User(s)
                                             </div>
                                         </div>
                                     </div>
