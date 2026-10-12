@@ -615,7 +615,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                                         <div v-for="emp in employeeResults" :key="emp.name" class="picker-item" @click="selectEmployee(emp)">
                                             <div class="picker-name">[[ emp.employee_name ]]</div>
                                             <div class="picker-meta">
-                                                [[ emp.user_id.slice(0, 4) ]] • [[ emp.designation ]]
+                                                [[ emp.user_id.split('@')[0] ]] • [[ emp.designation ]]
                                                 <span v-if="emp.petty_cash_branch"> • Current Branch: [[ emp.branch_name ]]</span>
                                             </div>
                                         </div>
@@ -637,7 +637,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                                         <div class="assigned-employee-info">
                                             <div class="assigned-name">[[ emp.employee_name ]]</div>
                                             <div class="assigned-meta">
-                                                [[ emp.user_id.slice(0, 4) ]] • [[ emp.designation ]]
+                                                [[ emp.user_id.split('@')[0] ]] • [[ emp.designation ]]
                                             </div>
                                         </div>
 
@@ -838,14 +838,14 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
 
                     frappe.confirm(
                         `
-                <strong>${new_employee_name} (${emp.user_id.slice(0, 4)})</strong> already has Petty Cash access for
+                <strong>${new_employee_name} (${emp.user_id.split('@')[0]})</strong> already has Petty Cash access for
                 <strong>${current_branch_name} (${current_branch_id})</strong>.<br><br>
                 <strong>${target_branch_name}  (${target_branch_id})</strong> already has Petty Cash access assigned to
-                <strong>${old_branch_employee_name}  (${existing_access_employee.user_id.slice(0, 4)})</strong>.<br><br>
-                Do you want to remove <strong>${old_branch_employee_name} (${existing_access_employee.user_id.slice(0, 4)})</strong> access from
+                <strong>${old_branch_employee_name}  (${existing_access_employee.user_id.split('@')[0]})</strong>.<br><br>
+                Do you want to remove <strong>${old_branch_employee_name} (${existing_access_employee.user_id.split('@')[0]})</strong> access from
                 <strong>${target_branch_name} (${target_branch_id})</strong> and assign
-                <strong>${new_employee_name} (${emp.user_id.slice(0, 4)})</strong> to <strong>${target_branch_name} (${target_branch_id})</strong>?<br><br>
-                <strong>${new_employee_name} (${emp.user_id.slice(0, 4)})</strong> existing Petty Cash role will remain unchanged.
+                <strong>${new_employee_name} (${emp.user_id.split('@')[0]})</strong> to <strong>${target_branch_name} (${target_branch_id})</strong>?<br><br>
+                <strong>${new_employee_name} (${emp.user_id.split('@')[0]})</strong> existing Petty Cash role will remain unchanged.
                 Only their Petty Cash Branch will be changed.
             `,
                         () => {
@@ -870,7 +870,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
 
                     frappe.confirm(
                         `
-                <strong>${emp.employee_name} (${emp.user_id.slice(0, 4)})</strong> already has Petty Cash access for
+                <strong>${emp.employee_name} (${emp.user_id.split('@')[0]})</strong> already has Petty Cash access for
                 <strong>${current_branch_name} (${current_branch_id})</strong>.<br><br>
                 Do you want to change their branch to
                 <strong>${new_branch_name} (${selected_branch_id})</strong>?<br><br>
@@ -901,9 +901,9 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     frappe.confirm(
                         `
                 <strong>${branch_name} (${selected_branch_id})</strong> already has Petty Cash access assigned to
-                <strong>${old_employee_name} (${existing_access_employee.user_id.slice(0, 4)})</strong>.<br><br>
-                Do you want to remove <strong>${old_employee_name} (${existing_access_employee.user_id.slice(0, 4)})</strong> access and assign
-                this branch to <strong>${new_employee_name} (${emp.user_id.slice(0, 4)})</strong>?<br><br>
+                <strong>${old_employee_name} (${existing_access_employee.user_id.split('@')[0]})</strong>.<br><br>
+                Do you want to remove <strong>${old_employee_name} (${existing_access_employee.user_id.split('@')[0]})</strong> access and assign
+                this branch to <strong>${new_employee_name} (${emp.user_id.split('@')[0]})</strong>?<br><br>
                 The existing employee's Petty Cash Branch and Petty Cash role will be removed.
             `,
                         () => {
