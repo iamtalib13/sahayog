@@ -310,21 +310,33 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                     letter-spacing: -0.2px;
                 }
 
-                .profile-meta {
-                    display: flex;
-                    flex-wrap: wrap;
-                    gap: 14px;
-                    font-size: 13px;
-                    color: #667085;
-                }
+               .profile-meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    font-size: 13px;
+    color: #57606a;
+}
 
-                .meta-item {
-                    display: flex;
-                    align-items: center;
-                    gap: 5px;
-                }
+.meta-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+    white-space: nowrap;
+}
 
-                .meta-item svg { color: #98a2b3; }
+.meta-icon {
+    flex-shrink: 0;
+    display: block;
+    color: #8c959f;
+}
+
+.meta-item span {
+    display: inline-flex;
+    align-items: center;
+}
 
                 .perm-section {
                     margin-top: 24px;
@@ -560,20 +572,25 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                                     <div class="profile-details">
                                         <h3>[[ selectedBranch.branch_name ]]</h3>
                                         <div class="profile-meta">
-                                            <div class="meta-item">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-                                                </svg>
-                                                Branch ID: [[ selectedBranch.branch_id ]]
-                                            </div>
-                                            <div class="meta-item">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                                    <circle cx="12" cy="7" r="4"></circle>
-                                                </svg>
-                                                [[ selectedBranch.employees.filter(emp => emp.has_branch_user_role).length ]] Active User(s)
-                                            </div>
-                                        </div>
+    <div class="meta-item">
+        <svg class="meta-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 10.5 12 3l9 7.5"></path>
+            <path d="M5 9.5V21h14V9.5"></path>
+            <path d="M9 21v-6h6v6"></path>
+        </svg>
+        <span>Branch ID: [[ selectedBranch.branch_id ]]</span>
+    </div>
+
+    <div class="meta-item">
+        <svg class="meta-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="9" cy="8" r="3.2"></circle>
+            <path d="M2.8 20a6.2 6.2 0 0 1 12.4 0"></path>
+            <path d="M16.5 11.2a3 3 0 1 0-1.8-5.4"></path>
+            <path d="M17.5 14.5a5.5 5.5 0 0 1 3.7 5.5"></path>
+        </svg>
+        <span>[[ selectedBranch.employees.filter(emp => emp.has_branch_user_role).length ]] Active User(s)</span>
+    </div>
+</div>
                                     </div>
                                 </div>
                             </div>
