@@ -1,5 +1,4 @@
 frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
-    // 1. Role-Based Access Control
     const authorized_roles = ["Administrator", "HO Petty Cash Manager", "HO Petty Cash Verifier"];
     const user_roles = frappe.user_roles;
 
@@ -14,7 +13,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
             </svg>
             <h2 style="margin-top: 20px; color: #24292f;">Access Denied</h2>
             <p style="font-size: 14px; max-width: 400px; text-align: center; line-height: 1.6;">
-                You do not have the required permissions to access this page. 
+                You do not have the required permissions to access this page.
                 Please contact your <strong>Administrator</strong> if you believe this is an error.
             </p>
             <button class="btn btn-default btn-sm" style="margin-top: 15px;" onclick="frappe.set_route('')">
@@ -22,10 +21,9 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
             </button>
           </div>
         `;
-        return; // Stop execution
+        return;
     }
 
-    // 2. Initialize Page
     let page = frappe.ui.make_app_page({
         parent: wrapper,
         title: 'Petty Cash Access Management',
@@ -36,403 +34,475 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
     $(wrapper).find(".layout-main-section").css({ maxWidth: "none" });
 
     frappe.require('/assets/sahayog/js/petite-vue.iife.js', () => {
-        page.main.html(` 
+        page.main.html(`
             <style>
                 * { box-sizing: border-box; }
-                #perm-root { 
-                  height: calc(100vh - 110px); 
-                  overflow: hidden; 
-                  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-                  color: #24292f;
-                  background: #f4f5f6;
-                  padding: 16px;
-				  border-radius: 8px;
+                #perm-root {
+                    height: calc(100vh - 110px);
+                    overflow: hidden;
+                    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+                    color: #24292f;
+                    background: #f4f5f6;
+                    padding: 16px;
+                    border-radius: 8px;
                 }
-                
-                /* --- Custom Scrollbar for all lists and panes --- */
+
                 #perm-root ::-webkit-scrollbar { width: 6px; height: 6px; }
                 #perm-root ::-webkit-scrollbar-track { background: transparent; }
                 #perm-root ::-webkit-scrollbar-thumb { background: #d0d7de; border-radius: 10px; }
                 #perm-root ::-webkit-scrollbar-thumb:hover { background: #aeb6c0; }
 
-                .perm-layout { 
-                  display: flex; height: 100%; border: 1px solid #d0d7de; border-radius: 8px;
-                  background: #ffffff; box-shadow: 0 4px 12px rgba(0,0,0,0.03); overflow: hidden;
+                .perm-layout {
+                    display: flex;
+                    height: 100%;
+                    border: 1px solid #d0d7de;
+                    border-radius: 8px;
+                    background: #ffffff;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+                    overflow: hidden;
                 }
-                
-                /* Layout Panes */
-                .perm-pane { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-                .perm-main { width: 35%; border-right: 1px solid #d0d7de; background: #ffffff; }
-                .perm-sidebar { width: 65%; background: #fafbfc; position: relative; }
 
-                /* Headers */
-                .perm-pane-header { padding: 16px 20px; border-bottom: 1px solid #d0d7de; flex-shrink: 0; background: #ffffff; }
+                .perm-pane { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+                .perm-main { width: 32%; border-right: 1px solid #d0d7de; background: #ffffff; }
+                .perm-sidebar { width: 68%; background: #fafbfc; position: relative; }
+
+                .perm-pane-header {
+                    padding: 16px 20px;
+                    border-bottom: 1px solid #d0d7de;
+                    flex-shrink: 0;
+                    background: #ffffff;
+                }
+
                 .perm-pane-header h3 { margin: 0; font-size: 16px; font-weight: 600; color: #1f2328; }
                 .perm-pane-content { flex: 1; overflow-y: auto; overflow-x: hidden; padding: 24px; }
 
-                /* Search Bar */
                 .perm-search { position: relative; width: 100%; padding: 16px 20px; border-bottom: 1px solid #d0d7de; background: #ffffff; }
-                .perm-search input { 
-                  width: 100%; padding: 8px 12px 8px 36px; border: 1px solid #d0d7de; border-radius: 6px; 
-                  font-size: 14px; background-color: #f6f8fa; color: #24292f; transition: all 0.2s;
+                .perm-search input {
+                    width: 100%;
+                    padding: 8px 12px 8px 36px;
+                    border: 1px solid #d0d7de;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    background-color: #f6f8fa;
+                    color: #24292f;
+                    transition: all 0.2s;
                 }
-                .perm-search input:focus { outline: none; border-color: #0969da; box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3); background-color: #ffffff; }
-                .perm-search-icon { position: absolute; left: 30px; top: 50%; transform: translateY(-50%); color: #57606a; }
-                
-                /* List & Cards */
-                .perm-list { display: flex; flex-direction: column; overflow-y: auto; height: calc(100% - 70px); }
-                .perm-card { 
-                  display: flex; align-items: center; gap: 12px; padding: 12px 20px; border-bottom: 1px solid #f0f3f6; 
-                  cursor: pointer; transition: all 0.15s ease; 
+                .perm-search input:focus {
+                    outline: none;
+                    border-color: #0969da;
+                    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+                    background-color: #ffffff;
                 }
-                .perm-card:hover { background: #f6f8fa; }
-                .perm-card.active { background: #eef3f8; border-left: 3px solid #0969da; padding-left: 17px; }
-                
-                /* Avatar */
-                .perm-avatar { 
-                    width: 36px; height: 36px; border-radius: 50%; background: #e1e4e8; color: #24292f;
-                    display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 600; flex-shrink: 0;
+                .perm-search-icon {
+                    position: absolute;
+                    left: 30px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #57606a;
                 }
 
-                /* Card Typography */
-                .perm-card-info { flex: 1; min-width: 0; }
-                .perm-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; }
-                .perm-card-name { font-size: 14px; font-weight: 600; color: #1f2328; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-                .perm-card-email { font-size: 12px; color: #57606a; }
-                
-                /* Colorful Tags - Perfectly Centered Text & Increased Size */
-                /* .perm-tag-badge { 
-                    display: inline-flex; align-items: center; justify-content: center;
-                    font-size: 13px; font-weight: 600; padding: 0 12px; height: 26px; 
-                    line-height: 1; border-radius: 13px; 
-                } */
-               .perm-tag-badge {
-                    display: inline-flex;
+                .perm-list { display: flex; flex-direction: column; overflow-y: auto; height: calc(100% - 70px); }
+
+                .perm-card {
+                    display: flex;
+                    align-items: center;
+                    gap: 12px;
+                    padding: 12px 20px;
+                    border-bottom: 1px solid #f0f3f6;
+                    cursor: pointer;
+                    transition: all 0.15s ease;
+                }
+                .perm-card:hover { background: #f6f8fa; }
+                .perm-card.active {
+                    background: #eef3f8;
+                    border-left: 3px solid #0969da;
+                    padding-left: 17px;
+                }
+
+                .branch-avatar {
+                    width: 38px;
+                    height: 38px;
+                    border-radius: 8px;
+                    background: #0969da;
+                    color: #fff;
+                    display: flex;
                     align-items: center;
                     justify-content: center;
-                    font-size: 12px;
+                    font-size: 13px;
+                    font-weight: 700;
+                    flex-shrink: 0;
+                }
+
+                .perm-card-info { flex: 1; min-width: 0; }
+                .perm-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px; gap: 8px; }
+                .perm-card-name {
+                    font-size: 14px;
                     font-weight: 600;
-                    padding: 0 10px;
-                    min-width: 42px;
-                    height: 26px;
-                    line-height: 1;
-                    border-radius: 13px;
+                    color: #1f2328;
+                    white-space: nowrap;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                }
+                .perm-card-email { font-size: 12px; color: #57606a; }
+
+                .access-count {
+                    font-size: 11px;
+                    font-weight: 700;
+                    color: #0969da;
+                    background: #ddf4ff;
+                    border: 1px solid #a7d7fd;
+                    padding: 3px 8px;
+                    border-radius: 20px;
                     white-space: nowrap;
                 }
 
-                /*.tag-bm { background: #e8fdf0; color: #2f9d58; border: 1px solid #A6EFC0; }
-                .tag-bom { background: #e7f5ff; color: #007be0; border: 1px solid #A7D7FD; }*/
-                /* Branch / Office */
-                    .tag-bm {
-                        background: #e8fdf0;
-                        color: #2f9d58;
-                        border: 1px solid #a6efc0;
-                    }
+                .perm-empty {
+                    padding: 40px 20px;
+                    text-align: center;
+                    color: #57606a;
+                    font-size: 14px;
+                }
 
-                    .tag-bo {
-                        background: #e7f5ff;
-                        color: #007be0;
-                        border: 1px solid #a7d7fd;
-                    }
-
-                    .tag-bdo {
-                        background: #fff4e5;
-                        color: #b45309;
-                        border: 1px solid #fed7aa;
-                    }
-
-                    .tag-abm-jll {
-                        background: #f3e8ff;
-                        color: #7e22ce;
-                        border: 1px solid #d8b4fe;
-                    }
-
-                    /* Sales */
-                    .tag-asm-dds,
-                    .tag-asm-tasc,
-                    .tag-asm {
-                        background: #e0f2fe;
-                        color: #0369a1;
-                        border: 1px solid #bae6fd;
-                    }
-
-                    .tag-sm-smbg,
-                    .tag-sm-dds,
-                    .tag-sm-tasc {
-                        background: #fef3c7;
-                        color: #92400e;
-                        border: 1px solid #fde68a;
-                    }
-
-                    .tag-bde {
-                        background: #ecfccb;
-                        color: #3f6212;
-                        border: 1px solid #bef264;
-                    }
-
-                    /* Loan / Credit */
-                    .tag-lo-sr {
-                        background: #fce7f3;
-                        color: #be185d;
-                        border: 1px solid #f9a8d4;
-                    }
-
-                    .tag-cre {
-                        background: #fee2e2;
-                        color: #b91c1c;
-                        border: 1px solid #fecaca;
-                    }
-
-                    /* Collection */
-                    .tag-ce,
-                    .tag-cm {
-                        background: #fff7ed;
-                        color: #c2410c;
-                        border: 1px solid #fed7aa;
-                    }
-
-                    /* Management */
-                    .tag-am-ld,
-                    .tag-am-ops {
-                        background: #eef2ff;
-                        color: #4338ca;
-                        border: 1px solid #c7d2fe;
-                    }
-
-                    .tag-tl {
-                        background: #f0fdf4;
-                        color: #15803d;
-                        border: 1px solid #bbf7d0;
-                    }
-
-                    .tag-scom {
-                        background: #f5f3ff;
-                        color: #6d28d9;
-                        border: 1px solid #ddd6fe;
-                    }
-
-                    /* Relationship */
-                    .tag-rm-tasc,
-                    .tag-rm-ins,
-                    .tag-ro-dds {
-                        background: #fdf2f8;
-                        color: #9d174d;
-                        border: 1px solid #fbcfe8;
-                    }
-
-                    /* Customer Service */
-                    .tag-csm {
-                        background: #ecfeff;
-                        color: #0e7490;
-                        border: 1px solid #a5f3fc;
-                    }
-
-                    /* Operations */
-                    .tag-se-ho {
-                        background: #f1f5f9;
-                        color: #334155;
-                        border: 1px solid #cbd5e1;
-                    }
-
-                    /* MIS */
-                    .tag-mis {
-                        background: #f0fdfa;
-                        color: #0f766e;
-                        border: 1px solid #99f6e4;
-                    }
-
-                    /* Training */
-                    .tag-tr-casa {
-                        background: #fefce8;
-                        color: #854d0e;
-                        border: 1px solid #fde68a;
-                    }
-
-                    .designation-meta {
-                        max-width: 350px;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        cursor: default;
-                    }
-
-
-                
-                .search-highlight { background: #fff2ac; padding: 0; border-radius: 2px; }
-
-                /* Empty States */
-                .perm-empty { padding: 40px 20px; text-align: center; color: #57606a; font-size: 14px; }
-                .perm-sidebar-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; padding: 64px 32px; text-align: center; color: #57606a; }
+                .perm-sidebar-empty {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100%;
+                    padding: 64px 32px;
+                    text-align: center;
+                    color: #57606a;
+                }
                 .perm-sidebar-empty svg { width: 48px; height: 48px; margin-bottom: 16px; color: #d0d7de; }
 
-                /* Profile Header in Right Sidebar */
-                .profile-header-container { display: flex; justify-content: space-between; align-items: flex-start; }
+                .profile-header-container {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: flex-start;
+                    gap: 16px;
+                }
+
                 .profile-header { display: flex; gap: 16px; align-items: center; }
-                .profile-avatar { width: 48px; height: 48px; border-radius: 8px; background: #0969da; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; flex-shrink: 0; }
+                .profile-avatar {
+                    width: 48px;
+                    height: 48px;
+                    border-radius: 8px;
+                    background: #0969da;
+                    color: #fff;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 18px;
+                    font-weight: 600;
+                    flex-shrink: 0;
+                }
+
                 .profile-details h3 { margin: 0 0 6px 0; font-size: 18px; color: #1f2328; }
                 .profile-meta { display: flex; flex-wrap: wrap; gap: 12px; font-size: 13px; color: #57606a; }
                 .meta-item { display: flex; align-items: center; gap: 4px; }
                 .meta-item svg { color: #8c959f; }
 
-                /* Settings Card */
-                .perm-section { margin-top: 24px; background: #ffffff; border: 1px solid #d0d7de; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-                .perm-field { padding: 20px; display: flex; justify-content: space-between; align-items: center; }
+                .perm-section {
+                    margin-top: 24px;
+                    background: #ffffff;
+                    border: 1px solid #d0d7de;
+                    border-radius: 8px;
+                    overflow: hidden;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+                }
+
+                .perm-field {
+                    padding: 20px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 20px;
+                }
+
                 .perm-flabel { font-size: 15px; font-weight: 600; color: #24292f; margin: 0 0 4px 0; }
                 .perm-fdesc { font-size: 13px; color: #57606a; margin: 0; max-width: 80%; line-height: 1.4; }
 
-                /* Toggle Switch */
-                .perm-toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0;}
+                .perm-toggle { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
                 .perm-toggle input { opacity: 0; width: 0; height: 0; }
-                .perm-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #d1d8dd; transition: .3s; border-radius: 24px; }
-                .perm-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+                .perm-slider {
+                    position: absolute;
+                    cursor: pointer;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background-color: #d1d8dd;
+                    transition: .3s;
+                    border-radius: 24px;
+                }
+                .perm-slider:before {
+                    position: absolute;
+                    content: "";
+                    height: 18px;
+                    width: 18px;
+                    left: 3px;
+                    bottom: 3px;
+                    background-color: white;
+                    transition: .3s;
+                    border-radius: 50%;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+                }
                 .perm-toggle input:checked + .perm-slider { background-color: #2f9d58; }
                 .perm-toggle input:checked + .perm-slider:before { transform: translateX(20px); }
                 .perm-toggle.is-updating { opacity: 0.5; pointer-events: none; }
-                
-                /* Loading Overlay */
-                .loading-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(250,251,252,0.6); display: flex; align-items: center; justify-content: center; z-index: 10; font-weight: 500; color: #0969da; }
+
+                .employee-picker {
+                    position: relative;
+                    margin-bottom: 20px;
+                }
+
+                .employee-picker input {
+                    width: 100%;
+                    padding: 10px 12px 10px 38px;
+                    border: 1px solid #d0d7de;
+                    border-radius: 6px;
+                    font-size: 14px;
+                    background: #f6f8fa;
+                }
+
+                .employee-picker input:focus {
+                    outline: none;
+                    border-color: #0969da;
+                    box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.3);
+                    background: #fff;
+                }
+
+                .picker-icon {
+                    position: absolute;
+                    left: 12px;
+                    top: 50%;
+                    transform: translateY(-50%);
+                    color: #57606a;
+                }
+
+                .picker-dropdown {
+                    position: absolute;
+                    top: calc(100% + 6px);
+                    left: 0;
+                    right: 0;
+                    background: #fff;
+                    border: 1px solid #d0d7de;
+                    border-radius: 8px;
+                    box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+                    max-height: 280px;
+                    overflow-y: auto;
+                    z-index: 20;
+                }
+
+                .picker-item {
+                    padding: 12px 14px;
+                    cursor: pointer;
+                    border-bottom: 1px solid #f0f3f6;
+                }
+                .picker-item:hover { background: #f6f8fa; }
+                .picker-item:last-child { border-bottom: 0; }
+
+                .picker-name { font-size: 14px; font-weight: 600; color: #1f2328; }
+                .picker-meta { font-size: 12px; color: #57606a; margin-top: 2px; }
+
+                .assigned-employee {
+                    border: 1px solid #d0d7de;
+                    background: #fff;
+                    border-radius: 8px;
+                    padding: 16px;
+                    margin-bottom: 14px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    gap: 16px;
+                }
+
+                .assigned-employee-info { min-width: 0; }
+                .assigned-name { font-size: 15px; font-weight: 600; color: #1f2328; }
+                .assigned-meta { font-size: 13px; color: #57606a; margin-top: 4px; }
+
+                .loading-overlay {
+                    position: absolute;
+                    top: 0; left: 0; right: 0; bottom: 0;
+                    background: rgba(250,251,252,0.65);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    z-index: 10;
+                    font-weight: 500;
+                    color: #0969da;
+                }
+
+                .search-highlight { background: #fff2ac; padding: 0; border-radius: 2px; }
             </style>
 
-            <div id="perm-root" v-scope @vue:mounted="init()"> 
-                <div class="perm-layout"> 
-                    
-                    <!-- Left Sidebar (Employee List) -->
-                    <div class="perm-main perm-pane"> 
-                        <div class="perm-pane-header"> 
-                            <h3>Eligible Employees</h3> 
-                        </div> 
-                        
-                        <div class="perm-search"> 
-                            <svg class="perm-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
-                            <input type="text" placeholder="Search by name or ID..." v-model="searchQuery" @input="filterList"> 
-                        </div> 
+            <div id="perm-root" v-scope @vue:mounted="init()">
+                <div class="perm-layout">
 
-                        <div class="perm-list" v-if="filteredList.length"> 
-                            <div v-for="emp in filteredList" :key="emp.name" 
-                                 class="perm-card" 
-                                 :class="{ active: selectedEmp && selectedEmp.name === emp.name }"
-                                 @click="selectEmployee(emp)"> 
-                                
-                                <div class="perm-avatar">[[ getInitials(emp.employee_name) ]]</div>
-                                
+                    <div class="perm-main perm-pane">
+                        <div class="perm-pane-header">
+                            <h3>Branch Access</h3>
+                        </div>
+
+                        <div class="perm-search">
+                            <svg class="perm-search-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            <input type="text" placeholder="Search branch..." v-model="branchSearch" @input="filterBranches">
+                        </div>
+
+                        <div class="perm-list" v-if="filteredBranches.length">
+                            <div v-for="branch in filteredBranches" :key="branch.branch_id"
+                                 class="perm-card"
+                                 :class="{ active: selectedBranch && selectedBranch.branch_id === branch.branch_id }"
+                                 @click="selectBranch(branch)">
+
+                                <div class="branch-avatar">[[ getBranchInitials(branch.branch_name) ]]</div>
+
                                 <div class="perm-card-info">
                                     <div class="perm-card-top">
-                                        <div class="perm-card-name" v-html="highlight(emp.employee_name, searchQuery)"></div>
-                                        <span 
-                                            class="perm-tag-badge" 
-                                            :class="getTagClass(emp.designation)"
-                                            :title="emp.designation">
-                                            [[ getShortTag(emp.designation) ]]
-                                        </span>
-
+                                        <div class="perm-card-name" v-html="highlight(branch.branch_name, branchSearch)"></div>
+                                        <span class="access-count">[[ branch.employees.length ]]</span>
                                     </div>
-                                    <div class="perm-card-email" v-html="highlight(emp.user_id, searchQuery)"></div>
+                                    <div class="perm-card-email">Branch ID: [[ branch.branch_id ]]</div>
                                 </div>
-                            </div> 
-                        </div> 
-                        <div class="perm-empty" v-else-if="!isLoading">
-                            <div style="margin-bottom: 12px;">
-                                <svg width="32" height="32" fill="none" stroke="#d0d7de" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
                             </div>
-                            No eligible employees found.
-                        </div>
-                        <div class="perm-empty" v-if="isLoading">Loading employees...</div>
-                    </div> 
-
-                    <!-- Right Main Content (Settings) -->
-                    <div class="perm-sidebar perm-pane"> 
-                        
-                        <!-- State 1: No Selection -->
-                        <div v-if="!selectedEmp" class="perm-sidebar-empty">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
-                            <div style="font-size: 16px; font-weight: 600; color: #1f2328;">Access Configuration</div>
-                            <div style="font-size: 14px; margin-top: 8px; max-width: 250px;">Select an employee from the left panel to manage their Petty Cash roles.</div>
                         </div>
 
-                        <!-- State 2: Selected -->
+                        <div class="perm-empty" v-else-if="!isLoading">
+                            No branches with Branch User access found.
+                        </div>
+
+                        <div class="perm-empty" v-if="isLoading">Loading branches...</div>
+                    </div>
+
+                    <div class="perm-sidebar perm-pane">
+                        <div v-if="!selectedBranch" class="perm-sidebar-empty">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            </svg>
+                            <div style="font-size: 16px; font-weight: 600; color: #1f2328;">Branch Access Configuration</div>
+                            <div style="font-size: 14px; margin-top: 8px; max-width: 280px;">
+                                Select a branch from the left panel to manage its Petty Cash user access.
+                            </div>
+                        </div>
+
                         <div v-else style="display: flex; flex-direction: column; height: 100%;">
                             <div class="perm-pane-header profile-header-container">
                                 <div class="profile-header">
-                                    <div class="profile-avatar">[[ getInitials(selectedEmp.employee_name) ]]</div>
+                                    <div class="profile-avatar">[[ getBranchInitials(selectedBranch.branch_name) ]]</div>
                                     <div class="profile-details">
-                                        <h3>[[ selectedEmp.employee_name ]]</h3>
+                                        <h3>[[ selectedBranch.branch_name ]]</h3>
                                         <div class="profile-meta">
                                             <div class="meta-item">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                                                [[ selectedEmp.user_id ]]
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                                </svg>
+                                                Branch ID: [[ selectedBranch.branch_id ]]
                                             </div>
                                             <div class="meta-item">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
-                                                [[ selectedEmp.petty_cash_branch || 'N/A' ]] - [[ selectedEmp.branch_name || 'N/A' ]]
-                                            </div>
-                                            <!-- Designation -->
-                                            <div class="meta-item designation-meta" :title="selectedEmp.designation">
                                                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                                    <path d="M20 7h-5V5a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v2H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"></path>
-                                                    <path d="M9 7h6"></path>
-                                                    <path d="M8 12h8"></path>
-                                                    <path d="M8 16h5"></path>
+                                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                    <circle cx="12" cy="7" r="4"></circle>
                                                 </svg>
-                                                [[ selectedEmp.designation ]]
+                                                [[ selectedBranch.employees.length ]] User(s) Assigned
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                                <!-- Right Corner Badge -->
-                                <div style="margin-top: 4px;">
-                                    
-                                    <span 
-                                        class="perm-tag-badge" 
-                                        :class="getTagClass(selectedEmp.designation)"
-                                        :title="selectedEmp.designation">
-                                        [[ getShortTag(selectedEmp.designation) ]]
-                                    </span>
-
                                 </div>
                             </div>
 
-                            <div class="perm-pane-content" style="position: relative;"> 
-                                <div v-if="isUpdating" class="loading-overlay">Updating Roles...</div>
-                                
-                                <h4 style="margin: 0 0 16px 0; font-size: 14px; color: #57606a; text-transform: uppercase; letter-spacing: 0.5px;">Role Management</h4>
-                                
-                                <div class="perm-section">
-                                    <div class="perm-field">
-                                        <div>
-                                            <p class="perm-flabel">Branch User Access</p>
-                                            <p class="perm-fdesc">Enable this to instantly grant or revoke the Branch User role permissions for this employee's linked account.</p>
+                            <div class="perm-pane-content" style="position: relative;">
+                                <div v-if="isUpdating" class="loading-overlay">Updating Access...</div>
+
+                                <h4 style="margin: 0 0 16px 0; font-size: 14px; color: #57606a; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    Add Employee Access
+                                </h4>
+
+                                <div class="employee-picker">
+                                    <svg class="picker-icon" width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                    </svg>
+                                    <input type="text"
+                                           placeholder="Search employee by name, ID or user ID..."
+                                           v-model="employeeSearch"
+                                           @input="searchEmployees"
+                                           @focus="showPicker = true">
+
+                                    <div class="picker-dropdown" v-if="showPicker && employeeResults.length">
+                                        <div v-for="emp in employeeResults" :key="emp.name" class="picker-item" @click="selectEmployee(emp)">
+                                            <div class="picker-name">[[ emp.employee_name ]]</div>
+                                            <div class="picker-meta">
+                                                [[ emp.user_id ]] • [[ emp.designation ]]
+                                                <span v-if="emp.petty_cash_branch"> • Current Branch: [[ emp.branch_name ]]</span>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label class="perm-toggle" :class="{'is-updating': isUpdating}" title="Toggle Branch User">
-                                                <input type="checkbox" v-model="hasBranchUserRole" @change="toggleRole">
-                                                <span class="perm-slider"></span>
-                                            </label>
+                                    </div>
+
+                                    <div class="picker-dropdown" v-else-if="showPicker && employeeSearch && !isSearching">
+                                        <div class="picker-item">
+                                            <div class="picker-meta">No eligible employee found.</div>
                                         </div>
                                     </div>
                                 </div>
-                            </div> 
+
+                                <h4 style="margin: 0 0 16px 0; font-size: 14px; color: #57606a; text-transform: uppercase; letter-spacing: 0.5px;">
+                                    User Access List
+                                </h4>
+
+                                <div v-if="selectedBranch.employees.length">
+                                    <div v-for="emp in selectedBranch.employees" :key="emp.name" class="assigned-employee">
+                                        <div class="assigned-employee-info">
+                                            <div class="assigned-name">[[ emp.employee_name ]]</div>
+                                            <div class="assigned-meta">
+                                                [[ emp.user_id ]] • [[ emp.designation ]]
+                                            </div>
+                                        </div>
+
+                                        <label class="perm-toggle" :class="{ 'is-updating': isUpdating }" title="Toggle Branch User">
+                                            <input type="checkbox"
+                                                   v-model="emp.has_branch_user_role"
+                                                   @change="toggleRole(emp)">
+                                            <span class="perm-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div class="perm-empty" v-else>
+                                    No employee is currently assigned to this branch.
+                                </div>
+                            </div>
                         </div>
-                    </div> 
-                </div> 
-            </div> 
+                    </div>
+                </div>
+            </div>
         `);
 
         PetiteVue.createApp({
             $delimiters: ['[[', ']]'],
-            empList: [],
-            filteredList: [],
-            searchQuery: "",
-            selectedEmp: null,
-            hasBranchUserRole: false,
+
+            branchList: [],
+            filteredBranches: [],
+            branchSearch: "",
+            selectedBranch: null,
+
+            employeeSearch: "",
+            employeeResults: [],
+            showPicker: false,
+            isSearching: false,
+
             isUpdating: false,
             isLoading: true,
 
             init() {
-                this.loadEmployees();
+                this.loadBranches();
+
+                $(document).on("click", (e) => {
+                    if (!$(e.target).closest(".employee-picker").length) {
+                        this.showPicker = false;
+                    }
+                });
             },
 
-            getInitials(name) {
-                if (!name) return "?";
+            getBranchInitials(name) {
+                if (!name) return "B";
                 const parts = name.trim().split(" ");
                 if (parts.length > 1) {
                     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
@@ -440,162 +510,110 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 return parts[0].substring(0, 2).toUpperCase();
             },
 
-            // getShortTag(designation) {
-            //     if (designation === "BRANCH MANAGER") return "BM";
-            //     if (designation === "Branch Operation Manager") return "BOM";
-            //     return designation;
-            // },
-
-            // getTagClass(designation) {
-            //     if (designation === "BRANCH MANAGER") return "tag-bm";
-            //     if (designation === "Branch Operation Manager") return "tag-bom";
-            //     return "";
-            // },
-
-            getShortTag(designation) {
-                const tagMap = {
-                    "BRANCH MANAGER": "BM",
-                    "BRANCH OFFICER": "BO",
-                    "BLOCK DEVELOPMENT OFFICER": "BDO",
-                    "Area Sales Manager-DDS": "ASM-DDS",
-                    "Sales Manager-SMBG": "SM-SMBG",
-                    "Sales Manager (DDS)": "SM-DDS",
-                    "LOAN OFFICER SR": "LO-SR",
-                    "Collection Executive": "CE",
-                    "Assistant Manager - Learning and Development": "AM-L&D",
-                    "Asst. Branch Manager JLL": "ABM-JLL",
-                    "BUSINESS DEVELOPMENT EXECUTIVE": "BDE",
-                    "Credit Executive": "CRE",
-                    "Team Leader": "TL",
-                    "SR.CLUSTER OPERATION MANAGER": "SCOM",
-                    "ASSISTANT SALES MANAGER": "ASM",
-                    "Sales Manager - TASC": "SM-TASC",
-                    "RELATIONSHIP MANAGER - TASC": "RM-TASC",
-                    "Customer Service Manager": "CSM",
-                    "Sr. Executive - HO Operation": "SE-HO",
-                    "Collection Manager": "CM",
-                    "AREA SALES MANAGER - TASC": "ASM-TASC",
-                    "MIS Executive": "MIS",
-                    "RELATIONSHIP OFFICER - DDS": "RO-DDS",
-                    "TRAINER-CASA": "TR-CASA",
-                    "Assistant Manager - Operations": "AM-OPS",
-                    "RELATIONSHIP MANAGER - INSURANCE": "RM-INS"
-                };
-
-                return tagMap[designation] || designation;
-            },
-
-            getTagClass(designation) {
-                const classMap = {
-                    "BRANCH MANAGER": "tag-bm",
-                    "BRANCH OFFICER": "tag-bo",
-                    "BLOCK DEVELOPMENT OFFICER": "tag-bdo",
-                    "Area Sales Manager-DDS": "tag-asm-dds",
-                    "Sales Manager-SMBG": "tag-sm-smbg",
-                    "Sales Manager (DDS)": "tag-sm-dds",
-                    "LOAN OFFICER SR": "tag-lo-sr",
-                    "Collection Executive": "tag-ce",
-                    "Assistant Manager - Learning and Development": "tag-am-ld",
-                    "Asst. Branch Manager JLL": "tag-abm-jll",
-                    "BUSINESS DEVELOPMENT EXECUTIVE": "tag-bde",
-                    "Credit Executive": "tag-cre",
-                    "Team Leader": "tag-tl",
-                    "SR.CLUSTER OPERATION MANAGER": "tag-scom",
-                    "ASSISTANT SALES MANAGER": "tag-asm",
-                    "Sales Manager - TASC": "tag-sm-tasc",
-                    "RELATIONSHIP MANAGER - TASC": "tag-rm-tasc",
-                    "Customer Service Manager": "tag-csm",
-                    "Sr. Executive - HO Operation": "tag-se-ho",
-                    "Collection Manager": "tag-cm",
-                    "AREA SALES MANAGER - TASC": "tag-asm-tasc",
-                    "MIS Executive": "tag-mis",
-                    "RELATIONSHIP OFFICER - DDS": "tag-ro-dds",
-                    "TRAINER-CASA": "tag-tr-casa",
-                    "Assistant Manager - Operations": "tag-am-ops",
-                    "RELATIONSHIP MANAGER - INSURANCE": "tag-rm-ins"
-                };
-
-                return classMap[designation] || "";
-            },
-
-
-            loadEmployees() {
+            loadBranches() {
                 this.isLoading = true;
+
                 frappe.call({
-                    method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.get_eligible_employees",
+                    method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.get_branch_access_data",
                     callback: (r) => {
-                        this.empList = r.message || [];
-                        this.filteredList = [...this.empList];
+                        this.branchList = r.message || [];
+                        this.filterBranches();
                         this.isLoading = false;
                     }
                 });
             },
 
-            filterList() {
-                const q = this.searchQuery.toLowerCase();
+            filterBranches() {
+                const q = this.branchSearch.toLowerCase().trim();
+
                 if (!q) {
-                    this.filteredList = [...this.empList];
+                    this.filteredBranches = [...this.branchList];
                 } else {
-                    this.filteredList = this.empList.filter(
-                        (p) =>
-                            (p.employee_name && p.employee_name.toLowerCase().includes(q)) ||
-                            (p.user_id && p.user_id.toLowerCase().includes(q))
+                    this.filteredBranches = this.branchList.filter(branch =>
+                        branch.branch_name.toLowerCase().includes(q) ||
+                        branch.branch_id.toLowerCase().includes(q)
                     );
                 }
             },
 
-            highlight(text, q) {
-                if (!q || !text) return text;
-                const searchVal = q.trim();
-                if (!searchVal) return text;
-                const regex = new RegExp(`(${searchVal})`, "gi");
-                return text.replace(regex, '<mark class="search-highlight">$1</mark>');
+            selectBranch(branch) {
+                this.selectedBranch = branch;
+                this.employeeSearch = "";
+                this.employeeResults = [];
+                this.showPicker = false;
+            },
+
+            searchEmployees() {
+                clearTimeout(this.searchTimeout);
+                this.isSearching = true;
+                this.showPicker = true;
+
+                this.searchTimeout = setTimeout(() => {
+                    frappe.call({
+                        method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.search_eligible_employees",
+                        args: {
+                            search_text: this.employeeSearch
+                        },
+                        callback: (r) => {
+                            this.employeeResults = r.message || [];
+                            this.isSearching = false;
+                        }
+                    });
+                }, 300);
             },
 
             selectEmployee(emp) {
-                this.selectedEmp = emp;
-                this.checkRoleStatus(emp.user_id);
-            },
+                this.showPicker = false;
+                this.employeeSearch = "";
 
-            checkRoleStatus(user_id) {
-                this.isUpdating = true;
-                frappe.call({
-                    method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.get_employee_role_status",
-                    args: { user_id: user_id },
-                    callback: (r) => {
-                        this.hasBranchUserRole = r.message || false;
-                        this.isUpdating = false;
-                    }
+                const already_added = this.selectedBranch.employees.some(
+                    row => row.name === emp.name
+                );
+
+                if (already_added) {
+                    frappe.show_alert({
+                        message: `${emp.employee_name} is already shown in this branch.`,
+                        indicator: "blue"
+                    }, 3);
+                    return;
+                }
+
+                this.selectedBranch.employees.push({
+                    name: emp.name,
+                    employee_name: emp.employee_name,
+                    designation: emp.designation,
+                    user_id: emp.user_id,
+                    petty_cash_branch: emp.petty_cash_branch || "",
+                    has_branch_user_role: emp.has_branch_user_role || false
                 });
             },
 
-            toggleRole() {
-                if (!this.selectedEmp || !this.selectedEmp.user_id) return;
+            toggleRole(emp) {
+                const enable = emp.has_branch_user_role;
+
+                if (enable && !this.selectedBranch) {
+                    emp.has_branch_user_role = false;
+                    return;
+                }
 
                 this.isUpdating = true;
+
                 frappe.call({
                     method: "sahayog.petty_cash_management.page.petty_cash_access_ma.petty_cash_access_ma.toggle_branch_user_role",
                     args: {
-                        user_id: this.selectedEmp.user_id,
-                        enable: this.hasBranchUserRole
+                        user_id: emp.user_id,
+                        enable: enable,
+                        branch_id: enable ? this.selectedBranch.branch_id : ""
                     },
-                    // callback: (r) => {
-                    //     this.isUpdating = false;
-                    //     if(r.message) {
-                    //         frappe.show_alert({ 
-                    //             message: `Branch User role ${r.message.status} successfully`, 
-                    //             indicator: r.message.status === 'added' ? 'green' : 'orange' 
-                    //         }, 3);
-                    //     }
-                    // },
                     callback: (r) => {
                         this.isUpdating = false;
+
                         if (r.message) {
                             const status = r.message.status;
 
                             const messageMap = {
-                                added: "Branch User role added successfully",
-                                removed: "Branch User role removed successfully",
+                                added: "Branch User access added successfully",
+                                removed: "Branch User access removed successfully",
                                 already_present: "Branch User role is already assigned",
                                 already_absent: "Branch User role is already removed"
                             };
@@ -608,17 +626,47 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                             };
 
                             frappe.show_alert({
-                                message: messageMap[status] || "Role updated successfully",
+                                message: messageMap[status] || "Access updated successfully",
                                 indicator: indicatorMap[status] || "green"
                             }, 3);
                         }
+
+                        if (!enable) {
+                            this.removeEmployeeFromBranch(emp);
+                        }
+
+                        this.loadBranches();
                     },
-                    error: (r) => {
+                    error: () => {
                         this.isUpdating = false;
-                        this.hasBranchUserRole = !this.hasBranchUserRole;
+                        emp.has_branch_user_role = !emp.has_branch_user_role;
                     }
                 });
+            },
+
+            removeEmployeeFromBranch(emp) {
+                this.selectedBranch.employees = this.selectedBranch.employees.filter(
+                    row => row.name !== emp.name
+                );
+
+                if (!this.selectedBranch.employees.length) {
+                    this.branchList = this.branchList.filter(
+                        branch => branch.branch_id !== this.selectedBranch.branch_id
+                    );
+                    this.filterBranches();
+                    this.selectedBranch = null;
+                }
+            },
+
+            highlight(text, q) {
+                if (!q || !text) return text;
+
+                const searchVal = q.trim();
+                if (!searchVal) return text;
+
+                const regex = new RegExp(`(${searchVal})`, "gi");
+                return text.replace(regex, '<mark class="search-highlight">$1</mark>');
             }
         }).mount('#perm-root');
     });
-}; 
+};
