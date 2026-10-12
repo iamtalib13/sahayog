@@ -536,7 +536,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                         </div>
 
                         <div class="perm-empty" v-else-if="!isLoading">
-                            No branches with Branch User access found.
+                            No branches with Petty Cash access found.
                         </div>
 
                         <div class="perm-empty" v-if="isLoading">Loading branches...</div>
@@ -599,7 +599,7 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                                         <div v-for="emp in employeeResults" :key="emp.name" class="picker-item" @click="selectEmployee(emp)">
                                             <div class="picker-name">[[ emp.employee_name ]]</div>
                                             <div class="picker-meta">
-                                                [[ emp.user_id ]] • [[ emp.designation ]]
+                                                [[ emp.user_id.slice(0, 4) ]] • [[ emp.designation ]]
                                                 <span v-if="emp.petty_cash_branch"> • Current Branch: [[ emp.branch_name ]]</span>
                                             </div>
                                         </div>
@@ -621,11 +621,11 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                                         <div class="assigned-employee-info">
                                             <div class="assigned-name">[[ emp.employee_name ]]</div>
                                             <div class="assigned-meta">
-                                                [[ emp.user_id ]] • [[ emp.designation ]]
+                                                [[ emp.user_id.slice(0, 4) ]] • [[ emp.designation ]]
                                             </div>
                                         </div>
 
-                                        <label class="perm-toggle" :class="{ 'is-updating': isUpdating }" title="Toggle Branch User">
+                                        <label class="perm-toggle" :class="{ 'is-updating': isUpdating }" title="Toggle Petty Cash Access">
                                             <input type="checkbox"
                                                    v-model="emp.has_branch_user_role"
                                                    @change="toggleRole(emp)">
@@ -786,19 +786,20 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                 if (employee_has_other_branch && existing_access_employee) {
                     const current_branch_name = emp.branch_name || current_branch_id;
                     const target_branch_name = this.selectedBranch.branch_name;
+                    const target_branch_id = this.selectedBranch.branch_id;
                     const old_branch_employee_name = existing_access_employee.employee_name;
                     const new_employee_name = emp.employee_name;
 
                     frappe.confirm(
                         `
-                <strong>${new_employee_name}</strong> already has Petty Cash access for
-                <strong>${current_branch_name}</strong>.<br><br>
-                <strong>${target_branch_name}</strong> already has Petty Cash access assigned to
-                <strong>${old_branch_employee_name}</strong>.<br><br>
-                Do you want to remove <strong>${old_branch_employee_name}</strong>'s access from
-                <strong>${target_branch_name}</strong> and assign
-                <strong>${new_employee_name}</strong> to <strong>${target_branch_name}</strong>?<br><br>
-                <strong>${new_employee_name}</strong>'s existing Branch User role will remain unchanged.
+                <strong>${new_employee_name} (${emp.user_id.slice(0, 4)})</strong> already has Petty Cash access for
+                <strong>${current_branch_name} (${current_branch_id})</strong>.<br><br>
+                <strong>${target_branch_name}  (${target_branch_id})</strong> already has Petty Cash access assigned to
+                <strong>${old_branch_employee_name}  (${existing_access_employee.user_id.slice(0, 4)})</strong>.<br><br>
+                Do you want to remove <strong>${old_branch_employee_name} (${existing_access_employee.user_id.slice(0, 4)})</strong> access from
+                <strong>${target_branch_name} (${target_branch_id})</strong> and assign
+                <strong>${new_employee_name} (${emp.user_id.slice(0, 4)})</strong> to <strong>${target_branch_name} (${target_branch_id})</strong>?<br><br>
+                <strong>${new_employee_name} (${emp.user_id.slice(0, 4)})</strong> existing Petty Cash role will remain unchanged.
                 Only their Petty Cash Branch will be changed.
             `,
                         () => {
@@ -823,12 +824,12 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
 
                     frappe.confirm(
                         `
-                <strong>${emp.employee_name}</strong> already has Petty Cash access for
-                <strong>${current_branch_name}</strong>.<br><br>
+                <strong>${emp.employee_name} (${emp.user_id.slice(0, 4)})</strong> already has Petty Cash access for
+                <strong>${current_branch_name} (${current_branch_id})</strong>.<br><br>
                 Do you want to change their branch to
-                <strong>${new_branch_name}</strong>?<br><br>
-                Their existing Branch User role will remain unchanged.
-                Only the Petty Cash Branch field will be updated.
+                <strong>${new_branch_name} (${selected_branch_id})</strong>?<br><br>
+                Their existing Petty Cash role will remain unchanged.
+                Only the Petty Cash Branch will be updated.
             `,
                         () => {
                             this.reassignEmployeeBranch(emp);
@@ -853,11 +854,11 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
 
                     frappe.confirm(
                         `
-                <strong>${branch_name}</strong> already has Petty Cash access assigned to
-                <strong>${old_employee_name}</strong>.<br><br>
-                Do you want to remove <strong>${old_employee_name}</strong>'s access and assign
-                this branch to <strong>${new_employee_name}</strong>?<br><br>
-                The existing employee's Petty Cash Branch and Branch User role will be removed.
+                <strong>${branch_name} (${selected_branch_id})</strong> already has Petty Cash access assigned to
+                <strong>${old_employee_name} (${existing_access_employee.user_id.slice(0, 4)})</strong>.<br><br>
+                Do you want to remove <strong>${old_employee_name} (${existing_access_employee.user_id.slice(0, 4)})</strong> access and assign
+                this branch to <strong>${new_employee_name} (${emp.user_id.slice(0, 4)})</strong>?<br><br>
+                The existing employee's Petty Cash Branch and Petty Cash role will be removed.
             `,
                         () => {
                             this.replaceBranchEmployee(emp, existing_access_employee);
@@ -1028,10 +1029,10 @@ frappe.pages['petty-cash-access-ma'].on_page_load = function (wrapper) {
                             const status = r.message.status;
 
                             const messageMap = {
-                                added: "Branch User access added successfully",
-                                removed: "Branch User access removed successfully",
-                                already_present: "Branch User role is already assigned",
-                                already_absent: "Branch User role is already removed"
+                                added: "Petty Cash access added successfully",
+                                removed: "Petty Cash access removed successfully",
+                                already_present: "Petty Cash role is already assigned",
+                                already_absent: "Petty Cash role is already removed"
                             };
 
                             const indicatorMap = {
