@@ -419,8 +419,10 @@ def _require_team_access():
 
 @frappe.whitelist()
 def get_holidays(year, month):
-    # Holidays for current user (Sundays + Employee.holiday_list) for a month.
-    # Mirrors team_attendance._get_employee_holiday_dates logic.
+    # Holidays for current user (Sundays + state-wise holiday list) for a month.
+    # Priority: 1) Employee.holiday_list (manual override)
+    #           2) State holiday list derived from employee's branch state
+    #           3) Company default_holiday_list (last resort)
     year, month = _safe_year_month(year, month)
     last_day = calendar.monthrange(year, month)[1]
     holidays = {}
@@ -428,27 +430,55 @@ def get_holidays(year, month):
         d = frappe.utils.getdate(f"{year}-{month:02d}-{day:02d}")
         if d.weekday() == 6:
             holidays[str(d)] = "Sunday"
-    # Fetch Employee.holiday_list (as in sahayog/api/attendance.py)
-    emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["holiday_list", "company"], as_dict=True)
+
+    # State (upper-cased from Sahayog Branch) -> Holiday List name prefix
+    _STATE_PREFIX = {
+        "MAHARASHTRA": "Maharashtra",
+        "MADHYA PRADESH": "Madhya Pradesh",
+        "KARNATAKA": "Karnataka",
+        "UTTARAKHAND": "Uttarakhand",
+        "HIMACHAL PRADESH": "Himachal Pradesh",
+        "CHANDIGARH": "Chandigarh",
+        "PUDUCHERRY": "Pondicherry",
+        "JAMMU AND KASHMIR": "Jammu & Kashmir",
+    }
+
+    emp = frappe.db.get_value(
+        "Employee",
+        {"user_id": frappe.session.user},
+        ["holiday_list", "company", "sahayog_branch"],
+        as_dict=True,
+    )
+
     holiday_list = None
     if emp:
-        holiday_list = emp.holiday_list
+        # 1. Use employee's explicitly set holiday_list
+        if emp.holiday_list:
+            holiday_list = emp.holiday_list
+
+        # 2. Try state-wise holiday list from employee's branch
+        if not holiday_list and emp.sahayog_branch:
+            try:
+                state = frappe.db.get_value("Sahayog Branch", emp.sahayog_branch, "state")
+                if state:
+                    prefix = _STATE_PREFIX.get(str(state).strip().upper())
+                    if prefix:
+                        # Try current year first, then any year for that state
+                        cand = f"{prefix} - {year}"
+                        if frappe.db.exists("Holiday List", cand):
+                            holiday_list = cand
+                        else:
+                            # Fallback to any existing list for this state
+                            holiday_list = frappe.db.get_value(
+                                "Holiday List", {"name": ["like", f"{prefix} - %"]}, "name"
+                            )
+            except Exception:
+                pass
+
+        # 3. Last resort: company default holiday list
         if not holiday_list and emp.company:
             holiday_list = frappe.db.get_value("Company", emp.company, "default_holiday_list")
-    if not holiday_list:
-        # Fallback: try user's branch state -> Holiday List "{State} - {year}"
-        try:
-            emp_branch = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "sahayog_branch")
-            if emp_branch:
-                state = frappe.db.get_value("Sahayog Branch", emp_branch, "state")
-                if state:
-                    cand = f"{state} - {year}"
-                    if frappe.db.exists("Holiday List", cand):
-                        holiday_list = cand
-                    else:
-                        holiday_list = frappe.db.get_value("Holiday List", {"holiday_list_name": ["like", f"{state} - %"]}, "name")
-        except Exception:
-            pass
+
     if holiday_list:
         rows = frappe.db.sql(
             "SELECT holiday_date, description FROM `tabHoliday` WHERE parent=%(hl)s AND holiday_date BETWEEN %(start)s AND %(end)s",
@@ -457,7 +487,7 @@ def get_holidays(year, month):
         )
         for r in rows:
             d_str = str(r.holiday_date)[:10]
-            # If already Sunday, overwrite with holiday description (more informative)
+            # Overwrite Sunday with holiday description (more informative)
             holidays[d_str] = (r.description or "Holiday").strip() if r.description else "Holiday"
     return holidays
 
@@ -726,6 +756,8 @@ def get_training_details(name):
     )
     r["participant_list"] = participants_list
     r["participants"] = len(participants_list)
+    # Ensure additional_to is included (new field for mail recipients)
+    r["additional_to"] = doc.additional_to or ""
     # Budget visible to all roles (writes stay L&D Admin-only).
     return r
 
@@ -909,6 +941,30 @@ def update_training_status(training_name, field, value):
     doc = frappe.get_doc("Training", training_name)
     _ensure_can_update(doc)
 
+    if field in COMPLETION_FIELDS and int(bool(value)):
+        # Completion needs participants; agent trainings additionally need
+        # every agent's attendance marked (employees have no attendance step).
+        parts = frappe.db.get_all(
+            "Training Participant",
+            filters={"parent": training_name},
+            fields=["reference_doctype", "attendance_status"],
+        )
+        if not parts:
+            frappe.throw(_("Add participants before marking completion."))
+        agents = [p for p in parts if (p.reference_doctype or "Employee") == "Agent"]
+        if agents and any((p.attendance_status or "") not in ("Present", "Absent") for p in agents):
+            frappe.throw(_("Mark attendance for all swayamsevikas before marking completion."))
+        # Completing (this tick makes 5/5) needs budget filled first (min ₹1
+        # each) — no completion without budget.
+        eff = {f: doc.get(f) for f in COMPLETION_FIELDS}
+        eff[field] = 1
+        if all(eff.values()):
+            for fld, label in (("budget_amount", _("Budget Amount")), ("actual_expense", _("Actual Expense"))):
+                if not doc.get(fld) or frappe.utils.flt(doc.get(fld)) < 1:
+                    frappe.throw(
+                        _("Fill {0} (minimum ₹1) before marking complete.").format(label)
+                    )
+
     if field == "trainer_remarks":
         frappe.db.set_value("Training", training_name, "trainer_remarks", value)
     else:
@@ -954,7 +1010,7 @@ def update_participant_attendance(training_name, participant_name, attendance_st
     if not row:
         frappe.throw(_("Participant not found in this training."))
     if (row.reference_doctype or "Employee") != "Agent":
-        frappe.throw(_("Attendance marking is only applicable for Agents."))
+        frappe.throw(_("Attendance marking is only applicable for SwayamSevikas."))
 
     # Direct set_value: avoids re-running full doc validations (e.g. the
     # Sunday/holiday schedule check) for an attendance-only change.
@@ -1005,7 +1061,7 @@ def sync_participants(training_name, participants=None):
             types.add(ref_type)
 
     if len(types) > 1:
-        frappe.throw(_("A training cannot have mixed participants. Please select either Employees or Agents only."))
+        frappe.throw(_("A training cannot have mixed participants. Please select either Employees or SwayamSevikas only."))
 
     existing_rows = frappe.db.get_all(
         "Training Participant",
@@ -1048,40 +1104,110 @@ def sync_participants(training_name, participants=None):
 
 @frappe.whitelist()
 def update_budget(training_name, budget_amount=None, actual_expense=None):
-    """Budget/expense capture — L&D Admin, plus the assigned trainer (owner or
-    trainer match) after all 5 completion checks are ticked."""
+    """Budget/expense capture — L&D Admin anytime; assigned trainer (owner or
+    trainer match) on their own trainings, any time BEFORE completion.
+    Completed trainings are fully locked via portal (desk validate() still
+    demands both fields ≥₹1 there).
+    """
     if _is_admin():
         pass
     else:
         _doc = frappe.get_doc("Training", training_name)
         _ensure_can_update(_doc)
-        _require_completed(_doc)
     if budget_amount is None and actual_expense is None:
         # Nothing to change (DB columns are NOT NULL) — don't touch stored values
         return {"success": True}
+    doc = frappe.get_doc("Training", training_name)
+    if all(doc.get(f) for f in COMPLETION_FIELDS):
+        # Already Completed: portal budget is fully locked — silently ignore
+        # (readonly inputs on the portal prevent accidental changes; desk stays
+        # available to L&D Admin as override via validate()).
+        return {"success": True, "skipped": "completed"}
+    # Not completed yet: free entry (the completing save fills budget first,
+    # and the 5th-check gate demands it) — desk validate() enforces presence.
+    # Cap: Actual Expense can never exceed Budget Amount (combined values).
+    eff_b = budget_amount if budget_amount is not None else doc.get("budget_amount")
+    eff_a = actual_expense if actual_expense is not None else doc.get("actual_expense")
+    if eff_b not in (None, "") and eff_a not in (None, ""):
+        if frappe.utils.flt(eff_a) > frappe.utils.flt(eff_b):
+            frappe.throw(_("Actual Expense cannot exceed Budget Amount."))
     frappe.db.set_value("Training", training_name, "budget_amount", budget_amount)
     frappe.db.set_value("Training", training_name, "actual_expense", actual_expense)
     frappe.db.commit()
     return {"success": True}
 
 
-@frappe.whitelist()
-def update_training_emails(training_name, additional_cc=None):
-    """Save Additional CC emails from the Edit form (comma-separated).
-
-    Same permission as other training updates (Admin, or owner/trainer).
-    Invalid entries are dropped; empty string clears the CC list.
-    """
-    doc = frappe.get_doc("Training", training_name)
-    _ensure_can_update(doc)
+def _clean_emails(raw):
     clean = []
-    for part in str(additional_cc or "").replace(";", ",").split(","):
+    for part in str(raw or "").replace(";", ",").split(","):
         email = part.strip()
         if email and "@" in email and email not in clean:
             clean.append(email)
-    frappe.db.set_value("Training", training_name, "additional_cc", ", ".join(clean))
+    return clean
+
+
+@frappe.whitelist()
+def update_training_emails(training_name, additional_cc=None, additional_to=None):
+    """Save Additional CC / To emails from the Edit form (comma-separated).
+
+    Same permission as other training updates (Admin, or owner/trainer).
+    Invalid entries are dropped; empty string clears the list. Passing None
+    leaves that list unchanged.
+    """
+    doc = frappe.get_doc("Training", training_name)
+    _ensure_can_update(doc)
+    if additional_cc is not None:
+        frappe.db.set_value("Training", training_name, "additional_cc", ", ".join(_clean_emails(additional_cc)))
+    if additional_to is not None:
+        frappe.db.set_value("Training", training_name, "additional_to", ", ".join(_clean_emails(additional_to)))
     frappe.db.commit()
     return {"success": True}
+
+
+@frappe.whitelist()
+def get_mail_recipients(training_name):
+    """Preview who gets the invitation/closure mail, grouped by source.
+
+    Read-only — shows exactly what _get_invitation_emails() will send.
+    """
+    from sahayog.agent_and_bdo.ld_notifications import (
+        _get_branch_head_emails,
+        _parse_cc,
+        _trainer_email,
+    )
+    doc = frappe.get_doc("Training", training_name)
+    _ensure_can_update(doc)
+
+    participants = []
+    for p in frappe.db.get_all(
+        "Training Participant",
+        filters={"parent": training_name},
+        fields=["reference_doctype", "agent_employee", "full_name"],
+        order_by="idx asc",
+    ):
+        if (p.reference_doctype or "Employee") != "Employee" or not p.agent_employee:
+            continue
+        email = frappe.db.get_value("Employee", p.agent_employee, "company_email") \
+            or frappe.db.get_value("Employee", p.agent_employee, "personal_email")
+        if email:
+            participants.append({"name": p.full_name or p.agent_employee, "email": email})
+
+    branch_heads = [
+        {"branch": code, "email": email}
+        for code, email in _get_branch_head_emails(doc)
+    ]
+    trainer_email = _trainer_email(doc.trainer)
+    return {
+        "to": {
+            "participants": participants,
+            "branch_heads": branch_heads,
+            "manual": _parse_cc(doc.additional_to),
+        },
+        "cc": {
+            "trainer": trainer_email,
+            "manual": _parse_cc(doc.additional_cc),
+        },
+    }
 
 
 @frappe.whitelist()
@@ -2113,49 +2239,62 @@ def get_team_training_report(
     page=None,
     page_size=None,
 ):
-    """Team-scoped training history. One row per team-member participant.
-
-    Same enrichment as the employee-wise report; defaults to the current
-    financial year-to-date when no date bounds are given.
+    """Team-scoped training report. Shows all trainings where team members
+    are the trainer — so a manager can track their team's training activity.
+    Defaults to current year (Jan 1 → Dec 31).
     """
     team_ids = _require_team_access()
 
     today_dt = frappe.utils.getdate()
     from_dt = frappe.utils.getdate(from_date) if from_date else frappe.utils.getdate(f"{today_dt.year}-01-01")
-    to_dt = frappe.utils.getdate(to_date) if to_date else today_dt
+    to_dt = frappe.utils.getdate(to_date) if to_date else frappe.utils.getdate(f"{today_dt.year}-12-31")
     if from_dt > to_dt:
         frappe.throw(_("From Date cannot be after To Date."))
 
-    placeholders = ", ".join(["%s"] * len(team_ids))
+    # Get team members' names (trainer field stores employee_name not ID)
+    team_emp_data = frappe.db.get_all(
+        "Employee",
+        filters={"name": ["in", team_ids]},
+        fields=["name", "employee_name", "sahayog_branch"],
+    )
+    team_names = [e.employee_name for e in team_emp_data if e.employee_name]
+
+    if not team_names:
+        return {"columns": TEAM_REPORT_COLUMNS, "rows": [], "total": 0}
+
+    params = {"from_dt": str(from_dt), "to_dt": str(to_dt)}
+
+    # Build trainer name keys for SQL IN clause
+    trainer_keys = []
+    for i, name in enumerate(team_names):
+        key = f"tr_{i}"
+        trainer_keys.append(f"%({key})s")
+        params[key] = name
+
     conds = [
         "t.docstatus < 2",
         "t.from_date <= %(to_dt)s",
         "COALESCE(t.to_date, t.from_date) >= %(from_dt)s",
+        f"t.trainer IN ({', '.join(trainer_keys)})",
     ]
-    params = {"from_dt": str(from_dt), "to_dt": str(to_dt)}
-    team_keys = []
-    for i, emp_id in enumerate(team_ids):
-        key = f"team_{i}"
-        team_keys.append(f"%({key})s")
-        params[key] = emp_id
-    conds.append(f"p.agent_employee IN ({', '.join(team_keys)})")
 
     q = (employee or "").strip().lower()
     if q:
-        # Search covers member (id/name) + trainer + program so reporting
-        # managers can find trainings either way (additive ORs only).
+        # q can be emp_id (from dropdown) or free text (from search box)
+        # resolve emp_id → employee_name so trainer field (which stores name) matches
+        resolved_name = frappe.db.get_value("Employee", q.upper(), "employee_name") or q
         conds.append(
-            "(LOWER(p.agent_employee) LIKE %(q)s OR LOWER(p.full_name) LIKE %(q)s "
-            "OR LOWER(t.trainer) LIKE %(q)s OR LOWER(t.training_program) LIKE %(q)s)"
+            "(LOWER(t.trainer) LIKE %(q)s OR LOWER(t.trainer) LIKE %(qn)s "
+            "OR LOWER(t.training_program) LIKE %(q)s "
+            "OR LOWER(t.training_location) LIKE %(q)s)"
         )
         params["q"] = f"%{q}%"
+        params["qn"] = f"%{resolved_name.lower()}%"
 
     where = " AND ".join(conds)
 
     base = """
         FROM `tabTraining` t
-        INNER JOIN `tabTraining Participant` p
-          ON p.parent = t.name AND p.parenttype = 'Training'
         WHERE {where}
     """.format(where=where)
 
@@ -2166,10 +2305,9 @@ def get_team_training_report(
         "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
         "t.start_time, t.end_time, t.trainer, t.training_location, "
         "t.training_delivered, t.attendance_marked, "
-        "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, t.docstatus, "
-        "p.idx, p.reference_doctype, p.agent_employee, p.full_name "
+        "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, t.docstatus "
     )
-    order_limit = " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC"
+    order_limit = " ORDER BY t.from_date ASC, t.start_time ASC"
     if page_size:
         page_params = dict(params, page_size=page_size, offset=offset)
         rows = frappe.db.sql(
@@ -2183,27 +2321,20 @@ def get_team_training_report(
     if not rows:
         return {"columns": TEAM_REPORT_COLUMNS, "rows": [], "total": 0}
 
-    emp_ids = {r.agent_employee for r in rows if r.agent_employee}
-    emp_data = _employee_master(emp_ids)
-    branch_ids = {
-        (getattr(e, "sahayog_branch", "") or "") for e in emp_data.values()
-        if getattr(e, "sahayog_branch", "")
-    }
+    # Build trainer name → employee map for enrichment
+    trainer_name_to_emp = {e.employee_name: e for e in team_emp_data if e.employee_name}
+    branch_ids = {e.sahayog_branch for e in team_emp_data if e.sahayog_branch}
     branch_meta = _branch_meta(branch_ids)
-
-    def _yn(v):
-        return "Yes" if v else "No"
 
     out = []
     seq = offset
     for r in rows:
         seq += 1
-        e = emp_data.get(r.agent_employee) if r.agent_employee else None
-        emp_branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
+        e = trainer_name_to_emp.get(r.trainer)
+        emp_branch_code = (e.sahayog_branch or "") if e else ""
         branch_meta_row = branch_meta.get(emp_branch_code) if emp_branch_code else None
         from_str = str(r.from_date or "")[:10]
         to_str = str(r.to_date or r.from_date or "")[:10]
-        display_name = r.full_name or (e.employee_name if e else "") or r.agent_employee or ""
         status = r.status or get_training_status(_row_tag(r))
         start_fmt = _format_time(r.start_time)
         end_fmt = _format_time(r.end_time)
@@ -2214,13 +2345,13 @@ def get_team_training_report(
         branch_fallback = (
             (branch_meta_row.branch or branch_meta_row.name)
             if branch_meta_row
-            else emp_branch_code or ((e.branch or "") if e else "")
+            else emp_branch_code
         )
         out.append({
             "s_no": seq,
             "name": r.training_name,
-            "emp_id": r.agent_employee or "",
-            "employee_name": display_name,
+            "emp_id": e.name if e else "",
+            "employee_name": "",  # blank until participant is added; Members cell shows — automatically
             "from_date": from_str,
             "to_date": to_str,
             "training_date": _pretty_date_range(from_str, to_str),
@@ -2265,7 +2396,7 @@ def get_trainer_options(enabled_only=True):
 
 @frappe.whitelist()
 def get_agent_options(enabled_only=True):
-    """Agents to pick as participants in the Add Training form.
+    """SwayamSevikas to pick as participants in the Add Training form.
     Filters by agent_status = 'live' (case-insensitive) when enabled_only is truthy.
     """
     if enabled_only:
@@ -2361,7 +2492,7 @@ def _replace_geographies(training_name, geographies):
 
 
 @frappe.whitelist()
-def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None):
+def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None, is_adhoc=None):
     """
     Reschedule a training — L&D Admin can change anything; a trainer can
     reschedule only their own trainings (created by them or assigned to them).
@@ -2406,6 +2537,8 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
             frappe.throw(_("Number of Participants must be a whole number."))
         if updates["number_of_participants"] < 0:
             frappe.throw(_("Number of Participants cannot be negative."))
+    if is_adhoc is not None:
+        updates["is_adhoc"] = 1 if str(is_adhoc).strip().lower() in ("1", "true", "yes") else 0
 
     # New date => new invitation cycle: capture the old date BEFORE writing,
     # so the 10 AM invitation cron picks the rescheduled training up again.
@@ -2624,6 +2757,42 @@ def bulk_upload_training(month=None):
                     f"Row {i}: Training Date '{training_date_raw}' is not in {sel_label} (selected upload month)"
                 )
                 continue
+            # Sunday check
+            import datetime as _dt
+            _td = frappe.utils.getdate(training_date)
+            _td_disp = f"{training_date[8:10]}/{training_date[5:7]}/{training_date[0:4]}"
+            if _td.weekday() == 6:
+                errors.append(f"Row {i}: Training Date '{_td_disp}' is a Sunday — trainings cannot be scheduled on Sundays")
+                continue
+            # Holiday check — use uploader's state-wise holiday list
+            _STATE_PREFIX_BU = {
+                "MAHARASHTRA": "Maharashtra", "MADHYA PRADESH": "Madhya Pradesh",
+                "KARNATAKA": "Karnataka", "UTTARAKHAND": "Uttarakhand",
+                "HIMACHAL PRADESH": "Himachal Pradesh", "CHANDIGARH": "Chandigarh",
+                "PUDUCHERRY": "Pondicherry", "JAMMU AND KASHMIR": "Jammu & Kashmir",
+            }
+            _emp_bl = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["holiday_list", "company", "sahayog_branch"], as_dict=True)
+            _hl = None
+            if _emp_bl:
+                _hl = _emp_bl.holiday_list
+                if not _hl and _emp_bl.sahayog_branch:
+                    _st = frappe.db.get_value("Sahayog Branch", _emp_bl.sahayog_branch, "state")
+                    if _st:
+                        _pfx = _STATE_PREFIX_BU.get(str(_st).strip().upper())
+                        if _pfx:
+                            _cand = f"{_pfx} - {_td.year}"
+                            _hl = _cand if frappe.db.exists("Holiday List", _cand) else frappe.db.get_value("Holiday List", {"name": ["like", f"{_pfx} - %"]}, "name")
+                if not _hl and _emp_bl.company:
+                    _hl = frappe.db.get_value("Company", _emp_bl.company, "default_holiday_list")
+            if _hl:
+                _hol_row = frappe.db.sql(
+                    "SELECT description FROM `tabHoliday` WHERE parent=%s AND holiday_date=%s LIMIT 1",
+                    (_hl, training_date), as_dict=True
+                )
+                if _hol_row:
+                    _hdesc = (_hol_row[0].description or "Holiday").strip()
+                    errors.append(f"Row {i}: Training Date '{_td_disp}' is a Holiday ({_hdesc}) — trainings cannot be scheduled on holidays")
+                    continue
             if not program:
                 errors.append(f"Row {i}: Program Name / Training Title is required")
                 continue

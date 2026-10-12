@@ -59,6 +59,9 @@ class Training(Document):
         self._validate_geographies()
         self._validate_no_holiday_sunday()
         self._validate_participant_types()
+        self._validate_completed_budget()
+        self._validate_checks_require_participants()
+        self._validate_budget_cap()
 
     def _sync_geographies(self):
         if self.get("geographies"):
@@ -152,11 +155,49 @@ class Training(Document):
                 frappe.throw(_("Training cannot be scheduled on Holiday ({0}): {1}").format(holiday_map[d_str], d_disp))
             curr = frappe.utils.add_days(curr, 1)
 
+    def _validate_completed_budget(self):
+        # Completed = all 5 checks ticked -> both budget fields mandatory, min ₹1.
+        # (Completion itself is never blocked: the portal ticks checks via
+        # set_value which bypasses validate; desk completions are done by
+        # L&D Admin who can fill budget on the same form.)
+        if not all(self.get(f) for f in COMPLETION_FIELDS):
+            return
+        for fld, label in (
+            ("budget_amount", _("Budget Amount")),
+            ("actual_expense", _("Actual Expense")),
+        ):
+            if not self.get(fld) or frappe.utils.flt(self.get(fld)) < 1:
+                frappe.throw(
+                    _("{0} is mandatory (minimum ₹1) when training is Completed.").format(label)
+                )
+
+    def _validate_checks_require_participants(self):
+        # Any completion check needs participants; agent trainings additionally
+        # need every agent's attendance marked (Present/Absent).
+        if not any(self.get(f) for f in COMPLETION_FIELDS):
+            return
+        parts = self.get("participants") or []
+        if not parts:
+            frappe.throw(_("Add participants before marking completion."))
+        agents = [p for p in parts if (p.reference_doctype or "Employee") == "Agent"]
+        if agents and any((p.attendance_status or "") not in ("Present", "Absent") for p in agents):
+            frappe.throw(_("Mark attendance for all swayamsevikas before marking completion."))
+
     def _validate_participant_types(self):
         if self.get("participants"):
             types = {p.reference_doctype or "Employee" for p in self.participants if p.agent_employee}
             if len(types) > 1:
-                frappe.throw(_("A training cannot have mixed participants. Please select either Employees or Agents only."))
+                frappe.throw(_("A training cannot have mixed participants. Please select either Employees or SwayamSevikas only."))
+
+    def _validate_budget_cap(self):
+        # Actual Expense can never exceed Budget Amount (when both are set).
+        b = self.get("budget_amount")
+        a = self.get("actual_expense")
+        if b in (None, "") or a in (None, ""):
+            return
+        if frappe.utils.flt(a) > frappe.utils.flt(b):
+            frappe.throw(_("Actual Expense (₹{0}) cannot exceed Budget Amount (₹{1}).").format(
+                frappe.utils.fmt_money(a), frappe.utils.fmt_money(b)))
 
     def set_trainer_from_user(self):
         # System Manager / Administrator may create trainings without a linked Employee
