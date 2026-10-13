@@ -172,9 +172,9 @@ def _verify(user_name, aadhaar_number, consent):
 		)
 		return out
 
-	key = frappe.conf.get("karza_api_key")
+	key = _karza_setting("karza_api_key")
 	if not key:
-		frappe.throw(_("karza_api_key is not set in site_config.json"))
+		frappe.throw(_("Karza API Key is not set in Sahayog Settings"))
 	headers = {"Content-Type": "application/json", "x-karza-key": key}
 	client_data = {"caseId": case_id}
 
@@ -231,8 +231,21 @@ def _new_case_id():
 	return now_datetime().strftime("%Y%m%d%H%M%S") + str(secrets.randbelow(900) + 100)
 
 
+def _karza_setting(fieldname):
+	"""Sahayog Settings first, site_config.json as fallback."""
+	val = None
+	try:
+		if fieldname == "karza_api_key":
+			val = frappe.get_single("Sahayog Settings").get_password(fieldname, raise_exception=False)
+		else:
+			val = frappe.db.get_single_value("Sahayog Settings", fieldname)
+	except Exception:
+		val = None
+	return val or frappe.conf.get(fieldname)
+
+
 def _post(path, payload, headers, timeout):
-	base_url = frappe.conf.get("karza_base_url") or "https://api.karza.in"
+	base_url = _karza_setting("karza_base_url") or "https://api.karza.in"
 	try:
 		return requests.post(base_url + path, json=payload, headers=headers, timeout=timeout).json()
 	except (requests.RequestException, ValueError):
@@ -254,3 +267,11 @@ def _fail(res):
 	if case_id:
 		msg += " (Reference: Case ID {0})".format(case_id)
 	frappe.throw(_(msg))
+
+
+@frappe.whitelist()
+def get_karza_api_key():
+	"""Used by the eye icon in Sahayog Settings. System Manager only."""
+	if "System Manager" not in frappe.get_roles():
+		frappe.throw(_("Not permitted"), frappe.PermissionError)
+	return frappe.get_single("Sahayog Settings").get_password("karza_api_key", raise_exception=False) or ""

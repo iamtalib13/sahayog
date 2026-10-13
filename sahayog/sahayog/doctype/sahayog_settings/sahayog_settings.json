@@ -54,7 +54,10 @@
   "require_number",
   "allow_special_characters",
   "approval_system_tab",
-  "enable_approval_system"
+  "enable_approval_system",
+  "aadhaar_verification_tab",
+  "karza_api_key",
+  "karza_base_url"
  ],
  "fields": [
   {
@@ -352,6 +355,23 @@
    "fieldtype": "Table",
    "label": "Allowed Access Manager Designation(s)",
    "options": "Allowed Access Manager Designation"
+  },
+  {
+   "default": "https://api.karza.in",
+   "fieldname": "aadhaar_verification_tab",
+   "fieldtype": "Tab Break",
+   "label": "Aadhaar Verification"
+  },
+  {
+   "fieldname": "karza_api_key",
+   "fieldtype": "Password",
+   "label": "Karza API key"
+  },
+  {
+   "default": "https://api.karza.in",
+   "fieldname": "karza_base_url",
+   "fieldtype": "Data",
+   "label": "karza Base Url"
   }
  ],
  "grid_page_length": 50,
@@ -359,6 +379,7 @@
  "issingle": 1,
  "links": [],
  "modified": "2026-10-12 12:58:17.340222",
+ "modified": "2026-10-13 16:12:24.130854",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
