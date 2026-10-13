@@ -1,0 +1,123 @@
+{
+ "actions": [],
+ "autoname": "format:AVL-{#####}",
+ "creation": "2026-10-12 18:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "user_id",
+  "user_full_name",
+  "log_datetime",
+  "holder_name",
+  "aadhaar_masked",
+  "status",
+  "column_break_1",
+  "case_id",
+  "is_issued",
+  "request_id",
+  "ip_address",
+  "error_message"
+ ],
+ "fields": [
+  {
+   "fieldname": "user_id",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "User",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "user_full_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "User Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "log_datetime",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Date & Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "holder_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Aadhaar Holder Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "aadhaar_masked",
+   "fieldtype": "Data",
+   "label": "Aadhaar (Masked)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_1",
+   "fieldtype": "Column Break",
+   "read_only": 0
+  },
+  {
+   "fieldname": "case_id",
+   "fieldtype": "Data",
+   "label": "Case ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "is_issued",
+   "fieldtype": "Data",
+   "label": "Is Issued",
+   "read_only": 1
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "Request ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-10-12 18:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Aadhaar Verification Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager"
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
