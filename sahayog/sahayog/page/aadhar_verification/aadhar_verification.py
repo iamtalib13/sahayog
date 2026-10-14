@@ -1,10 +1,3 @@
-# sahayog/sahayog/doctype/aadhaar_verification/aadhaar_verification.py
-#
-# site_config.json:
-#   "karza_api_key": "<<YOUR KEY>>"
-# Testing without key:
-#   "aadhaar_mock_mode": 1  and  "developer_mode": 1
-
 import json
 import re
 import secrets
@@ -146,8 +139,8 @@ def _verify(user_name, aadhaar_number, consent):
 	aadhaar_number = (aadhaar_number or "").strip()
 
 	# server-side validation
-	if not 3 <= len(user_name) <= 200:
-		frappe.throw(_("User Name must be between 3 and 200 characters."))
+	if not 2 <= len(user_name) <= 200:
+		frappe.throw(_("Full Name must be between 2 and 200 characters."))
 	if not re.fullmatch(r"[2-9]\d{11}", aadhaar_number):
 		frappe.throw(_("Aadhaar Number must be exactly 12 digits and cannot start with 0 or 1."))
 	if not int(consent or 0):
