@@ -55,19 +55,21 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Sync Status",
-   "options": "Fail\nPartially Success\nSuccess\nManually Success\nManually Partially Success\nManually Fail\nNo Record in Finacle"
+   "options": "Fail\nPartially Success\nSuccess\nManually Success\nManually Partially Success\nManually Fail\nNo Record in Finacle",
+   "read_only": 1
   },
   {
    "fieldname": "sync_log",
    "fieldtype": "Small Text",
-   "label": "Sync Log"
+   "label": "Sync Log",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-11 13:42:20.420326",
+ "modified": "2026-10-13 12:00:33.285526",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "CRL Monitoring Operation Tracker",

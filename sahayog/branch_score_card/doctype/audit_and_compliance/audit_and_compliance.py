@@ -1,6 +1,8 @@
+import json
 import io
 import pandas as pd
 import frappe
+from sahayog.branch_score_card.audit_log_utils import write_audit_log, snapshot_document, get_latest_version_data
 from frappe import _
 from frappe.model.document import Document
 from frappe.utils import getdate, date_diff
@@ -46,6 +48,61 @@ class AuditandCompliance(Document):
                         )
                     row.turnaround_time_days = str(date_diff(row.date_of_closure, row.date_of_publish))
                     row.status = "Completed"
+
+
+    def after_insert(self):
+        write_audit_log(
+            self, "Created",
+            data={"created": snapshot_document(self)},
+        )
+
+    def on_update(self):
+        if self.flags.get("in_insert"):
+            return
+        write_audit_log(
+            self, "Updated",
+            data={
+                "changed": get_latest_version_data(self),
+                "snapshot": snapshot_document(self),
+            },
+        )
+
+    def on_trash(self):
+        self._delete_log_snapshot = self._capture_delete_log_snapshot()
+        write_audit_log(
+            self, "Deleted",
+            data={"deleted": snapshot_document(self)},
+        )
+
+    def _capture_delete_log_snapshot(self):
+        excluded = {
+            "doctype", "owner", "creation", "modified", "modified_by",
+            "parent", "parentfield", "parenttype", "idx", "docstatus",
+            "__unsaved",
+        }
+        snapshot = {}
+        for key, value in self.as_dict().items():
+            if key in excluded:
+                continue
+            if isinstance(value, list):
+                value = [
+                    {k: v for k, v in row.items() if k not in excluded}
+                    if isinstance(row, dict) else row
+                    for row in value
+                ]
+            snapshot[key] = value
+        return snapshot
+
+    def after_delete(self):
+        snapshot = getattr(self, "_delete_log_snapshot", None)
+        if snapshot is None:
+            return
+        frappe.get_doc({
+            "doctype": "Version",
+            "ref_doctype": self.doctype,
+            "docname": self.name,
+            "data": json.dumps({"deleted": snapshot}, default=str),
+        }).insert(ignore_permissions=True)
 
 def generate_excel_response(columns, filename, sheet_name):
     df = pd.DataFrame(columns=columns)
@@ -152,6 +209,7 @@ def download_com_visit_compliance_template():
 
 @frappe.whitelist()
 def process_audit_score_excel(file_url):
+    frappe.flags.sahayog_audit_source = "Excel Upload"
     if not file_url:
         frappe.throw(_("Please upload a valid Excel file."))
 
@@ -180,7 +238,7 @@ def process_audit_score_excel(file_url):
         if pd.isnull(row["Audit Start Date"]):
             continue
 
-        raw_start_date = pd.to_datetime(str(row["Audit Start Date"]).strip(), format="%d-%m-%Y")
+        raw_start_date = _parse_date(row["Audit Start Date"])
         audit_start_date = raw_start_date.strftime("%Y-%m-%d")
 
         # Extract Month Name and Financial Year
@@ -190,7 +248,7 @@ def process_audit_score_excel(file_url):
         # Parse Audit Completed Date if present
         audit_completed_date = None
         if pd.notnull(row.get("Audit Completed Date")):
-            audit_completed_date = pd.to_datetime(str(row["Audit Completed Date"]).strip(), format="%d-%m-%Y").strftime("%Y-%m-%d")
+            audit_completed_date = _parse_date(row["Audit Completed Date"]).strftime("%Y-%m-%d")
             audit_status = "Completed"
         else:
             audit_status = "Pending"
@@ -246,6 +304,7 @@ def process_audit_score_excel(file_url):
 
 @frappe.whitelist()
 def process_audit_closure_excel(file_url):
+    frappe.flags.sahayog_audit_source = "Excel Upload"
     if not file_url:
         frappe.throw(_("Please upload a valid Excel file."))
 
@@ -270,7 +329,7 @@ def process_audit_closure_excel(file_url):
         if pd.isnull(row["Report Published Date"]):
             continue
 
-        report_published_dt = pd.to_datetime(str(row["Report Published Date"]).strip(), format="%d-%m-%Y")
+        report_published_dt = _parse_date(row["Report Published Date"])
         report_published_date = report_published_dt.strftime("%Y-%m-%d")
 
         month_name = report_published_dt.strftime("%B")
@@ -279,7 +338,7 @@ def process_audit_closure_excel(file_url):
         recived_date = None
         
         if pd.notnull(row.get("Received Date")):
-            recived_dt = pd.to_datetime(str(row["Received Date"]).strip(), format="%d-%m-%Y")
+            recived_dt = _parse_date(row["Received Date"])
             recived_date = recived_dt.strftime("%Y-%m-%d")
             delay_in_closure = str((recived_dt - report_published_dt).days)
             compliance_report_status = "Received"
@@ -333,6 +392,7 @@ def process_audit_closure_excel(file_url):
 
 @frappe.whitelist()
 def process_com_visit_excel(file_url):
+    frappe.flags.sahayog_audit_source = "Excel Upload"
     if not file_url:
         frappe.throw(_("Please upload a valid Excel file."))
 
@@ -358,7 +418,7 @@ def process_com_visit_excel(file_url):
         if pd.isnull(row["Date of Visit"]):
             continue
 
-        raw_visit_date = pd.to_datetime(str(row["Date of Visit"]).strip(), format="%d-%m-%Y")
+        raw_visit_date = _parse_date(row["Date of Visit"])
         date_of_visit = raw_visit_date.strftime("%Y-%m-%d")
 
         # Auto-extract month name & year
@@ -411,6 +471,7 @@ def process_com_visit_excel(file_url):
 
 @frappe.whitelist()
 def process_com_visit_compliance_excel(file_url):
+    frappe.flags.sahayog_audit_source = "Excel Upload"
     if not file_url:
         frappe.throw(_("Please upload a valid Excel file."))
 
@@ -436,7 +497,7 @@ def process_com_visit_compliance_excel(file_url):
         if pd.isnull(row["Date of publish"]):
             continue
 
-        raw_publish_date = pd.to_datetime(str(row["Date of publish"]).strip(), format="%d-%m-%Y")
+        raw_publish_date = _parse_date(row["Date of publish"])
         date_of_publish = raw_publish_date.strftime("%Y-%m-%d")
 
         month_name = raw_publish_date.strftime("%B")
@@ -449,7 +510,7 @@ def process_com_visit_compliance_excel(file_url):
 
         # If Date of Closure is present, validate & update Status & Turnaround Time
         if pd.notnull(row.get("Date of closure")):
-            raw_closure_date = pd.to_datetime(str(row["Date of closure"]).strip(), format="%d-%m-%Y")
+            raw_closure_date = _parse_date(row["Date of closure"])
             
             # Validation: Date of closure cannot be earlier than Date of publish
             if raw_closure_date < raw_publish_date:

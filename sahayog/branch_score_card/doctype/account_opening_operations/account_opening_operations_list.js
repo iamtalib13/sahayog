@@ -1,6 +1,13 @@
 frappe.listview_settings['Account Opening Operations'] = {
     onload: function (listview) {
 
+        // View Logs: sirf System Manager / Branch Scorecard Editor / Administrator
+        if (frappe.user.has_role(["System Manager", "Branch Scorecard Editor"])) {
+            listview.page.add_inner_button(__('View Logs'), function () {
+                window.open('/api/method/sahayog.branch_score_card.doctype.account_opening_operations.aoo_logs_page.view_logs_page', '_blank');
+            });
+        }
+
         // -----------------------------------------------------------
         // 1. ACTION: Upload Excel for FTR/FTNR
         // -----------------------------------------------------------

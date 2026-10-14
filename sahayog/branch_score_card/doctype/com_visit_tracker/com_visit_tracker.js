@@ -56,11 +56,25 @@ frappe.ui.form.on("COM Visit Tracker", {
             frm.save();
         });
 
+        // View Logs: sirf System Manager / Administrator / Branch Scorecard Editor
+        if (!frm.is_new() && frappe.user.has_role(["System Manager", "Branch Scorecard Editor"])) {
+            frm.add_custom_button(__("View Logs"), () => {
+                window.open(
+                    "/api/method/sahayog.branch_score_card.doctype.com_visit_tracker.visit_logs_page.view_logs_page?name=" +
+                        encodeURIComponent(frm.doc.name)
+                );
+            });
+        }
+
         if (frm.page.btn_primary) {
             frm.page.btn_primary.text(__("Submit"));
         }
 
         // Refresh / back ke baad widget-saved draft wapas laao
+        if (!frm.is_dirty()) {
+            frm.__baseline_rows = rows_signature(serialize_rows(frm));
+        }
+
         restore_draft_if_needed(frm);
 
         // HTML widget: DB save / Audit sync nahi karta, sirf browser draft rakhta hai
@@ -83,7 +97,10 @@ frappe.ui.form.on("COM Visit Tracker", {
                 e.stopPropagation();
 
                 // Koi change nahi hua to kuch bhi mat badlo
-                if (!frm.is_dirty()) {
+                const __draft = load_draft(frm);
+                const __ref = __draft ? rows_signature(__draft) : frm.__baseline_rows;
+                const __same = __ref !== undefined && rows_signature(serialize_rows(frm)) === __ref;
+                if (!frm.is_dirty() || __same) {
                     frappe.show_alert({
                         message: __("No changes in document"),
                         indicator: "blue"
@@ -93,6 +110,7 @@ frappe.ui.form.on("COM Visit Tracker", {
 
                 // Child table ki rows browser me store (DB / server call nahi)
                 save_draft(frm);
+                log_draft_to_server(frm);
 
                 frm.__pending_doc = frm.doc.name;
                 update_save_widget_status(frm);
@@ -315,4 +333,27 @@ function reset_save_widget_status(frm) {
     if (frm.is_dirty()) {
         frm.page.set_indicator(__("Not Saved"), "orange");
     }
+}
+
+function log_draft_to_server(frm) {
+    frappe.call({
+        method: "sahayog.branch_score_card.doctype.com_visit_tracker.com_visit_tracker.log_draft_save",
+        args: { name: frm.doc.name, rows: JSON.stringify(serialize_rows(frm)) },
+        no_spinner: true,
+        error() {}
+    });
+}
+
+
+function rows_signature(rows) {
+    // key order se farak na pade, isliye keys sort karke compare
+    return JSON.stringify((rows || []).map((r) => {
+        const o = {};
+        Object.keys(r).sort().forEach((k) => {
+            const v = r[k];
+            // empty / null / 0 ko same maano
+            o[k] = (v === null || v === undefined || v === "" || v === 0 || v === "0") ? "" : String(v);
+        });
+        return o;
+    }));
 }

@@ -45,7 +45,8 @@
   {
    "fieldname": "year",
    "fieldtype": "Int",
-   "label": "Year"
+   "label": "Year",
+   "read_only": 1
   },
   {
    "fieldname": "section_break_spco",
@@ -100,7 +101,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-28 13:39:59.849012",
+ "modified": "2026-10-13 15:40:11.023658",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Audit and Compliance",
@@ -146,5 +147,6 @@
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }

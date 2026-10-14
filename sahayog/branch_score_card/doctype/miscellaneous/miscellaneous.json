@@ -122,6 +122,7 @@
  "module": "Branch Score Card",
  "name": "Miscellaneous",
  "owner": "Administrator",
+ "track_changes": 1,
  "permissions": [
   {
    "create": 1,
