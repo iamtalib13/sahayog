@@ -46,10 +46,7 @@ USER_MESSAGES = {
 	"503": "The Aadhaar service is under maintenance. Please try again after some time.",
 	"504": "The Aadhaar service took too long to respond. Please try again.",
 }
-DEFAULT_USER_MESSAGE = (
-	"Verification could not be completed. Please try again. "
-	"If the problem continues, please contact your administrator."
-)
+DEFAULT_USER_MESSAGE = "Verification could not be completed. Please try again."
 
 
 CONSENT_TEXT = (
@@ -243,24 +240,19 @@ def _post(path, payload, headers, timeout):
 		return requests.post(base_url + path, json=payload, headers=headers, timeout=timeout).json()
 	except (requests.RequestException, ValueError):
 		frappe.log_error(title="Aadhaar API error")
-		frappe.throw(_("Aadhaar service is unreachable. Please try again."))
+		frappe.throw(_(DEFAULT_USER_MESSAGE))
 
 
 def _fail(res):
-	frappe.log_error(title="Aadhaar API failure", message=json.dumps(res)[:2000])
-	code = str(res.get("status-code") or res.get("statusCode") or "")
-	desc = ERROR_CODES.get(code)
-	raw = (res.get("result") or {}).get("message") or res.get("error")
-	raw = str(raw) if raw else None
-	detail = " | ".join(p for p in (desc, raw if raw != desc else None) if p) or "Unknown error"
-	# technical detail goes to the audit log only
-	frappe.flags.aadhaar_tech_error = "({0}) {1}".format(code or "NA", detail)
-	msg = USER_MESSAGES.get(code, DEFAULT_USER_MESSAGE)
-	case_id = frappe.flags.get("aadhaar_case_id")
-	if case_id:
-		msg += " (Reference: Case ID {0})".format(case_id)
-	frappe.throw(_(msg))
-
+    frappe.log_error(title="Aadhaar API failure", message=json.dumps(res)[:2000])
+    code = str(res.get("status-code") or res.get("statusCode") or "")
+    desc = ERROR_CODES.get(code)
+    raw = (res.get("result") or {}).get("message") or res.get("error")
+    raw = str(raw) if raw else None
+    detail = " | ".join(p for p in (desc, raw if raw != desc else None) if p) or "Unknown error"
+    # technical detail sirf audit log me jata hai
+    frappe.flags.aadhaar_tech_error = "({0}) {1}".format(code or "NA", detail)
+    frappe.throw(_(DEFAULT_USER_MESSAGE))
 
 @frappe.whitelist()
 def get_karza_api_key():
