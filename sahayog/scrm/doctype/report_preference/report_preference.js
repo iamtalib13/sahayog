@@ -11,6 +11,7 @@ frappe.ui.form.on("Report Preference", {
       regions: new Set(),
       districts: new Set(),
       sol_ids: new Set(),
+      override_designation_permission: 1,
     };
     frm.resolved_branches = [];
   },
@@ -58,6 +59,9 @@ frappe.ui.form.on("Report Preference", {
     frm.state.enabled = frm.doc.enabled !== undefined ? frm.doc.enabled : (pref ? pref.enabled : 1);
     frm.state.tag = frm.doc.tag || (pref ? pref.tag : "");
     frm.state.access_type = frm.doc.access_type || (pref ? pref.access_type : "Geographical (Zone / Region / District)");
+    frm.state.override_designation_permission = frm.doc.override_designation_permission !== undefined
+      ? frm.doc.override_designation_permission
+      : (pref && pref.override_designation_permission !== undefined ? pref.override_designation_permission : 1);
 
     let zones = (frm.doc.zone || []).map(d => d.zone).filter(Boolean);
     if (!zones.length && pref && pref.zones && frm.is_new() && (!frm.state || !frm.state.user)) zones = pref.zones;
@@ -104,6 +108,7 @@ frappe.ui.form.on("Report Preference", {
     frm.doc.enabled = frm.state.enabled ? 1 : 0;
     frm.doc.tag = frm.state.tag || "";
     frm.doc.access_type = frm.state.access_type || "Geographical (Zone / Region / District)";
+    frm.doc.override_designation_permission = frm.state.override_designation_permission ? 1 : 0;
 
     frm.clear_table("zone");
     frm.clear_table("region");
@@ -150,7 +155,8 @@ frappe.ui.form.on("Report Preference", {
             zones: Array.from(frm.state.zones),
             regions: Array.from(frm.state.regions),
             districts: Array.from(frm.state.districts),
-            sol_ids: Array.from(frm.state.sol_ids)
+            sol_ids: Array.from(frm.state.sol_ids),
+            override_designation_permission: frm.state.override_designation_permission ? 1 : 0
           }
         },
         callback: function (r) {
@@ -710,6 +716,19 @@ frappe.ui.form.on("Report Preference", {
           </div>
         </div>
 
+        <!-- Override Designation Permission Checkbox -->
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0 4px 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; font-size: 12px; font-weight: 600; color: #1e293b; user-select: none;">
+            <input type="checkbox" id="min-chk-override-designation"
+              ${frm.state.override_designation_permission ? 'checked' : ''}
+              style="width: 14px; height: 14px; cursor: pointer; accent-color: #0284c7;" />
+            Override Designation Permission
+          </label>
+          <span style="font-size: 10.5px; color: #64748b;">
+            (When checked, this will bypass the user's designation-based permissions)
+          </span>
+        </div>
+
         <!-- 1. GEO CONTROLS SECTION -->
         <div class="min-box-row ${!isGeo ? 'min-box-disabled' : ''}">
           <!-- Zone Box -->
@@ -994,6 +1013,12 @@ frappe.ui.form.on("Report Preference", {
     $w.find("#min-toggle-status").on("click", function () {
       frm.state.enabled = frm.state.enabled ? 0 : 1;
       frm.trigger("render_minimal_widget");
+      frm.trigger("auto_save_preference");
+    });
+
+    // Override Designation Permission Checkbox
+    $w.find("#min-chk-override-designation").on("change", function () {
+      frm.state.override_designation_permission = $(this).is(":checked") ? 1 : 0;
       frm.trigger("auto_save_preference");
     });
 

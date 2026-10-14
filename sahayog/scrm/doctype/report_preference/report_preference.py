@@ -136,6 +136,7 @@ def get_widget_meta(user=None):
                 "districts": raw_districts,
                 "states": raw_states,
                 "sol_ids": raw_sols,
+                "override_designation_permission": bool(doc.override_designation_permission),
                 "modified": str(doc.modified),
                 "modified_by": doc.modified_by,
                 "modified_by_name": frappe.utils.get_fullname(doc.modified_by),
@@ -153,6 +154,7 @@ def get_widget_meta(user=None):
                 "districts": [],
                 "states": [],
                 "sol_ids": [],
+                "override_designation_permission": False,
             }
 
     def sort_natural(lst, is_region=False):
@@ -214,6 +216,7 @@ def save_widget_preference(data):
     doc.tag = data.get("tag") or ""
     access_type = data.get("access_type") or "Geographical (Zone / Region / District)"
     doc.access_type = access_type
+    doc.override_designation_permission = 1 if data.get("override_designation_permission") else 0
 
     doc.set("zone", [])
     doc.set("region", [])

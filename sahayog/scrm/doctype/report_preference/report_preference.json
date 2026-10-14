@@ -13,6 +13,7 @@
   "user",
   "full_name",
   "enabled",
+  "override_designation_permission",
   "tag",
   "access_type",
   "zone",
@@ -125,13 +126,19 @@
    "fieldname": "settings_tab",
    "fieldtype": "Tab Break",
    "label": "Settings"
+  },
+  {
+   "default": "1",
+   "fieldname": "override_designation_permission",
+   "fieldtype": "Check",
+   "label": "Override Designation Permission"
   }
  ],
  "grid_page_length": 50,
  "hide_toolbar": 1,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-04 17:15:07.920963",
+ "modified": "2026-10-14 13:49:23.663475",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Report Preference",
