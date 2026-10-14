@@ -9,15 +9,16 @@
   "branch_name",
   "column_break_fbze",
   "district",
-  "state",
   "column_break_eivy",
-  "zone",
+  "state",
   "column_break_ngfp",
+  "zone",
+  "column_break_capt",
   "region",
-  "section_break_axpj",
-  "com_name",
-  "column_break_wcoa",
+  "section_break_cvrl",
   "year",
+  "column_break_gfzh",
+  "com_name",
   "section_break_vqdx",
   "save_widget",
   "com_visit_tracker"
@@ -57,7 +58,8 @@
    "fetch_from": "sol_id.cluster_operations_manager",
    "fieldname": "com_name",
    "fieldtype": "Data",
-   "label": "COM Name"
+   "label": "COM Name",
+   "read_only": 1
   },
   {
    "fieldname": "column_break_cogm",
@@ -98,14 +100,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "section_break_axpj",
-   "fieldtype": "Section Break"
-  },
-  {
-   "fieldname": "column_break_wcoa",
-   "fieldtype": "Column Break"
-  },
-  {
    "fieldname": "save_widget",
    "fieldtype": "HTML",
    "label": "Save"
@@ -116,12 +110,24 @@
    "fieldtype": "Data",
    "label": "State",
    "read_only": 1
+  },
+  {
+   "fieldname": "column_break_capt",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "section_break_cvrl",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "column_break_gfzh",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-09 17:19:19.786605",
+ "modified": "2026-10-10 15:33:36.788737",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "COM Visit Tracker",
@@ -145,11 +151,16 @@
    "read": 1,
    "role": "Employee",
    "write": 1
+  },
+  {
+   "role": "Branch Scorecard Editor",
+   "read": 1
   }
  ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [],
+ "track_changes": 1
 }
