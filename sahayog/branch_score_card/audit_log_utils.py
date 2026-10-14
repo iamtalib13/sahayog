@@ -36,6 +36,9 @@ def write_audit_log(
     reason=None,
 ):
 
+    if not frappe.db.table_exists("Sahayog Permanent Audit Log"):
+        return
+
     source = (
         source
         or getattr(frappe.flags, "sahayog_audit_source", None)
@@ -66,6 +69,8 @@ def write_audit_log(
 
 
 def get_audit_logs(doctype, record_name=None):
+    if not frappe.db.table_exists("Sahayog Permanent Audit Log"):
+        return []
 
     filters = [doctype]
     condition = "reference_doctype = %s"
