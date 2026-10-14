@@ -13,6 +13,24 @@ function has_widget_draft(name) {
 frappe.listview_settings["COM Visit Tracker"] = {
     add_fields: ["name"],
 
+    onload(listview) {
+        listview.page.add_inner_button(__("Report Download"), function () {
+            frappe.show_alert({ message: __("Generating report..."), indicator: "blue" });
+            const drafts = [];
+            try {
+                const prefix = `com_visit_tracker_draft::${frappe.session.user}::`;
+                for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && k.startsWith(prefix)) drafts.push(k.slice(prefix.length));
+                }
+            } catch (e) {}
+            window.open(
+                "/api/method/sahayog.branch_score_card.doctype.com_visit_tracker.com_visit_tracker.download_report?drafts=" +
+                    encodeURIComponent(JSON.stringify(drafts))
+            );
+        });
+    },
+
     get_indicator(doc) {
         const filter = "name,=," + doc.name;
 
