@@ -3,6 +3,7 @@ frappe.ui.form.on("Lead", {
     hideNamingSeries();
     frm.set_df_property("custom_verification_section", "collapsible", 0);
     setVerificationHighlight(frm);
+    toggleCallingSource(frm);
 
     if (!frm.is_new()) {
       addAssignButton(frm); // ✅ Only show when form is not new
@@ -464,3 +465,14 @@ frappe.ui.form.on("Lead Product", {
     }
   }
 });
+
+// Show custom_calling_source only for Operations roles
+function toggleCallingSource(frm) {
+  const user_roles = frappe.user_roles || [];
+  const is_operations =
+    user_roles.includes("Operations Support Manager") ||
+    user_roles.includes("Operations Support Executive") ||
+    (frappe.session.user === "Administrator");
+
+  frm.toggle_display("custom_calling_source", is_operations);
+}
