@@ -465,6 +465,17 @@ function validateMobileNumber(mobile) {
 }
 
 frappe.ui.form.on("Lead Product", {
+  account_number(frm, cdt, cdn) {
+    const row = locals[cdt][cdn];
+    if (row.account_number) {
+      // Strip non-digits and limit to max 15 digits
+      const sanitized = String(row.account_number).replace(/\D/g, "").slice(0, 15);
+      if (row.account_number !== sanitized) {
+        frappe.model.set_value(cdt, cdn, "account_number", sanitized);
+      }
+    }
+  },
+
   form_render(frm, cdt, cdn) {
     const user_roles = frappe.user_roles || [];
     const is_operations =
@@ -477,6 +488,17 @@ frappe.ui.form.on("Lead Product", {
     if (grid_row) {
       grid_row.toggle_display("account_number", is_operations);
       grid_row.toggle_display("account_creation_date", is_operations);
+
+      // Attach listener to block non-digits and limit to 15 digits
+      if (grid_row.grid_form && grid_row.grid_form.fields_dict.account_number) {
+        const input_field = grid_row.grid_form.fields_dict.account_number.$wrapper.find("input");
+        if (input_field && input_field.length) {
+          input_field.attr("maxlength", 15);
+          input_field.off("input.ac_filter").on("input.ac_filter", function () {
+            this.value = this.value.replace(/[^0-9]/g, "").slice(0, 15);
+          });
+        }
+      }
     }
   }
 });
