@@ -35,6 +35,7 @@
   {
    "fieldname": "product_name",
    "fieldtype": "Data",
+   "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Product Name",
    "reqd": 1
@@ -70,8 +71,10 @@
    "description": "1st Level",
    "fieldname": "group_name",
    "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Group Name",
-   "options": "\nCASA\nDAM\nFD\nRD\nDD\nSMBG\nSHARE"
+   "options": "\nCASA\nDAM\nFD\nRD\nDD\nSMBG\nSHARE\nMIS"
   },
   {
    "fieldname": "column_break_ngig",
@@ -165,7 +168,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-08-31 17:10:18.290557",
+ "modified": "2026-10-15 16:03:48.364840",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Product",
