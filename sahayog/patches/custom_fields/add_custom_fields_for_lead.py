@@ -141,6 +141,13 @@ def execute():
                 "insert_after": "custom_verified_by",
             },
             {
+                "label": "Calling Source",
+                "fieldname": "custom_calling_source",
+                "fieldtype": "Select",
+                "options": "\nWelcome\nTASC\nSales\nWebsite\nIncoming\nNMAB\nSS Calling",
+                "insert_after": "source",
+            },
+            {
                 "label": "Verification Remarks",
                 "fieldname": "custom_verification_remarks",
                 "fieldtype": "Small Text",
