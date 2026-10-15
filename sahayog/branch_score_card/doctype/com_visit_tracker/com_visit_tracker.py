@@ -39,6 +39,16 @@ class COMVisitTracker(Document):
                         )
 
             if (
+                row.visti_start_date
+                and row.report_publish_date
+                and getdate(row.report_publish_date) < getdate(row.visti_start_date)
+            ):
+                frappe.throw(
+                    frappe._("Row {0}: Report Publish Date cannot be earlier than Visit Start Date.").format(row.idx),
+                    title=frappe._("Date Mismatch"),
+                )
+
+            if (
                 row.report_publish_date
                 and row.report_closure_date
                 and getdate(row.report_closure_date) < getdate(row.report_publish_date)
