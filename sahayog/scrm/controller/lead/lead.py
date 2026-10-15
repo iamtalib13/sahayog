@@ -218,17 +218,22 @@ def validate_lead_products(doc, method=None):
                 msg=_("Row {0}: Product amount must be a valid number greater than 0.").format(i)
             )
 
-        # Validate Account Number and Account Creation Date when Approved
-        if doc.get("custom_lead_audit_status") == "Approved":
+        # Validate Account Number and Account Creation Date when Approved or Converted (for Operation Lead)
+        is_operation_lead = bool(doc.get("custom_is_operation_lead"))
+        is_converted = doc.get("status") == "Converted"
+        is_approved = doc.get("custom_lead_audit_status") == "Approved"
+
+        if is_approved or (is_operation_lead and is_converted):
+            reason = "Lead Audit Status is Approved" if is_approved else "Converting an Operation Lead"
             if not row.get("account_number"):
                 frappe.throw(
                     title=_("Missing Account Details"),
-                    msg=_("Row {0}: Account Number is required when Lead Audit Status is Approved.").format(i)
+                    msg=_("Row {0}: Account Number is required when {1}.").format(i, _(reason))
                 )
             if not row.get("account_creation_date"):
                 frappe.throw(
                     title=_("Missing Account Details"),
-                    msg=_("Row {0}: Account Creation Date is required when Lead Audit Status is Approved.").format(i)
+                    msg=_("Row {0}: Account Creation Date is required when {1}.").format(i, _(reason))
                 )
 
 
