@@ -218,6 +218,19 @@ def validate_lead_products(doc, method=None):
                 msg=_("Row {0}: Product amount must be a valid number greater than 0.").format(i)
             )
 
+        # Validate Account Number and Account Creation Date when Approved
+        if doc.get("custom_lead_audit_status") == "Approved":
+            if not row.get("account_number"):
+                frappe.throw(
+                    title=_("Missing Account Details"),
+                    msg=_("Row {0}: Account Number is required when Lead Audit Status is Approved.").format(i)
+                )
+            if not row.get("account_creation_date"):
+                frappe.throw(
+                    title=_("Missing Account Details"),
+                    msg=_("Row {0}: Account Creation Date is required when Lead Audit Status is Approved.").format(i)
+                )
+
 
 def validate_lead_source(doc, method):
     """Validate Lead source is set."""
@@ -610,5 +623,32 @@ def get_open_activities(ref_doctype=None, ref_docname=None):
     except Exception:
         return {"tasks": [], "events": []}
 
+def validate_lead_audit_lock(doc, method=None):
+    """Validate Lead Audit Status permissions and locking.
+    Only Administrator and employee 1034 can change custom_lead_audit_status or edit an Approved lead.
+    """
+    current_user = frappe.session.user
+    is_admin = current_user == "Administrator"
+    emp_number = frappe.db.get_value("Employee", {"user_id": current_user}, "employee_number") if not is_admin else None
+    is_emp_1034 = emp_number == "1034" or current_user == "1034@sahayog.com"
+    can_audit = is_admin or is_emp_1034
 
+    if not doc.is_new():
+        prev_status = frappe.db.get_value("Lead", doc.name, "custom_lead_audit_status")
+        # Prevent non-1034 / non-admin from changing audit status
+        if doc.get("custom_lead_audit_status") != prev_status and not can_audit:
+            frappe.throw(
+                title=_("Permission Denied"),
+                msg=_("Only Administrator and Authorized Auditor (Employee 1034) can update Lead Audit Status.")
+            )
 
+        # Lock Approved lead from being modified by others
+        if prev_status == "Approved" and not can_audit:
+            frappe.throw(
+                title=_("Lead Locked"),
+                msg=_("This lead is Approved / Audited and cannot be edited. Only Administrator and Authorized Auditor (1034) can modify.")
+            )
+    else:
+        # If new document and non-auditor attempts to set audit status
+        if doc.get("custom_lead_audit_status") and doc.get("custom_lead_audit_status") != "Pending" and not can_audit:
+            doc.custom_lead_audit_status = "Pending"
