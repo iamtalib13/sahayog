@@ -158,17 +158,52 @@ def get_permission_query_conditions(user=None):
     return "(" + " or ".join(clauses) + ")" if clauses else "1=0"
 
 
+def _no_access_on_form_open():
+    """Form kholte waqt (getdoc) generic error ki jagah clear 'No Access' message."""
+    if frappe.form_dict.get("cmd") == "frappe.desk.form.load.getdoc":
+        frappe.throw(
+            frappe._("You do not have access to COM Visit Tracker."),
+            frappe.PermissionError,
+            title=frappe._("No Access"),
+        )
+
+
 def has_permission(doc, ptype=None, user=None, debug=False):
     user = user or frappe.session.user
     if _is_admin(user):
         return True
     scope = _get_scope(user)
     if not scope:
+        _no_access_on_form_open()
         return False
     if doc.get("sol_id") and str(doc.sol_id) in scope["sol_ids"]:
         return True
     geo = {f: vs for f, vs in scope["geo"].items() if vs}
     return bool(geo) and all(doc.get(f) in vs for f, vs in geo.items())
+
+
+@frappe.whitelist()
+def has_com_tracker_access():
+    """List view ke liye: access check + COM ke missing records auto-create (COM_AUTO_CREATE)."""
+    user = frappe.session.user
+    if _is_admin(user):
+        return {"access": 1, "created": 0}
+    if not _get_scope(user):
+        return 0
+
+    created = 0
+    try:
+        pref_name = frappe.db.get_value(
+            "Report Preference", {"user": user, "enabled": 1}, "name"
+        ) or (user if frappe.db.exists("Report Preference", user) else None)
+        if pref_name:
+            year = get_current_fy()
+            before = frappe.db.count("COM Visit Tracker", {"year": year})
+            ensure_trackers_for_preference(frappe.get_doc("Report Preference", pref_name))
+            created = max(frappe.db.count("COM Visit Tracker", {"year": year}) - before, 0)
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "COM Visit Tracker auto-create failed")
+    return {"access": 1, "created": created}
 
 
 def get_scope_sols(pref):
