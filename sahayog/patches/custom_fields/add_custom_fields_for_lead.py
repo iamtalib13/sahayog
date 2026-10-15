@@ -141,6 +141,16 @@ def execute():
                 "insert_after": "custom_verified_by",
             },
             {
+                "label": "Lead Audit Status",
+                "fieldname": "custom_lead_audit_status",
+                "fieldtype": "Select",
+                "options": "Pending\nApproved\nRejected\nUnder Audit",
+                "default": "Pending",
+                "insert_after": "status",
+                "in_standard_filter": 1,
+                "in_list_view": 1,
+            },
+            {
                 "label": "Calling Source",
                 "fieldname": "custom_calling_source",
                 "fieldtype": "Select",
