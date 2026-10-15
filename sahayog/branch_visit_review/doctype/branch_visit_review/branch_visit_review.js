@@ -10,7 +10,7 @@ frappe.ui.form.on("Branch Visit Review", {
 			frm.set_df_property("section_break_mibr", "hidden", 1);
 		}
 		load_visit_details_designations(frm);
-		set_visit_details_access(frm);
+		// set_visit_details_access(frm);
 		set_visitor_signoff_access(frm);
 		set_branch_head_signoff_access(frm);
 		if (frm.doc.template) {
@@ -68,7 +68,7 @@ frappe.ui.form.on("Branch Visit Review", {
 		}
 	},
 	visited_by(frm) {
-		set_visit_details_access(frm);
+		// set_visit_details_access(frm);
 		set_visitor_signoff_access(frm);
 	},
 	overall_assessment(frm) {
@@ -104,9 +104,9 @@ let visit_designations = ["Cluster Head", "Regional Head (RH)", "Zonal Head (ZH)
 let visit_designations_loaded = false;
 
 function load_visit_details_designations(frm) {
-	frm.set_query("visited_by", function () {
-		return { filters: { designation: ["in", visit_designations] } };
-	});
+	// frm.set_query("visited_by", function () {
+	// 	return { filters: { designation: ["in", visit_designations] } };
+	// });
 	if (visit_designations_loaded) {
 		return;
 	}

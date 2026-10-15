@@ -58,8 +58,8 @@ class BranchVisitReview(Document):
 	# end: auto-generated types
 
 	def validate(self):
-		self.validate_visited_by_designation()
-		self.validate_visit_details_edit()
+		# self.validate_visited_by_designation()
+		# self.validate_visit_details_edit()
 		self.validate_visitor_signoff()
 		self.validate_branch_head_signoff()
 
