@@ -65,7 +65,10 @@ ALLOWED_DESIGNATIONS = [
 
 def has_aadhaar_access(user=None):
 	user = user or frappe.session.user
-	if user == "Administrator" or "System Manager" in frappe.get_roles(user):
+	roles = frappe.get_roles(user)
+	if user == "Administrator" or "System Manager" in roles:
+		return True
+	if "Aadhar Verification User" in roles:
 		return True
 	designation = frappe.db.get_value("Employee", {"user_id": user, "status": "Active"}, "designation")
 	return (designation or "").strip().upper() in ALLOWED_DESIGNATIONS
