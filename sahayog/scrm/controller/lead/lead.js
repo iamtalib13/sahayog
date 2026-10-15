@@ -447,3 +447,20 @@ function validateMobileNumber(mobile) {
     frappe.throw(__("Please enter a valid 10-digit mobile number."));
   }
 }
+
+frappe.ui.form.on("Lead Product", {
+  form_render(frm, cdt, cdn) {
+    const user_roles = frappe.user_roles || [];
+    const is_operations =
+      user_roles.includes("Operations Support Manager") ||
+      user_roles.includes("Operations Support Executive") ||
+      (frappe.session.user === "Administrator");
+
+    const row = locals[cdt][cdn];
+    const grid_row = frm.fields_dict["custom_product_table"].grid.get_row(cdn);
+    if (grid_row) {
+      grid_row.toggle_display("account_number", is_operations);
+      grid_row.toggle_display("account_creation_date", is_operations);
+    }
+  }
+});
