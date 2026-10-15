@@ -223,6 +223,16 @@ def validate_lead_products(doc, method=None):
         is_converted = doc.get("status") == "Converted"
         is_approved = doc.get("custom_lead_audit_status") == "Approved"
 
+        # Validate Account Number format: exactly 15 digits numeric
+        acc_no = str(row.get("account_number") or "").strip()
+        if acc_no:
+            if not (acc_no.isdigit() and len(acc_no) == 15):
+                frappe.throw(
+                    title=_("Invalid Account Number"),
+                    msg=_("Row {0}: Account Number must be exactly 15 numeric digits (numbers only).").format(i)
+                )
+
+        # Validate Account Number and Account Creation Date when Approved or Converted (for Operation Lead)
         if is_approved or (is_operation_lead and is_converted):
             reason = "Lead Audit Status is Approved" if is_approved else "Converting an Operation Lead"
             if not row.get("account_number"):
