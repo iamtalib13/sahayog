@@ -24,6 +24,19 @@ frappe.ui.form.on("Lead", {
 
   validate(frm) {
     validateMobileNumber(frm.doc.mobile_no);
+
+    // Validate Account details when Converting an Operation Lead
+    if (frm.doc.custom_is_operation_lead && frm.doc.status === "Converted") {
+      const rows = frm.doc.custom_product_table || [];
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row.account_number || !row.account_creation_date) {
+          frappe.throw(
+            __("Row {0}: Account Number and Account Creation Date are mandatory to convert an Operation Lead.", [i + 1])
+          );
+        }
+      }
+    }
   },
 });
 
