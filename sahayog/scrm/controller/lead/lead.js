@@ -4,6 +4,7 @@ frappe.ui.form.on("Lead", {
     frm.set_df_property("custom_verification_section", "collapsible", 0);
     setVerificationHighlight(frm);
     toggleCallingSource(frm);
+    toggleAuditStatusAndLock(frm);
 
     if (!frm.is_new()) {
       addAssignButton(frm); // ✅ Only show when form is not new
@@ -394,6 +395,7 @@ function getHiddenFields() {
     "contact_html",
     "dashboard_tab",
     "address_section",
+    "customer",
     "custom_lead_owner_details_section",
   ];
 }
@@ -475,4 +477,30 @@ function toggleCallingSource(frm) {
     (frappe.session.user === "Administrator");
 
   frm.toggle_display("custom_calling_source", is_operations);
+}
+
+// Handle Lead Audit Status read-only/editability and form locking
+function toggleAuditStatusAndLock(frm) {
+  const is_admin = frappe.session.user === "Administrator";
+  const is_emp_1034 =
+    frappe.session.user === "1034@sahayog.com" ||
+    (frappe.boot && frappe.boot.user && (frappe.boot.user.name === "1034" || frappe.boot.user.employee_number === "1034"));
+
+  const can_audit = is_admin || is_emp_1034;
+
+  // Field visible to all, but READ-ONLY for everyone except Admin and Employee 1034
+  frm.toggle_display("custom_lead_audit_status", true);
+  frm.set_df_property("custom_lead_audit_status", "read_only", can_audit ? 0 : 1);
+
+  // Lock entire form if Approved, unless Administrator or employee 1034
+  if (frm.doc.custom_lead_audit_status === "Approved" && !frm.is_new()) {
+    if (!can_audit) {
+      frm.disable_save();
+      frm.set_read_only();
+      frm.dashboard.set_headline(
+        __("This lead is Approved / Audited and locked. Only Administrator and Authorized Auditor (1034) can edit."),
+        "blue"
+      );
+    }
+  }
 }
