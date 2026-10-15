@@ -137,6 +137,26 @@ frappe.ui.form.on("COM Visit Tracker", {
         const rows = frm.doc.com_visit_tracker || [];
 
         for (const row of rows) {
+            if (
+                row.visti_start_date &&
+                row.report_publish_date &&
+                moment(row.report_publish_date, "YYYY-MM-DD").isBefore(
+                    moment(row.visti_start_date, "YYYY-MM-DD"),
+                    "day"
+                )
+            ) {
+                frappe.show_alert({
+                    message: __(
+                        "Row {0}: Report Publish Date cannot be earlier than Visit Start Date.",
+                        [row.idx]
+                    ),
+                    indicator: "red"
+                }, 10);
+
+                frappe.validated = false;
+                return;
+            }
+
             const month = (row.month || "").trim();
             if (!month) {
                 continue;
