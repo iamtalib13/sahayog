@@ -51,6 +51,17 @@ frappe.ui.form.on("COM Visit Tracker", {
     },
 
     refresh(frm) {
+        // block_new_form: naya record sirf Administrator / System Manager / Branch Scorecard Editor
+        if (frm.is_new() && !frappe.user.has_role(["System Manager", "Branch Scorecard Editor"])) {
+            frappe.msgprint({
+                title: __("No Access"),
+                message: __("You do not have access to create COM Visit Tracker."),
+                indicator: "red"
+            });
+            frappe.set_route("List", "COM Visit Tracker");
+            return;
+        }
+
         // Top-right Submit button -> sirf frm.save() (real submit nahi)
         frm.page.set_primary_action(__("Submit"), () => {
             frm.save();

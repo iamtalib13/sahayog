@@ -44,10 +44,40 @@ function show_no_access_after_back() {
     d.show();
 }
 
+function sync_missing_trackers(listview) {
+    // Har refresh / re-open par missing records banao (5 sec throttle, loop se bachne ke liye)
+    const now = Date.now();
+    if (window.__com_last_sync && now - window.__com_last_sync < 5000) return;
+    window.__com_last_sync = now;
+
+    frappe.call({
+        method: "sahayog.branch_score_card.doctype.com_visit_tracker.com_visit_tracker.has_com_tracker_access",
+        no_spinner: true,
+        callback(r) {
+            if (r.message && r.message.created) {
+                listview.refresh();
+            }
+        }
+    });
+}
+
+function hide_add_button(listview) {
+    // hide_add_btn: Add button sirf Administrator / System Manager / Branch Scorecard Editor ko
+    if (frappe.user.has_role(["System Manager", "Branch Scorecard Editor"])) return;
+    try {
+        listview.page.clear_primary_action();
+        if (listview.page.btn_primary) listview.page.btn_primary.hide();
+        listview.$page.find(".btn-new-doc, .primary-action, .btn-primary-action").hide();
+        listview.$result.find(".btn-new-doc, .btn-primary").hide();
+    } catch (e) {}
+}
+
 frappe.listview_settings["COM Visit Tracker"] = {
     add_fields: ["name"],
 
     onload(listview) {
+        hide_add_button(listview);
+        window.__com_last_sync = Date.now();
         // Access check: sirf Admin / System Manager / Branch Scorecard Editor / COM (Report Preference)
         frappe.call({
             method: "sahayog.branch_score_card.doctype.com_visit_tracker.com_visit_tracker.has_com_tracker_access",
@@ -102,6 +132,8 @@ frappe.listview_settings["COM Visit Tracker"] = {
     },
 
     refresh(listview) {
+        hide_add_button(listview);
+        sync_missing_trackers(listview);
         if (listview.__loading_rows) return;
         listview.__loading_rows = true;
 

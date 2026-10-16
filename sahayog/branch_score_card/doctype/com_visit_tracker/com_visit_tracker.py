@@ -172,6 +172,8 @@ def has_permission(doc, ptype=None, user=None, debug=False):
     user = user or frappe.session.user
     if _is_admin(user):
         return True
+    if ptype == "create":  # CREATE_ONLY_ADMIN
+        return False
     scope = _get_scope(user)
     if not scope:
         _no_access_on_form_open()
@@ -182,12 +184,48 @@ def has_permission(doc, ptype=None, user=None, debug=False):
     return bool(geo) and all(doc.get(f) in vs for f, vs in geo.items())
 
 
+def ensure_trackers_for_all_numeric_branches():
+    """Admin / System Manager / Branch Scorecard Editor ke liye:
+    Sahayog Branch ki saari numeric SOL ID + non-Zonal branches ke current FY ke
+    missing records banao. Existing ko touch nahi karta, duplicate nahi banata."""
+    import re
+
+    year = get_current_fy()
+    branches = frappe.get_all(
+        "Sahayog Branch", filters={"branch_type": ["!=", "Zonal"]}, pluck="name"
+    )
+    numeric = {str(b) for b in branches if re.fullmatch(r"\d+", str(b))}
+    existing = set(frappe.get_all(
+        "COM Visit Tracker", filters={"year": year}, pluck="sol_id"
+    ))
+
+    created = 0
+    for sol in sorted(numeric - existing):
+        try:
+            frappe.get_doc({
+                "doctype": "COM Visit Tracker",
+                "sol_id": sol,
+                "year": year,
+            }).insert(ignore_permissions=True)
+            created += 1
+        except frappe.DuplicateEntryError:
+            pass  # kisi aur request ne abhi bana diya
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"COM Visit Tracker create failed: {sol}")
+    return created
+
+
 @frappe.whitelist()
 def has_com_tracker_access():
     """List view ke liye: access check + COM ke missing records auto-create (COM_AUTO_CREATE)."""
     user = frappe.session.user
     if _is_admin(user):
-        return {"access": 1, "created": 0}
+        created = 0
+        try:
+            created = ensure_trackers_for_all_numeric_branches()
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "COM Visit Tracker admin auto-create failed")
+        return {"access": 1, "created": created}
     if not _get_scope(user):
         return 0
 
