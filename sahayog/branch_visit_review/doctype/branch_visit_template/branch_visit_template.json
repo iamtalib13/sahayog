@@ -1,7 +1,8 @@
 {
  "actions": [],
+ "allow_import": 1,
  "allow_rename": 1,
- "creation": "2026-09-19 00:00:00.000000",
+ "creation": "2026-09-19 00:00:00",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -43,7 +44,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-19 00:00:00.000000",
+ "modified": "2026-10-16 11:06:04.336079",
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
  "name": "Branch Visit Template",
