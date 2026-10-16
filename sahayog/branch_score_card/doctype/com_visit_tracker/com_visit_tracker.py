@@ -158,17 +158,90 @@ def get_permission_query_conditions(user=None):
     return "(" + " or ".join(clauses) + ")" if clauses else "1=0"
 
 
+def _no_access_on_form_open():
+    """Form kholte waqt (getdoc) generic error ki jagah clear 'No Access' message."""
+    if frappe.form_dict.get("cmd") == "frappe.desk.form.load.getdoc":
+        frappe.throw(
+            frappe._("You do not have access to COM Visit Tracker."),
+            frappe.PermissionError,
+            title=frappe._("No Access"),
+        )
+
+
 def has_permission(doc, ptype=None, user=None, debug=False):
     user = user or frappe.session.user
     if _is_admin(user):
         return True
+    if ptype == "create":  # CREATE_ONLY_ADMIN
+        return False
     scope = _get_scope(user)
     if not scope:
+        _no_access_on_form_open()
         return False
     if doc.get("sol_id") and str(doc.sol_id) in scope["sol_ids"]:
         return True
     geo = {f: vs for f, vs in scope["geo"].items() if vs}
     return bool(geo) and all(doc.get(f) in vs for f, vs in geo.items())
+
+
+def ensure_trackers_for_all_numeric_branches():
+    """Admin / System Manager / Branch Scorecard Editor ke liye:
+    Sahayog Branch ki saari numeric SOL ID + non-Zonal branches ke current FY ke
+    missing records banao. Existing ko touch nahi karta, duplicate nahi banata."""
+    import re
+
+    year = get_current_fy()
+    branches = frappe.get_all(
+        "Sahayog Branch", filters={"branch_type": ["!=", "Zonal"]}, pluck="name"
+    )
+    numeric = {str(b) for b in branches if re.fullmatch(r"\d+", str(b))}
+    existing = set(frappe.get_all(
+        "COM Visit Tracker", filters={"year": year}, pluck="sol_id"
+    ))
+
+    created = 0
+    for sol in sorted(numeric - existing):
+        try:
+            frappe.get_doc({
+                "doctype": "COM Visit Tracker",
+                "sol_id": sol,
+                "year": year,
+            }).insert(ignore_permissions=True)
+            created += 1
+        except frappe.DuplicateEntryError:
+            pass  # kisi aur request ne abhi bana diya
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), f"COM Visit Tracker create failed: {sol}")
+    return created
+
+
+@frappe.whitelist()
+def has_com_tracker_access():
+    """List view ke liye: access check + COM ke missing records auto-create (COM_AUTO_CREATE)."""
+    user = frappe.session.user
+    if _is_admin(user):
+        created = 0
+        try:
+            created = ensure_trackers_for_all_numeric_branches()
+        except Exception:
+            frappe.log_error(frappe.get_traceback(), "COM Visit Tracker admin auto-create failed")
+        return {"access": 1, "created": created}
+    if not _get_scope(user):
+        return 0
+
+    created = 0
+    try:
+        pref_name = frappe.db.get_value(
+            "Report Preference", {"user": user, "enabled": 1}, "name"
+        ) or (user if frappe.db.exists("Report Preference", user) else None)
+        if pref_name:
+            year = get_current_fy()
+            before = frappe.db.count("COM Visit Tracker", {"year": year})
+            ensure_trackers_for_preference(frappe.get_doc("Report Preference", pref_name))
+            created = max(frappe.db.count("COM Visit Tracker", {"year": year}) - before, 0)
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "COM Visit Tracker auto-create failed")
+    return {"access": 1, "created": created}
 
 
 def get_scope_sols(pref):
