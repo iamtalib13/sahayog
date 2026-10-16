@@ -5,6 +5,7 @@ frappe.ui.form.on("Lead", {
     setVerificationHighlight(frm);
     toggleCallingSource(frm);
     toggleAuditStatusAndLock(frm);
+    customizeTimelineTimestamps(frm);
 
     if (!frm.is_new()) {
       addAssignButton(frm); // ✅ Only show when form is not new
@@ -538,4 +539,66 @@ function toggleAuditStatusAndLock(frm) {
       );
     }
   }
+}
+
+// Format timeline & sidebar activity timestamps as: 'Day, DD-MMM-YYYY hh:mm A'
+function customizeTimelineTimestamps(frm) {
+  if (frm.is_new()) return;
+
+  const formatActivityDate = (dt) => {
+    if (!dt) return "";
+    const d = new Date(dt);
+    if (isNaN(d.getTime())) return dt;
+
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    const dayName = days[d.getDay()];
+    const dateNum = String(d.getDate()).padStart(2, "0");
+    const monthName = months[d.getMonth()];
+    const year = d.getFullYear();
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? String(hours).padStart(2, "0") : "12";
+
+    return dayName + ", " + dateNum + "-" + monthName + "-" + year + " " + hours + ":" + minutes + " " + ampm;
+  };
+
+  const applyCustomFormat = () => {
+    // 1. Sidebar (.modified-by & .created-by)
+    $(".modified-by, .created-by").each(function () {
+      const $el = $(this);
+      const text = $el.text();
+      const is_mod = $el.hasClass("modified-by") || text.includes("last edited");
+      const dt = is_mod ? frm.doc.modified : frm.doc.creation;
+      if (!dt) return;
+
+      const user_prefix = is_mod
+        ? (frm.doc.modified_by === frappe.session.user ? __("You last edited this") : frm.doc.modified_by + " " + __("last edited this"))
+        : (frm.doc.owner === frappe.session.user ? __("You created this") : frm.doc.owner + " " + __("created this"));
+
+      $el.html(user_prefix + " · " + formatActivityDate(dt));
+    });
+
+    // 2. Timeline items in footer
+    $(".timeline-item").each(function () {
+      const $item = $(this);
+      const timestamp = $item.attr("data-timestamp");
+      if (timestamp) {
+        $item.find(".timeline-content > span").each(function () {
+          const $s = $(this);
+          if ($s.text().startsWith(" · ")) {
+            $s.text(" · " + formatActivityDate(timestamp));
+          }
+        });
+      }
+    });
+  };
+
+  // Run immediately and periodically until rendered
+  applyCustomFormat();
+  [200, 500, 1000, 2000].forEach((ms) => setTimeout(applyCustomFormat, ms));
 }
