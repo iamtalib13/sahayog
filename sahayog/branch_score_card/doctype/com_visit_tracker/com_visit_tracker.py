@@ -235,10 +235,9 @@ def has_com_tracker_access():
             "Report Preference", {"user": user, "enabled": 1}, "name"
         ) or (user if frappe.db.exists("Report Preference", user) else None)
         if pref_name:
-            year = get_current_fy()
-            before = frappe.db.count("COM Visit Tracker", {"year": year})
-            ensure_trackers_for_preference(frappe.get_doc("Report Preference", pref_name))
-            created = max(frappe.db.count("COM Visit Tracker", {"year": year}) - before, 0)
+            created = ensure_trackers_for_preference(
+                frappe.get_doc("Report Preference", pref_name)
+            ) or 0
     except Exception:
         frappe.log_error(frappe.get_traceback(), "COM Visit Tracker auto-create failed")
     return {"access": 1, "created": created}
@@ -271,16 +270,17 @@ def get_scope_sols(pref):
 def ensure_trackers_for_preference(doc, method=None):
     """Report Preference save hote hi us user ke SOLs ke records bana do (jo nahi hain)."""
     if not doc.enabled or not is_com(doc.user):
-        return
+        return 0
     year = get_current_fy()
     sols = get_scope_sols(doc)
     if not sols:
-        return
+        return 0
     existing = set(frappe.get_all(
         "COM Visit Tracker",
         filters={"year": year, "sol_id": ["in", list(sols)]},
         pluck="sol_id",
     ))
+    created = 0
     for sol in sols - existing:
         try:
             frappe.get_doc({
@@ -288,11 +288,13 @@ def ensure_trackers_for_preference(doc, method=None):
                 "sol_id": sol,
                 "year": year,
             }).insert(ignore_permissions=True)
+            created += 1
         except Exception:
             frappe.log_error(
                 frappe.get_traceback(),
                 f"COM Visit Tracker create failed: {sol}",
             )
+    return created
 
 
 def backfill_all_preferences():
