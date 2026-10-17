@@ -136,6 +136,22 @@ def _get_scope(user):
     return scope
 
 
+def _ensure_trackers_for_user(user):
+    """List query se pehle us COM user ke missing records bana do (har request me ek baar)."""
+    done = frappe.flags.setdefault("com_tracker_ensured", {})
+    if done.get(user):
+        return
+    done[user] = 1
+    try:
+        pref_name = frappe.db.get_value(
+            "Report Preference", {"user": user, "enabled": 1}, "name"
+        ) or (user if frappe.db.exists("Report Preference", user) else None)
+        if pref_name:
+            ensure_trackers_for_preference(frappe.get_doc("Report Preference", pref_name))
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "COM Visit Tracker auto-create (query) failed")
+
+
 def get_permission_query_conditions(user=None):
     user = user or frappe.session.user
     if _is_admin(user):
@@ -143,6 +159,8 @@ def get_permission_query_conditions(user=None):
     scope = _get_scope(user)
     if not scope:
         return "1=0"
+
+    _ensure_trackers_for_user(user)
 
     t = "`tabCOM Visit Tracker`"
     geo = [
