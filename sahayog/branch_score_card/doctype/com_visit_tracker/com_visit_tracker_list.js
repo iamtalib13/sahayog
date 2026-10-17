@@ -44,6 +44,14 @@ function show_no_access_after_back() {
     d.show();
 }
 
+function reload_list_after_create(listview) {
+    // Records ab bane hain: thoda ruk ke list ko page 1 se dobara load karo
+    setTimeout(() => {
+        listview.start = 0;
+        listview.refresh();
+    }, 300);
+}
+
 function sync_missing_trackers(listview) {
     // Har refresh / re-open par missing records banao (5 sec throttle, loop se bachne ke liye)
     const now = Date.now();
@@ -55,7 +63,7 @@ function sync_missing_trackers(listview) {
         no_spinner: true,
         callback(r) {
             if (r.message && r.message.created) {
-                listview.refresh();
+                reload_list_after_create(listview);
             }
         }
     });
@@ -88,8 +96,15 @@ frappe.listview_settings["COM Visit Tracker"] = {
                     return;
                 }
                 if (r.message && r.message.created) {
-                    listview.refresh();
+                    reload_list_after_create(listview);
                 }
+                // Safety net: agar fir bhi list khali hai to ek baar aur reload
+                setTimeout(() => {
+                    if (!listview.data || !listview.data.length) {
+                        listview.start = 0;
+                        listview.refresh();
+                    }
+                }, 1500);
             }
         });
 
