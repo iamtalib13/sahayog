@@ -586,7 +586,9 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
                 <th>Customer</th>
                 <th>Contact</th>
                 <th>Status</th>
+                <th>Lead Audit Status</th>
                 <th>Source</th>
+                <th>Calling Source</th>
                 <th>Product Code</th>
                 <th>Product Name</th>
                 <th>Amount</th>
@@ -606,7 +608,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             </thead>
             <tbody id="lead-table-body">
               <tr>
-                <td colspan="21" class="loading-state">
+                <td colspan="23" class="loading-state">
                   <div class="loading-spinner"></div>
                   <div>Loading detailed lead data...</div>
                 </td>
@@ -731,7 +733,9 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             Customer: lead.lead_name || "",
             Contact: lead.mobile_no || "",
             Status: lead.status || "",
+            "Lead Audit Status": lead.lead_audit_status || "",
             Source: lead.source || "",
+            "Calling Source": lead.calling_source || "",
             "Product Code": p.product || "",
             "Product Name": p.product_name || "",
             Amount: p.amount || 0,
@@ -758,7 +762,9 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
           Customer: lead.lead_name || "",
           Contact: lead.mobile_no || "",
           Status: lead.status || "",
+          "Lead Audit Status": lead.lead_audit_status || "",
           Source: lead.source || "",
+          "Calling Source": lead.calling_source || "",
           "Product Code": "",
           "Product Name": "",
           Amount: 0,
@@ -813,7 +819,9 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
                     ${d["Status"] || ""}
                 </span>
             </td>
+            <td title="${d["Lead Audit Status"]}">${d["Lead Audit Status"] || ""}</td>
             <td title="${d["Source"]}">${d["Source"] || ""}</td>
+            <td title="${d["Calling Source"]}">${d["Calling Source"] || ""}</td>
             <td title="${
               d["Product Code"]
             }" style="font-weight: 600; color: #006767;">
@@ -1085,7 +1093,9 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
         "Customer",
         "Contact",
         "Status",
+        "Lead Audit Status",
         "Source",
+        "Calling Source",
         "Product Code",
         "Product Name",
         "Amount",
