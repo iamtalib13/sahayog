@@ -592,6 +592,8 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
                 <th>Product Code</th>
                 <th>Product Name</th>
                 <th>Amount</th>
+                <th>Account Number</th>
+                <th>Account Creation Date</th>
                 <th>Owner Employee Name</th>
                 <th>Owner Employee ID</th>
                 <th>Designation</th>
@@ -608,7 +610,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             </thead>
             <tbody id="lead-table-body">
               <tr>
-                <td colspan="23" class="loading-state">
+                <td colspan="25" class="loading-state">
                   <div class="loading-spinner"></div>
                   <div>Loading detailed lead data...</div>
                 </td>
@@ -739,6 +741,8 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             "Product Code": p.product || "",
             "Product Name": p.product_name || "",
             Amount: p.amount || 0,
+            "Account Number": p.account_number || "",
+            "Account Creation Date": p.account_creation_date || "",
             "Owner Employee Name": ownerEmp.employee_name || "",
             "Owner Employee ID": ownerEmp.name || "",
             Designation: ownerEmp.designation || "",
@@ -768,6 +772,8 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
           "Product Code": "",
           "Product Name": "",
           Amount: 0,
+          "Account Number": "",
+          "Account Creation Date": "",
           "Owner Employee Name": ownerEmp.employee_name || "",
           "Owner Employee ID": ownerEmp.name || "",
           Designation: ownerEmp.designation || "",
@@ -829,6 +835,8 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             </td>
             <td title="${d["Product Name"]}">${d["Product Name"] || ""}</td>
             <td class="amount-cell">${formatCurrency(d["Amount"])}</td>
+            <td title="${d["Account Number"]}">${d["Account Number"] || ""}</td>
+            <td title="${d["Account Creation Date"]}">${formatDate(d["Account Creation Date"])}</td>
             <td class="owner-employee-cell" title="${
               d["Owner Employee Name"]
             }">${d["Owner Employee Name"] || ""}</td>
@@ -1099,6 +1107,8 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
         "Product Code",
         "Product Name",
         "Amount",
+        "Account Number",
+        "Account Creation Date",
         "Owner Employee Name",
         "Owner Employee ID",
         "Designation",
