@@ -6149,8 +6149,8 @@
         staff.forEach((s) => {
           const opt = document.createElement("option");
           opt.value = s.name;
-          opt.textContent =
-            s.employee_name + (s.designation ? " (" + s.designation + ")" : "");
+          const code = s.employee_number || s.name;
+          opt.textContent = s.employee_name + (code ? " (" + code + ")" : "");
           sel.appendChild(opt);
         });
         sel.value = currentVal;

@@ -188,7 +188,7 @@ def get_team_attendance_data(employee_status="Active"):
     team = frappe.get_all("Employee", 
         filters=filters,
         fields=[
-            "name", "employee_name", "designation", "branch", "sahayog_branch", "sol_id", "status", 
+            "name", "employee_name", "employee_number", "designation", "branch", "sahayog_branch", "sol_id", "status", 
             "gender", "image", "department", "date_of_joining", 
             "reports_to", "cell_number", "company_email",
             "relieving_date", "resignation_letter_date", "reason_for_leaving"
