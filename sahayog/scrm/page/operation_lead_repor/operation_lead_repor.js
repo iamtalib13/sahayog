@@ -127,6 +127,18 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   transform: translateY(-1px);
 }
 
+.clear-filter-btn {
+  background: #fff;
+  color: #e53e3e;
+  border: 1px solid #feb2b2;
+}
+
+.clear-filter-btn:hover {
+  background: #fff5f5;
+  border-color: #fc8181;
+  transform: translateY(-1px);
+}
+
 .analytics-btn {
   background: #006767;
   color: white;
@@ -563,6 +575,11 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             <button class="action-btn refresh-btn" id="refresh-btn">
               <i class="fas fa-sync-alt"></i>
               <span>Refresh</span>
+            </button>
+            
+            <button class="action-btn clear-filter-btn" id="clear-filter-btn">
+              <i class="fas fa-times-circle"></i>
+              <span>Clear Filter</span>
             </button>
             
             <button class="action-btn export-btn" id="export-btn">
@@ -1066,6 +1083,14 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
     const icon = $("#refresh-btn i");
     icon.addClass("fa-spin");
     setTimeout(() => icon.removeClass("fa-spin"), 1000);
+  });
+
+  $("#clear-filter-btn").click(function () {
+    setDefaultDates();
+    let fromDate = $("#from-date-filter").val();
+    let toDate = $("#to-date-filter").val();
+    fetchDataByRange(fromDate, toDate);
+    frappe.show_alert({ message: __("Filters cleared"), indicator: "green" }, 3);
   });
 
   $("#analytics-btn").click(function () {
