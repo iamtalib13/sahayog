@@ -24,12 +24,8 @@ def get_operation_lead_report(from_date=None, to_date=None):
 
         # ✅ Operations Support Manager full access
         if not has_full_report_access():
-            # Regular users get only their leads
-            lead_filters.append([
-                "OR",
-                ["owner", "=", frappe.session.user],
-                ["lead_owner", "=", frappe.session.user]
-            ])
+            # Regular users get only leads created by them
+            lead_filters.append(["owner", "=", frappe.session.user])
 
         if from_date:
             lead_filters.append(["creation", ">=", f"{from_date} 00:00:00"])
