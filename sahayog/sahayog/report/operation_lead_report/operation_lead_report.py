@@ -25,7 +25,8 @@ def execute(filters=None):
         "Administrator",
         "System Manager",
         "Sales Manager",
-        "Operations Support Manager"
+        "Operations Support Manager",
+        "Operations Support Executive"
     }
 
     if not any(role in roles for role in allowed_roles):
@@ -38,6 +39,16 @@ def execute(filters=None):
     # OPERATION LEADS ONLY
     # --------------------------------------------------
     lead_filters["custom_is_operation_lead"] = 1
+
+    # Restrict executives to their created leads only
+    full_access_roles = {
+        "Administrator",
+        "System Manager",
+        "Sales Manager",
+        "Operations Support Manager"
+    }
+    if not any(role in roles for role in full_access_roles):
+        lead_filters["owner"] = user
 
     # --------------------------------------------------
     # DATE FILTER (MANDATORY)
