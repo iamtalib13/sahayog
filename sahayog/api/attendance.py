@@ -188,7 +188,7 @@ def get_team_attendance_data(employee_status="Active"):
     team = frappe.get_all("Employee", 
         filters=filters,
         fields=[
-            "name", "employee_name", "designation", "branch", "sahayog_branch", "sol_id", "status", 
+            "name", "employee_name", "employee_number", "designation", "branch", "sahayog_branch", "sol_id", "status", 
             "gender", "image", "department", "date_of_joining", 
             "reports_to", "cell_number", "company_email",
             "relieving_date", "resignation_letter_date", "reason_for_leaving"
@@ -319,7 +319,7 @@ def get_hr_dashboard_data(month=None):
     if "HR Manager" not in roles and "HR User" not in roles and user != "Administrator":
         frappe.throw(_("Not authorized to view HR Dashboard"), frappe.PermissionError)
         
-    from frappe.utils import get_first_day, get_last_day, getdate, nowdate
+    from frappe.utils import get_first_day, get_last_day, getdate, nowdate, add_days
     
     today = nowdate()
     if not month:
@@ -370,17 +370,9 @@ def get_hr_dashboard_data(month=None):
         eff_present = raw_counts.get("Present", 0) + (raw_counts.get("Half Day", 0) * 0.5) + raw_counts.get("Work From Home", 0)
         att_percentage = round((eff_present / headcount * 100), 2) if headcount > 0 else 0
 
-        # Actionable: Not marked today
-        marked_employees = frappe.get_all("Attendance", 
-            filters={"attendance_date": today, "docstatus": ["<", 2]}, 
-            pluck="employee"
-        )
-        alert_list = frappe.get_all("Employee",
-            filters={"name": ["not in", marked_employees], "status": "Active", "custom_is_support_staff": 1},
-            fields=["name", "employee_name", "sahayog_branch", "designation"],
-            limit=15
-        )
-        alert_title = "🚨 Attendance Not Marked Today"
+        # "Attendance Not Marked Today" alert removed.
+        alert_list = []
+        alert_title = ""
         working_days = 1
     else:
         # Monthly Averages
@@ -507,6 +499,69 @@ def get_hr_dashboard_data(month=None):
             b.present = round(att_map.get(b.branch, 0) / working_days, 1)
             b.att_pc = round((att_map.get(b.branch, 0) / possible * 100), 2) if possible > 0 else 0
 
+    # 5. Birthdays (active support staff) — today and upcoming week
+    tdate = getdate(today)
+    bd_employees = frappe.db.sql("""
+        SELECT name, employee_name, employee_number, designation,
+               department, sahayog_branch, date_of_birth
+        FROM `tabEmployee`
+        WHERE status = 'Active' AND custom_is_support_staff = 1
+          AND date_of_birth IS NOT NULL
+    """, as_dict=True)
+
+    birthdays_today = []
+    birthdays_week = []
+    for b in bd_employees:
+        dob = getdate(b["date_of_birth"])
+        try:
+            bd_this = dob.replace(year=tdate.year)
+        except ValueError:
+            # Feb 29 in a non-leap year
+            bd_this = dob.replace(year=tdate.year, day=28)
+        delta = (bd_this - tdate).days
+        person = {
+            "name": b["name"],
+            "employee_name": b["employee_name"],
+            "employee_number": b.get("employee_number") or b["name"],
+            "designation": b.get("designation"),
+            "department": b.get("department"),
+            "branch": b.get("sahayog_branch"),
+            "date_of_birth": str(dob),
+            "age": tdate.year - dob.year,
+        }
+        if delta == 0:
+            birthdays_today.append(person)
+        elif 0 < delta <= 7:
+            person["days_until"] = delta
+            birthdays_week.append(person)
+
+    birthdays_today.sort(key=lambda x: x["employee_name"] or "")
+    birthdays_week.sort(key=lambda x: x.get("days_until", 0))
+
+    # 6. Attendance trend (last 7 days) — current month only
+    attendance_trend = []
+    if is_current_month and headcount:
+        trend_raw = frappe.db.sql("""
+            SELECT a.attendance_date as date,
+                   SUM(CASE WHEN a.status IN ('Present', 'Work From Home') THEN 1
+                            WHEN a.status = 'Half Day' THEN 0.5 ELSE 0 END) as present
+            FROM `tabAttendance` a
+            JOIN `tabEmployee` e ON a.employee = e.name
+            WHERE a.attendance_date BETWEEN %s AND %s
+              AND a.docstatus < 2
+              AND e.custom_is_support_staff = 1
+            GROUP BY a.attendance_date
+        """, (first_day, today), as_dict=True)
+        trend_map = {str(r.date): float(r.present or 0) for r in trend_raw}
+        for i in range(6, -1, -1):
+            d = add_days(tdate, -i)
+            present = trend_map.get(str(d), 0)
+            attendance_trend.append({
+                "date": str(d),
+                "present": present,
+                "percentage": round(present / headcount * 100, 1),
+            })
+
     return {
         "month": month,
         "is_current_month": is_current_month,
@@ -520,6 +575,9 @@ def get_hr_dashboard_data(month=None):
         "branch_wise": branch_data,
         "alert_list": alert_list,
         "alert_title": alert_title,
+        "birthdays_today": birthdays_today,
+        "birthdays_week": birthdays_week,
+        "attendance_trend": attendance_trend,
         "pending_requests": {
             "leaves": leave_summary["Open"],
             "corrections": frappe.db.count("Attendance Correction", {"status": "Pending"})
