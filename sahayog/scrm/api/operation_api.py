@@ -48,7 +48,9 @@ def get_operation_lead_report(from_date=None, to_date=None):
                 "source",
                 "lead_owner",
                 "owner",
-                "creation"
+                "creation",
+                "custom_lead_audit_status",
+                "custom_calling_source"
             ],
             filters=lead_filters,
             order_by="creation desc",
@@ -133,7 +135,9 @@ def get_operation_lead_report(from_date=None, to_date=None):
                 "mobile_no": getattr(lead, 'mobile_no', ''),
                 "email_id": getattr(lead, 'email_id', ''),
                 "status": getattr(lead, 'status', ''),
+                "lead_audit_status": getattr(lead, 'custom_lead_audit_status', ''),
                 "source": getattr(lead, 'source', ''),
+                "calling_source": getattr(lead, 'custom_calling_source', ''),
                 "lead_owner": getattr(lead, 'lead_owner', ''),
                 "owner": getattr(lead, 'owner', ''),
                 "creation": getattr(lead, 'creation', ''),
