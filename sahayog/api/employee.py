@@ -798,6 +798,8 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
     return results
 
 
+# ── DISABLED: 'Fix Duplicate Code' feature retired (kept for reference) ──
+'''
 @frappe.whitelist()
 def get_duplicate_employee_codes():
     """List employee_number values shared by 2+ employees (support staff).
@@ -933,6 +935,7 @@ def fix_duplicate_employee_code(employee, new_code):
             "employee": new_code}
 
 
+'''
 @frappe.whitelist()
 def process_employee_exit(employee, resignation_letter_date, relieving_date, reason_for_leaving, resignation_type=None, attachment_url=None):
     roles = frappe.get_roles(frappe.session.user)
