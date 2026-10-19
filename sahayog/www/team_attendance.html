@@ -868,6 +868,10 @@
         right: 0;
       }
       .drawer-header {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        flex-shrink: 0;
         padding: 20px;
         background: var(--brand);
         color: #fff;
@@ -3489,9 +3493,31 @@
         <span>Attendance Insights</span>
         <div style="display: flex; gap: 8px; align-items: center">
           <button
+            type="submit"
+            form="empEditForm"
+            id="drawerSaveBtn"
+            style="
+              display: none;
+              width: auto;
+              height: auto;
+              background: rgba(255, 255, 255, 0.15);
+              border: 1px solid rgba(255, 255, 255, 0.3);
+              color: #fff;
+              padding: 5px 12px;
+              border-radius: 6px;
+              font-size: 12px;
+              font-weight: 600;
+              cursor: pointer;
+            "
+          >
+            💾 Save
+          </button>
+          <button
             id="drawerEditBtn"
             style="
               display: none;
+              width: auto;
+              height: auto;
               background: rgba(255, 255, 255, 0.15);
               border: 1px solid rgba(255, 255, 255, 0.3);
               color: #fff;
@@ -6389,6 +6415,7 @@
           "Employee Profile";
         document.getElementById("drawerEditBtn").style.display =
           isHR() || isAdmin() ? "inline-block" : "none";
+        document.getElementById("drawerSaveBtn").style.display = "none";
         content.innerHTML =
           '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
         drawer.classList.add("open");
@@ -6496,6 +6523,7 @@
           d ? new Date(d).toISOString().split("T")[0] : "";
 
         document.getElementById("drawerEditBtn").style.display = "none";
+        document.getElementById("drawerSaveBtn").style.display = "inline-block";
         document.getElementById("dashboardContent").innerHTML = `
           <div class="emp-header-card" style="margin-bottom:16px;">
             <div class="emp-h-name">${e.employee_name}</div>
@@ -6568,17 +6596,20 @@
                 <div><label style="font-size:11px;color:var(--muted);">Business Unit</label>${asyncSel("custom_division", e.custom_division, "edit_business_unit")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Joining</label>${dt("date_of_joining", fmtDate(e.date_of_joining))}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Date of Confirmation</label>${dt("final_confirmation_date", fmtDate(e.final_confirmation_date))}</div>
-                <div>
-                  <label style="font-size:11px;color:var(--muted);">Reporting Manager</label>
-                  <div style="position:relative;">
-                    <input id="edit_reports_to_input" value="${e.reports_to_name || e.reports_to || ""}" class="member-select" placeholder="Search manager..." autocomplete="off"
-                      style="padding:6px 10px;font-size:12px;margin-top:2px;width:100%;"
-                      oninput="filterEditReportingManager(this.value)"
-                      onfocus="showEditReportingDropdown()"
-                      onblur="hideEditReportingDropdown()">
-                    <input type="hidden" name="reports_to" id="edit_reports_to_value" value="${e.reports_to || ""}">
-                    <div id="edit_reports_to_dropdown"
-                      style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;max-height:180px;overflow-y:auto;z-index:999;box-shadow:0 4px 12px rgba(0,0,0,0.1);">
+                <div><label style="font-size:11px;color:var(--muted);">Reporting Manager</label>
+                  <div id="edit_reports_to_wrap" style="position:relative;">
+                    <button type="button" class="member-select" style="padding:6px 28px 6px 10px;font-size:12px;margin-top:2px;text-align:left;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;"
+                      onclick="toggleEditReportsMenu(event)">
+                      <span id="edit_reports_to_label">${e.reports_to_name || e.reports_to || "-- Select --"}</span>
+                    </button>
+                    <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);color:#94a3b8;pointer-events:none;">▾</span>
+                    <input type="hidden" name="reports_to" id="edit_reports_to" value="${e.reports_to || ""}">
+                    <div id="edit_reports_to_menu" style="display:none;position:absolute;top:100%;left:0;right:0;background:#fff;border:1px solid var(--border);border-radius:8px;z-index:1000;box-shadow:0 6px 16px rgba(0,0,0,0.12);margin-top:2px;">
+                      <div style="padding:6px;border-bottom:1px solid var(--border);">
+                        <input id="edit_reports_to_search" class="member-select" placeholder="Search manager..." autocomplete="off"
+                          style="width:100%;padding:6px 10px;font-size:12px;" oninput="filterEditReportsMenu(this.value)">
+                      </div>
+                      <div id="edit_reports_to_options" style="max-height:200px;overflow-y:auto;"></div>
                     </div>
                   </div>
                 </div>
@@ -6643,10 +6674,6 @@
             </div>`
                 : ""
             }
-            <div style="display:flex;gap:10px;padding-top:10px;">
-              <button type="submit" id="btnSaveProfile" class="btn-in" style="flex:1;padding:10px;font-weight:700;">Save Changes</button>
-              <button type="button" class="btn-clear" style="padding:10px 16px;" onclick="renderEmployeeProfileView(_currentProfileData); document.getElementById('drawerEditBtn').style.display='inline-block';">Cancel</button>
-            </div>
           </form>
         `;
 
@@ -6703,48 +6730,73 @@
         }
       }
 
-      // Reporting manager searchable dropdown helpers (edit form)
-      function filterEditReportingManager(query) {
-        const dd = document.getElementById("edit_reports_to_dropdown");
-        const items = dd.querySelectorAll(".edit-mgr-item");
-        const q = query.toLowerCase();
-        items.forEach((item) => {
-          item.style.display = item.textContent.toLowerCase().includes(q)
-            ? ""
-            : "none";
+      // Reporting Manager searchable-select (combobox) helpers
+      function _editReportsLabel(emp) {
+        return emp.employee_name + " (" + emp.name + ")";
+      }
+      function toggleEditReportsMenu(ev) {
+        if (ev) ev.stopPropagation();
+        const menu = document.getElementById("edit_reports_to_menu");
+        if (!menu) return;
+        if (menu.style.display === "block") {
+          closeEditReportsMenu();
+          return;
+        }
+        _renderEditReportsOptions(window._empList || []);
+        menu.style.display = "block";
+        const s = document.getElementById("edit_reports_to_search");
+        if (s) {
+          s.value = "";
+          s.focus();
+        }
+      }
+      function closeEditReportsMenu() {
+        const menu = document.getElementById("edit_reports_to_menu");
+        if (menu) menu.style.display = "none";
+      }
+      function _renderEditReportsOptions(list) {
+        const box = document.getElementById("edit_reports_to_options");
+        if (!box) return;
+        box.innerHTML = "";
+        const cur = document.getElementById("edit_reports_to").value;
+        if (!list.length) {
+          box.innerHTML =
+            '<div style="padding:10px 12px;font-size:12px;color:var(--muted);">No match</div>';
+          return;
+        }
+        list.forEach((emp) => {
+          const row = document.createElement("div");
+          const isCur = emp.name === cur;
+          row.textContent = _editReportsLabel(emp);
+          row.style.cssText =
+            "padding:8px 12px;font-size:13px;cursor:pointer;border-bottom:1px solid #f1f5f9;" +
+            (isCur ? "background:#eef2ff;" : "");
+          row.onmouseover = () => (row.style.background = "#f0f2f8");
+          row.onmouseout = () =>
+            (row.style.background = isCur ? "#eef2ff" : "");
+          row.onclick = () =>
+            selectEditReportsManager(emp.name, _editReportsLabel(emp));
+          box.appendChild(row);
         });
       }
-      function showEditReportingDropdown() {
-        const dd = document.getElementById("edit_reports_to_dropdown");
-        if (!dd) return;
-        if (!dd.hasChildNodes() && window._empList) {
-          window._empList.forEach((emp) => {
-            const item = document.createElement("div");
-            item.className = "edit-mgr-item";
-            item.dataset.value = emp.name;
-            item.textContent = emp.employee_name + " (" + emp.name + ")";
-            item.style.cssText =
-              "padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f1f5f9;";
-            item.onmouseover = () => (item.style.background = "#f0f2f8");
-            item.onmouseout = () => (item.style.background = "");
-            item.onmousedown = (ev) => {
-              ev.preventDefault();
-              document.getElementById("edit_reports_to_value").value = emp.name;
-              document.getElementById("edit_reports_to_input").value =
-                item.textContent;
-              dd.style.display = "none";
-            };
-            dd.appendChild(item);
-          });
-        }
-        dd.style.display = "block";
+      function filterEditReportsMenu(q) {
+        const query = (q || "").toLowerCase();
+        const list = (window._empList || []).filter((emp) =>
+          _editReportsLabel(emp).toLowerCase().includes(query),
+        );
+        _renderEditReportsOptions(list);
       }
-      function hideEditReportingDropdown() {
-        setTimeout(() => {
-          const dd = document.getElementById("edit_reports_to_dropdown");
-          if (dd) dd.style.display = "none";
-        }, 150);
+      function selectEditReportsManager(value, label) {
+        const hid = document.getElementById("edit_reports_to");
+        const lbl = document.getElementById("edit_reports_to_label");
+        if (hid) hid.value = value;
+        if (lbl) lbl.textContent = label;
+        closeEditReportsMenu();
       }
+      document.addEventListener("click", (ev) => {
+        const wrap = document.getElementById("edit_reports_to_wrap");
+        if (wrap && !wrap.contains(ev.target)) closeEditReportsMenu();
+      });
 
       // Populate Designation, Department, Employment Type, Shift, Business Unit dropdowns
       async function _populateEditDropdowns(e) {
@@ -6755,6 +6807,17 @@
             {},
             "employee",
           );
+        }
+
+        // Reflect current Reporting Manager as the combobox label
+        const rLabel = document.getElementById("edit_reports_to_label");
+        if (rLabel) {
+          const found = (window._empList || []).find(
+            (emp) => emp.name === e.reports_to,
+          );
+          rLabel.textContent = found
+            ? found.employee_name + " (" + found.name + ")"
+            : e.reports_to_name || e.reports_to || "-- Select --";
         }
 
         const _fill = (id, currentVal, items, labelKey = "name") => {
@@ -6867,11 +6930,10 @@
         if (r) data.custom_region = r.value;
         if (d) data.custom_district = d.value;
 
-        // Reporting manager from hidden input
-        const rtv = document.getElementById("edit_reports_to_value");
-        if (rtv) data.reports_to = rtv.value;
+        // Reporting manager comes from the hidden <input name="reports_to">
+        // set by the searchable-select (already captured via FormData).
 
-        const btn = document.getElementById("btnSaveProfile");
+        const btn = document.getElementById("drawerSaveBtn");
         btn.disabled = true;
         btn.textContent = "Saving...";
 
@@ -6882,7 +6944,7 @@
           "employee",
         );
         btn.disabled = false;
-        btn.textContent = "Save Changes";
+        btn.textContent = "💾 Save";
 
         if (res && res.success) {
           if (res.employee) employeeId = res.employee;
@@ -6897,6 +6959,7 @@
             _currentProfileData = updated;
             renderEmployeeProfileView(updated);
           }
+          document.getElementById("drawerSaveBtn").style.display = "none";
           document.getElementById("drawerEditBtn").style.display =
             "inline-block";
         }
