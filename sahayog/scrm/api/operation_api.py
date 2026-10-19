@@ -77,7 +77,7 @@ def get_operation_lead_report(from_date=None, to_date=None):
             products = frappe.get_all(
                 "Lead Product",
                 filters={"parent": ["in", lead_names]},
-                fields=["parent", "product", "product_name", "product_amount", "idx"],
+                fields=["parent", "product", "product_name", "product_amount", "account_number", "account_creation_date", "idx"],
                 order_by="idx"
             )
             # Map products by parent Lead
@@ -86,6 +86,7 @@ def get_operation_lead_report(from_date=None, to_date=None):
                     "product": p.product or "",
                     "product_name": p.product_name or "",
                     "amount": p.product_amount or 0,
+                     "account_number": p.account_number or "", "account_creation_date": p.account_creation_date or "",
                     "idx": p.idx or 0
                 })
 
