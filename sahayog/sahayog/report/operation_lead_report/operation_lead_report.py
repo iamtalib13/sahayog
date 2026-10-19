@@ -65,7 +65,9 @@ def execute(filters=None):
             "owner",
             "lead_owner",
             "phone",
-            "email_id"
+            "email_id",
+            "custom_lead_audit_status",
+            "custom_calling_source"
         ]
     )
 
@@ -160,7 +162,9 @@ def execute(filters=None):
             "lead_id": lead.name,
             "customer": lead.lead_name or "-",
             "status": lead.status,
+            "lead_audit_status": lead.custom_lead_audit_status or "-",
             "source": lead.source or "-",
+            "calling_source": lead.custom_calling_source or "-",
             "contact": lead.phone or lead.email_id or "-",
 
             # OWNER DETAILS
@@ -193,7 +197,9 @@ def execute(filters=None):
         {"label": "Lead ID", "fieldname": "lead_id", "fieldtype": "Link", "options": "Lead", "width": 120},
         {"label": "Customer", "fieldname": "customer", "width": 160},
         {"label": "Status", "fieldname": "status", "width": 100},
+        {"label": "Lead Audit Status", "fieldname": "lead_audit_status", "width": 130},
         {"label": "Source", "fieldname": "source", "width": 120},
+        {"label": "Calling Source", "fieldname": "calling_source", "width": 120},
         {"label": "Contact", "fieldname": "contact", "width": 120},
 
         {"label": "Owner Name", "fieldname": "owner_name", "width": 160},
