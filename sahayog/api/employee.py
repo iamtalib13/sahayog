@@ -645,6 +645,26 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
                     continue
 
             logger.info(f"[BulkImport] Row {i} ({emp_label}) — creating employee...")
+
+            # ── Honor CSV status so resigned staff stay 'Left' (not forced Active) ─
+            _STATUS_MAP = {
+                "active": "Active",
+                "left": "Left",
+                "resigned": "Left",
+                "inactive": "Inactive",
+                "suspended": "Suspended",
+            }
+            _status = _STATUS_MAP.get((row.get("status") or "").strip().lower())
+            _relieving = _parse_date(row.get("relieving_date"))
+            _resignation = _parse_date(row.get("resignation_letter_date"))
+            if not _status:
+                # Derive from relieving date: past -> Left, future/blank -> Active
+                _status = (
+                    "Left"
+                    if (_relieving and _relieving < getdate(frappe.utils.today()))
+                    else "Active"
+                )
+
             emp_data = {
                 "doctype": "Employee",
                 "employee_number": new_code or None,
@@ -655,6 +675,10 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
                 "date_of_birth": parsed_dob,
                 "date_of_joining": parsed_doj,
                 "final_confirmation_date": parsed_conf,
+                "relieving_date": _relieving,
+                "resignation_letter_date": _resignation,
+                # Insert as Active — ERPNext rejects 'Left' without a relieving
+                # date; the real status is applied right after insert (below).
                 "status": "Active",
                 "company": frappe.defaults.get_global_default("company"),
                 "department": row.get("department"),
@@ -670,7 +694,7 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
                 "marital_status": row.get("marital_status"),
                 "blood_group": row.get("blood_group"),
                 "permanent_address": row.get("permanent_address"),
-                "default_shift": row.get("shift"),
+                "default_shift": row.get("shift") or row.get("default_shift"),
                 "employment_type": row.get("employment_type"),
 
                 "custom_is_support_staff": 1,
@@ -685,6 +709,12 @@ def bulk_import_employees(rows, mode="insert", force_update=0):
             new_emp = frappe.get_doc(emp_data)
             # ignore_mandatory=True because zone/region/district are filled via SQL below
             new_emp.insert(ignore_permissions=True, ignore_links=True, ignore_mandatory=True)
+
+            # Apply the real CSV status via SQL so 'Left' works even when the
+            # sheet has no relieving date (ERPNext validate() requires one).
+            if _status and _status != "Active":
+                frappe.db.set_value("Employee", new_emp.name, "status", _status, update_modified=False)
+                new_emp.status = _status
 
             # ── 6. Fill optional SQL-level fields (ctc, zone, region, district) ─
             col_map = {}
