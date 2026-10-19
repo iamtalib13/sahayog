@@ -1132,6 +1132,319 @@
         box-shadow: 0 0 0 3px rgba(59, 45, 138, 0.12);
         outline: none;
       }
+
+      /* HR DASHBOARD */
+      .hrdash-head {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        justify-content: space-between;
+        align-items: flex-end;
+        margin-bottom: 16px;
+      }
+      .hrdash-head h3 {
+        font-family: "Syne", sans-serif;
+        color: var(--brand);
+        margin: 0;
+        font-size: 20px;
+      }
+      .hrdash-head p {
+        margin: 3px 0 0;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .hrdash-month {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: #fff;
+        border: 1px solid #f1f5f9;
+        border-radius: 12px;
+        padding: 8px 14px;
+        box-shadow: var(--shadow);
+      }
+      .hrdash-month input {
+        border: 1.5px solid var(--border);
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 13px;
+        font-family: inherit;
+        outline: none;
+        cursor: pointer;
+      }
+      .hrdash-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      .hrdash-stats .stat-card {
+        border: 1px solid #f1f5f9;
+        transition: transform 0.15s, box-shadow 0.15s;
+      }
+      .hrdash-stats .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(45, 32, 96, 0.12);
+      }
+      .hrdash-card {
+        background: #fff;
+        border: 1px solid #f1f5f9;
+        border-radius: 14px;
+        padding: 18px;
+        box-shadow: var(--shadow);
+      }
+      .hrdash-row,
+      .hrdash-row-3 {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 16px;
+        margin-bottom: 16px;
+      }
+      .hrdash-row-3 {
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      }
+      .hrdash-row {
+        align-items: stretch;
+      }
+      .hrdash-person {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 0;
+        border-bottom: 1px solid #f6f7fb;
+      }
+      .hrdash-person:last-child {
+        border-bottom: none;
+      }
+      .hrdash-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--brand), var(--brand2));
+        color: #fff;
+        font-weight: 700;
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .hrdash-pname {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      .hrdash-pmeta {
+        font-size: 11px;
+        color: var(--muted);
+        margin-top: 1px;
+      }
+      .hrdash-empty {
+        font-size: 12px;
+        color: var(--muted);
+        padding: 10px 0;
+      }
+      .hrdash-trend {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        height: 130px;
+        padding-top: 10px;
+      }
+      .hrdash-mid {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+      }
+      .hrdash-attcard {
+        display: flex;
+        flex-direction: column;
+      }
+      .hrdash-attcard .hrdash-donut {
+        margin: auto;
+      }
+      .hrdash-trendcard {
+        display: flex;
+        flex-direction: column;
+      }
+      .hrdash-trendcard .hrdash-trend {
+        flex: 1;
+        height: auto;
+        min-height: 130px;
+      }
+      .hrdash-bar-col {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
+        gap: 6px;
+      }
+      .hrdash-bar {
+        width: 70%;
+        max-width: 26px;
+        border-radius: 6px 6px 0 0;
+        background: linear-gradient(180deg, var(--brand2), var(--accent));
+        min-height: 4px;
+        transition: height 0.6s ease;
+      }
+      .hrdash-bar-lbl {
+        font-size: 10px;
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+      }
+      .hrdash-pc {
+        font-weight: 700;
+        border-radius: 6px;
+        padding: 3px 9px;
+        font-size: 12px;
+      }
+      .hrdash-table tbody tr:hover {
+        background: #f8f9fd;
+      }
+      .hrdash-table tbody tr:nth-child(even) {
+        background: #fcfcfe;
+      }
+      .hrdash-bday-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 0;
+        border-bottom: 1px solid #f6f7fb;
+      }
+      .hrdash-bday-row:last-child {
+        border-bottom: none;
+      }
+      .hrdash-bday-row .hrdash-avatar {
+        width: 40px;
+        height: 40px;
+      }
+      .hrdash-bday-when {
+        font-size: 10px;
+        font-weight: 700;
+        color: var(--muted);
+        background: #f1f5f9;
+        padding: 4px 9px;
+        border-radius: 20px;
+        white-space: nowrap;
+      }
+      .hrdash-bday-when.today {
+        color: #b45309;
+        background: #fef3c7;
+      }
+      .hrdash-hbar-row {
+        margin-bottom: 15px;
+      }
+      .hrdash-hbar-row:last-child {
+        margin-bottom: 0;
+      }
+      .hrdash-hbar-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 6px;
+        gap: 10px;
+      }
+      .hrdash-hbar-track {
+        background: #f1f5f9;
+        height: 9px;
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .hrdash-hbar-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.8s ease;
+      }
+      .hrdash-donut {
+        width: 156px;
+        height: 156px;
+        border-radius: 50%;
+        position: relative;
+        margin: 6px auto 0;
+      }
+      .hrdash-donut-sm {
+        width: 214px;
+        height: 214px;
+      }
+      .hrdash-donut-sm .hrdash-donut-hole {
+        inset: 40px;
+      }
+      .hrdash-donut-hole {
+        position: absolute;
+        inset: 26px;
+        background: #fff;
+        border-radius: 50%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+      }
+      .hrdash-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px 14px;
+        justify-content: center;
+        margin-top: 14px;
+      }
+      .hrdash-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 11px;
+        color: var(--muted);
+      }
+      .hrdash-legend-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 3px;
+        flex-shrink: 0;
+      }
+      .hrdash-lb-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 9px 0;
+        border-bottom: 1px solid #f6f7fb;
+      }
+      .hrdash-lb-row:last-child {
+        border-bottom: none;
+      }
+      .hrdash-lb-rank {
+        width: 30px;
+        height: 30px;
+        flex-shrink: 0;
+        border-radius: 50%;
+        background: #f1f5f9;
+        color: var(--muted);
+        font-weight: 800;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .hrdash-lb-rank.top {
+        background: #fef3c7;
+        font-size: 16px;
+      }
+      .hrdash-viewall {
+        margin-top: 12px;
+        width: 100%;
+        padding: 8px;
+        border: 1.5px dashed var(--border);
+        border-radius: 10px;
+        background: #f8f9fd;
+        color: var(--brand2);
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .hrdash-viewall:hover {
+        background: #eef2ff;
+      }
     </style>
   </head>
   <body>
@@ -5198,7 +5511,24 @@
         });
       }
 
+      function toggleBranchList(btn) {
+        const open = btn.dataset.open === "1";
+        document
+          .querySelectorAll("#branchLbList .hrdash-lb-extra")
+          .forEach((el) => (el.style.display = open ? "none" : "flex"));
+        const count = document.querySelectorAll(
+          "#branchLbList .hrdash-lb-extra",
+        ).length;
+        btn.dataset.open = open ? "0" : "1";
+        btn.textContent = open ? `View all (${count} more)` : "Show less";
+      }
+
       async function loadHRDashboard(month) {
+        const dashContent = document.getElementById("hrDashboardContent");
+        if (dashContent)
+          dashContent.innerHTML =
+            '<div style="text-align:center;padding:40px;"><div class="spinner" style="margin:0 auto;"></div></div>';
+
         const data = await callAPI(
           "get_hr_dashboard_data",
           { month: month },
@@ -5206,26 +5536,244 @@
         );
         if (!data) return;
 
-        const dashContent = document.getElementById("hrDashboardContent");
+        if (new URLSearchParams(location.search).has("demo")) {
+          data.is_current_month = true;
+          data.month = new Date().toISOString().slice(0, 7);
+          data.headcount = 451;
+          data.attendance.summary = {
+            Present: 318,
+            Absent: 42,
+            "Half Day": 12,
+            "On Leave": 24,
+            "Work From Home": 55,
+            "Not Marked": 0,
+          };
+          data.attendance.percentage = 80.4;
+          const _d = new Date();
+          const _isoDate = (add) => {
+            const dt = new Date(_d);
+            dt.setDate(_d.getDate() + add);
+            return dt.toISOString().slice(0, 10);
+          };
+          data.birthdays_today = [
+            {
+              employee_name: "Aarav Sharma",
+              employee_number: "P012",
+              designation: "Executive - Operations",
+              department: "Operations",
+              branch: "Mumbai HQ",
+              date_of_birth: _isoDate(0),
+              age: 29,
+            },
+          ];
+          data.birthdays_week = [
+            {
+              employee_name: "Priya Verma",
+              employee_number: "P044",
+              designation: "Team Lead",
+              department: "Sales",
+              branch: "Delhi North",
+              date_of_birth: _isoDate(2),
+              days_until: 2,
+            },
+            {
+              employee_name: "Rohit Singh",
+              employee_number: "P078",
+              designation: "Field Executive",
+              department: "Logistics",
+              branch: "Bengaluru",
+              date_of_birth: _isoDate(4),
+              days_until: 4,
+            },
+            {
+              employee_name: "Neha Gupta",
+              employee_number: "P091",
+              designation: "Accountant",
+              department: "Accounts",
+              branch: "Pune",
+              date_of_birth: _isoDate(5),
+              days_until: 5,
+            },
+            {
+              employee_name: "Imran Khan",
+              employee_number: "P102",
+              designation: "Support Staff",
+              department: "Admin",
+              branch: "Hyderabad",
+              date_of_birth: _isoDate(6),
+              days_until: 6,
+            },
+          ];
+          const _pct = [72, 78, 85, 80, 88, 76, 90];
+          data.attendance_trend = Array.from({ length: 7 }, (_, i) => {
+            const dt = new Date(_d);
+            dt.setDate(_d.getDate() - (6 - i));
+            return {
+              date: dt.toISOString().slice(0, 10),
+              percentage: _pct[i],
+              present: Math.round((_pct[i] * data.headcount) / 100),
+            };
+          });
+          data.branch_wise = [
+            { branch: "MUM", branch_name: "Mumbai HQ", total: 120, present: 112, att_pc: 93 },
+            { branch: "DEL", branch_name: "Delhi North", total: 95, present: 86, att_pc: 90 },
+            { branch: "BLR", branch_name: "Bengaluru", total: 80, present: 70, att_pc: 88 },
+            { branch: "PNQ", branch_name: "Pune", total: 60, present: 50, att_pc: 83 },
+            { branch: "HYD", branch_name: "Hyderabad", total: 55, present: 44, att_pc: 80 },
+            { branch: "CHN", branch_name: "Chennai", total: 48, present: 36, att_pc: 75 },
+            { branch: "AMD", branch_name: "Ahmedabad", total: 32, present: 24, att_pc: 75 },
+            { branch: "KOL", branch_name: "Kolkata", total: 40, present: 29, att_pc: 72 },
+          ];
+        }
+
         const isCurrent = data.is_current_month;
         const timeLabel = isCurrent ? "Today" : "Monthly Avg.";
 
+        const initials = (name) =>
+          (name || "?")
+            .trim()
+            .split(/\s+/)
+            .map((w) => w[0])
+            .slice(0, 2)
+            .join("")
+            .toUpperCase();
+        const pcColor = (p) =>
+          p >= 90
+            ? { c: "#15803d", bg: "#dcfce7" }
+            : p >= 75
+              ? { c: "#b45309", bg: "#fef3c7" }
+              : { c: "#b91c1c", bg: "#fee2e2" };
+        const monthLabel = new Date(data.month + "-01").toLocaleDateString(
+          "en-IN",
+          { month: "long", year: "numeric" },
+        );
+
+        const birthdaysToday = data.birthdays_today || [];
+        const birthdaysWeek = data.birthdays_week || [];
+        const trend = data.attendance_trend || [];
+        const fmtBdayDate = (iso) =>
+          iso
+            ? new Date(iso).toLocaleDateString("en-IN", {
+                day: "numeric",
+                month: "short",
+              })
+            : "";
+        const bdayPeople = [
+          ...birthdaysToday.map((b) => ({
+            ...b,
+            when: "Today",
+            dateLabel: fmtBdayDate(b.date_of_birth),
+          })),
+          ...birthdaysWeek.map((b) => ({
+            ...b,
+            when: b.days_until === 1 ? "Tomorrow" : `in ${b.days_until}d`,
+            dateLabel: fmtBdayDate(b.date_of_birth),
+          })),
+        ];
+        const branchSorted = [...(data.branch_wise || [])].sort(
+          (a, b) => (b.att_pc || 0) - (a.att_pc || 0),
+        );
+
+        const attPalette = {
+          Present: "#22c55e",
+          Absent: "#ef4444",
+          "Half Day": "#f59e0b",
+          "On Leave": "#6366f1",
+          "Work From Home": "#4dc7b5",
+        };
+        const toDonut = (segs) => {
+          const total = segs.reduce((a, s) => a + s.value, 0);
+          if (!total)
+            return { gradient: "#eef2f7 0deg 360deg", total: 0, segs: [] };
+          let acc = 0;
+          const stops = segs.map((s) => {
+            const st = (acc / total) * 360;
+            acc += s.value;
+            const en = (acc / total) * 360;
+            return `${s.color} ${st.toFixed(2)}deg ${en.toFixed(2)}deg`;
+          });
+          return { gradient: stops.join(", "), total, segs };
+        };
+        const attDonut = toDonut(
+          Object.keys(data.attendance.summary)
+            .filter((k) => k !== "Not Marked")
+            .map((k) => ({
+              label: k,
+              value: Number(data.attendance.summary[k]) || 0,
+              color: attPalette[k] || "#94a3b8",
+            }))
+            .filter((s) => s.value > 0),
+        );
+        const byTotal = [...(data.branch_wise || [])].sort(
+          (a, b) => (Number(b.total) || 0) - (Number(a.total) || 0),
+        );
+        const TOP_BRANCHES = 6;
+        const brSegs = byTotal
+          .slice(0, TOP_BRANCHES)
+          .map((b, i) => ({
+            label: b.branch_name || b.branch || "Not Set",
+            value: Number(b.total) || 0,
+            color: COLORS[i % COLORS.length],
+          }));
+        const brRest = byTotal.slice(TOP_BRANCHES);
+        if (brRest.length) {
+          brSegs.push({
+            label: `Others (${brRest.length})`,
+            value: brRest.reduce((a, b) => a + (Number(b.total) || 0), 0),
+            color: "#cbd5e1",
+          });
+        }
+        const brDonut = toDonut(brSegs);
+        const legendOf = (segs) =>
+          segs
+            .map(
+              (s) =>
+                `<div class="hrdash-legend-item"><span class="hrdash-legend-dot" style="background:${s.color};"></span>${s.label}</div>`,
+            )
+            .join("");
+
+        const alertSection =
+          data.alert_list && data.alert_list.length
+            ? `
+            <div class="hrdash-card" style="margin-bottom:16px;">
+                <div class="dash-sec-title" style="margin-bottom:12px;">${data.alert_title || "Action Needed"}</div>
+                ${data.alert_list
+                  .map(
+                    (a) => `
+                <div class="hrdash-person">
+                    <div class="hrdash-avatar" style="background:#fff7ed; color:#c2410c;">${initials(a.employee_name)}</div>
+                    <div style="min-width:0;">
+                        <div class="hrdash-pname">${a.employee_name}</div>
+                        <div class="hrdash-pmeta">${a.name} &middot; ${a.designation || "—"}${a.sahayog_branch ? " &middot; " + a.sahayog_branch : ""}</div>
+                    </div>
+                    ${a.absent_count ? `<div style="margin-left:auto; font-size:12px; font-weight:700; color:#b91c1c; white-space:nowrap;">${a.absent_count} absent</div>` : ""}
+                </div>`,
+                  )
+                  .join("")}
+            </div>`
+            : "";
+
         let html = `
-            <!-- Month Selector -->
-            <div style="background:#fff; padding:12px 18px; border-radius:12px; border:1px solid #f1f5f9; margin-bottom: 16px; display:flex; align-items:center; gap:12px; box-shadow: var(--shadow);">
-                <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Report:</span>
-                <input 
-                    type="month" 
-                    id="dashMonth" 
-                    value="${data.month}" 
-                    onchange="loadHRDashboard(this.value)"
-                    style="border:1.5px solid var(--border); border-radius:6px; padding:6px 12px; font-size:13px; font-family:inherit; outline:none; cursor:pointer;"
-                >
-                ${!isCurrent ? '<span style="background:#f5f3ff; color:var(--brand2); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;">Historical</span>' : ""}
+            <!-- Header -->
+            <div class="hrdash-head">
+                <div>
+                    <h3>HR Dashboard</h3>
+                    <p>Support staff overview &middot; ${monthLabel}</p>
+                </div>
+                <div class="hrdash-month">
+                    <span style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase;">Report:</span>
+                    <input 
+                        type="month" 
+                        id="dashMonth" 
+                        value="${data.month}" 
+                        onchange="loadHRDashboard(this.value)"
+                    >
+                    ${!isCurrent ? '<span style="background:#f5f3ff; color:var(--brand2); padding:4px 10px; border-radius:20px; font-size:11px; font-weight:700;">Historical</span>' : ""}
+                </div>
             </div>
 
             <!-- 1. Global Metrics (6 Cards) -->
-            <div style="display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 16px;">
+            <div class="hrdash-stats">
                 <div class="stat-card" style="border: 1px solid #e0e7ff; background: #fff; position: relative;">
                     <div class="stat-icon" style="background: #e0e7ff; color: #4338ca;">👥</div>
                     <div style="min-width:0;"><div class="stat-val">${data.headcount}</div><div class="stat-lbl">Total Staff</div></div>
@@ -5258,8 +5806,68 @@
                 </div>
             </div>
 
+            <!-- Birthdays, Attendance Donut & Trend -->
+            <div class="hrdash-row">
+                <div class="hrdash-card">
+                    <div class="dash-sec-title" style="margin-bottom:12px;">🎂 Coming up this week</div>
+                    ${
+                      bdayPeople.length
+                        ? bdayPeople
+                            .map(
+                              (b) => `
+                    <div class="hrdash-bday-row">
+                        <div class="hrdash-avatar">${initials(b.employee_name)}</div>
+                        <div style="min-width:0; flex:1;">
+                            <div class="hrdash-pname">${b.employee_name}</div>
+                            <div class="hrdash-pmeta">${b.employee_number || b.name}${b.department ? " · " + b.department : ""}${b.branch ? " · " + b.branch : ""}</div>
+                            <div class="hrdash-pmeta">${b.designation || "—"}</div>
+                        </div>
+                        <div style="text-align:right; flex-shrink:0;">
+                            <span class="hrdash-bday-when ${b.when === "Today" ? "today" : ""}">${b.when}</span>
+                            ${b.dateLabel ? `<div class="hrdash-pmeta" style="margin-top:5px;">🎂 ${b.dateLabel}</div>` : ""}
+                        </div>
+                    </div>`,
+                            )
+                            .join("")
+                        : `<div class="hrdash-empty">No birthdays this week.</div>`
+                    }
+                </div>
+
+                <div class="hrdash-card hrdash-attcard">
+                    <div class="dash-sec-title" style="margin-bottom:12px;">🍩 ${timeLabel} Attendance Status</div>
+                    <div class="hrdash-donut" style="background: conic-gradient(${attDonut.gradient});">
+                        <div class="hrdash-donut-hole">
+                            <div style="font-size:20px; font-weight:800; color:var(--brand);">${data.attendance.percentage}%</div>
+                            <div style="font-size:9px; color:var(--muted); text-transform:uppercase;">${timeLabel}</div>
+                        </div>
+                    </div>
+                    <div class="hrdash-legend">${legendOf(attDonut.segs)}</div>
+                </div>
+
+                <div class="hrdash-card hrdash-trendcard">
+                    <div class="dash-sec-title" style="margin-bottom:12px;">📈 Attendance Trend (Last 7 Days)</div>
+                    ${
+                      trend.length
+                        ? `
+                    <div class="hrdash-trend">
+                        ${trend
+                          .map(
+                            (t) => `
+                        <div class="hrdash-bar-col" title="${t.date}: ${t.percentage}% (${t.present} present)">
+                            <div style="font-size:10px; font-weight:700; color:var(--brand2);">${t.percentage}%</div>
+                            <div class="hrdash-bar" style="height:${Math.max(4, t.percentage)}%;"></div>
+                            <div class="hrdash-bar-lbl">${new Date(t.date).toLocaleDateString("en-IN", { weekday: "short" })}</div>
+                        </div>`,
+                          )
+                          .join("")}
+                    </div>`
+                        : `<div class="hrdash-empty">Trend available for the current month only.</div>`
+                    }
+                </div>
+            </div>
+
             <!-- 2. Attendance, Lifecycle & Leave in one row -->
-            <div style="display: grid; grid-template-columns: 1.2fr 0.9fr 1.9fr; gap: 16px; margin-bottom: 16px;">
+            <div class="hrdash-row-3">
                 <div class="dash-section" style="background:#fff; padding:16px; border-radius:12px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
                     <div class="dash-sec-title" style="margin-bottom:12px;">${isCurrent ? "Today's" : "Monthly Avg."} Attendance Status</div>
                     <div class="stat-pill-box">
@@ -5354,42 +5962,53 @@
                 </div>
             </div>
 
-            <!-- 3. Branch-wise Detailed Table -->
-            <div class="dash-section" style="background:#fff; padding:16px; border-radius:12px; border:1px solid #f1f5f9; box-shadow: var(--shadow);">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-                    <div class="dash-sec-title" style="margin:0;">Branch-wise Performance (${isCurrent ? "Today" : "Monthly Avg."})</div>
-                    <input 
-                      type="text" 
-                      id="branchTableSearch" 
-                      placeholder="🔍 Search Branch..." 
-                      onkeyup="filterBranchTable()"
-                      style="padding:5px 12px; font-size:12px; border:1px solid var(--border); border-radius:20px; outline:none;"
-                    >
+            ${alertSection}
+
+            <!-- 3. Branch-wise Performance: Leaderboard + Share donut -->
+            <div class="hrdash-row">
+                <div class="hrdash-card">
+                    <div class="dash-sec-title" style="margin-bottom:14px;">🏆 Branch Leaderboard (${isCurrent ? "Today" : "Monthly Avg."})</div>
+                    ${
+                      branchSorted.length
+                        ? `<div id="branchLbList">` +
+                          branchSorted
+                            .map((b, i) => {
+                              const col = pcColor(b.att_pc || 0);
+                              const label = b.branch_name ? `${b.branch_name} (${b.branch})` : b.branch || "Not Set";
+                              const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
+                              const extra = i >= 5;
+                              return `
+                    <div class="hrdash-lb-row ${extra ? "hrdash-lb-extra" : ""}"${extra ? ' style="display:none;"' : ""}>
+                        <div class="hrdash-lb-rank ${i < 3 ? "top" : ""}">${medal}</div>
+                        <div style="min-width:0; flex:1;">
+                            <div class="hrdash-pname">${label}</div>
+                            <div class="hrdash-hbar-track" style="margin-top:6px;">
+                                <div class="hrdash-hbar-fill" style="width:${b.att_pc}%; background:${col.c};"></div>
+                            </div>
+                            <div class="hrdash-pmeta" style="margin-top:4px;">${b.present}/${b.total} present</div>
+                        </div>
+                        <span class="hrdash-pc" style="background:${col.bg}; color:${col.c};">${b.att_pc}%</span>
+                    </div>`;
+                            })
+                            .join("") +
+                          `</div>` +
+                          (branchSorted.length > 5
+                            ? `<button type="button" class="hrdash-viewall" data-open="0" onclick="toggleBranchList(this)">View all (${branchSorted.length - 5} more)</button>`
+                            : "")
+                        : `<div class="hrdash-empty">No branch data for this period.</div>`
+                    }
                 </div>
-                <table style="width:100%; border-collapse: collapse; font-size: 14px; table-layout: fixed;">
-                    <thead>
-                        <tr style="text-align: left; border-bottom: 2px solid #f1f5f9; color: var(--muted); font-size:12px; text-transform:uppercase;">
-                            <th style="padding: 10px 0; width:25%;">Branch Name</th>
-                            <th style="padding: 10px 0; text-align: center; width:25%;">Staff</th>
-                            <th style="padding: 10px 0; text-align: center; width:25%;">${isCurrent ? "Present" : "Avg. Pres."}</th>
-                            <th style="padding: 10px 0; text-align: center; width:25%;">Att. %</th>
-                        </tr>
-                    </thead>
-                    <tbody id="branchTableBody">
-                        ${data.branch_wise
-                          .map(
-                            (b) => `
-                            <tr style="border-bottom: 1px solid #f1f5f9;">
-                                <td style="padding: 10px 0; font-weight: 600; color: var(--brand); font-size:13px;">${b.branch_name ? `${b.branch_name} (${b.branch})` : b.branch || "Not Set"}</td>
-                                <td style="padding: 10px 0; text-align: center; font-size:13px;">${b.total}</td>
-                                <td style="padding: 10px 0; text-align: center; color:var(--success); font-weight:600; font-size:13px;">${b.present}</td>
-                                <td style="padding: 10px 0; text-align: center;"><span style="background:#f5f3ff; color:var(--brand2); padding:4px 8px; border-radius:6px; font-weight:700; font-size:12px;">${b.att_pc}%</span></td>
-                            </tr>
-                        `,
-                          )
-                          .join("")}
-                    </tbody>
-                </table>
+
+                <div class="hrdash-card hrdash-attcard">
+                    <div class="dash-sec-title" style="margin-bottom:8px;">🥧 Branch Staff Share</div>
+                    <div class="hrdash-donut hrdash-donut-sm" style="background: conic-gradient(${brDonut.gradient});">
+                        <div class="hrdash-donut-hole">
+                            <div style="font-size:18px; font-weight:800; color:var(--brand);">${brDonut.total}</div>
+                            <div style="font-size:9px; color:var(--muted); text-transform:uppercase;">Staff</div>
+                        </div>
+                    </div>
+                    <div class="hrdash-legend">${legendOf(brDonut.segs)}</div>
+                </div>
             </div>
         `;
         dashContent.innerHTML = html;
