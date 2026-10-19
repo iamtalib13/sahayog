@@ -389,6 +389,7 @@ doc_events = {
             "sahayog.scrm.controller.lead.lead.validate_duplicate_lead",
             "sahayog.scrm.controller.lead.lead.validate_required_employee_fields",
             "sahayog.scrm.controller.lead.lead.validate_lead_conversion_verification",
+            "sahayog.scrm.controller.lead.lead.validate_lead_audit_lock",
         ],
         "after_save": "sahayog.scrm.page.my_crm.my_crm.invalidate_crm_cache_for_lead",
         "on_trash": "sahayog.scrm.page.my_crm.my_crm.invalidate_crm_cache_for_lead",

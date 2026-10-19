@@ -127,6 +127,18 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
   transform: translateY(-1px);
 }
 
+.clear-filter-btn {
+  background: #fff;
+  color: #e53e3e;
+  border: 1px solid #feb2b2;
+}
+
+.clear-filter-btn:hover {
+  background: #fff5f5;
+  border-color: #fc8181;
+  transform: translateY(-1px);
+}
+
 .analytics-btn {
   background: #006767;
   color: white;
@@ -565,6 +577,11 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
               <span>Refresh</span>
             </button>
             
+            <button class="action-btn clear-filter-btn" id="clear-filter-btn">
+              <i class="fas fa-times-circle"></i>
+              <span>Clear Filter</span>
+            </button>
+            
             <button class="action-btn export-btn" id="export-btn">
               <i class="fas fa-download"></i>
               <span>Export CSV</span>
@@ -586,10 +603,14 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
                 <th>Customer</th>
                 <th>Contact</th>
                 <th>Status</th>
+                <th>Lead Audit Status</th>
                 <th>Source</th>
+                <th>Calling Source</th>
                 <th>Product Code</th>
                 <th>Product Name</th>
                 <th>Amount</th>
+                <th>Account Number</th>
+                <th>Account Creation Date</th>
                 <th>Owner Employee Name</th>
                 <th>Owner Employee ID</th>
                 <th>Designation</th>
@@ -606,7 +627,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             </thead>
             <tbody id="lead-table-body">
               <tr>
-                <td colspan="21" class="loading-state">
+                <td colspan="25" class="loading-state">
                   <div class="loading-spinner"></div>
                   <div>Loading detailed lead data...</div>
                 </td>
@@ -731,10 +752,14 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             Customer: lead.lead_name || "",
             Contact: lead.mobile_no || "",
             Status: lead.status || "",
+            "Lead Audit Status": lead.lead_audit_status || "",
             Source: lead.source || "",
+            "Calling Source": lead.calling_source || "",
             "Product Code": p.product || "",
             "Product Name": p.product_name || "",
             Amount: p.amount || 0,
+            "Account Number": p.account_number || "",
+            "Account Creation Date": p.account_creation_date || "",
             "Owner Employee Name": ownerEmp.employee_name || "",
             "Owner Employee ID": ownerEmp.name || "",
             Designation: ownerEmp.designation || "",
@@ -758,10 +783,14 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
           Customer: lead.lead_name || "",
           Contact: lead.mobile_no || "",
           Status: lead.status || "",
+          "Lead Audit Status": lead.lead_audit_status || "",
           Source: lead.source || "",
+          "Calling Source": lead.calling_source || "",
           "Product Code": "",
           "Product Name": "",
           Amount: 0,
+          "Account Number": "",
+          "Account Creation Date": "",
           "Owner Employee Name": ownerEmp.employee_name || "",
           "Owner Employee ID": ownerEmp.name || "",
           Designation: ownerEmp.designation || "",
@@ -813,7 +842,9 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
                     ${d["Status"] || ""}
                 </span>
             </td>
+            <td title="${d["Lead Audit Status"]}">${d["Lead Audit Status"] || ""}</td>
             <td title="${d["Source"]}">${d["Source"] || ""}</td>
+            <td title="${d["Calling Source"]}">${d["Calling Source"] || ""}</td>
             <td title="${
               d["Product Code"]
             }" style="font-weight: 600; color: #006767;">
@@ -821,6 +852,8 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             </td>
             <td title="${d["Product Name"]}">${d["Product Name"] || ""}</td>
             <td class="amount-cell">${formatCurrency(d["Amount"])}</td>
+            <td title="${d["Account Number"]}">${d["Account Number"] || ""}</td>
+            <td title="${d["Account Creation Date"]}">${formatDate(d["Account Creation Date"])}</td>
             <td class="owner-employee-cell" title="${
               d["Owner Employee Name"]
             }">${d["Owner Employee Name"] || ""}</td>
@@ -1052,6 +1085,14 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
     setTimeout(() => icon.removeClass("fa-spin"), 1000);
   });
 
+  $("#clear-filter-btn").click(function () {
+    setDefaultDates();
+    let fromDate = $("#from-date-filter").val();
+    let toDate = $("#to-date-filter").val();
+    fetchDataByRange(fromDate, toDate);
+    frappe.show_alert({ message: __("Filters cleared"), indicator: "green" }, 3);
+  });
+
   $("#analytics-btn").click(function () {
     if (cachedData.length === 0) {
       frappe.show_alert(
@@ -1085,10 +1126,14 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
         "Customer",
         "Contact",
         "Status",
+        "Lead Audit Status",
         "Source",
+        "Calling Source",
         "Product Code",
         "Product Name",
         "Amount",
+        "Account Number",
+        "Account Creation Date",
         "Owner Employee Name",
         "Owner Employee ID",
         "Designation",

@@ -3,6 +3,9 @@ frappe.ui.form.on("Lead", {
     hideNamingSeries();
     frm.set_df_property("custom_verification_section", "collapsible", 0);
     setVerificationHighlight(frm);
+    toggleCallingSource(frm);
+    toggleAuditStatusAndLock(frm);
+    customizeTimelineTimestamps(frm);
 
     if (!frm.is_new()) {
       addAssignButton(frm); // ✅ Only show when form is not new
@@ -22,6 +25,19 @@ frappe.ui.form.on("Lead", {
 
   validate(frm) {
     validateMobileNumber(frm.doc.mobile_no);
+
+    // Validate Account details when Converting an Operation Lead
+    if (frm.doc.custom_is_operation_lead && frm.doc.status === "Converted") {
+      const rows = frm.doc.custom_product_table || [];
+      for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        if (!row.account_number || !row.account_creation_date) {
+          frappe.throw(
+            __("Row {0}: Account Number and Account Creation Date are mandatory to convert an Operation Lead.", [i + 1])
+          );
+        }
+      }
+    }
   },
 });
 
@@ -393,6 +409,7 @@ function getHiddenFields() {
     "contact_html",
     "dashboard_tab",
     "address_section",
+    "customer",
     "custom_lead_owner_details_section",
   ];
 }
@@ -446,4 +463,142 @@ function validateMobileNumber(mobile) {
   if (mobile && !mobileRegex.test(mobile)) {
     frappe.throw(__("Please enter a valid 10-digit mobile number."));
   }
+}
+
+frappe.ui.form.on("Lead Product", {
+  account_number(frm, cdt, cdn) {
+    const row = locals[cdt][cdn];
+    if (row.account_number) {
+      // Strip non-digits and limit to max 15 digits
+      const sanitized = String(row.account_number).replace(/\D/g, "").slice(0, 15);
+      if (row.account_number !== sanitized) {
+        frappe.model.set_value(cdt, cdn, "account_number", sanitized);
+      }
+    }
+  },
+
+  form_render(frm, cdt, cdn) {
+    const user_roles = frappe.user_roles || [];
+    const is_operations =
+      user_roles.includes("Operations Support Manager") ||
+      user_roles.includes("Operations Support Executive") ||
+      (frappe.session.user === "Administrator");
+
+    const row = locals[cdt][cdn];
+    const grid_row = frm.fields_dict["custom_product_table"].grid.get_row(cdn);
+    if (grid_row) {
+      grid_row.toggle_display("account_number", is_operations);
+      grid_row.toggle_display("account_creation_date", is_operations);
+
+      // Attach listener to block non-digits and limit to 15 digits
+      if (grid_row.grid_form && grid_row.grid_form.fields_dict.account_number) {
+        const input_field = grid_row.grid_form.fields_dict.account_number.$wrapper.find("input");
+        if (input_field && input_field.length) {
+          input_field.attr("maxlength", 15);
+          input_field.off("input.ac_filter").on("input.ac_filter", function () {
+            this.value = this.value.replace(/[^0-9]/g, "").slice(0, 15);
+          });
+        }
+      }
+    }
+  }
+});
+
+// Show custom_calling_source only for Operations roles
+function toggleCallingSource(frm) {
+  const user_roles = frappe.user_roles || [];
+  const is_operations =
+    user_roles.includes("Operations Support Manager") ||
+    user_roles.includes("Operations Support Executive") ||
+    (frappe.session.user === "Administrator");
+
+  frm.toggle_display("custom_calling_source", is_operations);
+}
+
+// Handle Lead Audit Status read-only/editability and form locking
+function toggleAuditStatusAndLock(frm) {
+  const is_admin = frappe.session.user === "Administrator";
+  const is_emp_1034 =
+    frappe.session.user === "1034@sahayog.com" ||
+    (frappe.boot && frappe.boot.user && (frappe.boot.user.name === "1034" || frappe.boot.user.employee_number === "1034"));
+
+  const can_audit = is_admin || is_emp_1034;
+
+  // Field visible to all, but READ-ONLY for everyone except Admin and Employee 1034
+  frm.toggle_display("custom_lead_audit_status", true);
+  frm.set_df_property("custom_lead_audit_status", "read_only", can_audit ? 0 : 1);
+
+  // Lock entire form if Approved, unless Administrator or employee 1034
+  if (frm.doc.custom_lead_audit_status === "Approved" && !frm.is_new()) {
+    if (!can_audit) {
+      frm.disable_save();
+      frm.set_read_only();
+      frm.dashboard.set_headline(
+        __("This lead is Approved / Audited and locked. Only Administrator and Authorized Auditor (1034) can edit."),
+        "blue"
+      );
+    }
+  }
+}
+
+// Format timeline & sidebar activity timestamps as: 'Day, DD-MMM-YYYY hh:mm A'
+function customizeTimelineTimestamps(frm) {
+  if (frm.is_new()) return;
+
+  const formatActivityDate = (dt) => {
+    if (!dt) return "";
+    const d = new Date(dt);
+    if (isNaN(d.getTime())) return dt;
+
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    const dayName = days[d.getDay()];
+    const dateNum = String(d.getDate()).padStart(2, "0");
+    const monthName = months[d.getMonth()];
+    const year = d.getFullYear();
+
+    let hours = d.getHours();
+    const minutes = String(d.getMinutes()).padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? String(hours).padStart(2, "0") : "12";
+
+    return dayName + ", " + dateNum + "-" + monthName + "-" + year + " " + hours + ":" + minutes + " " + ampm;
+  };
+
+  const applyCustomFormat = () => {
+    // 1. Sidebar (.modified-by & .created-by)
+    $(".modified-by, .created-by").each(function () {
+      const $el = $(this);
+      const text = $el.text();
+      const is_mod = $el.hasClass("modified-by") || text.includes("last edited");
+      const dt = is_mod ? frm.doc.modified : frm.doc.creation;
+      if (!dt) return;
+
+      const user_prefix = is_mod
+        ? (frm.doc.modified_by === frappe.session.user ? __("You last edited this") : frm.doc.modified_by + " " + __("last edited this"))
+        : (frm.doc.owner === frappe.session.user ? __("You created this") : frm.doc.owner + " " + __("created this"));
+
+      $el.html(user_prefix + " · " + formatActivityDate(dt));
+    });
+
+    // 2. Timeline items in footer
+    $(".timeline-item").each(function () {
+      const $item = $(this);
+      const timestamp = $item.attr("data-timestamp");
+      if (timestamp) {
+        $item.find(".timeline-content > span").each(function () {
+          const $s = $(this);
+          if ($s.text().startsWith(" · ")) {
+            $s.text(" · " + formatActivityDate(timestamp));
+          }
+        });
+      }
+    });
+  };
+
+  // Run immediately and periodically until rendered
+  applyCustomFormat();
+  [200, 500, 1000, 2000].forEach((ms) => setTimeout(applyCustomFormat, ms));
 }

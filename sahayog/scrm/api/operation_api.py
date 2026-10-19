@@ -24,12 +24,8 @@ def get_operation_lead_report(from_date=None, to_date=None):
 
         # ✅ Operations Support Manager full access
         if not has_full_report_access():
-            # Regular users get only their leads
-            lead_filters.append([
-                "OR",
-                ["owner", "=", frappe.session.user],
-                ["lead_owner", "=", frappe.session.user]
-            ])
+            # Regular users get only leads created by them
+            lead_filters.append(["owner", "=", frappe.session.user])
 
         if from_date:
             lead_filters.append(["creation", ">=", f"{from_date} 00:00:00"])
@@ -48,7 +44,9 @@ def get_operation_lead_report(from_date=None, to_date=None):
                 "source",
                 "lead_owner",
                 "owner",
-                "creation"
+                "creation",
+                "custom_lead_audit_status",
+                "custom_calling_source"
             ],
             filters=lead_filters,
             order_by="creation desc",
@@ -75,7 +73,7 @@ def get_operation_lead_report(from_date=None, to_date=None):
             products = frappe.get_all(
                 "Lead Product",
                 filters={"parent": ["in", lead_names]},
-                fields=["parent", "product", "product_name", "product_amount", "idx"],
+                fields=["parent", "product", "product_name", "product_amount", "account_number", "account_creation_date", "idx"],
                 order_by="idx"
             )
             # Map products by parent Lead
@@ -84,6 +82,7 @@ def get_operation_lead_report(from_date=None, to_date=None):
                     "product": p.product or "",
                     "product_name": p.product_name or "",
                     "amount": p.product_amount or 0,
+                     "account_number": p.account_number or "", "account_creation_date": p.account_creation_date or "",
                     "idx": p.idx or 0
                 })
 
@@ -133,7 +132,9 @@ def get_operation_lead_report(from_date=None, to_date=None):
                 "mobile_no": getattr(lead, 'mobile_no', ''),
                 "email_id": getattr(lead, 'email_id', ''),
                 "status": getattr(lead, 'status', ''),
+                "lead_audit_status": getattr(lead, 'custom_lead_audit_status', ''),
                 "source": getattr(lead, 'source', ''),
+                "calling_source": getattr(lead, 'custom_calling_source', ''),
                 "lead_owner": getattr(lead, 'lead_owner', ''),
                 "owner": getattr(lead, 'owner', ''),
                 "creation": getattr(lead, 'creation', ''),

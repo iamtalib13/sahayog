@@ -8,7 +8,9 @@
  "field_order": [
   "product",
   "product_name",
-  "product_amount"
+  "product_amount",
+  "account_number",
+  "account_creation_date"
  ],
  "fields": [
   {
@@ -35,12 +37,24 @@
    "label": "Amount",
    "precision": "0",
    "reqd": 1
+  },
+  {
+   "fieldname": "account_creation_date",
+   "fieldtype": "Date",
+   "label": "Account Creation Date",
+   "in_list_view": 0
+  },
+  {
+   "fieldname": "account_number",
+   "fieldtype": "Data",
+   "label": "Account Number",
+   "in_list_view": 0
   }
  ],
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-08-28 11:12:51.618657",
+ "modified": "2026-10-15 13:44:50.020075",
  "modified_by": "Administrator",
  "module": "SCRM",
  "name": "Lead Product",
