@@ -1068,6 +1068,70 @@
           grid-template-columns: repeat(2, 1fr);
         }
       }
+
+      /* CREATE SUPPORT STAFF MODAL — professional polish */
+      #createEmployeeModal .cs-sec-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+        text-transform: uppercase;
+        color: var(--brand2);
+        letter-spacing: 1px;
+        margin: 0 0 15px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid #eef0f6;
+      }
+      #createEmployeeModal .cs-sec-title::before {
+        content: "";
+        width: 4px;
+        height: 14px;
+        border-radius: 2px;
+        background: var(--brand2);
+        flex: none;
+      }
+      #createEmployeeModal .cs-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 15px 18px;
+      }
+      @media (max-width: 900px) {
+        #createEmployeeModal .cs-grid {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+      @media (max-width: 600px) {
+        #createEmployeeModal .cs-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      #createEmployeeModal label {
+        display: block;
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--muted);
+        margin-bottom: 5px;
+        letter-spacing: 0.2px;
+      }
+      #createEmployeeModal .member-select {
+        height: 40px;
+        padding: 8px 12px;
+        font-size: 13px;
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        background: #fff;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      #createEmployeeModal textarea.member-select {
+        height: auto;
+        min-height: 64px;
+        resize: vertical;
+      }
+      #createEmployeeModal .member-select:focus {
+        border-color: var(--brand2);
+        box-shadow: 0 0 0 3px rgba(59, 45, 138, 0.12);
+        outline: none;
+      }
     </style>
   </head>
   <body>
@@ -1749,6 +1813,19 @@
                       "
                     >
                       Create Support Staff
+                      <span
+                        style="
+                          display: block;
+                          font-size: 12px;
+                          font-weight: 500;
+                          color: var(--muted);
+                          margin-top: 3px;
+                          font-family: &quot;DM Sans&quot;, sans-serif;
+                          letter-spacing: 0;
+                          text-transform: none;
+                        "
+                        >Add a new support staff member</span
+                      >
                     </h3>
                     <div style="display: flex; gap: 10px; align-items: center">
                       <button
@@ -1769,37 +1846,18 @@
                           font-weight: 700;
                         "
                       >
-                        Create Employee
+                        Create Support Staff
                       </button>
                     </div>
                   </div>
 
-                  <div style="padding: 0 30px 30px 30px">
+                  <div style="padding: 22px 30px 30px 30px">
                     <!-- Section 1: Basic Details -->
                     <div style="margin-bottom: 25px">
-                      <h4
-                        style="
-                          font-size: 12px;
-                          text-transform: uppercase;
-                          color: var(--brand2);
-                          letter-spacing: 1px;
-                          margin-bottom: 15px;
-                          border-left: 4px solid var(--brand2);
-                          padding-left: 10px;
-                        "
-                      >
+                      <h4 class="cs-sec-title">
                         Basic Information
                       </h4>
-                      <div
-                        style="
-                          display: grid;
-                          grid-template-columns: repeat(
-                            auto-fit,
-                            minmax(200px, 1fr)
-                          );
-                          gap: 15px;
-                        "
-                      >
+                      <div class="cs-grid">
                         <div>
                           <label>First Name *</label
                           ><input
@@ -1890,29 +1948,10 @@
 
                     <!-- Section 2: Professional Details -->
                     <div style="margin-bottom: 25px">
-                      <h4
-                        style="
-                          font-size: 12px;
-                          text-transform: uppercase;
-                          color: var(--brand2);
-                          letter-spacing: 1px;
-                          margin-bottom: 15px;
-                          border-left: 4px solid var(--brand2);
-                          padding-left: 10px;
-                        "
-                      >
+                      <h4 class="cs-sec-title">
                         Professional Details
                       </h4>
-                      <div
-                        style="
-                          display: grid;
-                          grid-template-columns: repeat(
-                            auto-fit,
-                            minmax(200px, 1fr)
-                          );
-                          gap: 15px;
-                        "
-                      >
+                      <div class="cs-grid">
                         <div>
                           <label>Date of Joining *</label
                           ><input
@@ -2028,29 +2067,10 @@
                     </div>
 
                     <div style="margin-bottom: 25px">
-                      <h4
-                        style="
-                          font-size: 12px;
-                          text-transform: uppercase;
-                          color: var(--brand2);
-                          letter-spacing: 1px;
-                          margin-bottom: 15px;
-                          border-left: 4px solid var(--brand2);
-                          padding-left: 10px;
-                        "
-                      >
+                      <h4 class="cs-sec-title">
                         Branch & Hierarchy
                       </h4>
-                      <div
-                        style="
-                          display: grid;
-                          grid-template-columns: repeat(
-                            auto-fit,
-                            minmax(200px, 1fr)
-                          );
-                          gap: 15px;
-                        "
-                      >
+                      <div class="cs-grid">
                         <div>
                           <label>Branch Code (SOL ID)</label>
                           <select
@@ -2121,29 +2141,10 @@
 
                     <!-- Section 4: Contact & Identity -->
                     <div style="margin-bottom: 25px">
-                      <h4
-                        style="
-                          font-size: 12px;
-                          text-transform: uppercase;
-                          color: var(--brand2);
-                          letter-spacing: 1px;
-                          margin-bottom: 15px;
-                          border-left: 4px solid var(--brand2);
-                          padding-left: 10px;
-                        "
-                      >
+                      <h4 class="cs-sec-title">
                         Contact & Identity
                       </h4>
-                      <div
-                        style="
-                          display: grid;
-                          grid-template-columns: repeat(
-                            auto-fit,
-                            minmax(200px, 1fr)
-                          );
-                          gap: 15px;
-                        "
-                      >
+                      <div class="cs-grid">
                         <div>
                           <label>Mobile Number</label
                           ><input
@@ -2200,29 +2201,10 @@
 
                     <!-- Section 5: Banking & Salary -->
                     <div style="margin-bottom: 30px">
-                      <h4
-                        style="
-                          font-size: 12px;
-                          text-transform: uppercase;
-                          color: var(--brand2);
-                          letter-spacing: 1px;
-                          margin-bottom: 15px;
-                          border-left: 4px solid var(--brand2);
-                          padding-left: 10px;
-                        "
-                      >
+                      <h4 class="cs-sec-title">
                         Banking & Salary
                       </h4>
-                      <div
-                        style="
-                          display: grid;
-                          grid-template-columns: repeat(
-                            auto-fit,
-                            minmax(200px, 1fr)
-                          );
-                          gap: 15px;
-                        "
-                      >
+                      <div class="cs-grid">
                         <div>
                           <label>Bank Name *</label
                           ><input
