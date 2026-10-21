@@ -35,9 +35,12 @@ def execute(filters=None):
 
     conditions = "WHERE e.custom_is_support_staff = 1"
 
-    # Status filter
+    # Status filter (Left is shown as Resigned)
     if filters.get("status"):
-        conditions += " AND e.status = %(status)s"
+        if filters.get("status") == "Resigned":
+            conditions += " AND e.status IN ('Left', 'Resigned')"
+        else:
+            conditions += " AND e.status = %(status)s"
 
     # Branch filter
     if filters.get("branch"):
@@ -95,7 +98,9 @@ def execute(filters=None):
             e.custom_zone, e.custom_region, e.custom_district,
             e.branch, e.sahayog_branch, e.sol_id,
             e.cell_number, {_pan_select}, {_aadhaar_select}, {_uhid_select},
-            e.bank_name, e.bank_ac_no, e.reports_to, e.status, e.relieving_date
+            e.bank_name, e.bank_ac_no, e.reports_to,
+            CASE WHEN e.status = 'Left' THEN 'Resigned' ELSE e.status END AS status,
+            e.relieving_date
         FROM `tabEmployee` e
         LEFT JOIN `tabSahayog Branch` sb ON sb.name = e.sahayog_branch
         {conditions}
