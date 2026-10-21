@@ -1794,22 +1794,6 @@
                 >
                   ⬆ Update
                 </button>
-                <button
-                  id="btnUpdateEmployees"
-                  class="btn-clear"
-                  style="
-                    display: none;
-                    padding: 6px 14px;
-                    font-size: 11px;
-                    font-weight: 700;
-                    background: #f0fdf4;
-                    color: #15803d;
-                    border: 1px solid #86efac;
-                  "
-                  onclick="openUpdateModal()"
-                >
-                  ✏️ Update
-                </button>
                 <!-- DISABLED: 'Fix Duplicate Code' feature no longer needed
                 <button
                   id="btnFixDuplicateCodes"
@@ -4837,16 +4821,11 @@
               tab === "attendance" ? "inline-block" : "none";
           const btnImportEmployees =
             document.getElementById("btnImportEmployees");
-          const btnUpdateEmployees =
-            document.getElementById("btnUpdateEmployees");
           const btnFixDuplicateCodes = document.getElementById(
             "btnFixDuplicateCodes",
           );
           if (btnImportEmployees)
             btnImportEmployees.style.display =
-              tab === "attendance" ? "inline-block" : "none";
-          if (btnUpdateEmployees)
-            btnUpdateEmployees.style.display =
               tab === "attendance" && userRoles.includes("Administrator")
                 ? "inline-block"
                 : "none";
@@ -5359,17 +5338,13 @@
               currentTab === "attendance" ? "inline-block" : "none";
           const btnImportEmployees =
             document.getElementById("btnImportEmployees");
-          const btnUpdateEmployees =
-            document.getElementById("btnUpdateEmployees");
           const btnFixDuplicateCodes2 = document.getElementById(
             "btnFixDuplicateCodes",
           );
           if (btnImportEmployees)
             btnImportEmployees.style.display =
-              currentTab === "attendance" ? "inline-block" : "none";
-          if (btnUpdateEmployees)
-            btnUpdateEmployees.style.display =
-              currentTab === "attendance" && userRoles.includes("Administrator")
+              currentTab === "attendance" &&
+              userRoles.includes("Administrator")
                 ? "inline-block"
                 : "none";
           if (btnFixDuplicateCodes2)
