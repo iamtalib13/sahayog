@@ -9621,7 +9621,16 @@
           </div>
         </div>
       </div>
-      <div class="profile-modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+      <div class="profile-modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <button
+          @click="downloadInwardTemplate()"
+          style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #369696; color: #369696; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;"
+          onmouseover="this.style.background='#369696';this.style.color='white'"
+          onmouseout="this.style.background='transparent';this.style.color='#369696'"
+        >
+          <i class="fas fa-download"></i>
+          <span>Download Template</span>
+        </button>
         <button class="btn-create" @click="showInwardBulkInsertModal = false" style="padding: 10px 20px; border-radius: 6px;">Done</button>
       </div>
     </div>
@@ -16811,6 +16820,37 @@
         const link = document.createElement("a");
         link.href = url;
         link.download = "asset_update_template.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      downloadInwardTemplate() {
+        // Inward (Purchase Receipt) header-level fields
+        const inwardHeaders = [
+          "Supplier", "Invoice No", "Invoice Date", "Set Warehouse",
+          "Item Code", "Description", "Qty", "Rate",
+        ];
+        // Serial No creation child-table fields
+        const serialHeaders = [
+          "Serial No", "MAC Address", "Make", "Model Number", "Processor", "RAM",
+          "Storage", "Operating System", "Windows Key", "Office Key",
+          "Warranty Start Date", "Warranty End Date",
+        ];
+        const headers = [...inwardHeaders, ...serialHeaders];
+        const example = [
+          // Inward example
+          "Supplier Pvt Ltd", "INV-12345", "2024-01-10", "Stores - Main",
+          "ITM-001", "Laptop Dell Latitude", "1", "50000",
+          // Serial No child-table example
+          "SN-12345", "00:1A:2B:3C:4D:5E", "Dell", "Latitude 5420", "i5", "8GB",
+          "256GB", "Windows 11", "XXXXX-XXXXX-XXXXX-XXXXX", "AAAAA-BBBBB-CCCCC-DDDDD",
+          "2024-01-10", "2027-01-09",
+        ];
+        const csv = headers.join(",") + "\n" + example.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "inward_bulk_insert_template.csv";
         link.click();
         URL.revokeObjectURL(url);
       },
