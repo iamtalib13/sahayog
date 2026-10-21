@@ -16823,7 +16823,48 @@
         link.click();
         URL.revokeObjectURL(url);
       },
-      downloadInwardTemplate() {
+      async downloadInwardTemplate() {
+        // Pull REAL master data so the sample row is valid & usable.
+        // Nothing is written to any doctype — it all only goes into the file.
+        if (!this.suppliers.length || !this.itemsList.length || !this.warehouses.length) {
+          try { await this.fetchItemGroupsAndDepartments(); } catch (e) { /* keep fallbacks */ }
+        }
+        const pick = (arr) => (arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null);
+
+        // Supplier (real)
+        const sup = pick(this.suppliers) || {};
+        const supplierName = sup.name || sup.supplier_name || "";
+
+        // Item (real code + name)
+        const item = pick(this.itemsList) || {};
+        const itemCode = item.name || "";
+        const itemName = item.item_name || "";
+
+        // Warehouse (real)
+        const warehouseName = pick(this.warehouses) || "";
+
+        // Rate = the item's real valuation_rate (never touches the doctype)
+        let rate = "";
+        if (itemCode) {
+          try {
+            const r = await frappe.call({
+              method: "frappe.client.get_value",
+              args: { doctype: "Item", filters: { name: itemCode }, fieldname: "valuation_rate" },
+            });
+            if (r.message && r.message.valuation_rate != null) rate = String(r.message.valuation_rate);
+          } catch (e) { /* leave blank */ }
+        }
+
+        // Realistic serial + warranty dates
+        const today = new Date();
+        const iso = (d) => d.toISOString().slice(0, 10);
+        const warrantyStart = iso(today);
+        const warrantyEnd = iso(new Date(today.getFullYear() + 3, today.getMonth(), today.getDate() - 1));
+        const serialNo = "SN" + today.getFullYear() + String(Math.floor(Math.random() * 900000) + 100000);
+        const mac = Array.from({ length: 6 }, () =>
+          Math.floor(Math.random() * 256).toString(16).padStart(2, "0").toUpperCase()
+        ).join(":");
+
         // Inward (Purchase Receipt) header-level fields
         const inwardHeaders = [
           "Supplier", "Invoice No", "Invoice Date", "Set Warehouse",
@@ -16837,13 +16878,13 @@
         ];
         const headers = [...inwardHeaders, ...serialHeaders];
         const example = [
-          // Inward example
-          "Supplier Pvt Ltd", "INV-12345", "2024-01-10", "Stores - Main",
-          "ITM-001", "Laptop Dell Latitude", "1", "50000",
-          // Serial No child-table example
-          "SN-12345", "00:1A:2B:3C:4D:5E", "Dell", "Latitude 5420", "i5", "8GB",
-          "256GB", "Windows 11", "XXXXX-XXXXX-XXXXX-XXXXX", "AAAAA-BBBBB-CCCCC-DDDDD",
-          "2024-01-10", "2027-01-09",
+          // Inward example (real supplier / item / warehouse / rate)
+          supplierName, "INV-2024-0001", iso(today), warehouseName,
+          itemCode, itemName, "1", rate,
+          // Serial No child-table example (realistic values)
+          serialNo, mac, "", "", "", "",
+          "", "", "", "",
+          warrantyStart, warrantyEnd,
         ];
         const csv = headers.join(",") + "\n" + example.join(",") + "\n";
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
