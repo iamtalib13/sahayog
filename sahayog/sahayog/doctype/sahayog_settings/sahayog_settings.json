@@ -21,16 +21,17 @@
   "wh_dept_map",
   "branch_access",
   "email_tab",
-   "send",
-   "enable_ld_email_notifications",
-   "ld_sender_email",
-   "crm_tab",
+  "send",
+  "enable_ld_email_notifications",
+  "ld_sender_email",
+  "crm_tab",
   "enable_crm_lead_report_cron",
   "petty_cash_management_tab",
   "enable_finacle_integration",
   "enable_unsettled_cash_flow",
   "daily_cash_expense_limit",
   "cash_limit_exempt_categories",
+  "allowed_access_manager_designations",
   "pending_request_dashboard_tab",
   "pending_request_setting",
   "password_security_tab",
@@ -49,12 +50,15 @@
   "min_password_length",
   "require_uppercase",
   "require_lowercase",
-   "column_break_policy",
-   "require_number",
-   "allow_special_characters",
-   "approval_system_tab",
-   "enable_approval_system"
-  ],
+  "column_break_policy",
+  "require_number",
+  "allow_special_characters",
+  "approval_system_tab",
+  "enable_approval_system",
+  "aadhaar_verification_tab",
+  "karza_api_key",
+  "karza_base_url"
+ ],
  "fields": [
   {
    "fieldname": "project_settings_section",
@@ -110,20 +114,20 @@
    "fieldtype": "Check",
    "label": "Send Email"
   },
-   {
-    "default": "1",
-    "description": "When unchecked, L&D invitation and closure emails are paused (scheduler skips them).",
-    "fieldname": "enable_ld_email_notifications",
-    "fieldtype": "Check",
-    "label": "Enable L&D Email Notifications"
-   },
-   {
-    "description": "From-address for L&D invitation and closure mails. Must exist as an outgoing-enabled Email Account. Blank = system default outgoing account.",
-    "fieldname": "ld_sender_email",
-    "fieldtype": "Data",
-    "label": "L&D Sender Email",
-    "options": "Email"
-   },
+  {
+   "default": "1",
+   "description": "When unchecked, L&D invitation and closure emails are paused (scheduler skips them).",
+   "fieldname": "enable_ld_email_notifications",
+   "fieldtype": "Check",
+   "label": "Enable L&D Email Notifications"
+  },
+  {
+   "description": "From-address for L&D invitation and closure mails. Must exist as an outgoing-enabled Email Account. Blank = system default outgoing account.",
+   "fieldname": "ld_sender_email",
+   "fieldtype": "Data",
+   "label": "L&D Sender Email",
+   "options": "Email"
+  },
   {
    "fieldname": "crm_tab",
    "fieldtype": "Tab Break",
@@ -328,30 +332,54 @@
    "label": "Daily Cash Expense Limit",
    "reqd": 1
   },
-   {
-    "fieldname": "cash_limit_exempt_categories",
-    "fieldtype": "Table",
-    "label": "Cash Limit Exempt Categories",
-    "options": "Petty Cash Cash Limit Exempt Category"
-   },
-   {
-    "fieldname": "approval_system_tab",
-    "fieldtype": "Tab Break",
-    "label": "Approval System"
-   },
-   {
-    "default": "1",
-    "description": "When checked, Approval System stays ON. Uncheck to turn it OFF.",
-    "fieldname": "enable_approval_system",
-    "fieldtype": "Check",
-    "label": "Enable Approval System"
-   }
-  ],
+  {
+   "fieldname": "cash_limit_exempt_categories",
+   "fieldtype": "Table",
+   "label": "Cash Limit Exempt Categories",
+   "options": "Petty Cash Cash Limit Exempt Category"
+  },
+  {
+   "fieldname": "approval_system_tab",
+   "fieldtype": "Tab Break",
+   "label": "Approval System"
+  },
+  {
+   "default": "1",
+   "description": "When checked, Approval System stays ON. Uncheck to turn it OFF.",
+   "fieldname": "enable_approval_system",
+   "fieldtype": "Check",
+   "label": "Enable Approval System"
+  },
+  {
+   "fieldname": "allowed_access_manager_designations",
+   "fieldtype": "Table",
+   "label": "Allowed Access Manager Designation(s)",
+   "options": "Allowed Access Manager Designation"
+  },
+  {
+   "default": "https://api.karza.in",
+   "fieldname": "aadhaar_verification_tab",
+   "fieldtype": "Tab Break",
+   "label": "Aadhaar Verification"
+  },
+  {
+   "fieldname": "karza_api_key",
+   "fieldtype": "Password",
+   "label": "Karza API key"
+  },
+  {
+   "default": "https://api.karza.in",
+   "fieldname": "karza_base_url",
+   "fieldtype": "Data",
+   "label": "karza Base Url"
+  }
+ ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-09-07 15:11:32.570093",
+ "modified": "2026-10-12 12:58:17.340222",
+ "modified": "2026-10-13 16:12:24.130854",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",

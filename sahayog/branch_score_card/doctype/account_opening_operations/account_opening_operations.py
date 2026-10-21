@@ -1,4 +1,6 @@
+from datetime import datetime, date
 import frappe
+from sahayog.branch_score_card.audit_log_utils import write_audit_log, snapshot_document, get_latest_version_data
 import openpyxl
 import io
 import json
@@ -151,6 +153,61 @@ class AccountOpeningOperations(Document):
 
 
 # ------------------------------------------------------------------
+
+    def after_insert(self):
+        write_audit_log(
+            self, "Created",
+            data={"created": snapshot_document(self)},
+        )
+
+    def on_update(self):
+        if self.flags.get("in_insert"):
+            return
+        write_audit_log(
+            self, "Updated",
+            data={
+                "changed": get_latest_version_data(self),
+                "snapshot": snapshot_document(self),
+            },
+        )
+
+    def on_trash(self):
+        self._delete_log_snapshot = self._capture_delete_log_snapshot()
+        write_audit_log(
+            self, "Deleted",
+            data={"deleted": snapshot_document(self)},
+        )
+
+    def _capture_delete_log_snapshot(self):
+        excluded = {
+            "doctype", "owner", "creation", "modified", "modified_by",
+            "parent", "parentfield", "parenttype", "idx", "docstatus",
+            "__unsaved",
+        }
+        snapshot = {}
+        for key, value in self.as_dict().items():
+            if key in excluded:
+                continue
+            if isinstance(value, list):
+                value = [
+                    {k: v for k, v in row.items() if k not in excluded}
+                    if isinstance(row, dict) else row
+                    for row in value
+                ]
+            snapshot[key] = value
+        return snapshot
+
+    def after_delete(self):
+        snapshot = getattr(self, "_delete_log_snapshot", None)
+        if snapshot is None:
+            return
+        frappe.get_doc({
+            "doctype": "Version",
+            "ref_doctype": self.doctype,
+            "docname": self.name,
+            "data": json.dumps({"deleted": snapshot}, default=str),
+        }).insert(ignore_permissions=True)
+
 # TEMPLATE DOWNLOAD APIS (HEADER ONLY)
 # ------------------------------------------------------------------
 @frappe.whitelist()
@@ -194,6 +251,7 @@ def download_zero_ip_template():
 # ------------------------------------------------------------------
 @frappe.whitelist()
 def process_consolidated_excel(file_url=None, confirm=False):
+    frappe.flags.sahayog_audit_source = "Excel Upload"
     if not file_url:
         frappe.throw("No file provided for processing.")
 
@@ -293,13 +351,44 @@ def process_consolidated_excel(file_url=None, confirm=False):
                 )
 
             try:
-                entry_date = datetime.strptime(str(date_raw).strip(), "%d-%m-%Y").date()
-                date_str = str(entry_date)
+                if isinstance(date_raw, datetime):
+                    entry_date = date_raw.date()
+                elif isinstance(date_raw, date):
+                    entry_date = date_raw
+                else:
+                    raw_date = str(date_raw).strip()
+                    entry_date = None
+
+                    for date_format in (
+                        "%d-%m-%Y",
+                        "%d/%m/%Y",
+                        "%Y-%m-%d %H:%M:%S",
+                        "%Y-%m-%d",
+                    ):
+                        try:
+                            entry_date = datetime.strptime(
+                                raw_date, date_format
+                            ).date()
+                            break
+                        except ValueError:
+                            continue
+
+                    if entry_date is None:
+                        try:
+                            entry_date = datetime.fromisoformat(
+                                raw_date
+                            ).date()
+                        except ValueError:
+                            raise ValueError("Unsupported date format")
+
+                date_str = entry_date.strftime("%Y-%m-%d")
                 month_name = entry_date.strftime("%B")
                 year_num = entry_date.year
-            except Exception:
+
+            except (ValueError, TypeError):
                 errors.append(
-                    f"Row {row_idx}: Invalid Date format '<b>{date_raw}</b>'."
+                    f"Row {row_idx}: Invalid Date format '<b>{date_raw}</b>'. "
+                    "Expected DD-MM-YYYY."
                 )
                 continue
 
@@ -452,6 +541,7 @@ def process_consolidated_excel(file_url=None, confirm=False):
 # ------------------------------------------------------------------
 @frappe.whitelist()
 def process_zero_ip_excel(file_url=None, confirm=False):
+    frappe.flags.sahayog_audit_source = "Excel Upload"
     if not file_url:
         frappe.throw("No file provided for processing.")
 
@@ -522,13 +612,44 @@ def process_zero_ip_excel(file_url=None, confirm=False):
                 )
 
             try:
-                entry_date = datetime.strptime(str(date_raw).strip(), "%d-%m-%Y").date()
-                date_str = str(entry_date)
+                if isinstance(date_raw, datetime):
+                    entry_date = date_raw.date()
+                elif isinstance(date_raw, date):
+                    entry_date = date_raw
+                else:
+                    raw_date = str(date_raw).strip()
+                    entry_date = None
+
+                    for date_format in (
+                        "%d-%m-%Y",
+                        "%d/%m/%Y",
+                        "%Y-%m-%d %H:%M:%S",
+                        "%Y-%m-%d",
+                    ):
+                        try:
+                            entry_date = datetime.strptime(
+                                raw_date, date_format
+                            ).date()
+                            break
+                        except ValueError:
+                            continue
+
+                    if entry_date is None:
+                        try:
+                            entry_date = datetime.fromisoformat(
+                                raw_date
+                            ).date()
+                        except ValueError:
+                            raise ValueError("Unsupported date format")
+
+                date_str = entry_date.strftime("%Y-%m-%d")
                 month_name = entry_date.strftime("%B")
                 year_num = entry_date.year
-            except Exception:
+
+            except (ValueError, TypeError):
                 errors.append(
-                    f"Row {row_idx}: Invalid Date format '<b>{date_raw}</b>'."
+                    f"Row {row_idx}: Invalid Date format '<b>{date_raw}</b>'. "
+                    "Expected DD-MM-YYYY."
                 )
                 continue
 

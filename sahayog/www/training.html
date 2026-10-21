@@ -510,6 +510,155 @@
         padding: 8px 4px;
       }
 
+      /* ---------- Today Panel ---------- */
+      /* Gentle attention glow (opacity only — no jumpy scaling) */
+      @keyframes tp-pulse {
+        0%, 100% { opacity: 1; }
+        50%       { opacity: 0.35; }
+      }
+      .today-panel {
+        margin-top: 18px;
+      }
+      .today-panel-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--ink-3);
+        padding: 0 8px 6px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .today-panel-title .tp-date {
+        font-weight: 600;
+        font-size: 11px;
+        color: var(--ink-2);
+        text-transform: none;
+        letter-spacing: 0;
+      }
+      .today-card {
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+        padding: 8px 10px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        background: var(--surface);
+        margin-bottom: 6px;
+        cursor: pointer;
+        transition: box-shadow 0.12s, border-color 0.12s;
+        text-align: left;
+        width: 100%;
+        min-width: 0;
+      }
+      .today-card:hover {
+        border-color: var(--accent);
+        box-shadow: 0 2px 8px rgba(79,107,237,0.10);
+      }
+      .today-card-top {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 0;
+      }
+      .tp-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .tp-dot.pulse {
+        animation: tp-pulse 1.6s ease-in-out infinite;
+      }
+      .tp-dot.upcoming  { background: var(--accent); }
+      .tp-dot.inprogress { background: var(--orange); }
+      .tp-dot.completed  { background: var(--green); }
+      .tp-dot.pending    { background: var(--gray); }
+      .today-card-name {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--ink-1);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+      }
+      /* Trainer + location on their own lines, aligned with the name */
+      .today-card-sub {
+        padding-left: 13px;
+        min-width: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .today-card-trainer {
+        font-size: 11.5px;
+        font-weight: 500;
+        color: var(--ink-2);
+      }
+      .today-card-loc {
+        font-size: 11px;
+        color: var(--ink-3);
+      }
+      .today-more {
+        font-size: 11.5px;
+        color: var(--accent-ink);
+        font-weight: 500;
+        padding: 2px 8px 4px;
+        cursor: pointer;
+        background: none;
+        border: none;
+        text-align: left;
+        width: 100%;
+      }
+      .today-more:hover { text-decoration: underline; }
+      .today-empty {
+        font-size: 12px;
+        color: var(--ink-3);
+        padding: 6px 8px;
+        font-style: italic;
+      }
+      /* Collapsed sidebar — show only a dot indicator */
+      .app.collapsed .today-panel { display: none; }
+      .tp-collapsed-dot {
+        display: none;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--orange);
+        margin: 6px auto;
+        animation: tp-pulse 1.6s ease-in-out infinite;
+      }
+      .app.collapsed .tp-collapsed-dot { display: block; }
+      /* Toolbar pill — persistent entry point to today's consolidated list */
+      .today-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        height: 30px;
+        padding: 0 12px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        border: 1px solid #d7defc;
+        color: var(--accent-ink);
+        font-size: 12.5px;
+        font-weight: 600;
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .today-pill:hover {
+        background: #e2e8fd;
+      }
+      .today-pill .tp-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--accent);
+        animation: tp-pulse 1.6s ease-in-out infinite;
+      }
+
       /* ---------- Main ---------- */
       .main {
         grid-area: main;
@@ -529,7 +678,10 @@
         background: #f8fafc;
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
-        flex-wrap: wrap;
+        /* Single row always — scrolls horizontally on narrow screens
+           instead of pushing Trainer ID / Reset to the next line. */
+        flex-wrap: nowrap;
+        overflow-x: auto;
       }
       .filter-group {
         display: flex;
@@ -552,9 +704,24 @@
       .filters-bar .filter-group select {
         width: auto;
         min-width: 118px;
+        /* Long "code - name" branch labels must not stretch the row */
+        max-width: 168px;
+        text-overflow: ellipsis;
         height: 26px;
         font-size: 12px;
         padding: 0 7px;
+      }
+      .filters-bar #fil-trainer-id {
+        width: 92px;
+        min-width: 0;
+      }
+      /* Locked geography (non-admin restricted scope) — visibly read-only */
+      .filters-bar select:disabled,
+      .tr-toolbar select:disabled,
+      .report-toolbar select:disabled {
+        opacity: 0.65;
+        cursor: not-allowed;
+        background: var(--surface-2);
       }
       .filters-bar .btn-reset {
         margin-left: 4px;
@@ -579,18 +746,35 @@
         background: transparent;
         color: var(--accent-ink);
       }
-      /* Your-access scope note in the calendar filters bar */
+      /* Access-scope pill in the header (next to search) — shows the user's
+         Report Preference geography at a glance; full detail in tooltip. */
       .access-note {
         display: inline-flex;
         align-items: center;
+        gap: 6px;
         font-size: 11.5px;
         font-weight: 600;
         color: var(--accent-ink);
         background: var(--accent-soft);
+        border: 1px solid #d7defc;
         border-radius: 999px;
-        padding: 3px 10px;
+        padding: 4px 11px;
         white-space: nowrap;
-        margin-left: 2px;
+        flex-shrink: 1;
+        min-width: 0;
+        max-width: 36vw;
+        cursor: default;
+      }
+      .access-note svg {
+        width: 13px;
+        height: 13px;
+        flex-shrink: 0;
+      }
+      .access-note .an-text {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        min-width: 0;
       }
 
       /* Toolbar */
@@ -796,6 +980,13 @@
         color: #fff;
         font-weight: 700;
       }
+      /* Soft tint for today's whole box (instead of outline-only emphasis) */
+      .day-cell.is-today {
+        background: #eef1fe;
+      }
+      .day-cell.is-today:hover {
+        background: #e4e9fd;
+      }
       .day-cell.dimmed {
         opacity: 0.45;
       }
@@ -848,7 +1039,7 @@
         width: 100%;
         min-width: 0;
         cursor: pointer;
-        border-left: 2px solid transparent;
+        border-left: 3px solid transparent;
       }
       .event-chip {
         transition:
@@ -914,12 +1105,17 @@
       }
       .event-more {
         font-size: 11px;
+        font-weight: 600;
         color: var(--accent-ink);
-        padding: 1px 5px;
+        background: var(--accent-soft);
+        border-radius: 999px;
+        padding: 2px 9px;
         cursor: pointer;
+        align-self: flex-start;
       }
       .event-more:hover {
-        text-decoration: underline;
+        background: #e2e8fd;
+        text-decoration: none;
       }
 
       /* Week view */
@@ -1318,6 +1514,15 @@
       }
       .check-item.done .ck-val {
         color: #15803d;
+      }
+      /* Why completion checks are locked (no participants / attendance) */
+      .checks-lock-hint {
+        font-size: 11.5px;
+        color: #b45309;
+        background: var(--orange-soft);
+        border-radius: var(--radius-sm);
+        padding: 6px 9px;
+        margin-top: 6px;
       }
       .progress-row {
         display: flex;
@@ -1806,6 +2011,349 @@
         outline: none;
         cursor: default;
         width: 100%;
+      }
+
+      /* ── Mail Recipients header button ── */
+      .btn-mail-recipients-header {
+        display: none; /* shown by JS in edit mode */
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 14px;
+        font-size: 12.5px;
+        font-weight: 500;
+        border-radius: 8px;
+        color: var(--accent, #2563eb);
+        border-color: var(--accent, #2563eb);
+        background: var(--accent-soft, #eff6ff);
+        white-space: nowrap;
+        transition: background 0.15s, box-shadow 0.15s;
+      }
+      .btn-mail-recipients-header[style*="display: "]:not([style*="none"]),
+      .btn-mail-recipients-header:not([style*="none"]) {
+        display: inline-flex !important;
+      }
+      .btn-mail-recipients-header:hover {
+        background: #dbeafe;
+        box-shadow: 0 1px 4px rgba(37,99,235,0.18);
+      }
+
+      /* ── Mail Recipients Modal ── */
+      .mail-modal-dialog {
+        width: min(960px, 97vw) !important;
+        max-width: 97vw !important;
+        max-height: 92vh;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        border-radius: 14px;
+        padding: 0 !important;
+      }
+      /* Head */
+      .mail-modal-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 18px 22px 16px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+      }
+      .mail-modal-head-left {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .mail-modal-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 10px;
+        background: var(--accent-soft, #eff6ff);
+        color: var(--accent, #2563eb);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+      .mail-modal-title {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink-1);
+        line-height: 1.2;
+      }
+      .mail-modal-sub {
+        font-size: 11.5px;
+        color: var(--ink-3);
+        margin-top: 2px;
+      }
+      /* ── 2-panel body ── */
+      .mail-modal-body {
+        display: flex;
+        flex: 1;
+        min-height: 420px;
+        overflow: hidden;
+      }
+      .mail-panel {
+        flex: 1;
+        padding: 18px 22px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        min-width: 0;
+      }
+      .mail-panel-auto {
+        background: var(--surface-2, #f8fafc);
+        flex: 1.1;
+      }
+      .mail-panel-manual {
+        flex: 0.9;
+        background: var(--surface, #fff);
+      }
+      .mail-panel-divider {
+        width: 1px;
+        background: var(--border);
+        flex-shrink: 0;
+        align-self: stretch;
+      }
+      .mail-panel-head {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-3);
+        flex-shrink: 0;
+      }
+      .mail-panel-hint {
+        font-size: 11.5px;
+        color: var(--ink-3);
+        line-height: 1.5;
+        flex-shrink: 0;
+      }
+      /* Scrollable body sections (kept for compat, not used in 2-panel) */
+      .mail-modal-section {
+        padding: 16px 22px;
+        flex-shrink: 0;
+      }
+      .mail-section-auto {
+        background: var(--surface-2, #f8fafc);
+        border-bottom: 1px solid var(--border);
+        max-height: 260px;
+        overflow-y: auto;
+      }
+      .mail-section-label {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-3);
+        margin-bottom: 4px;
+      }
+      .mail-section-badge {
+        font-size: 10px;
+        font-weight: 600;
+        background: var(--border);
+        color: var(--ink-3);
+        border-radius: 999px;
+        padding: 1px 7px;
+        margin-left: 4px;
+        letter-spacing: 0;
+        text-transform: none;
+      }
+      .mail-section-hint {
+        font-size: 11.5px;
+        color: var(--ink-3);
+        margin-bottom: 12px;
+      }
+      /* Auto groups */
+      .mail-auto-groups {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .mail-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .mail-group-title {
+        font-size: 10.5px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: var(--ink-3);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .mail-group-title .mail-group-dot {
+        width: 5px;
+        height: 5px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0.5;
+        flex-shrink: 0;
+      }
+      .mail-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+      }
+      .mail-tag {
+        display: inline-flex;
+        align-items: center;
+        font-size: 11.5px;
+        background: var(--surface, #fff);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        padding: 3px 10px;
+        color: var(--ink-2);
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      }
+      .mail-tag-to {
+        border-color: #bfdbfe;
+        background: #eff6ff;
+        color: #1e40af;
+      }
+      .mail-tag-cc {
+        border-color: #d1fae5;
+        background: #f0fdf4;
+        color: #065f46;
+      }
+      .mail-empty {
+        font-size: 12px;
+        color: var(--ink-3);
+        font-style: italic;
+      }
+      /* Divider with label */
+      .mail-modal-divider {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 22px;
+        color: var(--ink-3);
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        flex-shrink: 0;
+      }
+      .mail-modal-divider::before,
+      .mail-modal-divider::after {
+        content: "";
+        flex: 1;
+        height: 1px;
+        background: var(--border);
+      }
+      /* Manual fields — single column in right panel */
+      .mail-manual-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      @media (max-width: 480px) {
+        .mail-manual-grid { grid-template-columns: 1fr; }
+      }
+      .mail-manual-field {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .mail-field-head {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: var(--ink-2);
+      }
+      .mail-field-label {
+        font-size: 12.5px;
+        font-weight: 600;
+        color: var(--ink-1);
+      }
+      .mail-field-hint {
+        font-size: 11px;
+        color: var(--ink-3);
+        margin-left: 2px;
+      }
+      .mail-textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 10px;
+        font-size: 12.5px;
+        color: var(--ink-1);
+        background: var(--surface, #fff);
+        resize: vertical;
+        outline: none;
+        transition: border-color 0.15s, box-shadow 0.15s;
+        font-family: inherit;
+        line-height: 1.5;
+      }
+      .mail-textarea:focus {
+        border-color: var(--accent, #2563eb);
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+      }
+      .mail-textarea::placeholder {
+        color: var(--ink-3);
+        font-size: 11.5px;
+      }
+      /* Live tag preview below textarea */
+      .mail-tag-preview {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+        min-height: 0;
+      }
+      .mail-tag-preview:empty { display: none; }
+      /* Responsive: stack panels on small screens */
+      @media (max-width: 640px) {
+        .mail-modal-body { flex-direction: column; overflow-y: auto; }
+        .mail-panel-divider { width: auto; height: 1px; align-self: stretch; }
+        .mail-panel { max-height: 260px; }
+        .mail-panel-manual { max-height: none; }
+      }
+      /* Footer */
+      .mail-modal-foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 14px 22px;
+        border-top: 1px solid var(--border);
+        background: var(--surface-2, #f8fafc);
+        flex-shrink: 0;
+      }
+      .mail-modal-foot-hint {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 11.5px;
+        color: var(--ink-3);
+        flex: 1;
+      }
+      .mail-modal-foot-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .mail-save-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        padding: 0 18px;
+        height: 34px;
       }
 
       /* Multi-geography rows — 2 per row grid */
@@ -3150,11 +3698,7 @@
         margin-bottom: 10px;
       }
       /* Modal backdrop blur (create + edit) */
-      #addModal.modal-wrap.open {
-        background: rgba(15, 23, 42, 0.45);
-        backdrop-filter: blur(6px);
-        -webkit-backdrop-filter: blur(6px);
-      }
+      /* addModal backdrop handled by global .modal-wrap.open rule */
       /* Edit mode: 3-column full-width — 3rd column is completion/budget */
       #addModal.editing .modal {
         width: min(1600px, 98vw);
@@ -3375,6 +3919,16 @@
       .budget-edit input:focus {
         border-color: var(--accent);
       }
+      .budget-edit input:disabled {
+        background: var(--surface-2);
+        color: var(--ink-3);
+        cursor: not-allowed;
+      }
+      /* Locked (readonly) budget on completed trainings must LOOK locked */
+      .budget-edit input[readonly] {
+        background: var(--surface-2);
+        color: var(--ink-3);
+      }
       .budget-edit-foot {
         display: flex;
         align-items: center;
@@ -3432,6 +3986,9 @@
       }
       .modal-wrap.open {
         display: flex;
+        background: rgba(15, 23, 42, 0.45);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
       }
       .modal {
         width: 480px;
@@ -3504,14 +4061,28 @@
       .more-row:hover {
         background: var(--surface-2);
       }
-      .more-row .more-title {
+      .more-row .more-main {
         flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+      .more-row .more-title {
         min-width: 0;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: 13px;
         font-weight: 500;
+      }
+      .more-row .more-sub {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-size: 11px;
+        color: var(--ink-3);
       }
       .more-row .more-time {
         font-size: 11.5px;
@@ -3745,9 +4316,9 @@
       /* Toast */
       .toast {
         position: fixed;
-        bottom: 22px;
+        top: 68px;
         left: 50%;
-        transform: translateX(-50%) translateY(20px);
+        transform: translateX(-50%) translateY(-20px);
         background: #1c1d21;
         color: #fff;
         padding: 9px 16px;
@@ -4666,7 +5237,7 @@
         .toast {
           left: 12px;
           right: 12px;
-          transform: translateX(0) translateY(20px);
+          transform: translateX(0) translateY(-20px);
           text-align: center;
         }
         .toast.show {
@@ -4787,33 +5358,18 @@
             </button>
           </div>
 
-          <div class="sidebar-section" id="statusSection">
-            <div class="sidebar-section-title">Training status</div>
-            <button class="nav-item" data-status="upcoming" title="Upcoming">
-              <span class="status-dot" style="background: var(--accent)"></span>
-              <span class="item-label">Upcoming</span>
-              <span class="item-count" id="count-upcoming">0</span>
-            </button>
-            <button
-              class="nav-item"
-              data-status="inprogress"
-              title="In progress"
-            >
-              <span class="status-dot" style="background: var(--orange)"></span>
-              <span class="item-label">In progress</span>
-              <span class="item-count" id="count-inprogress">0</span>
-            </button>
-            <button class="nav-item" data-status="completed" title="Completed">
-              <span class="status-dot" style="background: var(--green)"></span>
-              <span class="item-label">Completed</span>
-              <span class="item-count" id="count-completed">0</span>
-            </button>
-            <button class="nav-item" data-status="pending" title="Pending">
-              <span class="status-dot" style="background: var(--ink-3)"></span>
-              <span class="item-label">Pending</span>
-              <span class="item-count" id="count-pending">0</span>
-            </button>
+          <!-- Today's Trainings Panel -->
+          <div class="today-panel sidebar-section" id="todayPanel" style="display:none;">
+            <div class="today-panel-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              <span class="tp-date" id="todayDateLabel"></span>
+            </div>
+            <div id="todayCards"></div>
           </div>
+
+          <!-- Collapsed sidebar dot — shown only when there are today's trainings -->
+          <div class="tp-collapsed-dot" id="tpCollapsedDot" style="display:none;" title="You have trainings today"></div>
+
         </div>
 
         <div class="sidebar-footer" id="sidebarFooter"></div>
@@ -4843,6 +5399,19 @@
           </svg>
           <input type="text" id="searchInput" placeholder="Search trainings" />
         </div>
+        <span class="access-note" id="accessNote" style="display: none">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+          <span class="an-text" id="accessNoteText"></span>
+        </span>
         <div class="header-spacer"></div>
         <div class="header-right"></div>
       </header>
@@ -4884,7 +5453,13 @@
                 autocomplete="off"
               />
             </div>
-            <button class="btn-reset" id="btn-reset" title="Reset filters">
+            <button
+              class="btn-reset"
+              id="btn-reset"
+              title="Reset filters"
+              aria-label="Reset filters"
+              style="padding: 0 5px"
+            >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
@@ -4896,13 +5471,19 @@
                 <path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" />
                 <path d="M3 3v5h5" />
               </svg>
-              Reset
             </button>
-            <span class="access-note" id="accessNote" style="display: none"></span>
           </div>
 
           <div class="cal-toolbar">
             <button class="btn" id="todayBtn">Today</button>
+            <button
+              class="today-pill"
+              id="todayPill"
+              style="display: none"
+              title="Today's trainings"
+            >
+              <span class="tp-dot"></span><span id="todayPillText"></span>
+            </button>
             <div class="month-nav">
               <button class="icon-btn" id="prevBtn" title="Previous">
                 <svg
@@ -5539,6 +6120,16 @@
             <button class="btn" id="btn-reschedule-training" style="display:none;height:32px;padding:7px 18px;font-size:13px;color:var(--accent-ink);border-color:var(--accent);">Reschedule</button>
             -->
             <button
+              type="button"
+              class="btn btn-mail-recipients-header"
+              id="btn-mail-recipients"
+              style="display: none"
+              title="Preview and manage who gets the training invitation/closure email"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="flex-shrink:0"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+              Mail Recipients
+            </button>
+            <button
               class="btn btn-primary"
               id="btn-save-training"
               style="height: 32px; padding: 7px 18px; font-size: 13px"
@@ -5605,7 +6196,7 @@
                         Employee
                       </button>
                       <button type="button" id="p-type-agent" class="btn">
-                        Agent
+                        SwayamSevika
                       </button>
                     </div>
                     <div class="nt-pop-wrap fx-search-wrap">
@@ -5816,11 +6407,11 @@
                       >
                         <option value="">All</option>
                         <option value="Employee">Employees</option>
-                        <option value="Agent">Agents</option>
+                        <option value="Agent">SwayamSevikas</option>
                       </select>
                       <span class="c none" id="emp-selected-count">0 emp</span>
                       <span class="c none" id="agent-selected-count"
-                        >0 agents</span
+                        >0 swayamsevikas</span
                       >
                       <label class="nt-ptable-search">
                         <input id="nt-part-search" autocomplete="off" />
@@ -5955,15 +6546,6 @@
                       placeholder="Add any specific prerequisites, materials, or classroom guidelines..."
                     ></textarea>
                   </div>
-                  <div class="fx-field fx-grow">
-                    <span class="fx-label">Additional CC Emails</span>
-                    <textarea
-                      class="fx-area"
-                      id="new-cc"
-                      rows="2"
-                      placeholder="Comma-separated emails — zonal head, branch head, extra... (invitation mails go in CC)"
-                    ></textarea>
-                  </div>
                 </div>
                 <!-- /fx-col-card -->
                 <div
@@ -5990,6 +6572,93 @@
             <!-- /nt-split -->
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Mail Recipients Modal: who gets To/CC, with manual extras -->
+    <div class="modal-wrap" id="mailModal">
+      <div class="modal mail-modal-dialog">
+
+        <!-- Header -->
+        <div class="mail-modal-head">
+          <div class="mail-modal-head-left">
+            <div class="mail-modal-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            </div>
+            <div>
+              <div class="mail-modal-title">Mail Recipients</div>
+              <div class="mail-modal-sub">Preview auto-recipients and add manual addresses for invitation &amp; closure emails</div>
+            </div>
+          </div>
+          <button class="modal-close" data-close="mailModal" title="Close">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+
+        <!-- 2-panel body -->
+        <div class="mail-modal-body">
+
+          <!-- LEFT: Auto recipients (read-only) -->
+          <div class="mail-panel mail-panel-auto">
+            <div class="mail-panel-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+              Auto Recipients
+              <span class="mail-section-badge">Read-only</span>
+            </div>
+            <div class="mail-panel-hint">Derived from participants, branch heads and trainer. Updates automatically when training data changes.</div>
+            <div id="mail-auto" class="mail-auto-groups"></div>
+          </div>
+
+          <!-- Vertical divider -->
+          <div class="mail-panel-divider"></div>
+
+          <!-- RIGHT: Manual overrides (editable) -->
+          <div class="mail-panel mail-panel-manual">
+            <div class="mail-panel-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+              Manual Overrides
+            </div>
+            <div class="mail-panel-hint">Add extra addresses here. These persist across all emails for this training.</div>
+
+            <div class="mail-manual-field">
+              <div class="mail-field-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                <span class="mail-field-label">Additional To</span>
+                <span class="mail-field-hint">Lands directly in To</span>
+              </div>
+              <textarea class="mail-textarea" id="mail-to" rows="4" placeholder="email1@example.com, email2@example.com, ..."></textarea>
+              <div class="mail-tag-preview" id="mail-to-preview"></div>
+            </div>
+
+            <div class="mail-manual-field" style="margin-top: 14px">
+              <div class="mail-field-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span class="mail-field-label">Additional CC</span>
+                <span class="mail-field-hint">Copied on the email</span>
+              </div>
+              <textarea class="mail-textarea" id="mail-cc" rows="4" placeholder="email1@example.com, email2@example.com, ..."></textarea>
+              <div class="mail-tag-preview" id="mail-cc-preview"></div>
+            </div>
+          </div>
+
+        </div>
+        <!-- /mail-modal-body -->
+
+        <!-- Footer -->
+        <div class="mail-modal-foot">
+          <div class="mail-modal-foot-hint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            Changes apply to next invitation &amp; closure emails for this training
+          </div>
+          <div class="mail-modal-foot-actions">
+            <button class="btn" data-close="mailModal" type="button">Cancel</button>
+            <button class="btn btn-primary mail-save-btn" id="btn-mail-save" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save Recipients
+            </button>
+          </div>
+        </div>
+
       </div>
     </div>
 
@@ -6204,6 +6873,93 @@
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#39;");
         }
+        /* Budget is the LAST step: inputs unlock only when all 5 checks are
+           ticked (staged counts). Readonly only when training is SAVED as completed. */
+        function refreshBudgetInputs(ev) {
+          var stagedScore = completionScore(ev);
+          /* Use the persisted base score (not staged) to decide readonly lock.
+             Budget must remain editable until the save actually completes. */
+          var savedScore = CHECK_FIELDS.filter(function (f) {
+            var base = state.drawerBase || state.editBase || { checks: {} };
+            return (base.checks && base.checks[f.key]) || 0;
+          }).length;
+          var isSavedDone = savedScore === 5;
+          var ready = stagedScore === 5;
+          var hint = ready
+            ? "Fill before marking complete (min ₹1 each)"
+            : "Complete all checks first — budget is the last step";
+          ["drw-budget-amount", "drw-actual-expense", "edit-budget-amount", "edit-actual-expense"].forEach(
+            function (id) {
+              var el = document.getElementById(id);
+              if (!el) return;
+              /* Only lock readonly if training is already SAVED as completed */
+              if (isSavedDone) {
+                el.readOnly = true;
+                el.disabled = false;
+                el.title = "Locked — completed training";
+                return;
+              }
+              if (el.readOnly) return;
+              el.disabled = !ready;
+              el.title = ready ? "" : hint;
+            },
+          );
+          document.querySelectorAll(".budget-edit-foot .budget-hint").forEach(function (h) {
+            var box = h.closest(".drawer-section");
+            if (box && box.querySelector("input[readonly]")) return;
+            h.textContent = hint;
+          });
+        }
+        function ptLabel(t) {
+          return t === "Agent" ? "SwayamSevika" : "Employee";
+        }
+        function ptPlural(t) {
+          return t === "Agent" ? "SwayamSevikas" : "Employees";
+        }
+        /* Completion checks need participants; agent trainings additionally
+           need every swayamsevika's attendance marked. Returns "" or a reason. */
+        function checksLockedReason(ev) {
+          var list = ev.participant_list || [];
+          if (!list.length)
+            return "Add participants before marking completion.";
+          var agents = list.filter(function (p) {
+            return (p.reference_doctype || "Employee") === "Agent";
+          });
+          if (agents.length) {
+            var pending = agents.filter(function (p) {
+              return p.attendance_status !== "Present" && p.attendance_status !== "Absent";
+            });
+            if (pending.length)
+              return "Mark attendance for all swayamsevikas before marking completion.";
+          }
+          return "";
+        }
+        /* Re-evaluate check locks after participant_list arrives late.
+           Only touches locks it owns (dataset.lockOwned) — never enables
+           inputs disabled for other reasons (role, completed). */
+        function applyCheckLock(inp, reason) {
+          if (reason) {
+            inp.disabled = true;
+            inp.title = reason;
+            inp.dataset.lockOwned = "1";
+          } else if (inp.dataset.lockOwned) {
+            inp.disabled = false;
+            inp.title = "";
+            delete inp.dataset.lockOwned;
+          }
+        }
+        function refreshCheckLocks(ev) {
+          var reason = checksLockedReason(ev);
+          document
+            .querySelectorAll("#drawerBody .check-item input, #nt-edit-extra .check-item input")
+            .forEach(function (inp) {
+              applyCheckLock(inp, reason);
+            });
+          document.querySelectorAll(".checks-lock-hint").forEach(function (h) {
+            h.textContent = reason;
+            h.style.display = reason ? "" : "none";
+          });
+        }
         function fmtTime(t) {
           if (!t) return "";
           var p = String(t).split(":");
@@ -6279,6 +7035,42 @@
         function isOwnCompletedTraining(ev) {
           if (!ev || completionScore(ev) !== 5) return false;
           return isOwnTraining(ev);
+        }
+
+        /**
+         * Pre-flight check before allowing a save that would complete the training (5/5).
+         * Mirrors backend update_training_status() validations so errors are caught
+         * on the client before any API call fires.
+         *
+         * Returns null if OK, or an error message string if blocked.
+         */
+        function validateBeforeComplete(ev, budgetInputId, expenseInputId) {
+          /* 1. Participants required — check all available sources */
+          var parts = (state.selectedParticipants && state.selectedParticipants.length)
+            ? state.selectedParticipants
+            : (ev.participant_list || []);
+          /* Also accept a non-zero participants count on ev as proof */
+          var hasParticipants = parts.length > 0 || (ev.participants && ev.participants > 0);
+          if (!hasParticipants) {
+            return "Add participants before marking this training as complete.";
+          }
+          /* 2. Budget + expense required (for roles that can edit budget) */
+          var canBudget = state.role === "ld_admin" || isOwnTraining(ev);
+          if (canBudget) {
+            var bEl = budgetInputId ? document.getElementById(budgetInputId) : null;
+            var aEl = expenseInputId ? document.getElementById(expenseInputId) : null;
+            var bv = bEl ? parseFloat(bEl.value) : NaN;
+            var av = aEl ? parseFloat(aEl.value) : NaN;
+            var effB = bEl && !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
+            var effA = aEl && !isNaN(av) ? av : parseFloat(ev.actual_expense);
+            if (isNaN(effB) || effB < 1) {
+              return "Fill Budget Amount (min ₹1) before marking complete.";
+            }
+            if (isNaN(effA) || effA < 1) {
+              return "Fill Actual Expense (min ₹1) before marking complete.";
+            }
+          }
+          return null;
         }
         function evStart(ev) {
           return ev.from_date || ev.date || "";
@@ -6431,13 +7223,16 @@
         function role() {
           return ROLES[state.role];
         }
+        /* Portal build stamp — bump on every release so testers can confirm
+           which version they run (kills cached-JS confusion). */
+        var LD_BUILD = "2026-10-10d";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
           badge.textContent = r.label;
           badge.className = "role-badge " + r.badge;
           document.getElementById("headerSub").textContent = r.sub;
-          document.getElementById("sidebarFooter").textContent = r.label;
+          document.getElementById("sidebarFooter").textContent = r.label + " · build " + LD_BUILD;
           var addBtn = document.getElementById("btn-add-training");
           if (addBtn) addBtn.style.display = r.canAdd ? "inline-flex" : "none";
           var bulkBtnEl = document.getElementById("btn-bulk-upload");
@@ -6615,6 +7410,7 @@
               state.holidays = cleanH;
               if (typeof fillTrainerOptions === "function") fillTrainerOptions();
               render();
+              renderTodayPanel();
               updateSchedulePreview();
             })
             .catch(function (err) {
@@ -6761,10 +7557,39 @@
           document.getElementById("fil-trainer").value = cur;
         }
         /* Prefill calendar filters from Report Preference access so the
-           applied scope is visible (single-value scopes get selected). */
+           applied scope is visible (single-value scopes get selected).
+           Non-admins with a restricted scope get their geography filters
+           locked — they only ever see their own access (server enforces it
+           too); L&D Admin keeps full access. */
+        var GEO_FILTER_IDS = [
+          "fil-zone",
+          "fil-region",
+          "fil-district",
+          "fil-branch",
+          "tr-zone",
+          "tr-region",
+          "tr-district",
+          "tr-branch",
+          "emp-zone",
+          "emp-region",
+          "emp-district",
+          "emp-branch",
+        ];
+        function lockGeoFilters() {
+          var s = state.accessScope;
+          var locked = state.role !== "ld_admin" && !!(s && s.restricted);
+          GEO_FILTER_IDS.forEach(function (id) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.disabled = locked;
+            el.title = locked ? "Locked to your access" : "";
+          });
+          return locked;
+        }
         function applyAccessDefaults() {
           var s = state.accessScope;
           var note = document.getElementById("accessNote");
+          lockGeoFilters();
           if (!s || !s.restricted) {
             if (note) note.style.display = "none";
             return false;
@@ -6794,9 +7619,21 @@
             else if (v.length > 1) bits.push(v.length + " " + k);
           });
           if (note) {
-            note.textContent = "Your access: " + (bits.join(" · ") || "restricted");
+            var label = "Your access: " + (bits.join(" · ") || "restricted");
+            var txt = document.getElementById("accessNoteText");
+            if (txt) txt.textContent = label;
+            else note.textContent = label;
             note.style.display = bits.length ? "inline-flex" : "none";
-            note.title = "Calendar is filtered to your Report Preference access";
+            var detail = ["zones", "regions", "districts", "branches"]
+              .map(function (k) {
+                var v = s[k] || [];
+                if (!v.length) return null;
+                var name = k.charAt(0).toUpperCase() + k.slice(1);
+                return name + ": " + (v.length <= 8 ? v.join(", ") : v.length + " selected");
+              })
+              .filter(Boolean)
+              .join("  |  ");
+            note.title = detail || "Calendar is filtered to your Report Preference access";
           }
           return true;
         }
@@ -7108,12 +7945,31 @@
               var meta = STATUS_META[st];
               var row = document.createElement("button");
               row.className = "more-row";
+              /* Status-tinted row like calendar chips: soft bg + color bar */
+              row.style.background = meta.soft;
+              row.style.borderLeft = "3px solid " + meta.color;
+              /* Sub-line tells repeat program names apart: trainer · branches */
+              var subBits = [];
+              var trName = ev.trainer || ev.trainer_name || "";
+              if (trName) subBits.push(trName);
+              var brs = (ev.branches && ev.branches.length ? ev.branches : ev.branch ? [ev.branch] : []);
+              var brLabels = brs.slice(0, 2).map(function (b) {
+                return typeof branchLabel === "function" ? branchLabel(b) : b;
+              });
+              if (brs.length > 2) brLabels.push("+" + (brs.length - 2));
+              if (brLabels.length) subBits.push(brLabels.join(", "));
+              var progName = ev.training_program || ev.topic || "Training";
               row.innerHTML =
                 '<span class="status-dot" style="background:' +
                 meta.color +
                 '"></span>' +
+                '<span class="more-main">' +
                 '<span class="more-title">' +
-                esc(ev.training_program || ev.topic || "Training") +
+                esc(progName) +
+                "</span>" +
+                (subBits.length
+                  ? '<span class="more-sub">' + esc(subBits.join(" · ")) + "</span>"
+                  : "") +
                 "</span>" +
                 '<span class="more-time">' +
                 esc(ev.time || "") +
@@ -7123,6 +7979,7 @@
                 '">' +
                 meta.label +
                 "</span>";
+              row.title = progName + (subBits.length ? " — " + subBits.join(" · ") : "");
               row.addEventListener("click", function () {
                 closeModal("moreModal");
                 openTrainingDialog(ev);
@@ -7456,12 +8313,10 @@
           state.currentEvent = ev;
           var r = role();
           var editable = mode === "edit" && r.canEdit;
-          /* Completed trainings are fully read-only, except budget top-up
-             while a budget field is still empty. */
+          /* Completed trainings are fully locked in the portal
+             (desk stays as L&D Admin override, e.g. backlog budgets). */
           var isDone = completionScore(ev) === 5;
           var canEditDrawer = editable && !isDone;
-          var budgetOpen = (state.role === "ld_admin" || isOwnCompletedTraining(ev)) &&
-            (ev.budget_amount == null || ev.budget_amount === "" || ev.actual_expense == null || ev.actual_expense === "");
           var st = statusOf(ev);
           var meta = STATUS_META[st];
           var score = completionScore(ev);
@@ -7495,7 +8350,7 @@
             (ev.is_adhoc ? ' <span class="chip chip-gray">Ad-hoc</span>' : "") +
             "</div>" +
             "</div>" +
-            (canEditDrawer || (isDone && budgetOpen)
+            (canEditDrawer
               ? '<button class="btn btn-primary" id="drawerSaveTop" style="height:30px;padding:0 14px;font-size:12.5px;flex-shrink:0;">Save</button>'
               : "") +
             '<button class="icon-btn" id="drawerClose" title="Close">' +
@@ -7592,12 +8447,17 @@
 
           var checkList = CHECK_FIELDS.map(function (f) {
             var on = !!ev[f.key];
+            var lockReason = checksLockedReason(ev);
             var input = canEditDrawer
               ? '<input type="checkbox" ' +
                 (on ? "checked" : "") +
                 ' data-field="' +
                 f.key +
-                '" />'
+                '"' +
+                (lockReason
+                  ? ' disabled title="' + esc(lockReason) + '" data-lock-owned="1"'
+                  : "") +
+                " />"
               : "";
             return (
               '<label class="check-item' +
@@ -7617,39 +8477,43 @@
           body +=
             '<div class="drawer-section"><div class="drawer-section-title">Training Status</div>' +
             checkList +
+            '<div class="checks-lock-hint" style="display:none"></div>' +
             "</div>";
 
-          /* View mode (e.g. Team Training drawer): show participant names +
-             attendance ticks. Reuses the existing attendance section renderer;
-             fillAttendanceSection() below populates it (instant when the
-             opener pre-fetched participant_list, fetched otherwise). */
-          if (!canEditDrawer) {
-            body += attendanceSectionHTML(ev, false);
-          }
+          /* Participants section in BOTH modes (edit needs it for attendance
+             marking + check unlocking; view stays read-only). The box lets
+             fillAttendanceSection() fetch details when the opener had none. */
+          body += attendanceSectionHTML(ev, canEditDrawer);
 
           if (r.showBudget) {
-            /* Budget inputs: L&D Admin + own-trainer after 5/5 checks (also
-               on completed trainings while a field is still empty);
-               everyone else sees values read-only. Filled values lock. */
+            /* Budget inputs: L&D Admin anytime + own trainer any time BEFORE
+               completion (editable until Completed, then locked). Everyone
+               else sees read-only values. Desk stays as admin override. */
             var drwBfilled = ev.budget_amount != null && ev.budget_amount !== "";
             var drwAfilled = ev.actual_expense != null && ev.actual_expense !== "";
-            if ((editable || isDone) && (state.role === "ld_admin" || isOwnCompletedTraining(ev))) {
+            var drwBlocked = isDone;
+            if ((editable || isDone) && (state.role === "ld_admin" || isOwnTraining(ev))) {
+              var drwReady = completionScore(ev) === 5;
               body +=
                 '<div class="drawer-section"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
-                '<label>Budget Amount (₹)<input id="drw-budget-amount" type="number" step="0.01" min="0" value="' +
+                '<label>Budget Amount (₹)<input id="drw-budget-amount" type="number" step="0.01" min="1" value="' +
                 (ev.budget_amount == null ? "" : ev.budget_amount) +
                 '"' +
-                (drwBfilled ? " readonly" : "") +
+                (drwBlocked ? " readonly" : drwReady ? "" : " disabled") +
                 " /></label>" +
-                '<label>Actual Expense (₹)<input id="drw-actual-expense" type="number" step="0.01" min="0" value="' +
+                '<label>Actual Expense (₹)<input id="drw-actual-expense" type="number" step="0.01" min="1" value="' +
                 (ev.actual_expense == null ? "" : ev.actual_expense) +
                 '"' +
-                (drwAfilled ? " readonly" : "") +
+                (drwBlocked ? " readonly" : drwReady ? "" : " disabled") +
                 " /></label>" +
                 "</div>" +
                 '<div class="budget-edit-foot">' +
-                '<span class="budget-hint">Saved with Save Changes</span>' +
+                '<span class="budget-hint">' +
+                (isDone
+                  ? "Locked — completed trainings cannot be edited here"
+                  : "Complete all checks first — budget is the last step") +
+                "</span>" +
                 "</div></div>";
             } else {
               body +=
@@ -7685,7 +8549,7 @@
           actionsEl.innerHTML = "";
           actionsEl.style.display = "none";
 
-          if (canEditDrawer || (isDone && budgetOpen)) {
+          if (canEditDrawer) {
             var saveTop = document.getElementById("drawerSaveTop");
             if (saveTop) saveTop.onclick = saveDrawerChanges;
           }
@@ -7713,6 +8577,8 @@
           drawer.classList.add("open");
           drawer.setAttribute("aria-hidden", "false");
           fillAttendanceSection(ev, editable && !isDone);
+          /* Participant list may arrive late — fix check locks when it does */
+          refreshCheckLocks(ev);
         }
 
         /* ----- Calendar modal attendance (edit mode): summary + popover ----- */
@@ -7849,9 +8715,19 @@
           if (saveBtn) saveBtn.disabled = Object.keys(attPopDirty).length === 0;
         }
         function saveAttPop(ev) {
+          /* Sel-list marks (Mark-all popup excluded) ride along too */
+          var selFlush =
+            dialogFn.flushAttStaged
+              ? dialogFn.flushAttStaged()
+              : Promise.resolve(true);
+          selFlush.then(function () {
+            saveAttPopCore(ev);
+          });
+        }
+        function saveAttPopCore(ev) {
           var keys = Object.keys(attPopDirty);
           if (!keys.length) {
-            closeAttPop();
+            showToast("No attendance changes to save yet.");
             return;
           }
           var wanted = {};
@@ -7867,7 +8743,8 @@
             var p = (ev.participant_list || []).find(function (x) {
               return attRowKey(x) === key;
             });
-            if (!p || !p.name) return Promise.resolve({ key: key, ok: false });
+            if (!p || !p.name)
+              return Promise.resolve({ key: key, ok: false, skipped: true });
             return api("update_participant_attendance", {
               training_name: ev.name,
               participant_name: p.name,
@@ -7886,6 +8763,7 @@
           });
           Promise.all(tasks).then(function (results) {
             var failed = {};
+            var skippedNew = 0;
             results.forEach(function (r) {
               if (r.ok) {
                 var p = (ev.participant_list || []).find(function (x) {
@@ -7894,6 +8772,7 @@
                 if (p) p.attendance_status = wanted[r.key];
               } else {
                 failed[r.key] = true;
+                if (r.skipped) skippedNew++;
               }
             });
             var keep = {};
@@ -7911,12 +8790,72 @@
                 attendanceSummary(ev.participant_list || []),
               );
             if (Object.keys(failed).length) {
-              showToast("Some updates failed — kept previous state for those");
+              showToast(
+                skippedNew === Object.keys(failed).length
+                  ? "Save new participants first (dialog Save), then mark attendance."
+                  : "Some updates failed — kept previous state for those",
+              );
               openAttPop(ev, true);
             } else {
               showToast("Attendance saved");
               closeAttPop();
             }
+          });
+        }
+        /* Flush popover-staged attendance (attPopDirty) so the dialog Save
+           button also persists marks made in "Mark Attendance" popup.
+           Never blocks the rest of the save; failures keep entries dirty. */
+        function flushAttPopStaged() {
+          var ev = state.currentEvent;
+          var keys = Object.keys(attPopDirty);
+          if (!ev || !ev.name || !keys.length) return Promise.resolve(true);
+          var wanted = {};
+          keys.forEach(function (k) {
+            wanted[k] = attPopDirty[k];
+          });
+          var tasks = keys.map(function (key) {
+            var p = (ev.participant_list || []).find(function (x) {
+              return attRowKey(x) === key;
+            });
+            if (!p || !p.name)
+              return Promise.resolve({ key: key, ok: false, skipped: true });
+            return api("update_participant_attendance", {
+              training_name: ev.name,
+              participant_name: p.name,
+              attendance_status: wanted[key],
+            })
+              .then(function () {
+                return { key: key, ok: true };
+              })
+              .catch(function () {
+                return { key: key, ok: false };
+              });
+          });
+          return Promise.all(tasks).then(function (results) {
+            var failed = {};
+            var skippedNew = 0;
+            results.forEach(function (r) {
+              if (r.ok) {
+                var p = (ev.participant_list || []).find(function (x) {
+                  return attRowKey(x) === r.key;
+                });
+                if (p) p.attendance_status = wanted[r.key];
+              } else {
+                failed[r.key] = true;
+                if (r.skipped) skippedNew++;
+              }
+            });
+            var keep = {};
+            Object.keys(wanted).forEach(function (k) {
+              if (failed[k]) keep[k] = wanted[k];
+            });
+            attPopDirty = keep;
+            if (Object.keys(failed).length) {
+              if (skippedNew === Object.keys(failed).length)
+                showToast("Save new participants first (dialog Save), then mark attendance.");
+              else showToast("Some attendance updates failed — retry from Mark Attendance");
+            }
+            return true;
           });
         }
 
@@ -7941,6 +8880,8 @@
           }
           var pctEl = document.getElementById("drw-progress-pct");
           if (pctEl) pctEl.textContent = pct + "%";
+          /* 5th staged check unlocks budget (last step) */
+          refreshBudgetInputs(ev);
         }
 
         function metaRow(k, v) {
@@ -8042,7 +8983,7 @@
               "</div>"
             );
           }
-          /* View mode for Agents: compact 2-column chips (dot = status). Fits dozens
+          /* View mode for SwayamSevikas: compact 2-column chips (dot = status). Fits dozens
              of participants in ~168px with internal scroll. */
           if (!editable) {
             return (
@@ -8073,7 +9014,7 @@
               "</div>"
             );
           }
-          /* Edit mode for Agents: full rows with Present/Absent buttons. */
+          /* Edit mode for SwayamSevikas: full rows with Present/Absent buttons. */
           return (
             '<div class="att-list">' +
             list
@@ -8135,6 +9076,7 @@
                 ev.participant_list.length ? isAgt0 : undefined,
               );
             }
+            refreshCheckLocks(ev);
             return;
           }
           api("get_training_details", { name: ev.name })
@@ -8154,6 +9096,7 @@
                   ev.participant_list.length ? isAgt : undefined,
                 );
               }
+              refreshCheckLocks(ev);
             })
             .catch(function () {
               var b = document.getElementById("drw-attendance");
@@ -8174,6 +9117,10 @@
                     return attRowKey(x) === key;
                   });
                   if (!p || attStatusOf(p) === want) return;
+                  if (!p.name) {
+                    showToast("Reload this training first (unsaved participant rows cannot be marked).");
+                    return;
+                  }
                   row.querySelectorAll(".att-btn").forEach(function (b) {
                     b.disabled = true;
                   });
@@ -8201,6 +9148,8 @@
                         s.innerHTML = attendanceSummaryHTML(
                           attendanceSummary(ev.participant_list),
                         );
+                      /* Attendance progress may unlock completion checks */
+                      refreshCheckLocks(ev);
                     })
                     .catch(function (e) {
                       row.querySelectorAll(".att-btn").forEach(function (b) {
@@ -8215,33 +9164,6 @@
             });
         }
 
-        function toggleStatus(ev, field, value) {
-          var val = value ? 1 : 0;
-          ev[field] = val;
-          api("update_training_status", {
-            training_name: ev.name,
-            field: field,
-            value: val,
-          })
-            .then(function (res) {
-              if (res && res.status) ev.status = res.status;
-              refreshTrainingSurface(ev);
-              render();
-              showToast(
-                "Training " +
-                  (statusOf(ev) === "completed"
-                    ? "marked complete"
-                    : "status updated"),
-              );
-            })
-            .catch(function (e) {
-              ev[field] = val ? 0 : 1;
-              refreshTrainingSurface(ev);
-              render();
-              showToast("Update failed: " + e.message);
-            });
-        }
-
         function refreshTrainingSurface(ev) {
           if (
             state.dialogMode === "edit" &&
@@ -8253,84 +9175,170 @@
           }
         }
 
+        /* Stage a completion check in the edit dialog (saved on Save only).
+           Mirrors stageCheck for the drawer; never calls the API directly. */
+        function stageEditCheck(ev, field, checked) {
+          ev[field] = checked ? 1 : 0;
+          var extra = document.getElementById("nt-edit-extra");
+          if (extra) {
+            var inp = extra.querySelector('input[data-field="' + field + '"]');
+            var label = inp ? inp.closest("label") : null;
+            if (label) {
+              label.classList.toggle("done", !!checked);
+              var val = label.querySelector(".ck-val");
+              if (val) val.textContent = checked ? "Yes" : "No";
+            }
+            var score = completionScore(ev);
+            var tg = document.getElementById("ee-toggle");
+            if (tg) {
+              var tt = tg.querySelector(".drawer-section-title");
+              if (tt) tt.textContent = "Training Completion · " + score + "/5";
+            }
+            var fill = extra.querySelector(".progress-fill");
+            if (fill) {
+              fill.style.width = Math.round((score / 5) * 100) + "%";
+              fill.classList.toggle("complete", score === 5);
+            }
+            var pct = extra.querySelector(".progress-pct");
+            if (pct) pct.textContent = Math.round((score / 5) * 100) + "%";
+          }
+          /* 5th staged check unlocks budget (last step) */
+          refreshBudgetInputs(ev);
+        }
         function saveDrawerChanges() {
           var ev = state.currentEvent;
           if (!ev) {
             closeDrawer();
             return;
           }
-          /* Completed trainings are read-only — only budget may be saved. */
-          var isDoneSave = completionScore(ev) === 5;
+          if (state.savingDrawer) return; /* in-flight guard — prevent double clicks */
+          /* Completed trainings are read-only — only budget may be saved.
+             NOTE: staged (unsaved) checks must not count — base decides. */
+          var wasScore = CHECK_FIELDS.filter(function (f) {
+            return (state.drawerBase && state.drawerBase.checks[f.key]) || 0;
+          }).length;
+          var isDoneSave = wasScore === 5;
           var base = state.drawerBase || { checks: {} };
           var tasks = [];
+
+          /* Early validation — before any API tasks are queued.
+             If saving would complete (5/5), run all pre-flight checks. */
+          var stagedScoreEarly = completionScore(ev);
+          var wouldCompleteEarly = wasScore < 5 && stagedScoreEarly === 5;
+          if (wouldCompleteEarly) {
+            var errEarly = validateBeforeComplete(ev, "drw-budget-amount", "drw-actual-expense");
+            if (errEarly) { showToast(errEarly); return; }
+          }
 
           if (!isDoneSave) {
             CHECK_FIELDS.forEach(function (f) {
               var cur = ev[f.key] || 0;
               if (cur !== (base.checks[f.key] || 0)) {
-                tasks.push(
-                  api("update_training_status", {
+                /* Lazy factory — the API must fire only on execution,
+                   never while building (Cancel/validation must stop it). */
+                tasks.push(function () {
+                  return api("update_training_status", {
                     training_name: ev.name,
                     field: f.key,
                     value: cur,
-                  }),
-                );
+                  });
+                });
               }
             });
           }
 
           var rem = (document.getElementById("drw-remarks") || {}).value || "";
           if (!isDoneSave && rem !== (base.remarks || "")) {
-            tasks.push(
-              api("update_training_status", {
+            tasks.push(function () {
+              return api("update_training_status", {
                 training_name: ev.name,
                 field: "trainer_remarks",
                 value: rem,
               }).then(function () {
                 ev.trainer_remarks = rem;
-              }),
-            );
+              });
+            });
           }
 
-          if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
+          var canBudget = state.role === "ld_admin" || isOwnTraining(ev);
+          var budgetTasks = [];
+          if (canBudget && !isDoneSave) {
             var b = document.getElementById("drw-budget-amount");
             var a = document.getElementById("drw-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
+            /* Cap: Actual must never exceed Budget (only when inputs are
+               visible — otherwise the user cannot fix it here). */
+            var capB = !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
+            var capA = !isNaN(av) ? av : parseFloat(ev.actual_expense);
+            if ((b || a) && !isNaN(capB) && !isNaN(capA) && capA > capB) {
+              showToast("Actual Expense cannot exceed Budget Amount.");
+              return;
+            }
             var bStr = isNaN(bv) ? "" : bv;
             var aStr = isNaN(av) ? "" : av;
             if (
               String(bStr) !== String(base.budget) ||
               String(aStr) !== String(base.expense)
             ) {
-              tasks.push(
-                api("update_budget", {
+              budgetTasks.push(function () {
+                return api("update_budget", {
                   training_name: ev.name,
                   budget_amount: isNaN(bv) ? null : bv,
                   actual_expense: isNaN(av) ? null : av,
                 }).then(function () {
                   ev.budget_amount = isNaN(bv) ? null : bv;
                   ev.actual_expense = isNaN(av) ? null : av;
-                }),
-              );
+                });
+              });
             }
           }
 
-          if (!tasks.length) {
+          if (!tasks.length && !budgetTasks.length) {
             closeDrawer();
             return;
           }
 
-          Promise.all(tasks)
+          /* Confirm before locking: completing cannot be undone here */
+          if (wasScore < 5 && completionScore(ev) === 5) {
+            if (
+              !confirm(
+                "Mark this training as Completed? Completed trainings get locked (further changes only on desk by L&D Admin).",
+              )
+            )
+              return;
+          }
+
+          /* Budget first (the completing check reads stored budget).
+             Factories run here — never before (Cancel must send nothing). */
+          state.savingDrawer = true;
+          Promise.all(
+            budgetTasks.map(function (fn) {
+              return fn();
+            }),
+          )
             .then(function () {
+              return Promise.all(
+                tasks.map(function (fn) {
+                  return fn();
+                }),
+              );
+            })
+            .then(function () {
+              state.savingDrawer = false;
               render();
               renderTrainings();
-              showToast("Training updated");
+              showToast(
+                wasScore < 5 && completionScore(ev) === 5
+                  ? "Training marked Completed — locked."
+                  : "Training updated",
+              );
               if (state.currentEvent && state.currentEvent.name === ev.name) {
                 openDrawer(ev);
               }
             })
             .catch(function (e) {
+              state.savingDrawer = false;
               showToast("Could not save changes: " + e.message);
             });
         }
@@ -8432,7 +9440,7 @@
           var pte = document.getElementById("p-type-employee");
           if (pte) pte.textContent = "Employees";
           var pta = document.getElementById("p-type-agent");
-          if (pta) pta.textContent = "Agents";
+          if (pta) pta.textContent = "SwayamSevikas";
           var agenda = document.getElementById("new-agenda");
           if (agenda) {
             agenda.value = "";
@@ -8440,8 +9448,7 @@
             var agRow = agenda.closest(".nt-agenda-row");
             if (agRow) agRow.classList.remove("open");
           }
-          var ccReset = document.getElementById("new-cc");
-          if (ccReset) ccReset.value = "";
+          /* new-cc field removed from form — additional_cc managed via Mail Recipients dialog */
           updateSchedulePreview();
           // Auto-fill trainer from session user's linked Employee
           var trainerInput = document.getElementById("new-trainer");
@@ -8547,9 +9554,114 @@
               fillEditDialog(ev);
             });
         }
+        /* ----- Mail recipients preview (To/CC with sources + manual extras) ----- */
+        var mailEv = null;
+        function openMailDialog(ev) {
+          mailEv = ev;
+          var box = document.getElementById("mail-auto");
+          if (box) box.innerHTML = '<div class="mail-empty">Loading…</div>';
+          var toEl = document.getElementById("mail-to");
+          var ccEl = document.getElementById("mail-cc");
+          if (toEl) toEl.value = ev.additional_to || "";
+          if (ccEl) ccEl.value = ev.additional_cc || "";
+          document.getElementById("mailModal").classList.add("open");
+
+          /* Live tag preview helper */
+          function renderPreview(inputId, previewId, tagClass) {
+            var inp = document.getElementById(inputId);
+            var prev = document.getElementById(previewId);
+            if (!inp || !prev) return;
+            function refresh() {
+              var parts = inp.value.replace(/;/g, ",").split(",")
+                .map(function (s) { return s.trim(); })
+                .filter(function (s) { return s && s.indexOf("@") !== -1; });
+              if (!parts.length) { prev.innerHTML = ""; return; }
+              prev.innerHTML = parts.map(function (e) {
+                return '<span class="mail-tag ' + tagClass + '" title="' + esc(e) + '">' + esc(e) + "</span>";
+              }).join("");
+            }
+            inp.addEventListener("input", refresh);
+            inp.addEventListener("blur", refresh);
+            refresh();
+          }
+          renderPreview("mail-to", "mail-to-preview", "mail-tag-to");
+          renderPreview("mail-cc", "mail-cc-preview", "mail-tag-cc");
+
+          api("get_mail_recipients", { training_name: ev.name })
+            .then(function (r) {
+              if (!r || mailEv !== ev) return;
+              var boxEl = document.getElementById("mail-auto");
+
+              function group(title, list, tagClass, emptyText) {
+                var inner = "";
+                if (!list || !list.length) {
+                  inner = '<div class="mail-empty">' + esc(emptyText) + "</div>";
+                } else {
+                  inner = '<div class="mail-tags">' +
+                    list.map(function (t) {
+                      return '<span class="mail-tag ' + tagClass + '" title="' + esc(t) + '">' + esc(t) + "</span>";
+                    }).join("") + "</div>";
+                }
+                return '<div class="mail-group">' +
+                  '<div class="mail-group-title"><span class="mail-group-dot"></span>' + esc(title) + "</div>" +
+                  inner + "</div>";
+              }
+
+              var toP = ((r.to || {}).participants || []).map(function (p) {
+                return p.email;
+              });
+              var toB = ((r.to || {}).branch_heads || []).map(function (b) {
+                return "Branch " + b.branch + " <" + b.email + ">";
+              });
+              var ccT = r.cc && r.cc.trainer ? ["Trainer <" + r.cc.trainer + ">"] : [];
+
+              if (boxEl)
+                boxEl.innerHTML =
+                  group("To · Participants", toP, "mail-tag-to", "No participant emails on file") +
+                  group("To · Branch Heads", toB, "mail-tag-to", "No branch-head email on file") +
+                  group("To · Manual", (r.to || {}).manual, "mail-tag-to", "None added") +
+                  group("CC · Trainer", ccT, "mail-tag-cc", "No trainer email") +
+                  group("CC · Manual", (r.cc || {}).manual, "mail-tag-cc", "None added");
+
+              var toFill = document.getElementById("mail-to");
+              var ccFill = document.getElementById("mail-cc");
+              if (toFill) { toFill.value = ((r.to || {}).manual || []).join(", "); toFill.dispatchEvent(new Event("input")); }
+              if (ccFill) { ccFill.value = ((r.cc || {}).manual || []).join(", "); ccFill.dispatchEvent(new Event("input")); }
+            })
+            .catch(function (err) {
+              var boxEl = document.getElementById("mail-auto");
+              if (boxEl)
+                boxEl.innerHTML =
+                  '<div class="mail-empty">Could not load preview: ' + esc((err && err.message) || err) + "</div>";
+            });
+
+          document.getElementById("btn-mail-save").onclick = function () {
+            var toVal = document.getElementById("mail-to").value;
+            var ccVal = document.getElementById("mail-cc").value;
+            api("update_training_emails", {
+              training_name: ev.name,
+              additional_to: toVal,
+              additional_cc: ccVal,
+            })
+              .then(function () {
+                ev.additional_to = toVal;
+                ev.additional_cc = ccVal;
+                showToast("Mail recipients saved");
+                closeModal("mailModal");
+              })
+              .catch(function (err) {
+                showToast("Could not save: " + ((err && err.message) || err));
+              });
+          };
+        }
         function fillEditDialog(ev) {
           var r = role();
           setDialogMode("edit", ev);
+          /* Snapshot saved checks — dialog stages until Save (never auto-saves) */
+          state.editBase = { checks: {} };
+          CHECK_FIELDS.forEach(function (f) {
+            state.editBase.checks[f.key] = ev[f.key] || 0;
+          });
           var f = function (id, v) {
             var el = document.getElementById(id);
             if (el) el.value = v == null ? "" : v;
@@ -8637,10 +9749,14 @@
               if (agRow) agRow.classList.add("open");
             }
           }
-          var ccFill = document.getElementById("new-cc");
-          if (ccFill) {
-            ccFill.value = ev.additional_cc || "";
-            ccFill.readOnly = !r.canEdit || isDone;
+          /* additional_cc managed via Mail Recipients dialog — no inline field */
+          /* Mail recipients preview (edit mode, can-edit only) */
+          var mrBtn = document.getElementById("btn-mail-recipients");
+          if (mrBtn) {
+            mrBtn.style.display = ev.name && r.canEdit ? "" : "none";
+            mrBtn.onclick = function () {
+              openMailDialog(ev);
+            };
           }
           ["new-branch"].forEach(function (id) {
             var el = document.getElementById(id);
@@ -8695,7 +9811,7 @@
                 .querySelectorAll(".check-item input")
                 .forEach(function (inp) {
                   inp.onchange = function () {
-                    toggleStatus(ev, inp.dataset.field, inp.checked);
+                    stageEditCheck(ev, inp.dataset.field, inp.checked);
                   };
                 });
             }
@@ -8706,6 +9822,8 @@
                 inp.readOnly = !r.canEdit;
               },
             );
+            /* Apply participant/attendance lock to the staged checkboxes */
+            refreshCheckLocks(ev);
           }
           addModal.classList.add("open");
           refreshModalAttendanceRow(ev);
@@ -8732,12 +9850,17 @@
             "%</span></div></div>";
           var checkList = CHECK_FIELDS.map(function (f) {
             var on = !!ev[f.key];
+            var lockReason = checksLockedReason(ev);
             var input = r.canEdit && score !== 5
               ? '<input type="checkbox" ' +
                 (on ? "checked" : "") +
                 ' data-field="' +
                 f.key +
-                '" />'
+                '"' +
+                (lockReason
+                  ? ' disabled title="' + esc(lockReason) + '" data-lock-owned="1"'
+                  : "") +
+                " />"
               : "";
             return (
               '<label class="check-item' +
@@ -8755,27 +9878,35 @@
           var statusHtml =
             '<div class="drawer-section ee-card"><div class="drawer-section-title">Training Status</div>' +
             checkList +
+            '<div class="checks-lock-hint" style="display:none"></div>' +
             "</div>";
           if (r.showBudget) {
-            /* Budget inputs: editable only while empty — filled values stay read-only. */
+            /* Budget inputs: L&D Admin anytime + own trainer any time BEFORE
+               completion (editable until Completed, then locked). */
             var budgetHtml;
             var bFilled = ev.budget_amount != null && ev.budget_amount !== "";
             var aFilled = ev.actual_expense != null && ev.actual_expense !== "";
-            if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
+            if (state.role === "ld_admin" || isOwnTraining(ev)) {
+              var doneLock = score === 5;
+              var eeReady = score === 5;
               budgetHtml =
                 '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
                 '<div class="budget-edit">' +
-                '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="0" value="' +
+                '<label>Budget Amount (₹)<input id="edit-budget-amount" type="number" step="0.01" min="1" value="' +
                 (ev.budget_amount == null ? "" : ev.budget_amount) +
                 '"' +
-                (bFilled ? " readonly" : "") +
+                (doneLock ? " readonly" : eeReady ? "" : " disabled") +
                 " /></label>" +
-                '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="0" value="' +
+                '<label>Actual Expense (₹)<input id="edit-actual-expense" type="number" step="0.01" min="1" value="' +
                 (ev.actual_expense == null ? "" : ev.actual_expense) +
                 '"' +
-                (aFilled ? " readonly" : "") +
+                (doneLock ? " readonly" : eeReady ? "" : " disabled") +
                 " /></label>" +
-                "</div></div>";
+                "</div>" +
+                (doneLock
+                  ? '<div class="budget-edit-foot"><span class="budget-hint">Locked — completed trainings cannot be edited here</span></div>'
+                  : '<div class="budget-edit-foot"><span class="budget-hint">Complete all checks first — budget is the last step</span></div>') +
+                "</div>";
             } else {
               budgetHtml =
                 '<div class="drawer-section ee-card"><div class="drawer-section-title">Budget &amp; Expenses</div>' +
@@ -8813,9 +9944,25 @@
             return;
           }
           // Completed trainings are read-only — only budget may still be saved.
-          var isDoneSave = completionScore(ev) === 5;
+          // NOTE: staged (unsaved) checks must not count — base decides.
+          var wasScore = CHECK_FIELDS.filter(function (f) {
+            return (state.editBase && state.editBase.checks[f.key]) || 0;
+          }).length;
+          var isDoneSave = wasScore === 5;
           // In-flight guard: double-clicks would race parallel writers on the same doc
           if (state.savingTraining) return;
+
+          /* Early validation — before any tasks are queued.
+             If saving would complete the training (5/5), run all pre-flight checks. */
+          if (!isDoneSave) {
+            var stagedScoreEdit = completionScore(ev);
+            var wouldCompleteEdit = wasScore < 5 && stagedScoreEdit === 5;
+            if (wouldCompleteEdit) {
+              var errEdit = validateBeforeComplete(ev, "edit-budget-amount", "edit-actual-expense");
+              if (errEdit) { showToast(errEdit); return; }
+            }
+          }
+
           var tasks = [];
           // Schedule changes — single Save handles reschedule (dialog shows DD/MM/YYYY, API uses ISO)
           var fromRaw = (
@@ -8869,7 +10016,9 @@
           var beforeGeo = ((ev.geographies || []).map(function (g) { return g.branch || ""; }).filter(Boolean).sort().join("|"));
           var afterGeo = ((state.selectedGeographies || []).map(function (g) { return (g.branch || "").trim(); }).filter(Boolean).sort().join("|"));
           var geoChanged = beforeGeo !== afterGeo;
-          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged)) {
+          var adhocVal = document.getElementById("new-adhoc").checked ? 1 : 0;
+          var adhocChanged = !isDoneSave && adhocVal !== (ev.is_adhoc ? 1 : 0);
+          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged || adhocChanged)) {
             if (!fromDate) {
               showToast("From Date is required");
               return;
@@ -8886,12 +10035,12 @@
                 var iso = cur.toISOString().slice(0, 10);
                 if (_hols2[iso]) {
                   showToast(
-                    "Cannot schedule on Holiday (" + _hols2[iso] + "): " + iso,
+                    "Cannot schedule on Holiday (" + _hols2[iso] + "): " + fmtSlash(iso),
                   );
                   return true;
                 }
                 if (cur.getDay() === 0) {
-                  showToast("Cannot schedule on Sunday: " + iso);
+                  showToast("Cannot schedule on Sunday: " + fmtSlash(iso));
                   return true;
                 }
                 cur.setDate(cur.getDate() + 1);
@@ -8911,8 +10060,8 @@
                 return;
               }
             }
-            tasks.push(
-              api("update_training_schedule", {
+            tasks.push(function () {
+              return api("update_training_schedule", {
                 name: ev.name,
                 from_date: fromDate,
                 to_date: toDate,
@@ -8922,6 +10071,7 @@
                 training_location: trainingLocation || null,
                 number_of_participants: expChanged ? expVal : null,
                 geographies: geoChanged ? JSON.stringify(state.selectedGeographies) : null,
+                is_adhoc: adhocChanged ? adhocVal : null,
               }).then(function () {
                 ev.from_date = fromDate;
                 ev.to_date = toDate;
@@ -8930,36 +10080,41 @@
                 ev.time = startTime;
                 ev.training_type = trainingType;
                 ev.training_location = trainingLocation;
+                ev.is_adhoc = adhocVal;
                 if (expChanged) ev.number_of_participants = expVal;
                 /* ev.geographies refreshes from the get_training_details
                    refetch after save — no manual merge needed. */
-              }),
-            );
+              });
+            });
           }
           var val = (document.getElementById("new-agenda") || {}).value || "";
           if (!isDoneSave && (ev.trainer_remarks || "") !== val) {
-            tasks.push(
-              api("update_training_status", {
+            tasks.push(function () {
+              return api("update_training_status", {
                 training_name: ev.name,
                 field: "trainer_remarks",
                 value: val,
               }).then(function () {
                 ev.trainer_remarks = val;
-              }),
-            );
+              });
+            });
           }
-          var ccVal = (
-            (document.getElementById("new-cc") || {}).value || ""
-          ).trim();
-          if (!isDoneSave && (ev.additional_cc || "") !== ccVal) {
-            tasks.push(
-              api("update_training_emails", {
-                training_name: ev.name,
-                additional_cc: ccVal,
-              }).then(function () {
-                ev.additional_cc = ccVal;
-              }),
-            );
+          /* additional_cc is saved directly from the Mail Recipients dialog — no save needed here */
+          /* Staged completion checks (edit dialog stages until Save) */
+          if (!isDoneSave) {
+            CHECK_FIELDS.forEach(function (f) {
+              var cur = ev[f.key] || 0;
+              var was = (state.editBase && state.editBase.checks[f.key]) || 0;
+              if (cur !== was) {
+                tasks.push(function () {
+                  return api("update_training_status", {
+                    training_name: ev.name,
+                    field: f.key,
+                    value: cur,
+                  });
+                });
+              }
+            });
           }
           // Sync added/removed participants on Save (no locks)
           var doSync = null;
@@ -8995,39 +10150,95 @@
               };
             }
           }
-          if (state.role === "ld_admin" || isOwnCompletedTraining(ev)) {
+          var canBudgetEdit = state.role === "ld_admin" || isOwnTraining(ev);
+          var budgetTasks = [];
+          if (canBudgetEdit && !isDoneSave) {
             var b = document.getElementById("edit-budget-amount");
             var a = document.getElementById("edit-actual-expense");
             var bv = b ? parseFloat(b.value) : NaN;
             var av = a ? parseFloat(a.value) : NaN;
-            tasks.push(
-              api("update_budget", {
-                training_name: ev.name,
-                budget_amount: isNaN(bv) ? null : bv,
-                actual_expense: isNaN(av) ? null : av,
-              }).then(function () {
-                ev.budget_amount = isNaN(bv) ? null : bv;
-                ev.actual_expense = isNaN(av) ? null : av;
-              }),
-            );
+            /* Cap: Actual must never exceed Budget (only when inputs are
+               visible — otherwise the user cannot fix it here). */
+            var capB = !isNaN(bv) ? bv : parseFloat(ev.budget_amount);
+            var capA = !isNaN(av) ? av : parseFloat(ev.actual_expense);
+            if ((b || a) && !isNaN(capB) && !isNaN(capA) && capA > capB) {
+              showToast("Actual Expense cannot exceed Budget Amount.");
+              return;
+            }
+            if (b || a) {
+              var bStr = isNaN(bv) ? "" : bv;
+              var aStr = isNaN(av) ? "" : av;
+              var baseB = ev.budget_amount == null ? "" : ev.budget_amount;
+              var baseA = ev.actual_expense == null ? "" : ev.actual_expense;
+              if (String(bStr) !== String(baseB) || String(aStr) !== String(baseA)) {
+                budgetTasks.push(function () {
+                  return api("update_budget", {
+                    training_name: ev.name,
+                    budget_amount: isNaN(bv) ? null : bv,
+                    actual_expense: isNaN(av) ? null : av,
+                  }).then(function () {
+                    ev.budget_amount = isNaN(bv) ? null : bv;
+                    ev.actual_expense = isNaN(av) ? null : av;
+                  });
+                });
+              }
+            }
+          }
+          /* Confirm before locking: completing cannot be undone here */
+          if (wasScore < 5 && completionScore(ev) === 5) {
+            if (
+              !confirm(
+                "Mark this training as Completed? Completed trainings get locked (further changes only on desk by L&D Admin).",
+              )
+            )
+              return;
           }
           // Serialized writes: doc.save() inside sync/flush throws TimestampMismatch
-          // if parallel set_value calls bump `modified` first. Order: flush, sync, rest.
+          // if parallel set_value calls bump `modified` first. Order: flush, att-pop, sync, budget, rest.
+          var hasAttPop = Object.keys(attPopDirty).length > 0;
+          var hasSelAtt =
+            dialogFn.attDirtyCount ? dialogFn.attDirtyCount() > 0 : false;
+          if (!tasks.length && !budgetTasks.length && !hasAttPop && !hasSelAtt) {
+            if (isDoneSave) {
+              showToast("This training is completed and locked — no changes can be made here.");
+            } else {
+              showToast("No changes to save.");
+            }
+            return;
+          }
           state.savingTraining = true;
           var flushP = dialogFn.flushAttStaged
             ? dialogFn.flushAttStaged()
             : Promise.resolve(true);
           flushP
             .then(function () {
+              return flushAttPopStaged();
+            })
+            .then(function () {
               return doSync ? doSync() : true;
             })
             .then(function () {
-              return Promise.all(tasks);
+              return Promise.all(
+                budgetTasks.map(function (fn) {
+                  return fn();
+                }),
+              );
+            })
+            .then(function () {
+              return Promise.all(
+                tasks.map(function (fn) {
+                  return fn();
+                }),
+              );
             })
             .then(function () {
               state.savingTraining = false;
               loadData(true);
-              showToast("Training updated");
+              showToast(
+                wasScore < 5 && completionScore(ev) === 5
+                  ? "Training marked Completed — locked."
+                  : "Training updated",
+              );
               return api("get_training_details", { name: ev.name });
             })
             .then(function (d) {
@@ -9037,6 +10248,7 @@
                 }
                 fillEditDialog(ev);
               }
+              if (typeof closeAttPop === "function") closeAttPop();
             })
             .catch(function (e) {
               state.savingTraining = false;
@@ -9045,6 +10257,21 @@
         }
         function closeModal(id) {
           document.getElementById(id).classList.remove("open");
+          /* Discard staged (unsaved) completion checks on edit-dialog close */
+          if (
+            id === "addModal" &&
+            state.dialogMode === "edit" &&
+            !state.savingTraining &&
+            state.currentEvent &&
+            state.editBase
+          ) {
+            var cev = state.currentEvent;
+            CHECK_FIELDS.forEach(function (f) {
+              cev[f.key] = state.editBase.checks[f.key] || 0;
+            });
+            state.editBase = null;
+            render();
+          }
         }
 
         /* ---- Reschedule mode (temporarily disabled — Save already handles schedule changes)
@@ -9204,12 +10431,12 @@
               var iso = cur.toISOString().slice(0, 10);
               if (_hols[iso]) {
                 showToast(
-                  "Cannot schedule on Holiday (" + _hols[iso] + "): " + iso,
+                  "Cannot schedule on Holiday (" + _hols[iso] + "): " + fmtSlash(iso),
                 );
                 return iso;
               }
               if (cur.getDay() === 0) {
-                showToast("Cannot schedule on Sunday: " + iso);
+                showToast("Cannot schedule on Sunday: " + fmtSlash(iso));
                 return iso;
               }
               cur.setDate(cur.getDate() + 1);
@@ -9281,10 +10508,7 @@
               null,
             geographies: JSON.stringify(state.selectedGeographies),
             trainer_remarks: agenda.trim() || null,
-            additional_cc:
-              (
-                (document.getElementById("new-cc") || {}).value || ""
-              ).trim() || null,
+            additional_cc: null, /* managed via Mail Recipients dialog in edit mode */
             is_adhoc: isAdhoc,
             participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
@@ -10477,7 +11701,7 @@
             }
             if (pSearch) {
               pSearch.placeholder =
-                type === "Agent" ? "Search agents..." : "Search employees...";
+                type === "Agent" ? "Search swayamsevikas..." : "Search employees...";
               if (!keepQuery) pSearch.value = "";
             }
             // Hardening: toggle must always leave the popover open with results
@@ -10662,7 +11886,7 @@
                 return (
                   '<span class="participant-chip">' +
                   (isAgent
-                    ? '<span style="font-size:10px;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 5px;margin-right:3px">Agent</span>'
+                    ? '<span style="font-size:10px;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 5px;margin-right:3px">SwayamSevika</span>'
                     : "") +
                   esc(displayName) +
                   idSuffix +
@@ -10683,12 +11907,27 @@
               pBtnEmp.textContent = "Employees" + (ne ? " (" + ne + ")" : "");
             if (pBtnAgent)
               pBtnAgent.textContent =
-                "Agents" + (n - ne ? " (" + (n - ne) + ")" : "");
+                "SwayamSevikas" + (n - ne ? " (" + (n - ne) + ")" : "");
             if (pCount) {
               pCount.textContent = n ? pLabel() : "Add participants";
               pCount.classList.toggle("has", n > 0);
             }
             if (pDropCount) pDropCount.textContent = n + " selected";
+            /* Participant add/remove may lock/unlock completion checks */
+            if (
+              state.dialogMode === "edit" &&
+              state.currentEvent &&
+              document.getElementById("addModal").classList.contains("open")
+            ) {
+              refreshCheckLocks({
+                participant_list: (state.selectedParticipants || []).map(function (p) {
+                  return {
+                    reference_doctype: p.reference_doctype,
+                    attendance_status: p.attendance_status || "",
+                  };
+                }),
+              });
+            }
           }
 
           function openPop() {
@@ -10713,7 +11952,7 @@
               return p.reference_doctype !== type;
             });
             if (otherType) {
-              showToast("Cannot mix Employees and Agents. Please remove existing " + otherType.reference_doctype + "s first.");
+              showToast("Cannot mix Employees and SwayamSevikas. Please remove existing " + ptPlural(otherType.reference_doctype) + " first.");
               return;
             }
             var key = type + ":" + val;
@@ -10973,7 +12212,7 @@
                 return p.reference_doctype !== type;
               });
               if (otherType) {
-                showToast("Cannot mix Employees and Agents. Please unselect existing " + otherType.reference_doctype + "s first.");
+                showToast("Cannot mix Employees and SwayamSevikas. Please unselect existing " + ptPlural(otherType.reference_doctype) + " first.");
                 return;
               }
               state.selectedParticipants.push({
@@ -11029,7 +12268,7 @@
           ) {
             var tag =
               type === "Agent"
-                ? '<span class="role-tag agent">Agent</span>'
+                ? '<span class="role-tag agent">SwayamSevika</span>'
                 : '<span class="role-tag emp">Employee</span>';
             return (
               '<tr data-type="' +
@@ -11196,7 +12435,7 @@
             var disabled = state.dialogMode === "edit";
             var q = (partSearch ? partSearch.value : "").trim().toLowerCase();
             var tf = partType ? partType.value : "";
-            // Unified list: employees + agents, selected frozen at top (stable)
+            // Unified list: employees + swayamsevikas, selected frozen at top (stable)
             var rows = [];
             if (!tf || tf === "Employee") {
               (state.allEmployees || []).forEach(function (e) {
@@ -11268,7 +12507,7 @@
               empCount.classList.toggle("none", !ne);
             }
             if (agentCount) {
-              agentCount.textContent = na ? na + " agents" : "0 agents";
+              agentCount.textContent = na ? na + " swayamsevikas" : "0 swayamsevikas";
               agentCount.classList.toggle("none", !na);
             }
             if (totalCount)
@@ -11613,6 +12852,13 @@
             }
           }
           // Flush staged attendance (called by dialog Save in edit mode)
+          dialogFn.attDirtyCount = function () {
+            try {
+              return attDirtyList(state.selectedParticipants).length;
+            } catch (e) {
+              return 0;
+            }
+          };
           dialogFn.flushAttStaged = function () {
             var ev = state.currentEvent;
             var dirty = attDirtyList(state.selectedParticipants);
@@ -11717,10 +12963,10 @@
           var fileInput = document.getElementById("participant-csv-file");
           var statusEl = document.getElementById("participant-csv-status");
 
-          /* Download sample template — two columns: Emp ID + Agent ID */
+          /* Download sample template — two columns: Emp ID + SwayamSevika ID */
           if (templateBtn) {
             templateBtn.addEventListener("click", function () {
-              var csv = "Emp ID,Agent ID\r\n12565,\r\n12664,\r\n,AGT001\r\n";
+              var csv = "Emp ID,SwayamSevika ID\r\n12565,\r\n12664,\r\n,AGT001\r\n";
               var blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
               var a = document.createElement("a");
               a.href = URL.createObjectURL(blob);
@@ -11769,12 +13015,14 @@
                   return h.trim().toLowerCase();
                 });
                 var empCol = header.indexOf("emp id");
+                /* Old template used "Agent ID" — still accepted */
                 var agentCol = header.indexOf("agent id");
+                if (agentCol === -1) agentCol = header.indexOf("swayamsevika id");
 
                 if (empCol === -1 && agentCol === -1) {
                   if (statusEl)
                     statusEl.textContent =
-                      "Columns 'Emp ID' or 'Agent ID' not found. Download template first.";
+                      "Columns 'Emp ID' or 'SwayamSevika ID' not found. Download template first.";
                   return;
                 }
 
@@ -11834,7 +13082,7 @@
                       agent_employee: id,
                       full_name: fullName,
                     });
-                    // Auto-add participant's branch (employees + agents alike)
+                    // Auto-add participant's branch (employees + swayamsevikas alike)
                     if (dialogFn.autoAddBranch) {
                       if (type === "Employee" && item.sahayog_branch) {
                         dialogFn.autoAddBranch(item.sahayog_branch);
@@ -11862,7 +13110,7 @@
                     return true;
                   }
 
-                  /* Emp ID and/or Agent ID — each valid ID becomes a participant */
+                  /* Emp ID and/or SwayamSevika ID — each valid ID becomes a participant */
                   tryAdd("Employee", empId);
                   tryAdd("Agent", agentId);
                 });
@@ -11873,7 +13121,7 @@
                 var msg =
                   added + " participant" + (added === 1 ? "" : "s") + " added";
                 if (addedEmp && addedAgt)
-                  msg += " (" + addedEmp + " emp + " + addedAgt + " agents)";
+                  msg += " (" + addedEmp + " emp + " + addedAgt + " swayamsevikas)";
                 if (skipped) msg += ", " + skipped + " already present";
                 if (notFound.length)
                   msg +=
@@ -11924,6 +13172,155 @@
             hr + ":" + (mi < 10 ? "0" : "") + mi + " " + (h < 12 ? "AM" : "PM")
           );
         }
+        /* ── Today's Trainings Panel ───────────────────────────────────── */
+        function renderTodayPanel() {
+          var panel     = document.getElementById("todayPanel");
+          var container = document.getElementById("todayCards");
+          var dot       = document.getElementById("tpCollapsedDot");
+          var dateLabel = document.getElementById("todayDateLabel");
+          if (!panel || !container) return;
+
+          var todayIso = isoOf(today);
+
+          // Date label e.g. "8 Oct"
+          if (dateLabel) {
+            var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+            dateLabel.textContent = today.getDate() + " " + MONTHS[today.getMonth()];
+          }
+
+          // Filter calEvents to today only
+          var todayEvs = (state.calEvents || []).filter(function (ev) {
+            var f = ev.from_date || ev.date || "";
+            var t = ev.to_date   || f;
+            return f <= todayIso && todayIso <= t;
+          });
+
+          // Trainer role: show only own trainings
+          var sessionUser = state.sessionUser || "";
+          var currentEmpName = state.currentEmployeeName || "";
+          if (state.role === "trainer" && currentEmpName) {
+            todayEvs = todayEvs.filter(function (ev) {
+              return (ev.trainer || ev.trainer_name || "") === currentEmpName;
+            });
+          }
+
+          // Sort: in-progress first, then upcoming, then by time
+          var ORDER = { inprogress: 0, upcoming: 1, completed: 2, pending: 3 };
+          todayEvs.sort(function (a, b) {
+            var sa = ORDER[statusOf(a)] !== undefined ? ORDER[statusOf(a)] : 9;
+            var sb = ORDER[statusOf(b)] !== undefined ? ORDER[statusOf(b)] : 9;
+            if (sa !== sb) return sa - sb;
+            return (a.start_time || a.time || "") < (b.start_time || b.time || "") ? -1 : 1;
+          });
+
+          if (!todayEvs.length) {
+            panel.style.display = "none";
+            if (dot) dot.style.display = "none";
+            var pill0 = document.getElementById("todayPill");
+            if (pill0) pill0.style.display = "none";
+            state.todayEvs = [];
+            state.todayIso = todayIso;
+            return;
+          }
+
+          panel.style.display = "";
+          /* Share the role-scoped list with the toolbar pill + auto modal */
+          state.todayEvs = todayEvs;
+          state.todayIso = todayIso;
+          var pill = document.getElementById("todayPill");
+          var pillText = document.getElementById("todayPillText");
+          if (pill) {
+            /* Number only ("Today" already sits next to it as a button) */
+            if (pillText) pillText.textContent = String(todayEvs.length);
+            pill.style.display = "";
+            pill.title =
+              todayEvs.length === 1
+                ? "1 training today — click to view"
+                : todayEvs.length + " trainings today — click to view";
+            pill.onclick = function () {
+              if (state.todayEvs && state.todayEvs.length)
+                openMoreModal(state.todayIso, state.todayEvs);
+            };
+          }
+          var hasActive = todayEvs.some(function (ev) {
+            return statusOf(ev) === "inprogress";
+          });
+          if (dot) dot.style.display = hasActive ? "" : "none";
+
+          var MAX_CARDS = 6;
+          var shown = todayEvs.slice(0, MAX_CARDS);
+          var extra = todayEvs.length - shown.length;
+
+          var html = "";
+          shown.forEach(function (ev) {
+            var st       = statusOf(ev) || "upcoming";
+            var isPulse  = st === "inprogress";
+            var cardMeta = (typeof STATUS_META !== "undefined" && STATUS_META[st]) || null;
+            var name     = ev.training_program || "—";
+            var loc      = ev.training_location || "";
+            var trName   = ev.trainer || ev.trainer_name || "";
+            var tipBits = [];
+            if (trName) tipBits.push(trName);
+            if (loc) tipBits.push(loc);
+
+            html +=
+              '<button class="today-card" data-tname="' + esc(ev.name || "") + '" title="' + esc(name + (tipBits.length ? " — " + tipBits.join(", ") : "")) + '"' +
+                (cardMeta
+                  ? ' style="background:' + cardMeta.soft + ';border-left:3px solid ' + cardMeta.color + ';"'
+                  : '') +
+                '>' +
+                '<div class="today-card-top">' +
+                  '<span class="tp-dot ' + st + (isPulse ? " pulse" : "") + '"></span>' +
+                  '<span class="today-card-name">' + esc(name) + '</span>' +
+                '</div>' +
+                (trName
+                  ? '<div class="today-card-sub today-card-trainer">' + esc(trName) + '</div>'
+                  : '') +
+                (loc
+                  ? '<div class="today-card-sub today-card-loc">' + esc(loc) + '</div>'
+                  : '') +
+              '</button>';
+          });
+
+          if (extra > 0) {
+            html += '<button class="today-more" id="todayMoreBtn">+' + extra + ' more today →</button>';
+          }
+
+          container.innerHTML = html;
+
+          // Click → open drawer
+          container.querySelectorAll(".today-card[data-tname]").forEach(function (btn) {
+            btn.addEventListener("click", function () {
+              var tname = btn.dataset.tname;
+              var ev = (state.calEvents || []).find(function (e) { return e.name === tname; });
+              if (ev) openDrawer(ev, "view");
+            });
+          });
+
+          // "+N more" → open today's consolidated list (same modal as auto-popup)
+          var moreBtn = document.getElementById("todayMoreBtn");
+          if (moreBtn) {
+            moreBtn.addEventListener("click", function () {
+              openMoreModal(todayIso, todayEvs);
+            });
+          }
+
+          // Once-a-day auto popup on portal open (suppressed after first view)
+          try {
+            var seenKey = "ld_today_seen";
+            var seen = null;
+            try {
+              seen = localStorage.getItem(seenKey);
+            } catch (e) {}
+            if (seen !== todayIso && typeof openMoreModal === "function") {
+              try {
+                localStorage.setItem(seenKey, todayIso);
+              } catch (e) {}
+              openMoreModal(todayIso, todayEvs);
+            }
+          } catch (e) {}
+        }
+
         function updateSchedulePreview() {
           var fEl = document.getElementById("new-from-date");
           var tEl = document.getElementById("new-to-date");

@@ -36,7 +36,48 @@ def get_user_report_preference_record(user):
     else:
         names = frappe.get_all("Report Preference", filters={"user": user}, pluck="name")
     
-    if not names: return None
+    if not names:
+        # Fallback for Branch Manager if Report Preference is not configured
+        emp = frappe.db.get_value(
+            "Employee",
+            {"user_id": user, "status": "Active"},
+            ["name", "designation", "sol_id", "sahayog_branch"],
+            as_dict=True
+        ) or frappe.db.get_value(
+            "Employee",
+            {"user_id": user},
+            ["name", "designation", "sol_id", "sahayog_branch"],
+            as_dict=True
+        )
+        if emp and (emp.get("designation") or "").strip().upper() == "BRANCH MANAGER":
+            bm_sol = emp.get("sol_id") or emp.get("sahayog_branch")
+            if bm_sol:
+                bm_sol_str = str(bm_sol).strip()
+                sb = frappe.db.get_value(
+                    "Sahayog Branch",
+                    {"sol_id": bm_sol_str},
+                    ["sol_id", "branch", "zone", "region"],
+                    as_dict=True
+                ) or frappe.db.get_value(
+                    "Sahayog Branch",
+                    {"name": bm_sol_str},
+                    ["sol_id", "branch", "zone", "region"],
+                    as_dict=True
+                )
+                branch_title = sb.get("branch") if sb else "Unknown"
+                sol_val = str(sb.get("sol_id") or bm_sol_str)
+                zone_list = [sb.get("zone")] if sb and sb.get("zone") else []
+                region_list = [sb.get("region")] if sb and sb.get("region") else []
+
+                return [{
+                    "user": user,
+                    "product": [],
+                    "source": [],
+                    "zone": zone_list,
+                    "region": region_list,
+                    "sol_id": [{"value": sol_val, "label": f"{sol_val} - {branch_title}"}],
+                }]
+        return None
 
     for name in names:
         doc = frappe.get_doc("Report Preference", name)
@@ -873,25 +914,22 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             IFNULL(lp.product, ''),
             IFNULL(lp.product_name, ''),
             IFNULL(lp.product_amount, 0),
-            IFNULL(COALESCE(e.employee_name, e_owner.employee_name, l.custom_employee_name), ''),
-            IFNULL(COALESCE(e.employee_number, e_owner.employee_number, l.custom_employee_id), ''),
-            IFNULL(COALESCE(e.designation, e_owner.designation, l.custom_designation), ''),
+            IFNULL(l.custom_employee_name, ''),
+            IFNULL(l.custom_employee_id, ''),
+            IFNULL(l.custom_designation, ''),
             IFNULL(l.sol_id, ''),
-            IFNULL(sb.branch, ''),
-            IFNULL(sb.district, ''),
-            IFNULL(sb.region, ''),
-            IFNULL(sb.zone, ''),
+            IFNULL(l.custom_branch, ''),
+            IFNULL(l.custom_district, ''),
+            IFNULL(l.custom_region, ''),
+            IFNULL(l.custom_zone, ''),
             DATE_FORMAT(l.creation, '%d-%m-%Y %H:%i:%s') as created_on,
             DATE_FORMAT(l.modified, '%d-%m-%Y %H:%i:%s') as last_modified,
             CONCAT(TIMESTAMPDIFF(DAY, l.creation, NOW()), ' Days') as lead_age,
             IFNULL(l.lead_owner, ''),
-            IFNULL(COALESCE(e.status, e_owner.status), 'Active') as emp_status,
+            'Active' as emp_status,
             IFNULL(l.custom_verification_status, 'Pending') as bm_verification
         FROM `tabLead` l
         LEFT JOIN `tabLead Product` lp ON lp.parent = l.name
-        LEFT JOIN `tabEmployee` e ON (LOWER(e.user_id) = LOWER(l.lead_owner) OR e.employee_number = l.lead_owner)
-        LEFT JOIN `tabEmployee` e_owner ON (LOWER(e_owner.user_id) = LOWER(l.owner) OR e_owner.employee_number = l.owner)
-        LEFT JOIN `tabSahayog Branch` sb ON sb.sol_id = l.sol_id
         WHERE {where_clause}
         ORDER BY l.creation DESC
     """.format(where_clause=where_clause)

@@ -357,13 +357,55 @@ def _training_invitation_email_body(t):
 # Recipient helpers
 # ─────────────────────────────────────────────────────────────────────────────
 
+def _training_branches(training):
+    """Branch codes of a training: legacy field + Geographies rows."""
+    codes = set()
+    if isinstance(training, dict):
+        if training.get("branch"):
+            codes.add(training["branch"])
+        for g in training.get("geographies") or []:
+            if isinstance(g, dict):
+                if g.get("branch"):
+                    codes.add(g["branch"])
+            elif g:
+                codes.add(g)
+    else:
+        if getattr(training, "branch", None):
+            codes.add(training.branch)
+        try:
+            geos = frappe.db.get_all(
+                "Training Geography",
+                filters={"parent": training.name},
+                pluck="branch",
+            )
+            for code in geos or []:
+                if code:
+                    codes.add(code)
+        except Exception:
+            pass
+    return sorted(codes)
+
+
+def _get_branch_head_emails(training):
+    """Branch-head emails from Sahayog Branch.email, matched on the
+    training's branches. Returns [(branch_code, email)]. Invalid/blank
+    entries (e.g. '#N/A') are skipped."""
+    out = []
+    for code in _training_branches(training):
+        email = (frappe.db.get_value("Sahayog Branch", code, "email") or "").strip()
+        if email and "@" in email:
+            out.append((code, email))
+    return out
+
+
 def _get_invitation_emails(training):
     """(To, CC) emails for the training invitation.
 
-    To: Employee-type participants only.
+    To: Employee-type participants + branch heads (Sahayog Branch.email)
+        + Training.additional_to (comma-separated).
     CC: trainer + Training.additional_cc (comma-separated).
     Agent-type participants have no email in the system — skipped.
-    Fallback: when no participant email exists, trainer moves to To
+    Fallback: when no To email exists, trainer moves to To
     so the mail is still delivered (empty To is not allowed).
     """
     to_emails = set()
@@ -381,6 +423,12 @@ def _get_invitation_emails(training):
                  or frappe.db.get_value("Employee", p.agent_employee, "personal_email")
             if email:
                 to_emails.add(email)
+
+    for _code, head_email in _get_branch_head_emails(training):
+        to_emails.add(head_email)
+
+    raw_to = training.get("additional_to") if isinstance(training, dict) else getattr(training, "additional_to", "")
+    to_emails.update(_parse_cc(raw_to))
 
     cc_emails = set()
     trainer_email = _trainer_email(training.trainer if isinstance(training, dict) else getattr(training, "trainer", ""))
@@ -422,7 +470,7 @@ def _trainer_email(trainer_name):
 def _get_closure_recipients(training):
     """(To, CC) for the closure mail — same split as invitation for now.
 
-    To: participants; CC: trainer + additional_cc.
+    To: participants + branch heads + additional_to; CC: trainer + additional_cc.
     Branch-manager recipients are parked below (commented) for later use.
     """
     to_emails, cc_emails = _get_invitation_emails(training)

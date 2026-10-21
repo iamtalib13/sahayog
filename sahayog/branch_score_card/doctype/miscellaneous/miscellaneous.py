@@ -1,4 +1,6 @@
 import frappe
+from sahayog.branch_score_card.audit_log_utils import write_audit_log, snapshot_document, get_latest_version_data
+import json
 import openpyxl
 import io
 import re
@@ -10,6 +12,73 @@ from frappe.utils.response import build_response
 
 
 class Miscellaneous(Document):
+
+    def after_insert(self):
+        write_audit_log(
+            self, "Created",
+            data={"created": snapshot_document(self)},
+        )
+
+    def on_update(self):
+        if self.flags.get("in_insert"):
+            return
+        write_audit_log(
+            self, "Updated",
+            data={
+                "changed": get_latest_version_data(self),
+                "snapshot": snapshot_document(self),
+            },
+        )
+
+    def on_trash(self):
+        self._miscellaneous_delete_snapshot = (
+            self._capture_miscellaneous_delete_snapshot()
+        )
+        write_audit_log(
+            self, "Deleted",
+            data={"deleted": snapshot_document(self)},
+        )
+
+    def _capture_miscellaneous_delete_snapshot(self):
+        excluded = {
+            "doctype", "name", "owner", "creation", "modified",
+            "modified_by", "parent", "parentfield", "parenttype",
+            "idx", "docstatus", "__unsaved",
+        }
+        fields = {
+            "sol_id": self.get("sol_id"),
+            "month": self.get("month"),
+            "year": self.get("year"),
+            "account_opening_error_count": self.get("account_opening_error_count"),
+            "reconciliation_discrepancy_count": self.get("reconciliation_discrepancy_count"),
+        }
+        tables = {}
+        for fieldname in (
+            "account_opening_error",
+            "bank_reconciliation_discrepancy",
+        ):
+            tables[fieldname] = [
+                {
+                    key: value
+                    for key, value in row.as_dict().items()
+                    if key not in excluded
+                }
+                for row in (self.get(fieldname) or [])
+            ]
+        return {"fields": fields, "tables": tables}
+
+    def after_delete(self):
+        snapshot = getattr(self, "_miscellaneous_delete_snapshot", None)
+        if not snapshot:
+            return
+
+        version = frappe.get_doc({
+            "doctype": "Version",
+            "ref_doctype": "Miscellaneous",
+            "docname": self.name,
+            "data": json.dumps({"deleted": snapshot}, default=str),
+        })
+        version.insert(ignore_permissions=True)
 
     def autoname(self):
         # Format: 1005-August-2026
@@ -105,6 +174,7 @@ def extract_dates_from_cell(cell_value):
 # ------------------------------------------------------------------
 @frappe.whitelist()
 def process_miscellaneous_excel(file_url=None, type_name=None, confirm=False):
+    frappe.flags.sahayog_audit_source = "Excel Upload"
     if not file_url:
         frappe.throw("No file provided for processing.")
 

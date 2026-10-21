@@ -1,5 +1,18 @@
 frappe.listview_settings['Miscellaneous'] = {
     onload: function (listview) {
+        // View Logs: System Manager / Branch Scorecard Editor / Administrator
+        if (
+            frappe.session.user === "Administrator" ||
+            frappe.user.has_role(["System Manager", "Branch Scorecard Editor"])
+        ) {
+            listview.page.add_inner_button(__("View Logs"), function () {
+                window.open(
+                    "/api/method/sahayog.branch_score_card.doctype.miscellaneous.miscellaneous_logs_page.view_logs_page",
+                    "_blank"
+                );
+            });
+        }
+
 
         // -----------------------------------------------------------
         // 1. ACTION: Upload Excel for Account Opening Error
