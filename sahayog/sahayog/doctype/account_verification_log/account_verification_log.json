@@ -1,0 +1,177 @@
+{
+ "actions": [],
+ "allow_rename": 0,
+ "autoname": "format:ACV-{YYYY}-{#####}",
+ "creation": "2026-10-21 10:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "user_id",
+  "user_full_name",
+  "log_datetime",
+  "ip_address",
+  "ifsc",
+  "account_masked",
+  "holder_name",
+  "case_id",
+  "status",
+  "is_valid",
+  "bank_response",
+  "request_id",
+  "error_message",
+  "account_name",
+  "status_as_per_source",
+  "bank_status_code",
+  "bank_rrn",
+  "from_cache",
+  "lookup_hash"
+ ],
+ "fields": [
+  {
+   "fieldname": "user_id",
+   "fieldtype": "Link",
+   "label": "User",
+   "read_only": 1,
+   "in_list_view": 1,
+   "options": "User"
+  },
+  {
+   "fieldname": "user_full_name",
+   "fieldtype": "Data",
+   "label": "User Full Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "log_datetime",
+   "fieldtype": "Datetime",
+   "label": "Log Datetime",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "ip_address",
+   "fieldtype": "Data",
+   "label": "IP Address",
+   "read_only": 1
+  },
+  {
+   "fieldname": "ifsc",
+   "fieldtype": "Data",
+   "label": "IFSC",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "account_masked",
+   "fieldtype": "Data",
+   "label": "Account (Masked)",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "holder_name",
+   "fieldtype": "Data",
+   "label": "Holder Name (Entered)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "case_id",
+   "fieldtype": "Data",
+   "label": "Case ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Data",
+   "label": "Status",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "is_valid",
+   "fieldtype": "Data",
+   "label": "Is Valid",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bank_response",
+   "fieldtype": "Data",
+   "label": "Bank Response",
+   "read_only": 1
+  },
+  {
+   "fieldname": "request_id",
+   "fieldtype": "Data",
+   "label": "Request ID",
+   "read_only": 1
+  },
+  {
+   "fieldname": "error_message",
+   "fieldtype": "Small Text",
+   "label": "Error Message",
+   "read_only": 1
+  },
+  {
+   "fieldname": "account_name",
+   "fieldtype": "Data",
+   "label": "Name (as per bank)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "status_as_per_source",
+   "fieldtype": "Data",
+   "label": "Status As Per Source",
+   "read_only": 1
+  },
+  {
+   "fieldname": "bank_status_code",
+   "fieldtype": "Data",
+   "label": "Bank Status Code",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "bank_rrn",
+   "fieldtype": "Data",
+   "label": "Bank RRN",
+   "read_only": 1
+  },
+  {
+   "fieldname": "from_cache",
+   "fieldtype": "Check",
+   "label": "Served From Previous Result",
+   "read_only": 1,
+   "in_list_view": 1
+  },
+  {
+   "fieldname": "lookup_hash",
+   "fieldtype": "Data",
+   "label": "Lookup Hash",
+   "read_only": 1,
+   "hidden": 1,
+   "search_index": 1
+  }
+ ],
+ "index_web_pages_for_search": 0,
+ "links": [],
+ "modified": "2026-10-21 16:28:13.682308",
+ "modified_by": "Administrator",
+ "module": "Sahayog",
+ "name": "Account Verification Log",
+ "naming_rule": "Expression",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
