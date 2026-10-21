@@ -7,7 +7,7 @@ frappe.query_reports["SS Employee Master Report"] = {
 			"fieldname": "status",
 			"label": __("Status"),
 			"fieldtype": "Select",
-			"options": ["", "Active", "Left", "Resigned", "Retired"],
+			"options": ["", "Active", "Resigned", "Retired"],
 			"default": ""
 		},
 		{

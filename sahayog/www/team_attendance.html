@@ -1794,22 +1794,6 @@
                 >
                   ⬆ Update
                 </button>
-                <button
-                  id="btnUpdateEmployees"
-                  class="btn-clear"
-                  style="
-                    display: none;
-                    padding: 6px 14px;
-                    font-size: 11px;
-                    font-weight: 700;
-                    background: #f0fdf4;
-                    color: #15803d;
-                    border: 1px solid #86efac;
-                  "
-                  onclick="openUpdateModal()"
-                >
-                  ✏️ Update
-                </button>
                 <!-- DISABLED: 'Fix Duplicate Code' feature no longer needed
                 <button
                   id="btnFixDuplicateCodes"
@@ -2386,14 +2370,36 @@
                       <div class="cs-grid">
                         <div>
                           <label>Branch Code (SOL ID)</label>
-                          <select
-                            name="sol_id"
-                            id="new_emp_sol_id"
-                            class="member-select"
-                            onchange="handleBranchCodeChange(this.value)"
-                          >
-                            <option value="">Select Branch Code</option>
-                          </select>
+                          <div style="position: relative">
+                            <input
+                              type="text"
+                              id="new_emp_sol_id_input"
+                              class="member-select"
+                              placeholder="Type to search branch code..."
+                              autocomplete="off"
+                              onfocus="showSolIdDropdown()"
+                              oninput="filterSolId(this.value)"
+                              onblur="setTimeout(() => hideSolIdDropdown(), 200)"
+                            />
+                            <input type="hidden" name="sol_id" id="new_emp_sol_id" />
+                            <div
+                              id="new_emp_sol_id_dropdown"
+                              style="
+                                display: none;
+                                position: absolute;
+                                top: 100%;
+                                left: 0;
+                                width: 100%;
+                                background: #fff;
+                                border: 1px solid #e5e7eb;
+                                max-height: 200px;
+                                overflow-y: auto;
+                                z-index: 20;
+                                border-radius: 8px;
+                                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                              "
+                            ></div>
+                          </div>
                         </div>
                         <div>
                           <label>Branch Name</label
@@ -3841,6 +3847,69 @@
       onclick="closeDashboardDrawer()"
     ></div>
 
+    <!-- Branch Leaderboard Modal -->
+    <div
+      id="branchLbModal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.45);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+      "
+      onclick="if (event.target === this) closeBranchLeaderboard()"
+    >
+      <div
+        style="
+          background: #fff;
+          border-radius: 16px;
+          width: 100%;
+          max-width: 520px;
+          max-height: 82vh;
+          display: flex;
+          flex-direction: column;
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+        "
+      >
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 18px 20px;
+            border-bottom: 1px solid #f1f5f9;
+          "
+        >
+          <div class="dash-sec-title" style="margin: 0">
+            🏆 Branch Leaderboard
+          </div>
+          <button
+            type="button"
+            onclick="closeBranchLeaderboard()"
+            style="
+              background: #f1f5f9;
+              border: none;
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              cursor: pointer;
+              font-size: 15px;
+              color: var(--muted);
+            "
+          >
+            ✕
+          </button>
+        </div>
+        <div
+          id="branchLbModalBody"
+          style="overflow-y: auto; padding: 8px 20px 20px"
+        ></div>
+      </div>
+    </div>
+
     <script>
       document.getElementById("todayDate").textContent =
         new Date().toLocaleDateString("en-IN", {
@@ -4300,45 +4369,43 @@
           }
         }
 
-        if (solIdSel && solIdSel.options.length <= 1) {
+        if (solIdSel && !window._solIdList) {
           const branches = await callAPI(
             "get_sahayog_branches",
             {},
             "employee",
           );
-          if (branches) {
-            branches.forEach((b) => {
-              const opt = document.createElement("option");
-              opt.value = b.name;
-              opt.textContent = b.name;
-              solIdSel.appendChild(opt);
-            });
-          }
+          window._solIdList = (branches || [])
+            .map((b) => b.name)
+            .filter(Boolean);
         }
 
         if (zoneSel && zoneSel.options.length <= 1) {
           const zones = await callAPI("get_zones", {}, "employee");
-          if (zones) {
-            zones.forEach((z) => {
-              const opt = document.createElement("option");
-              opt.value = z.name;
-              opt.textContent = z.name;
-              zoneSel.appendChild(opt);
-            });
-          }
+          _fillUniqueSelect(zoneSel, zones);
         }
 
         if (regionSel && regionSel.options.length <= 1) {
           const regions = await callAPI("get_regions", {}, "employee");
-          if (regions) {
-            regions.forEach((r) => {
-              const opt = document.createElement("option");
-              opt.value = r.name;
-              opt.textContent = r.name;
-              regionSel.appendChild(opt);
-            });
-          }
+          _fillUniqueSelect(regionSel, regions);
         }
+      }
+
+      function _fillUniqueSelect(sel, items) {
+        if (!sel) return;
+        while (sel.options.length > 1) sel.remove(1);
+        const seen = new Set();
+        (items || []).forEach((it) => {
+          const val = it && it.name;
+          if (!val) return;
+          const key = String(val).trim().toUpperCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          const opt = document.createElement("option");
+          opt.value = val;
+          opt.textContent = val;
+          sel.appendChild(opt);
+        });
       }
 
       function filterReportingManager(query) {
@@ -4385,6 +4452,60 @@
         hideReportingDropdown();
       }
 
+      function _renderSolIdOptions(list) {
+        const dd = document.getElementById("new_emp_sol_id_dropdown");
+        if (!dd) return;
+        dd.innerHTML = "";
+        (list || []).forEach((code) => {
+          const item = document.createElement("div");
+          item.className = "sol-id-item";
+          item.dataset.value = code;
+          item.textContent = code;
+          item.style.cssText =
+            "padding:8px 12px; cursor:pointer; font-size:13px; border-bottom:1px solid #f1f5f9;";
+          item.onmouseover = () => (item.style.background = "#f0f2f8");
+          item.onmouseout = () => (item.style.background = "");
+          item.onmousedown = (ev) => {
+            ev.preventDefault();
+            selectSolId(code);
+          };
+          dd.appendChild(item);
+        });
+      }
+
+      function showSolIdDropdown() {
+        const dd = document.getElementById("new_emp_sol_id_dropdown");
+        if (!dd) return;
+        _renderSolIdOptions(window._solIdList || []);
+        dd.style.display = "block";
+      }
+
+      function filterSolId(query) {
+        const dd = document.getElementById("new_emp_sol_id_dropdown");
+        if (!dd) return;
+        if (!dd.hasChildNodes()) _renderSolIdOptions(window._solIdList || []);
+        dd.style.display = "block";
+        document.getElementById("new_emp_sol_id").value = "";
+        const q = (query || "").toLowerCase();
+        dd.querySelectorAll(".sol-id-item").forEach((item) => {
+          item.style.display = item.textContent.toLowerCase().includes(q)
+            ? ""
+            : "none";
+        });
+      }
+
+      function hideSolIdDropdown() {
+        const dd = document.getElementById("new_emp_sol_id_dropdown");
+        if (dd) dd.style.display = "none";
+      }
+
+      function selectSolId(code) {
+        document.getElementById("new_emp_sol_id").value = code;
+        document.getElementById("new_emp_sol_id_input").value = code;
+        hideSolIdDropdown();
+        handleBranchCodeChange(code);
+      }
+
       function filterExitEmp(query) {
         const dd = document.getElementById("exit_emp_dropdown");
         const items = dd.querySelectorAll(".exit-emp-item");
@@ -4412,6 +4533,11 @@
         document.getElementById("createEmployeeForm").reset();
         document.getElementById("new_emp_reports_to_input").value = "";
         document.getElementById("new_emp_reports_to").value = "";
+        const solInput = document.getElementById("new_emp_sol_id_input");
+        if (solInput) solInput.value = "";
+        const solHidden = document.getElementById("new_emp_sol_id");
+        if (solHidden) solHidden.value = "";
+        hideSolIdDropdown();
       }
 
       function validateName(value, fieldLabel) {
@@ -4541,10 +4667,19 @@
           if (details.branch)
             document.getElementById("new_emp_branch_name").value =
               details.branch;
-          if (details.zone)
-            document.getElementById("new_emp_zone").value = details.zone;
-          if (details.region)
-            document.getElementById("new_emp_region").value = details.region;
+          const setSel = (id, val) => {
+            const sel = document.getElementById(id);
+            if (!sel || !val) return;
+            if (![...sel.options].some((o) => o.value === val)) {
+              const opt = document.createElement("option");
+              opt.value = val;
+              opt.textContent = val;
+              sel.appendChild(opt);
+            }
+            sel.value = val;
+          };
+          setSel("new_emp_zone", details.zone);
+          setSel("new_emp_region", details.region);
           if (details.district)
             document.getElementById("new_emp_district").value =
               details.district;
@@ -4837,16 +4972,11 @@
               tab === "attendance" ? "inline-block" : "none";
           const btnImportEmployees =
             document.getElementById("btnImportEmployees");
-          const btnUpdateEmployees =
-            document.getElementById("btnUpdateEmployees");
           const btnFixDuplicateCodes = document.getElementById(
             "btnFixDuplicateCodes",
           );
           if (btnImportEmployees)
             btnImportEmployees.style.display =
-              tab === "attendance" ? "inline-block" : "none";
-          if (btnUpdateEmployees)
-            btnUpdateEmployees.style.display =
               tab === "attendance" && userRoles.includes("Administrator")
                 ? "inline-block"
                 : "none";
@@ -5359,17 +5489,13 @@
               currentTab === "attendance" ? "inline-block" : "none";
           const btnImportEmployees =
             document.getElementById("btnImportEmployees");
-          const btnUpdateEmployees =
-            document.getElementById("btnUpdateEmployees");
           const btnFixDuplicateCodes2 = document.getElementById(
             "btnFixDuplicateCodes",
           );
           if (btnImportEmployees)
             btnImportEmployees.style.display =
-              currentTab === "attendance" ? "inline-block" : "none";
-          if (btnUpdateEmployees)
-            btnUpdateEmployees.style.display =
-              currentTab === "attendance" && userRoles.includes("Administrator")
+              currentTab === "attendance" &&
+              userRoles.includes("Administrator")
                 ? "inline-block"
                 : "none";
           if (btnFixDuplicateCodes2)
@@ -5511,16 +5637,44 @@
         });
       }
 
-      function toggleBranchList(btn) {
-        const open = btn.dataset.open === "1";
-        document
-          .querySelectorAll("#branchLbList .hrdash-lb-extra")
-          .forEach((el) => (el.style.display = open ? "none" : "flex"));
-        const count = document.querySelectorAll(
-          "#branchLbList .hrdash-lb-extra",
-        ).length;
-        btn.dataset.open = open ? "0" : "1";
-        btn.textContent = open ? `View all (${count} more)` : "Show less";
+      function openBranchLeaderboard() {
+        const list = window._branchSorted || [];
+        const body = document.getElementById("branchLbModalBody");
+        if (!body) return;
+        const pc = (p) =>
+          p >= 90
+            ? { c: "#15803d", bg: "#dcfce7" }
+            : p >= 75
+              ? { c: "#b45309", bg: "#fef3c7" }
+              : { c: "#b91c1c", bg: "#fee2e2" };
+        body.innerHTML = list
+          .map((b, i) => {
+            const col = pc(b.att_pc || 0);
+            const label = b.branch_name
+              ? `${b.branch_name} (${b.branch})`
+              : b.branch || "Not Set";
+            const medal =
+              i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `#${i + 1}`;
+            return `
+                <div class="hrdash-lb-row">
+                    <div class="hrdash-lb-rank ${i < 3 ? "top" : ""}">${medal}</div>
+                    <div style="min-width:0; flex:1;">
+                        <div class="hrdash-pname">${label}</div>
+                        <div class="hrdash-hbar-track" style="margin-top:6px;">
+                            <div class="hrdash-hbar-fill" style="width:${b.att_pc}%; background:${col.c};"></div>
+                        </div>
+                        <div class="hrdash-pmeta" style="margin-top:4px;">${b.present}/${b.total} present</div>
+                    </div>
+                    <span class="hrdash-pc" style="background:${col.bg}; color:${col.c};">${b.att_pc}%</span>
+                </div>`;
+          })
+          .join("");
+        document.getElementById("branchLbModal").style.display = "flex";
+      }
+
+      function closeBranchLeaderboard() {
+        const m = document.getElementById("branchLbModal");
+        if (m) m.style.display = "none";
       }
 
       async function loadHRDashboard(month) {
@@ -5673,6 +5827,7 @@
         const branchSorted = [...(data.branch_wise || [])].sort(
           (a, b) => (b.att_pc || 0) - (a.att_pc || 0),
         );
+        window._branchSorted = branchSorted;
 
         const attPalette = {
           Present: "#22c55e",
@@ -5993,7 +6148,7 @@
                             .join("") +
                           `</div>` +
                           (branchSorted.length > 5
-                            ? `<button type="button" class="hrdash-viewall" data-open="0" onclick="toggleBranchList(this)">View all (${branchSorted.length - 5} more)</button>`
+                            ? `<button type="button" class="hrdash-viewall" onclick="openBranchLeaderboard()">View all (${branchSorted.length})</button>`
                             : "")
                         : `<div class="hrdash-empty">No branch data for this period.</div>`
                     }
