@@ -282,13 +282,13 @@ def create_support_staff(data):
     col_map = {
         "ctc": data.get("monthly_gross_salary"),
     }
-    # Auto-fetch zone/region/district from Sahayog Branch if sol_id provided
+    # Zone/Region/District: prefer user selection, fallback to branch master
     if data.get("sol_id") and frappe.db.exists("Sahayog Branch", data.get("sol_id")):
         branch_doc = frappe.db.get_value("Sahayog Branch", data.get("sol_id"),
             ["zone", "region", "district"], as_dict=True)
-        col_map["custom_zone"] = branch_doc.get("zone")
-        col_map["custom_region"] = branch_doc.get("region")
-        col_map["custom_district"] = branch_doc.get("district")
+        col_map["custom_zone"] = data.get("zone") or branch_doc.get("zone")
+        col_map["custom_region"] = data.get("region") or branch_doc.get("region")
+        col_map["custom_district"] = data.get("district_name") or branch_doc.get("district")
     else:
         col_map["custom_zone"] = data.get("zone")
         col_map["custom_region"] = data.get("region")
