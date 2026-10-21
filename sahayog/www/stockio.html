@@ -9212,6 +9212,7 @@
               <button
                 v-if="activeItem === 'Inward'"
                 class="btn-create-inline"
+                @click="showInwardBulkInsertModal = true"
                 style="
                   background: linear-gradient(135deg, #369696, #2c7a7a) !important;
                   border: none !important;
@@ -9486,6 +9487,91 @@
             <span>Download Template</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inward Bulk Insert Modal (file select only) -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showInwardBulkInsertModal"
+    @click.self="showInwardBulkInsertModal = false"
+  >
+    <div class="profile-modal" style="max-width: 560px;">
+      <div class="profile-modal-header">
+        <h3><i class="fas fa-file-upload" style="margin-right: 8px; color: #369696;"></i>Bulk Insert</h3>
+        <button class="profile-close" @click="showInwardBulkInsertModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px;">
+        <div class="form-group">
+          <label class="form-label">Select the File</label>
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+              padding: 22px;
+              border: 2px dashed var(--border-color);
+              border-radius: 10px;
+              cursor: pointer;
+              font-weight: 600;
+              color: var(--text-muted);
+              transition: all 0.2s;
+            "
+            onmouseover="this.style.borderColor='#369696';this.style.color='#369696'"
+            onmouseout="this.style.borderColor='';this.style.color=''"
+          >
+            <i class="fas fa-folder-open"></i>
+            <span>Choose File (.csv, .xlsx, .xls)</span>
+            <input
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              style="display: none;"
+              @change="onInwardBulkFileSelect($event)"
+            />
+          </label>
+        </div>
+
+        <!-- File Info: name + row count only -->
+        <div
+          v-if="inwardBulkInsertFileName"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-card);
+            margin-top: 4px;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+            <i class="fas fa-file-csv" style="color: #369696;"></i>
+            <span style="font-weight: 700; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              [[ inwardBulkInsertFileName ]]
+            </span>
+          </div>
+          <span
+            style="
+              flex-shrink: 0;
+              padding: 4px 14px;
+              border-radius: 20px;
+              background: rgba(54, 150, 150, 0.12);
+              border: 1px solid rgba(54, 150, 150, 0.3);
+              color: #369696;
+              font-weight: 800;
+              font-size: 0.85rem;
+            "
+          >
+            [[ inwardBulkInsertRowCount ]] Rows
+          </span>
+        </div>
+      </div>
+      <div class="profile-modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+        <button class="btn-create" @click="showInwardBulkInsertModal = false" style="padding: 10px 20px; border-radius: 6px;">Done</button>
       </div>
     </div>
   </div>
@@ -13999,6 +14085,9 @@
       scrappedSerialsList: [],
       showBulkAssetModal: false,
       showBulkAssetInsertModal: false,
+      showInwardBulkInsertModal: false,
+      inwardBulkInsertFileName: "",
+      inwardBulkInsertRowCount: 0,
       bulkInsertPreview: null,
       bulkInsertFileName: "",
       bulkInsertFileUrl: "",
@@ -16492,6 +16581,38 @@
           frappe.msgprint("Bulk update failed: " + (e.message || "Unknown error"));
         }
         event.target.value = "";
+      },
+      onInwardBulkFileSelect(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        this.inwardBulkInsertFileName = file.name;
+        this.inwardBulkInsertRowCount = 0;
+        const ext = (file.name.split(".").pop() || "").toLowerCase();
+        if (ext === "csv" || ext === "txt") {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const lines = String(e.target.result || "")
+              .split(/\r\n|\n|\r/)
+              .filter((l) => l.trim() !== "");
+            this.inwardBulkInsertRowCount = lines.length > 0 ? lines.length - 1 : 0;
+          };
+          reader.readAsText(file);
+        } else if (ext === "xlsx" || ext === "xls") {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+              const ws = wb.Sheets[wb.SheetNames[0]];
+              const ref = ws && ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : null;
+              // subtract header row
+              this.inwardBulkInsertRowCount = ref ? Math.max(0, ref.e.r - ref.s.r) : 0;
+            } catch (err) {
+              console.error("Bulk insert file parse error:", err);
+              this.inwardBulkInsertRowCount = 0;
+            }
+          };
+          reader.readAsArrayBuffer(file);
+        }
       },
       async downloadInsertTemplate() {
         let configTypes = [];
