@@ -9516,7 +9516,7 @@
     v-if="showInwardBulkInsertModal"
     @click.self="showInwardBulkInsertModal = false"
   >
-    <div class="profile-modal" style="max-width: 560px;">
+    <div class="profile-modal" style="max-width: 640px;">
       <div class="profile-modal-header">
         <h3><i class="fas fa-file-upload" style="margin-right: 8px; color: #369696;"></i>Bulk Insert</h3>
         <button class="profile-close" @click="showInwardBulkInsertModal = false">&times;</button>
@@ -9587,6 +9587,38 @@
           >
             [[ inwardBulkInsertRowCount ]] Rows
           </span>
+        </div>
+
+        <!-- Header Column Detection -->
+        <div
+          v-if="inwardBulkInsertFileName && inwardBulkHeaders.length"
+          style="margin-top: 16px;"
+        >
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">
+            Detected Columns
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div
+              v-for="t in inwardBulkHeaderTargets()"
+              :key="t.key"
+              style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); font-size: 0.82rem;"
+            >
+              <i
+                class="fas"
+                :class="inwardBulkDetected[t.key] ? 'fa-check-circle' : 'fa-times-circle'"
+                :style="{ color: inwardBulkDetected[t.key] ? '#10b981' : '#ef4444', flexShrink: 0 }"
+              ></i>
+              <span style="font-weight: 700; color: var(--text-main); flex-shrink: 0;">[[ t.label ]]</span>
+              <span
+                v-if="inwardBulkDetected[t.key]"
+                style="color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: auto;"
+                :title="inwardBulkDetected[t.key].header"
+              >
+                [[ inwardBulkDetected[t.key].header ]]
+              </span>
+              <span v-else style="color: #ef4444; font-weight: 600; margin-left: auto; flex-shrink: 0;">Missing</span>
+            </div>
+          </div>
         </div>
       </div>
       <div class="profile-modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
@@ -14107,6 +14139,8 @@
       showInwardBulkInsertModal: false,
       inwardBulkInsertFileName: "",
       inwardBulkInsertRowCount: 0,
+      inwardBulkHeaders: [],
+      inwardBulkDetected: {},
       bulkInsertPreview: null,
       bulkInsertFileName: "",
       bulkInsertFileUrl: "",
@@ -16679,11 +16713,34 @@
         }
         event.target.value = "";
       },
+      inwardBulkHeaderTargets() {
+        return [
+          { key: "supplier",      label: "Supplier",       aliases: ["supplier", "vendor"] },
+          { key: "invoice_date",  label: "Invoice Date",   aliases: ["invoicedate", "invdate", "billdate"] },
+          { key: "invoice_no",    label: "Invoice No",     aliases: ["invoiceno", "invoicenumber", "invno", "billno"] },
+          { key: "serial_no",     label: "Serial No",      aliases: ["serialno", "serial", "sn"] },
+          { key: "rate",          label: "Rate",           aliases: ["rate", "price", "unitprice", "amount"] },
+          { key: "item_code",     label: "Item Code",      aliases: ["itemcode", "item", "material", "sku", "productcode"] },
+          { key: "set_warehouse", label: "Set Warehouse",  aliases: ["setwarehouse", "warehouse", "store", "location"] },
+        ];
+      },
+      matchInwardHeader(headers) {
+        const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const normHeaders = (headers || []).map((h) => ({ raw: h, n: norm(h) }));
+        const detected = {};
+        for (const t of this.inwardBulkHeaderTargets()) {
+          const hit = normHeaders.find((h) => h.n && t.aliases.some((a) => h.n.includes(a)));
+          detected[t.key] = hit ? { header: hit.raw, label: t.label } : null;
+        }
+        return detected;
+      },
       onInwardBulkFileSelect(event) {
         const file = event.target.files && event.target.files[0];
         if (!file) return;
         this.inwardBulkInsertFileName = file.name;
         this.inwardBulkInsertRowCount = 0;
+        this.inwardBulkHeaders = [];
+        this.inwardBulkDetected = {};
         const ext = (file.name.split(".").pop() || "").toLowerCase();
         if (ext === "csv" || ext === "txt") {
           const reader = new FileReader();
@@ -16692,6 +16749,9 @@
               .split(/\r\n|\n|\r/)
               .filter((l) => l.trim() !== "");
             this.inwardBulkInsertRowCount = lines.length > 0 ? lines.length - 1 : 0;
+            // first non-empty line = header
+            this.inwardBulkHeaders = lines.length ? lines[0].split(",").map((c) => c.trim().replace(/^"|"$/g, "")) : [];
+            this.inwardBulkDetected = this.matchInwardHeader(this.inwardBulkHeaders);
           };
           reader.readAsText(file);
         } else if (ext === "xlsx" || ext === "xls") {
@@ -16703,9 +16763,15 @@
               const ref = ws && ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : null;
               // subtract header row
               this.inwardBulkInsertRowCount = ref ? Math.max(0, ref.e.r - ref.s.r) : 0;
+              const rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: "" });
+              const headerRow = rows.length ? rows[0] : [];
+              this.inwardBulkHeaders = headerRow.map((c) => String(c).trim());
+              this.inwardBulkDetected = this.matchInwardHeader(this.inwardBulkHeaders);
             } catch (err) {
               console.error("Bulk insert file parse error:", err);
               this.inwardBulkInsertRowCount = 0;
+              this.inwardBulkHeaders = [];
+              this.inwardBulkDetected = {};
             }
           };
           reader.readAsArrayBuffer(file);
