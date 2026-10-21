@@ -9210,6 +9210,21 @@
                 <span>Bulk Actions</span>
               </div>
               <button
+                v-if="activeItem === 'Inward'"
+                class="btn-create-inline"
+                style="
+                  background: linear-gradient(135deg, #369696, #2c7a7a) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 2px 8px rgba(54, 150, 150, 0.35) !important;
+                  font-weight: 700;
+                  margin-left: auto;
+                "
+              >
+                <i class="fas fa-file-import"></i>
+                <span>Bulk Insert</span>
+              </button>
+              <button
                 v-if="hasMore"
                 class="btn-load-more"
                 @click="loadMore()"
