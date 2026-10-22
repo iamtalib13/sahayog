@@ -9671,6 +9671,63 @@
             </div>
           </div>
         </div>
+        <!-- Inline Fix Editor for errored rows -->
+        <div
+          v-if="inwardBulkValidation && inwardBulkValidation.rowIssues && inwardBulkValidation.rowIssues.length"
+          style="margin-top: 16px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card); padding: 14px 16px;"
+        >
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 10px;">
+            Fix Records Inline (edits update instantly)
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto;">
+            <div
+              v-for="ri in inwardBulkValidation.rowIssues"
+              :key="'fix' + ri.line"
+              style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; background: var(--bg-surface);"
+            >
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+                <span style="font-weight: 800; color: #dc2626; font-size: 0.85rem;">Row [[ ri.line ]]</span>
+                <span style="color: var(--text-muted); font-size: 0.78rem;">([[ ri.item ]])</span>
+                <span style="color: #dc2626; font-size: 0.78rem; margin-left: auto;">[[ ri.issues.join(' · ') ]]</span>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+                <div v-if="findHeaderByAliases(['supplier','vendor'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Supplier</label>
+                  <select class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['supplier','vendor'])" @change="fixInwardRowField(ri.line, ['supplier','vendor'], $event.target.value)">
+                    <option value="">-- select --</option>
+                    <option v-for="s in suppliers" :value="s.name" :key="s.name">[[ s.name ]]</option>
+                  </select>
+                </div>
+                <div v-if="findHeaderByAliases(['invoiceno','invoicenumber','invno','billno'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Invoice No</label>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['invoiceno','invoicenumber','invno','billno'])" @change="fixInwardRowField(ri.line, ['invoiceno','invoicenumber','invno','billno'], $event.target.value)" />
+                </div>
+                <div v-if="findHeaderByAliases(['invoicedate','invdate','billdate'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Invoice Date</label>
+                  <input type="date" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['invoicedate','invdate','billdate'])" @change="fixInwardRowField(ri.line, ['invoicedate','invdate','billdate'], $event.target.value)" />
+                </div>
+                <div v-if="findHeaderByAliases(['setwarehouse','warehouse','store','location'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Warehouse</label>
+                  <select class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'])" @change="fixInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'], $event.target.value)">
+                    <option value="">-- select --</option>
+                    <option v-for="w in warehouses" :value="w" :key="w">[[ w ]]</option>
+                  </select>
+                </div>
+                <div v-if="findHeaderByAliases(['itemcode','item','material','sku','productcode'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Item Code</label>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixItems" :value="getInwardRowField(ri.line, ['itemcode','item','material','sku','productcode'])" @change="fixInwardRowField(ri.line, ['itemcode','item','material','sku','productcode'], $event.target.value)" />
+                </div>
+                <div v-if="findHeaderByAliases(['rate','price','unitprice','amount'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Rate</label>
+                  <input type="number" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['rate','price','unitprice','amount'])" @change="fixInwardRowField(ri.line, ['rate','price','unitprice','amount'], $event.target.value)" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <datalist id="inwardFixItems">
+            <option v-for="it in itemsList" :value="it.name" :key="it.name">[[ it.item_name ]]</option>
+          </datalist>
+        </div>
       </div>
       <div class="profile-modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
         <button
@@ -16817,6 +16874,24 @@
           if (n && (aliases || []).some((a) => n.includes(a))) return h;
         }
         return null;
+      },
+      getInwardRow(lineNo) {
+        const idx = (lineNo || 0) - 2;
+        return (this.inwardBulkRows || [])[idx] || null;
+      },
+      getInwardRowField(lineNo, aliases) {
+        const row = this.getInwardRow(lineNo);
+        if (!row) return "";
+        const h = this.findHeaderByAliases(aliases);
+        return h ? String(row[h] != null ? row[h] : "").trim() : "";
+      },
+      fixInwardRowField(lineNo, aliases, value) {
+        const row = this.getInwardRow(lineNo);
+        if (!row) return;
+        const h = this.findHeaderByAliases(aliases);
+        if (!h) return;
+        row[h] = /date/i.test(h) ? this.normalizeDateValue(value) : value;
+        this.validateInwardRows();
       },
       normalizeDateValue(v) {
         v = (v == null ? "" : String(v).trim());
