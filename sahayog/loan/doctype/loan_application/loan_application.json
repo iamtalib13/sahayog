@@ -163,7 +163,8 @@
    "description": "Unique Customer Identification File (CIF) ID.",
    "fieldname": "cif_id",
    "fieldtype": "Data",
-   "label": "CIF ID"
+   "label": "CIF ID",
+   "reqd": 1
   },
   {
    "allow_on_submit": 1,
