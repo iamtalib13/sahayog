@@ -47,6 +47,7 @@ frappe.ui.form.on("Loan Application", {
                     reject(); 
                     return;
                 }
+
             }
 
             // ==========================================
@@ -125,6 +126,21 @@ frappe.ui.form.on("Loan Application", {
                     // 3. Check Manual Verification Status (Mandatory for ALL rows)
                     if (row.status !== "Verified") {
                         errors.push(`<b>${doc_name}</b>: Status has not been marked as 'Verified'.`);
+                    }
+                });
+
+                // Stage-wise mandatory Gold Loan checklist (all must exist with a file)
+                const mandatory_docs = [
+                    "Aadhaar Card", "PAN Card", "Application Form", "Customer Signature",
+                    "Bureau Report", "Valuation Report Image", "Ornament Image",
+                    "Packet Image", "Pledge(Group) Image", "Loan Agreement", "Sanction Letter"
+                ];
+                mandatory_docs.forEach(doc_type => {
+                    let rows = (frm.doc.kyc_documents || []).filter(d => d.document_type === doc_type);
+                    if (!rows.length) {
+                        errors.push(`<b>${doc_type}</b>: Mandatory document row is missing.`);
+                    } else if (!rows.some(d => d.document_file)) {
+                        errors.push(`<b>${doc_type}</b>: Mandatory document attachment is missing.`);
                     }
                 });
 
@@ -472,7 +488,7 @@ frappe.ui.form.on("Loan Application", {
 
             if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
                 
-                let required_docs = ["Account Open Form", "Valuation Report Image", "Ornament Image"];
+                let required_docs = ["Account Open Form", "Valuation Report Image", "Ornament Image", "Packet Image", "Pledge(Group) Image"];
                 let val_errors = [];
 
                 // Loop through the required documents list
@@ -673,7 +689,7 @@ frappe.ui.form.on("Loan Application", {
     if (!frm.is_new() && frm.doc.lead_converter) {
       frappe.db.get_value("Employee", { user_id: frappe.session.user }, "name", (r) => {
         if (r && r.name && frm.doc.lead_converter !== r.name) {
-          const admin_roles = ["Administrator", "Credit Loan User", "System Manager"];
+          const admin_roles = ["Administrator", "Credit Loan User", "CPC Loan User", "System Manager"];
           if (!frappe.user_roles.some(role => admin_roles.includes(role))) {
             frm.disable_form();
             frm.page.clear_actions();
@@ -850,6 +866,65 @@ frappe.ui.form.on("Loan Application", {
       }, __("Update Loan Case"));
     }
 
+    // ==========================================
+    // MANAGE DOCUMENTS AFTER APPROVAL (Credit / CPC team)
+    // ==========================================
+    const can_manage_docs = frappe.user_roles.some(role => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(role));
+    if (!frm.is_new() && can_manage_docs && ["Approved", "Disbursed", "Closed"].includes(frm.doc.status)) {
+      frm.add_custom_button(__("Add Document"), function () {
+        let doc_type_options = (frappe.meta.get_docfield("Loan Document", "document_type").options || "")
+          .split("\n").map(t => t.trim()).filter(Boolean);
+        let d = new frappe.ui.Dialog({
+          title: __('Upload / Re-upload Document'),
+          fields: [
+            { label: __('Document Type'), fieldname: 'document_type', fieldtype: 'Select', options: doc_type_options, reqd: 1 },
+            { label: __('Document Number'), fieldname: 'document_number', fieldtype: 'Data' },
+            { label: __('Document File'), fieldname: 'document_file', fieldtype: 'Attach', reqd: 1 },
+            { label: __('Remark'), fieldname: 'remark', fieldtype: 'Small Text' }
+          ],
+          primary_action_label: __('Upload'),
+          primary_action(values) {
+            frappe.call({
+              method: 'sahayog.loan.doctype.loan_application.loan_application.add_document_after_approval',
+              args: {
+                docname: frm.doc.name,
+                document_type: values.document_type,
+                document_number: values.document_number,
+                document_file: values.document_file,
+                remark: values.remark
+              },
+              freeze: true,
+              freeze_message: __('Uploading Document...'),
+              callback: function (r) {
+                if (!r.exc) {
+                  frappe.show_alert({ message: __('Document uploaded successfully'), indicator: 'green' });
+                  d.hide();
+                  frm.reload_doc();
+                }
+              }
+            });
+          }
+        });
+        d.show();
+      }, __("Update Loan Case"));
+    }
+
+
+    // ==========================================
+    // AUTO-ADD: BUREAU REPORT (CREDIT CHECK)
+    // ==========================================
+    if (frm.doc.status === "Credit Check" && frm.doc.security_type === "Gold") {
+      let doc_type = "Bureau Report";
+      let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
+
+      if (!exists) {
+        let row = frm.add_child("kyc_documents");
+        row.document_type = doc_type;
+        row.status = "Pending";
+        frm.refresh_field("kyc_documents");
+        frm.save();
+      }
+    }
 
     // ==========================================
     // AUTO-ADD: ACCOUNT OPEN FORM
