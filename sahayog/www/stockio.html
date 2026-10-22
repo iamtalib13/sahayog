@@ -9620,6 +9620,57 @@
             </div>
           </div>
         </div>
+
+        <!-- Creation Feasibility Verdict -->
+        <div
+          v-if="inwardBulkValidation && inwardBulkInsertFileName"
+          style="margin-top: 16px; border-radius: 10px; border: 1px solid; overflow: hidden;"
+          :style="inwardBulkValidation.canCreate
+            ? 'border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08);'
+            : 'border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08);'"
+        >
+          <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-weight: 800; font-size: 0.9rem;">
+            <i
+              class="fas"
+              :class="inwardBulkValidation.canCreate ? 'fa-check-circle' : 'fa-times-circle'"
+              :style="{ color: inwardBulkValidation.canCreate ? '#10b981' : '#ef4444' }"
+            ></i>
+            <span :style="{ color: inwardBulkValidation.canCreate ? '#059669' : '#dc2626' }">
+              <span v-if="inwardBulkValidation.canCreate">
+                Can create — [[ inwardBulkValidation.rowCount ]] record(s) → [[ inwardBulkValidation.inwardCount ]] Inward entr[[ inwardBulkValidation.inwardCount === 1 ? 'y' : 'ies' ]]
+              </span>
+              <span v-else>
+                Cannot create — [[ inwardBulkValidation.rowIssues ? inwardBulkValidation.rowIssues.length : 0 ]] issue(s) found
+              </span>
+            </span>
+          </div>
+
+          <!-- Header-level errors (missing columns / no rows) -->
+          <div
+            v-if="inwardBulkValidation.errors && inwardBulkValidation.errors.length"
+            style="padding: 0 16px 10px 42px;"
+          >
+            <div v-for="(err, i) in inwardBulkValidation.errors" :key="'e' + i" style="font-size: 0.82rem; font-weight: 600; color: #dc2626; margin-top: 3px;">
+              [[ err ]]
+            </div>
+          </div>
+
+          <!-- Row-level issues -->
+          <div
+            v-if="inwardBulkValidation.rowIssues && inwardBulkValidation.rowIssues.length"
+            style="padding: 0 16px 12px 42px; max-height: 150px; overflow-y: auto;"
+          >
+            <div
+              v-for="ri in inwardBulkValidation.rowIssues"
+              :key="ri.line"
+              style="font-size: 0.8rem; margin-top: 4px; color: var(--text-main);"
+            >
+              <span style="font-weight: 800; color: #dc2626;">Row [[ ri.line ]]</span>
+              <span style="color: var(--text-muted);">([[ ri.item ]]):</span>
+              [[ ri.issues.join(' · ') ]]
+            </div>
+          </div>
+        </div>
       </div>
       <div class="profile-modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
         <button
@@ -14150,6 +14201,8 @@
       inwardBulkInsertRowCount: 0,
       inwardBulkHeaders: [],
       inwardBulkDetected: {},
+      inwardBulkRows: [],
+      inwardBulkValidation: null,
       bulkInsertPreview: null,
       bulkInsertFileName: "",
       bulkInsertFileUrl: "",
@@ -16729,6 +16782,7 @@
           { key: "invoice_no",    label: "Invoice No",     aliases: ["invoiceno", "invoicenumber", "invno", "billno"] },
           { key: "serial_no",     label: "Serial No",      aliases: ["serialno", "serial", "sn"] },
           { key: "rate",          label: "Rate",           aliases: ["rate", "price", "unitprice", "amount"] },
+          { key: "qty",           label: "Qty",            aliases: ["qty", "quantity", "units", "noofunits"] },
           { key: "item_code",     label: "Item Code",      aliases: ["itemcode", "item", "material", "sku", "productcode"] },
           { key: "set_warehouse", label: "Set Warehouse",  aliases: ["setwarehouse", "warehouse", "store", "location"] },
         ];
@@ -16750,6 +16804,8 @@
         this.inwardBulkInsertRowCount = 0;
         this.inwardBulkHeaders = [];
         this.inwardBulkDetected = {};
+        this.inwardBulkRows = [];
+        this.inwardBulkValidation = null;
         const ext = (file.name.split(".").pop() || "").toLowerCase();
         if (ext === "csv" || ext === "txt") {
           const reader = new FileReader();
@@ -16761,6 +16817,14 @@
             // first non-empty line = header
             this.inwardBulkHeaders = lines.length ? lines[0].split(",").map((c) => c.trim().replace(/^"|"$/g, "")) : [];
             this.inwardBulkDetected = this.matchInwardHeader(this.inwardBulkHeaders);
+            // data rows as objects keyed by header
+            this.inwardBulkRows = lines.slice(1).map((line) => {
+              const cells = line.split(",");
+              const obj = {};
+              this.inwardBulkHeaders.forEach((h, i) => { obj[h] = (cells[i] || "").trim().replace(/^"|"$/g, ""); });
+              return obj;
+            });
+            this.validateInwardRows();
           };
           reader.readAsText(file);
         } else if (ext === "xlsx" || ext === "xls") {
@@ -16770,21 +16834,98 @@
               const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
               const ws = wb.Sheets[wb.SheetNames[0]];
               const ref = ws && ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : null;
-              // subtract header row
-              this.inwardBulkInsertRowCount = ref ? Math.max(0, ref.e.r - ref.s.r) : 0;
               const rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: "" });
               const headerRow = rows.length ? rows[0] : [];
               this.inwardBulkHeaders = headerRow.map((c) => String(c).trim());
               this.inwardBulkDetected = this.matchInwardHeader(this.inwardBulkHeaders);
+              const dataRows = rows.slice(1).filter((r) => r.some((c) => String(c).trim() !== ""));
+              this.inwardBulkInsertRowCount = dataRows.length;
+              this.inwardBulkRows = dataRows.map((r) => {
+                const obj = {};
+                this.inwardBulkHeaders.forEach((h, i) => { obj[h] = r[i] != null ? String(r[i]).trim() : ""; });
+                return obj;
+              });
+              this.validateInwardRows();
             } catch (err) {
               console.error("Bulk insert file parse error:", err);
               this.inwardBulkInsertRowCount = 0;
               this.inwardBulkHeaders = [];
               this.inwardBulkDetected = {};
+              this.inwardBulkRows = [];
+              this.inwardBulkValidation = { canCreate: false, errors: ["Could not read/parse the file."] };
             }
           };
           reader.readAsArrayBuffer(file);
         }
+      },
+      // Check whether the loaded rows can actually create records
+      async validateInwardRows() {
+        const D = this.inwardBulkDetected || {};
+        const rows = this.inwardBulkRows || [];
+        const col = (key) => (D[key] ? D[key].header : null);
+        const get = (r, key) => { const c = col(key); return c ? String(r[c] != null ? r[c] : "").trim() : ""; };
+        const errors = [];
+        const out = { canCreate: false, errors: [], rowIssues: [], inwardCount: 0, rowCount: rows.length };
+
+        // 1) required columns present?
+        ["supplier", "invoice_no", "invoice_date", "set_warehouse", "item_code", "qty", "rate"].forEach((k) => {
+          if (!D[k]) errors.push(`Missing column: ${D[k] ? "" : (this.inwardBulkHeaderTargets().find(t => t.key === k) || {}).label}`);
+        });
+        if (errors.length) {
+          errors[0] = errors[0].replace("Missing column: ", "Missing column: ");
+          out.errors = errors;
+          this.inwardBulkValidation = out;
+          return;
+        }
+
+        // 2) load master data to verify supplier/item/warehouse exist
+        try { await this.fetchItemGroupsAndDepartments(); } catch (e) { /* fall back to empty lists */ }
+        const supNames = new Set((this.suppliers || []).map(s => String(s.name || "").toLowerCase()));
+        const itemNames = new Set((this.itemsList || []).map(i => String(i.name || "").toLowerCase()));
+        const whNames = new Set((this.warehouses || []).map(w => String(w.name || w).toLowerCase()));
+
+        const invoiceNos = new Set();
+        rows.forEach((r, idx) => {
+          const lineNo = idx + 2; // 1-based + header
+          const issues = [];
+          const sup = get(r, "supplier");
+          const invNo = get(r, "invoice_no");
+          const invDate = get(r, "invoice_date");
+          const wh = get(r, "set_warehouse");
+          const item = get(r, "item_code");
+          const qty = get(r, "qty");
+          const rate = get(r, "rate");
+
+          if (!sup) issues.push("Supplier empty");
+          else if (supNames.size && !supNames.has(sup.toLowerCase())) issues.push(`Supplier not found: ${sup}`);
+
+          if (!invNo) issues.push("Invoice No empty");
+          else invoiceNos.add(invNo);
+
+          if (!invDate) issues.push("Invoice Date empty");
+          else if (isNaN(Date.parse(invDate))) issues.push(`Invalid date: ${invDate}`);
+
+          if (!wh) issues.push("Warehouse empty");
+          else if (whNames.size && !whNames.has(wh.toLowerCase())) issues.push(`Warehouse not found: ${wh}`);
+
+          if (!item) issues.push("Item Code empty");
+          else if (itemNames.size && !itemNames.has(item.toLowerCase())) issues.push(`Item not found: ${item}`);
+
+          const q = Number(qty);
+          if (!qty || isNaN(q) || q <= 0) issues.push(`Qty must be > 0 (got "${qty}")`);
+
+          const rt = Number(rate);
+          if (rate === "" || isNaN(rt) || rt < 0) issues.push(`Rate invalid (got "${rate}")`);
+
+          if (issues.length) out.rowIssues.push({ line: lineNo, item: item || "-", issues });
+        });
+
+        out.inwardCount = invoiceNos.size;
+        out.validRows = out.rowCount - out.rowIssues.length;
+        out.canCreate = out.rowIssues.length === 0 && out.rowCount > 0;
+        if (out.rowCount === 0) out.errors.push("File has no data rows.");
+        if (out.rowIssues.length) out.errors.push(`${out.rowIssues.length} of ${out.rowCount} row(s) cannot be created.`);
+        this.inwardBulkValidation = out;
       },
       async downloadInsertTemplate() {
         let configTypes = [];
