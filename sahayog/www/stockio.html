@@ -9682,7 +9682,19 @@
           <i class="fas fa-download"></i>
           <span>Download Template</span>
         </button>
-        <button class="btn-create" @click="showInwardBulkInsertModal = false" style="padding: 10px 20px; border-radius: 6px;">Done</button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-cancel" @click="showInwardBulkInsertModal = false" style="padding: 8px 16px; font-size: 0.85rem;">Cancel</button>
+          <button
+            class="btn-create"
+            :disabled="creatingBulkInward || (inwardBulkValidation && !inwardBulkValidation.canCreate)"
+            @click="bulkCreateInward()"
+            style="padding: 8px 20px; border-radius: 6px;"
+          >
+            <i class="fas fa-spinner fa-spin" v-if="creatingBulkInward"></i>
+            <i class="fas fa-layer-group" v-else></i>
+            <span>[[ creatingBulkInward ? 'Creating...' : 'Bulk Creation' ]]</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -14203,6 +14215,7 @@
       inwardBulkDetected: {},
       inwardBulkRows: [],
       inwardBulkValidation: null,
+      creatingBulkInward: false,
       bulkInsertPreview: null,
       bulkInsertFileName: "",
       bulkInsertFileUrl: "",
@@ -16964,6 +16977,176 @@
         link.click();
         URL.revokeObjectURL(url);
       },
+      async bulkCreateInward() {
+        if (this.creatingBulkInward) return;
+        if (this.inwardBulkValidation && !this.inwardBulkValidation.canCreate) {
+          frappe.msgprint("Cannot create — fix the issues listed first.");
+          return;
+        }
+        const rows = this.inwardBulkRows || [];
+        if (!rows.length) { frappe.msgprint("No data rows to create."); return; }
+
+        const D = this.inwardBulkDetected || {};
+        const col = (key) => (D[key] ? D[key].header : null);
+        const get = (r, key) => { const c = col(key); return c ? String(r[c] != null ? r[c] : "").trim() : ""; };
+        const flatGet = (r, aliases) => { const h = this.findHeaderByAliases(aliases); return h ? String(r[h] != null ? r[h] : "").trim() : ""; };
+        const buildSerialConfigTable = (r) => [
+          { config_type: "MAC Address", config_value: flatGet(r, ["macaddress", "mac"]) },
+          { config_type: "Make", config_value: flatGet(r, ["make"]) },
+          { config_type: "Model Number", config_value: flatGet(r, ["modelnumber", "model"]) },
+          { config_type: "Processor", config_value: flatGet(r, ["processor"]) },
+          { config_type: "RAM", config_value: flatGet(r, ["ram"]) },
+          { config_type: "Storage", config_value: flatGet(r, ["storage"]) },
+          { config_type: "Operating System", config_value: flatGet(r, ["operatingsystem", "os"]) },
+          { config_type: "Windows Key", config_value: flatGet(r, ["windowskey", "winkey"]) },
+          { config_type: "Office Key", config_value: flatGet(r, ["officekey"]) },
+          { config_type: "Warranty start date", config_value: flatGet(r, ["warrantystartdate", "warrantystart"]) },
+          { config_type: "Warranty end date", config_value: flatGet(r, ["warrantyenddate", "warrantyend"]) },
+        ].filter((x) => x.config_value);
+
+        // group rows by invoice no
+        const groups = new Map();
+        for (const r of rows) {
+          const inv = get(r, "invoice_no") || "__none__";
+          if (!groups.has(inv)) groups.set(inv, []);
+          groups.get(inv).push(r);
+        }
+
+        this.creatingBulkInward = true;
+        const createdPRs = [];
+        const errors = [];
+        try {
+          for (const [invNo, grows] of groups) {
+            try {
+              const first = grows[0];
+              const supplier = get(first, "supplier");
+              const warehouse = get(first, "set_warehouse");
+              const invoiceDate = get(first, "invoice_date");
+
+              let company = "";
+              try {
+                const compRes = await frappe.call({ method: "sahayog.procurement.api.stock_balance_ledger.get_warehouse_company", args: { warehouse } });
+                company = compRes.message || "";
+              } catch (e) { /* ignore */ }
+              if (!company) company = "Sahayog Multistate Credit Co-op Society Ltd";
+
+              const items = [];
+              for (const r of grows) {
+                const itemCode = get(r, "item_code");
+                if (!itemCode) continue;
+                let uom = "";
+                try {
+                  const u = await frappe.call({ method: "frappe.client.get_value", args: { doctype: "Item", filters: { name: itemCode }, fieldname: "stock_uom" } });
+                  if (u.message) uom = u.message.stock_uom;
+                } catch (e) { /* ignore */ }
+
+                const qty = Number(get(r, "qty")) || 1;
+                const rate = Number(get(r, "rate")) || 0;
+                const serialNo = get(r, "serial_no");
+                const serialNames = [];
+                let bundleName = null;
+
+                if (serialNo) {
+                  // 1) create Serial No
+                  try {
+                    const serialDoc = {
+                      doctype: "Serial No",
+                      serial_no: serialNo,
+                      item_code: itemCode,
+                      warehouse: warehouse,
+                      purchase_rate: rate,
+                      status: "Active",
+                      company: company,
+                      purchase_document_no: invNo,
+                      warranty_expiry_date: flatGet(r, ["warrantyenddate", "warrantyend"]) || null,
+                      configuration_table: buildSerialConfigTable(r),
+                    };
+                    const sRes = await frappe.call({ method: "frappe.client.insert", args: { doc: serialDoc } });
+                    if (sRes.message && sRes.message.name) serialNames.push(sRes.message.name);
+                  } catch (e) {
+                    console.error("Serial No creation failed", serialNo, e);
+                    frappe.msgprint(`Serial No ${serialNo} failed: ${e.message || e}`);
+                  }
+                  // 2) create Serial and Batch Bundle
+                  if (serialNames.length) {
+                    try {
+                      const bRes = await frappe.call({
+                        method: "frappe.client.insert",
+                        args: {
+                          doc: {
+                            doctype: "Serial and Batch Bundle",
+                            item_code: itemCode,
+                            type_of_transaction: "Inward",
+                            voucher_type: "Purchase Receipt",
+                            warehouse: warehouse,
+                            entries: serialNames.map((sn) => ({ serial_no: sn, warehouse: warehouse, qty: 1 })),
+                          },
+                        },
+                      });
+                      if (bRes.message && bRes.message.name) bundleName = bRes.message.name;
+                    } catch (e) {
+                      console.error("Bundle creation failed", serialNo, e);
+                    }
+                  }
+                }
+
+                items.push({
+                  item_code: itemCode,
+                  description: get(r, "description") || undefined,
+                  qty: serialNames.length ? serialNames.length : qty,
+                  uom: uom || undefined,
+                  warehouse: warehouse,
+                  rate: rate,
+                  serial_and_batch_bundle: bundleName || undefined,
+                });
+              }
+
+              const doc = {
+                doctype: "Purchase Receipt",
+                company: company,
+                supplier: supplier,
+                custom_invoice_number: invNo === "__none__" ? "" : invNo,
+                custom_invoice_date: invoiceDate || null,
+                posting_date: invoiceDate || frappe.datetime.now_date(),
+                set_warehouse: warehouse,
+                items: items,
+              };
+
+              const res = await frappe.call({ method: "frappe.client.insert", args: { doc } });
+              if (res.message && res.message.name) {
+                const prName = res.message.name;
+                // submit
+                try {
+                  await frappe.call({ method: "frappe.client.submit", args: { doc: res.message } });
+                } catch (e) {
+                  console.error("Submit failed", prName, e);
+                  frappe.msgprint(`Created ${prName} as draft (submit failed: ${e.message || e})`);
+                }
+                createdPRs.push(prName);
+              }
+            } catch (e) {
+              console.error("Inward creation failed for", invNo, e);
+              errors.push(`${invNo}: ${e.message || e}`);
+            }
+          }
+
+          if (createdPRs.length) {
+            frappe.show_alert({ message: `${createdPRs.length} Inward(s) created: ${createdPRs.join(", ")}`, indicator: "green" }, 10);
+            await this.fetchData("Purchase Receipt");
+            this.showInwardBulkInsertModal = false;
+            this.inwardBulkInsertFileName = "";
+            this.inwardBulkRows = [];
+            this.inwardBulkValidation = null;
+            this.inwardBulkHeaders = [];
+            this.inwardBulkDetected = {};
+          }
+          if (errors.length) {
+            frappe.msgprint({ title: "Some inwards failed", message: errors.join("<br>"), indicator: "red" });
+          }
+        } finally {
+          this.creatingBulkInward = false;
+        }
+      },
       async downloadInwardTemplate() {
         // Pull REAL master data so the sample row is valid & usable.
         // Nothing is written to any doctype — it all only goes into the file.
@@ -16972,60 +17155,37 @@
         }
         const pick = (arr) => (arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null);
 
-        // Supplier (real)
         const sup = pick(this.suppliers) || {};
         const supplierName = sup.name || sup.supplier_name || "";
 
-        // Item (real code + name)
         const item = pick(this.itemsList) || {};
         const itemCode = item.name || "";
         const itemName = item.item_name || "";
 
-        // Warehouse (real)
         const warehouseName = pick(this.warehouses) || "";
 
-        // Rate = the item's real valuation_rate (never touches the doctype)
         let rate = "";
         if (itemCode) {
           try {
-            const r = await frappe.call({
-              method: "frappe.client.get_value",
-              args: { doctype: "Item", filters: { name: itemCode }, fieldname: "valuation_rate" },
-            });
+            const r = await frappe.call({ method: "frappe.client.get_value", args: { doctype: "Item", filters: { name: itemCode }, fieldname: "valuation_rate" } });
             if (r.message && r.message.valuation_rate != null) rate = String(r.message.valuation_rate);
           } catch (e) { /* leave blank */ }
         }
 
-        // Realistic serial + warranty dates
         const today = new Date();
         const iso = (d) => d.toISOString().slice(0, 10);
         const warrantyStart = iso(today);
         const warrantyEnd = iso(new Date(today.getFullYear() + 3, today.getMonth(), today.getDate() - 1));
         const serialNo = "SN" + today.getFullYear() + String(Math.floor(Math.random() * 900000) + 100000);
-        const mac = Array.from({ length: 6 }, () =>
-          Math.floor(Math.random() * 256).toString(16).padStart(2, "0").toUpperCase()
-        ).join(":");
+        const mac = Array.from({ length: 6 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, "0").toUpperCase()).join(":");
 
-        // Inward (Purchase Receipt) header-level fields
-        const inwardHeaders = [
-          "Supplier", "Invoice No", "Invoice Date", "Set Warehouse",
-          "Item Code", "Description", "Qty", "Rate",
-        ];
-        // Serial No creation child-table fields
-        const serialHeaders = [
-          "Serial No", "MAC Address", "Make", "Model Number", "Processor", "RAM",
-          "Storage", "Operating System", "Windows Key", "Office Key",
-          "Warranty Start Date", "Warranty End Date",
-        ];
+        const inwardHeaders = ["Supplier", "Invoice No", "Invoice Date", "Set Warehouse", "Item Code", "Description", "Qty", "Rate"];
+        const serialHeaders = ["Serial No", "MAC Address", "Make", "Model Number", "Processor", "RAM", "Storage", "Operating System", "Windows Key", "Office Key", "Warranty Start Date", "Warranty End Date"];
         const headers = [...inwardHeaders, ...serialHeaders];
         const example = [
-          // Inward example (real supplier / item / warehouse / rate)
           supplierName, "INV-2024-0001", iso(today), warehouseName,
           itemCode, itemName, "1", rate,
-          // Serial No child-table example (realistic values)
-          serialNo, mac, "", "", "", "",
-          "", "", "", "",
-          warrantyStart, warrantyEnd,
+          serialNo, mac, "", "", "", "", "", "", "", "", warrantyStart, warrantyEnd,
         ];
         const csv = headers.join(",") + "\n" + example.join(",") + "\n";
         const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
