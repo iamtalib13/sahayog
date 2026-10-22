@@ -16930,7 +16930,7 @@
         const itemNames = new Set((this.itemsList || []).map(i => String(i.name || "").toLowerCase()));
         const whNames = new Set((this.warehouses || []).map(w => String(w.name || w).toLowerCase()));
 
-        const invoiceNos = new Set();
+        const invoiceKeys = new Set();
         rows.forEach((r, idx) => {
           const lineNo = idx + 2; // 1-based + header
           const issues = [];
@@ -16946,7 +16946,7 @@
           else if (supNames.size && !supNames.has(sup.toLowerCase())) issues.push(`Supplier not found: ${sup}`);
 
           if (!invNo) issues.push("Invoice No empty");
-          else invoiceNos.add(invNo);
+          else invoiceKeys.add([sup, invNo, invDate].join("||"));
 
           if (!invDate) issues.push("Invoice Date empty");
           else if (isNaN(Date.parse(invDate))) issues.push(`Invalid date: ${invDate}`);
@@ -16966,7 +16966,7 @@
           if (issues.length) out.rowIssues.push({ line: lineNo, item: item || "-", issues });
         });
 
-        out.inwardCount = invoiceNos.size;
+        out.inwardCount = invoiceKeys.size;
         out.validRows = out.rowCount - out.rowIssues.length;
         out.canCreate = out.rowIssues.length === 0 && out.rowCount > 0;
         if (out.rowCount === 0) out.errors.push("File has no data rows.");
