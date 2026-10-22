@@ -48,6 +48,18 @@ frappe.ui.form.on("Loan Application", {
                     return;
                 }
 
+                // Bureau Report must be uploaded before accepting Credit Check
+                let bureau_row = (frm.doc.kyc_documents || []).find(d => d.document_type === "Bureau Report");
+                if (!bureau_row || !bureau_row.document_file) {
+                    frappe.msgprint({
+                        title: __('Bureau Report Required'),
+                        indicator: 'red',
+                        message: __('Please upload the <b>Bureau Report</b> before accepting the Credit Check.')
+                    });
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
             }
 
             // ==========================================
