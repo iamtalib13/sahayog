@@ -8402,58 +8402,34 @@
           class="list-view-container"
           :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
         >
-          <!-- Branch Expance (static requirements list) -->
+          <!-- Branch Expance (branch-wise monthly expense + unused requested) -->
           <div
             v-if="activeItem === 'Branch Expance'"
             style="padding: 24px; overflow: auto; height: 100%;"
           >
             <h2 style="margin: 0 0 16px 0; font-weight: 800; color: var(--text-main);">Branch Expance</h2>
-            <table class="items-table" style="width: 100%;">
-              <thead>
-                <tr>
-                  <th style="padding: 10px 12px;">#</th>
-                  <th style="padding: 10px 12px;">Title</th>
-                  <th style="padding: 10px 12px;">Type</th>
-                  <th style="padding: 10px 12px;">Problem</th>
-                  <th style="padding: 10px 12px;">Action</th>
-                  <th style="padding: 10px 12px;">Requirement</th>
-                  <th style="padding: 10px 12px;">Purpose</th>
-                  <th style="padding: 10px 12px;">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="padding: 10px 12px;">1</td>
-                  <td style="padding: 10px 12px; font-weight: 700;">Month-wise Proforma Report</td>
-                  <td style="padding: 10px 12px;">Enhancement</td>
-                  <td style="padding: 10px 12px;">Month-wise report is not available for each branch.</td>
-                  <td style="padding: 10px 12px;">Add month-wise reporting.</td>
-                  <td style="padding: 10px 12px;">Provide a month-wise Proforma Report for every branch.</td>
-                  <td style="padding: 10px 12px;">For monthly review.</td>
-                  <td style="padding: 10px 12px;"><span class="badge pending">Inprogress</span></td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 12px;">4</td>
-                  <td style="padding: 10px 12px; font-weight: 700;">Monthly Report in PDF Format</td>
-                  <td style="padding: 10px 12px;">Enhancement</td>
-                  <td style="padding: 10px 12px;">Monthly reports are required in PDF format for audit purposes.</td>
-                  <td style="padding: 10px 12px;">Provide an option to generate and download monthly reports in PDF format.</td>
-                  <td style="padding: 10px 12px;">Enable PDF generation and download for monthly reports for audit and documentation purposes.</td>
-                  <td style="padding: 10px 12px;">For monthly audit and record-keeping.</td>
-                  <td style="padding: 10px 12px;"><span class="badge pending">Inprogress</span></td>
-                </tr>
-                <tr>
-                  <td style="padding: 10px 12px;">3</td>
-                  <td style="padding: 10px 12px; font-weight: 700;">Stationery Expense Code &amp; Report</td>
-                  <td style="padding: 10px 12px;">New Requirement</td>
-                  <td style="padding: 10px 12px;">Branch-wise and warehouse-wise expense tracking is required.</td>
-                  <td style="padding: 10px 12px;">Create separate expense codes and a report.</td>
-                  <td style="padding: 10px 12px;">Provide separate stationery expense codes and a monthly expense report for each branch and warehouse.</td>
-                  <td style="padding: 10px 12px;">For monthly expense tracking.</td>
-                  <td style="padding: 10px 12px;"><span class="badge pending">Inprogress</span></td>
-                </tr>
-              </tbody>
-            </table>
+            <div v-if="branchExpenseLoading" style="color: var(--text-muted); padding: 20px;">Loading...</div>
+            <div v-else-if="branchExpenseReport && branchExpenseReport.branches && branchExpenseReport.branches.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%; min-width: 700px;">
+                <thead>
+                  <tr>
+                    <th style="padding: 10px 12px;">Branch</th>
+                    <th style="padding: 10px 12px;">SOL ID</th>
+                    <th style="padding: 10px 12px;" v-for="m in branchExpenseReport.months" :key="m">[[ m ]]</th>
+                    <th style="padding: 10px 12px;">Unused Requested</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="b in branchExpenseReport.branches" :key="b.sol_id">
+                    <td style="padding: 10px 12px; font-weight: 700;">[[ b.branch ]]</td>
+                    <td style="padding: 10px 12px;">[[ b.sol_id ]]</td>
+                    <td style="padding: 10px 12px; text-align: right;" v-for="m in branchExpenseReport.months" :key="m">[[ (b.monthly_expense[m] || 0).toLocaleString() ]]</td>
+                    <td style="padding: 10px 12px; text-align: center;">[[ b.unused_requested ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); padding: 20px;">No branch data.</div>
           </div>
 
           <!-- Analytics Dashboard -->
@@ -14332,6 +14308,8 @@
       creatingBulkInward: false,
       collapsedFixRows: [],
       fixedFixLines: [],
+      branchExpenseReport: null,
+      branchExpenseLoading: false,
       collapsedFixRows: [],
       bulkInsertPreview: null,
       bulkInsertFileName: "",
@@ -15471,6 +15449,10 @@
 
         if (item.label === "Branch Stock") {
           this.branchStockFilter = "My Stock";
+        }
+
+        if (item.label === "Branch Expance") {
+          this.fetchBranchExpenseReport();
         }
 
         if (item.label === "Serial No") {
@@ -17370,6 +17352,21 @@
         this.creatingBulkInward = false;
         this.collapsedFixRows = [];
         this.fixedFixLines = [];
+      },
+      async fetchBranchExpenseReport() {
+        this.branchExpenseLoading = true;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_branch_expense_report",
+            args: { months: 6 },
+          });
+          this.branchExpenseReport = res.message || null;
+        } catch (e) {
+          console.error("Branch expense report error:", e);
+          this.branchExpenseReport = null;
+        } finally {
+          this.branchExpenseLoading = false;
+        }
       },
       async downloadInwardTemplate() {
         // Pull REAL master data so the sample row is valid & usable.

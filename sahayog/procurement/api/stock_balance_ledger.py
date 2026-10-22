@@ -1404,3 +1404,87 @@ def get_inward_list(limit=20, start=0, search_text=None, receipt=None, supplier=
         "total": total_count
     }
 
+
+
+@frappe.whitelist()
+def get_branch_expense_report(months=6):
+    """Return branch-wise monthly expense (from Purchase Receipts) and unused requested items (from EMMR)."""
+    from datetime import date
+    from collections import defaultdict
+    import calendar
+
+    months = int(months) if months else 6
+    today = date.today()
+    month_list = []
+    y, m = today.year, today.month
+    for i in range(months):
+        month_list.append(f"{y:04d}-{m:02d}")
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    month_list.reverse()
+
+    branches = frappe.get_all("Sahayog Branch", fields=["name", "branch", "sol_id", "branch_type"], limit_page_length=0)
+    sol_to_branch = {}
+    for b in branches:
+        if b.sol_id:
+            sol_to_branch[b.sol_id] = b
+
+    start_date = f"{month_list[0]}-01"
+    last_y, last_m = today.year, today.month
+    last_day = calendar.monthrange(last_y, last_m)[1]
+    end_date = f"{last_y:04d}-{last_m:02d}-{last_day:02d}"
+
+    expense_map = defaultdict(lambda: defaultdict(float))
+    pr_items = frappe.db.sql("""
+        SELECT pr.set_warehouse AS warehouse, pr.posting_date, pri.qty, pri.rate
+        FROM `tabPurchase Receipt` pr
+        JOIN `tabPurchase Receipt Item` pri ON pri.parent = pr.name
+        WHERE pr.docstatus = 1
+          AND pr.posting_date BETWEEN %s AND %s
+    """, (start_date, end_date), as_dict=True)
+    for row in pr_items:
+        wh = row.get("warehouse")
+        if not wh or wh not in sol_to_branch:
+            continue
+        pd = row.get("posting_date")
+        if isinstance(pd, str):
+            mo = pd[:7]
+        else:
+            mo = pd.strftime("%Y-%m")
+        amt = (row.get("qty") or 0) * (row.get("rate") or 0)
+        expense_map[wh][mo] += amt
+
+    unused_map = defaultdict(int)
+    emrs = frappe.get_all("Employee Material Request",
+        filters={"status": ["in", ["Approved", "Partially Dispatched"]]},
+        fields=["name", "employee"], limit_page_length=0)
+    for emr in emrs:
+        emp = frappe.get_value("Employee", emr.employee, ["sol_id"], as_dict=True) if emr.employee else None
+        sol = emp.sol_id if emp else None
+        if not sol or sol not in sol_to_branch:
+            continue
+        items = frappe.get_all("Material Request Items", filters={"parent": emr.name}, fields=["item_code", "quantity", "approved_quantity", "available_qty", "status"])
+        for it in items:
+            # Unused = requested/approved but not yet Received
+            st = (it.status or "").strip()
+            if st in ("Received", "Rejected"):
+                continue
+            unused_map[sol] += 1
+
+    result = []
+    for b in branches:
+        sol = b.sol_id
+        if not sol:
+            continue
+        monthly = {m: round(expense_map.get(sol, {}).get(m, 0), 2) for m in month_list}
+        result.append({
+            "branch": b.branch,
+            "sol_id": sol,
+            "branch_type": b.branch_type,
+            "monthly_expense": monthly,
+            "unused_requested": unused_map.get(sol, 0),
+        })
+
+    return {"months": month_list, "branches": result}
