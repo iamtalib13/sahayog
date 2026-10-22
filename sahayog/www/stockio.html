@@ -9666,7 +9666,7 @@
         </div>
         <!-- Inline Fix Editor for errored rows -->
         <div
-          v-if="inwardBulkValidation && inwardBulkValidation.rowIssues && inwardBulkValidation.rowIssues.length"
+          v-if="inwardBulkValidation && getFixEditorRows().length"
           style="margin-top: 16px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card); padding: 14px 16px;"
         >
           <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 10px;">
@@ -9674,7 +9674,7 @@
           </div>
           <div style="display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto;">
             <div
-              v-for="ri in inwardBulkValidation.rowIssues"
+              v-for="ri in getFixEditorRows()"
               :key="'fix' + ri.line"
               style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; background: var(--bg-surface);"
             >
@@ -9683,36 +9683,37 @@
                 @click="toggleFixRow(ri.line)"
               >
                 <i class="fas" :class="collapsedFixRows.includes(ri.line) ? 'fa-chevron-right' : 'fa-chevron-down'" style="font-size: 0.7rem; color: var(--text-muted);"></i>
-                <span style="font-weight: 800; color: #dc2626; font-size: 0.85rem;">Row [[ ri.line ]]</span>
+                <span style="font-weight: 800; color: #dc2626; font-size: 0.85rem;" v-if="!ri.fixed">Row [[ ri.line ]]</span>
+                <span style="font-weight: 800; color: #059669; font-size: 0.85rem;" v-if="ri.fixed">Row [[ ri.line ]] ✓ Fixed</span>
                 <span style="color: var(--text-muted); font-size: 0.78rem;">([[ ri.item ]])</span>
-                <span style="color: #dc2626; font-size: 0.78rem; margin-left: auto;">[[ ri.issues.join(' · ') ]]</span>
+                <span style="color: #dc2626; font-size: 0.78rem; margin-left: auto;" v-if="!ri.fixed">[[ ri.issues.join(' · ') ]]</span>
               </div>
-              <div v-if="!collapsedFixRows.includes(ri.line)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
-                <div v-if="findHeaderByAliases(['supplier','vendor']) && rowHasIssue(ri, 'supplier')">
+              <div v-if="!ri.fixed && !collapsedFixRows.includes(ri.line)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+                <div v-if="findHeaderByAliases(['supplier','vendor'])">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Supplier</label>
                   <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixSuppliers" :value="getInwardRowField(ri.line, ['supplier','vendor'])" @change="fixInwardRowField(ri.line, ['supplier','vendor'], $event.target.value)" />
                 </div>
-                <div v-if="findHeaderByAliases(['invoiceno','invoicenumber','invno','billno']) && rowHasIssue(ri, 'invoice_no')">
+                <div v-if="findHeaderByAliases(['invoiceno','invoicenumber','invno','billno'])">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Invoice No</label>
                   <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['invoiceno','invoicenumber','invno','billno'])" @change="fixInwardRowField(ri.line, ['invoiceno','invoicenumber','invno','billno'], $event.target.value)" />
                 </div>
-                <div v-if="findHeaderByAliases(['invoicedate','invdate','billdate']) && rowHasIssue(ri, 'invoice_date')">
+                <div v-if="findHeaderByAliases(['invoicedate','invdate','billdate'])">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Invoice Date</label>
                   <input type="date" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['invoicedate','invdate','billdate'])" @change="fixInwardRowField(ri.line, ['invoicedate','invdate','billdate'], $event.target.value)" />
                 </div>
-                <div v-if="findHeaderByAliases(['setwarehouse','warehouse','store','location']) && rowHasIssue(ri, 'set_warehouse')">
+                <div v-if="findHeaderByAliases(['setwarehouse','warehouse','store','location'])">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Warehouse</label>
                   <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixWarehouses" :value="getInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'])" @change="fixInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'], $event.target.value)" />
                 </div>
-                <div v-if="findHeaderByAliases(['itemcode','item','material','sku','productcode']) && rowHasIssue(ri, 'item_code')">
+                <div v-if="findHeaderByAliases(['itemcode','item','material','sku','productcode'])">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Item Code</label>
                   <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixItems" :value="getInwardRowField(ri.line, ['itemcode','item','material','sku','productcode'])" @change="fixInwardRowField(ri.line, ['itemcode','item','material','sku','productcode'], $event.target.value)" />
                 </div>
-                <div v-if="findHeaderByAliases(['serialno','serial','sn']) && rowHasIssue(ri, 'serial_no')">
+                <div v-if="findHeaderByAliases(['serialno','serial','sn'])">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Serial No</label>
                   <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['serialno','serial','sn'])" @change="fixInwardRowField(ri.line, ['serialno','serial','sn'], $event.target.value)" />
                 </div>
-                <div v-if="findHeaderByAliases(['rate','price','unitprice','amount']) && rowHasIssue(ri, 'rate')">
+                <div v-if="findHeaderByAliases(['rate','price','unitprice','amount'])">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Rate</label>
                   <input type="number" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['rate','price','unitprice','amount'])" @change="fixInwardRowField(ri.line, ['rate','price','unitprice','amount'], $event.target.value)" />
                 </div>
@@ -14275,6 +14276,7 @@
       inwardBulkValidation: null,
       creatingBulkInward: false,
       collapsedFixRows: [],
+      fixedFixLines: [],
       collapsedFixRows: [],
       bulkInsertPreview: null,
       bulkInsertFileName: "",
@@ -16915,6 +16917,18 @@
         if (!kw) return false;
         return ri.issues.some((msg) => String(msg).toLowerCase().includes(kw.toLowerCase()));
       },
+      getFixEditorRows() {
+        const vi = this.inwardBulkValidation;
+        const rows = (vi && vi.rowIssues) ? vi.rowIssues.map((r) => ({ line: r.line, item: r.item, issues: r.issues, fixed: false })) : [];
+        const fixed = (this.fixedFixLines || [])
+          .filter((ln) => !rows.some((r) => r.line === ln))
+          .map((ln) => {
+            const r = this.getInwardRow(ln);
+            const item = r ? (this.getInwardRowField(ln, ["itemcode", "item", "material", "sku", "productcode"]) || "-") : "-";
+            return { line: ln, item: item, issues: [], fixed: true };
+          });
+        return rows.concat(fixed);
+      },
       normalizeDateValue(v) {
         v = (v == null ? "" : String(v).trim());
         if (!v) return "";
@@ -17005,6 +17019,9 @@
       async validateInwardRows() {
         const D = this.inwardBulkDetected || {};
         const rows = this.inwardBulkRows || [];
+        const prevIssueLines = (this.inwardBulkValidation && this.inwardBulkValidation.rowIssues)
+          ? this.inwardBulkValidation.rowIssues.map((r) => r.line)
+          : [];
         const col = (key) => (D[key] ? D[key].header : null);
         const get = (r, key) => { const c = col(key); return c ? String(r[c] != null ? r[c] : "").trim() : ""; };
         const errors = [];
@@ -17067,6 +17084,15 @@
         out.canCreate = out.rowIssues.length === 0 && out.rowCount > 0;
         if (out.rowCount === 0) out.errors.push("File has no data rows.");
         if (out.rowIssues.length) out.errors.push(`${out.rowIssues.length} of ${out.rowCount} row(s) cannot be created.`);
+
+        // Track rows that just became valid so their fixed values stay visible
+        const newIssueLines = (out.rowIssues || []).map((r) => r.line);
+        const fixedLines = (this.fixedFixLines || []).slice();
+        for (const ln of prevIssueLines) {
+          if (!newIssueLines.includes(ln) && !fixedLines.includes(ln)) fixedLines.push(ln);
+        }
+        // drop any that became errored again
+        this.fixedFixLines = fixedLines.filter((ln) => !newIssueLines.includes(ln));
         this.inwardBulkValidation = out;
       },
       async downloadInsertTemplate() {
@@ -17297,6 +17323,7 @@
         this.inwardBulkValidation = null;
         this.creatingBulkInward = false;
         this.collapsedFixRows = [];
+        this.fixedFixLines = [];
       },
       async downloadInwardTemplate() {
         // Pull REAL master data so the sample row is valid & usable.
