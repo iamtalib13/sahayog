@@ -508,7 +508,7 @@ frappe.ui.form.on("Loan Application", {
 
             if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
                 
-                let required_docs = ["Loan Agreement", "Valuation Report", "Ornament Image", "Packet Image", "Pledge(Group) Image"];
+                let required_docs = ["Loan Agreement", "Valuation Report", "Ornament Image", "Packet Image", "Pledge(Group) Image", "Checklist"];
                 let val_errors = [];
 
                 // Loop through the required documents list
@@ -969,6 +969,30 @@ frappe.ui.form.on("Loan Application", {
           
           // Optionally auto-save so it persists even if they leave the page
           frm.save(); 
+      }
+    }
+
+    // ==========================================
+    // AUTO-ADD: CHECKLIST (VALUATION PENDING)
+    // ==========================================
+    if (frm.doc.status === "Valuation Pending") {
+      let doc_type = "Checklist";
+      let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
+
+      if (!exists) {
+          let row = frm.add_child("kyc_documents");
+          row.document_type = doc_type;
+          row.status = "Pending";
+
+          frm.refresh_field("kyc_documents");
+
+          frappe.msgprint({
+              title: __('Document Required'),
+              indicator: 'blue',
+              message: __('A <b>Checklist</b> row has been added. Please attach the document before proceeding.')
+          });
+
+          frm.save();
       }
     }
 
