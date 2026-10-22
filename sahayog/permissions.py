@@ -31,6 +31,39 @@ def has_lead_permission(doc, ptype, user):
     return None
 
 
+@frappe.whitelist()
+def has_bm_verification_permission(user=None):
+    """Check if the user has permission for BM Lead Verification.
+    Authorized if:
+    1. Role: Administrator, System Manager, Branch Manager, Operations Support Manager, Sales Manager.
+    2. Employee Designation: Contains 'Manager' or 'BM' (case-insensitive).
+    """
+    if not user:
+        user = frappe.session.user
+
+    if user == "Administrator":
+        return True
+
+    roles = frappe.get_roles(user)
+    manager_roles = {
+        "Administrator",
+        "System Manager",
+        "Branch Manager",
+        "Operations Support Manager",
+        "Sales Manager",
+    }
+    if any(r in roles for r in manager_roles):
+        return True
+
+    designation = frappe.db.get_value("Employee", {"user_id": user}, "designation")
+    if designation:
+        desig_lower = designation.strip().lower()
+        if "manager" in desig_lower or "bm" in desig_lower:
+            return True
+
+    return False
+
+
 def get_user_sol_ids(user):
     if not user:
         return []
