@@ -515,8 +515,8 @@ frappe.ui.form.on("Lead Product", {
         }
       }
 
-      // If Approved row and user is NOT authorized, lock all fields and hide delete button
-      if (row.audit_status === "Approved" && !can_audit) {
+      // If Approved or Rejected row and user is NOT authorized, lock all fields and hide delete button
+      if (["Approved", "Rejected"].includes(row.audit_status) && !can_audit) {
         ["product", "product_name", "product_amount", "account_number", "account_creation_date", "audit_status"].forEach((fn) => {
           grid_row.toggle_editable(fn, false);
         });
@@ -553,11 +553,11 @@ function toggleAuditStatusAndLock(frm) {
     can_audit ? 0 : 1
   );
 
-  // If not auditor, lock grid rows that are Approved completely
+  // If not auditor, lock grid rows that are Approved or Rejected completely
   if (!can_audit) {
     const lockRows = () => {
       (grid.grid_rows || []).forEach((grid_row) => {
-        if (grid_row.doc && grid_row.doc.audit_status === "Approved") {
+        if (grid_row.doc && ["Approved", "Rejected"].includes(grid_row.doc.audit_status)) {
           if (grid_row.row) {
             // Disable inline inputs in grid view
             grid_row.row.find("input, select, textarea").prop("disabled", true);
