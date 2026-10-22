@@ -16810,6 +16810,14 @@
         }
         return detected;
       },
+      findHeaderByAliases(aliases) {
+        const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        for (const h of (this.inwardBulkHeaders || [])) {
+          const n = norm(h);
+          if (n && (aliases || []).some((a) => n.includes(a))) return h;
+        }
+        return null;
+      },
       onInwardBulkFileSelect(event) {
         const file = event.target.files && event.target.files[0];
         if (!file) return;
@@ -17109,6 +17117,8 @@
                 custom_invoice_date: invoiceDate || null,
                 posting_date: invoiceDate || frappe.datetime.now_date(),
                 set_warehouse: warehouse,
+                custom_po_wo: "Purchase Order",
+                custom_request_for: "Store",
                 items: items,
               };
 
