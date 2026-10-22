@@ -1,6 +1,6 @@
 {
  "actions": [],
- "autoname": "format:AVL-{#####}",
+ "autoname": "format:AVL-{YYYY}-{#####}",
  "creation": "2026-10-12 18:00:00.000000",
  "doctype": "DocType",
  "engine": "InnoDB",
@@ -102,7 +102,7 @@
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-12 18:00:00.000000",
+ "modified": "2026-10-21 16:28:13.682308",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Aadhaar Verification Log",
