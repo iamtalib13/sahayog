@@ -8423,6 +8423,13 @@
                     : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
                 >Purchased</button>
               </div>
+              <select
+                v-model="branchExpenseMonth"
+                style="padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; background: var(--bg-primary); color: var(--text-main); min-width: 130px;"
+              >
+                <option value="">All Months</option>
+                <option v-for="m in branchExpenseReport && branchExpenseReport.months ? branchExpenseReport.months.slice().reverse() : []" :key="m" :value="m">[[ m ]]</option>
+              </select>
               <input
                 v-model="branchExpenseSearch"
                 type="text"
@@ -8449,7 +8456,7 @@
                   <tr>
                     <th style="padding: 10px 12px;">Branch</th>
                     <th style="padding: 10px 12px;">SOL ID</th>
-                    <th style="padding: 10px 12px;" v-for="m in branchExpenseReport.months" :key="m">[[ m ]]</th>
+                    <th style="padding: 10px 12px;" v-for="m in visibleBranchExpenseMonths()" :key="m">[[ m ]]</th>
                     <th style="padding: 10px 12px; text-align: right;">Used (Total)</th>
                     <th style="padding: 10px 12px; text-align: right;">Purchased (Total)</th>
                     <th style="padding: 10px 12px; text-align: center;">Unused Requested</th>
@@ -8460,9 +8467,9 @@
                   <tr v-for="b in filteredBranchExpenseRows()" :key="b.sol_id" style="cursor: pointer;" @click="openBranchDetail(b.sol_id)" title="Click for breakdown">
                     <td style="padding: 10px 12px; font-weight: 700;">[[ b.branch ]]</td>
                     <td style="padding: 10px 12px;">[[ b.sol_id ]]</td>
-                    <td style="padding: 10px 12px; text-align: right;" v-for="m in branchExpenseReport.months" :key="m">[[ fmtBranchExpense(b, m) ]]</td>
-                    <td style="padding: 10px 12px; text-align: right; font-weight: 700;">[[ fmtNumber(b.used_total) ]]</td>
-                    <td style="padding: 10px 12px; text-align: right;">[[ fmtNumber(b.purchased_total) ]]</td>
+                    <td style="padding: 10px 12px; text-align: right;" v-for="m in visibleBranchExpenseMonths()" :key="m">[[ fmtBranchExpense(b, m) ]]</td>
+                    <td style="padding: 10px 12px; text-align: right; font-weight: 700;">[[ fmtBranchUsedTotal(b) ]]</td>
+                    <td style="padding: 10px 12px; text-align: right;">[[ fmtBranchPurchasedTotal(b) ]]</td>
                     <td style="padding: 10px 12px; text-align: center;">[[ b.unused_requested ]]</td>
                     <td style="padding: 10px 12px; text-align: center;">
                       <button
@@ -9429,6 +9436,13 @@
         <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
           Branch: <span style="font-weight: 800; color: var(--text-main);">[[ branchDownloadRow && branchDownloadRow.branch ]]</span>
           <span v-if="branchDownloadRow"> ([[ branchDownloadRow.sol_id ]])</span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-main); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; margin-bottom: 14px;">
+          <i class="fas fa-filter" style="margin-right: 6px; color: #369696;"></i>
+          Showing:
+          <b>[[ branchExpenseMode === 'purchased' ? 'Purchase Receipts' : 'Expense (Material Used)' ]]</b>
+          &mdash; Month:
+          <b>[[ branchExpenseMonth || 'All Months' ]]</b>
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <button
@@ -14599,6 +14613,7 @@
       branchExpenseReport: null,
       branchExpenseLoading: false,
       branchExpenseMode: "expense",
+      branchExpenseMonth: "",
       branchExpenseSearch: "",
       branchExpenseOnlyActive: false,
       branchDetail: null,
@@ -17687,6 +17702,23 @@
         const rows = (this.branchDetail && this.branchDetail.monthly_records) || [];
         return rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
       },
+      fmtBranchUsedTotal(row) {
+        if (this.branchExpenseMonth) {
+          return this.fmtNumber((row.monthly_expense || {})[this.branchExpenseMonth]);
+        }
+        return this.fmtNumber(row.used_total);
+      },
+      fmtBranchPurchasedTotal(row) {
+        if (this.branchExpenseMonth) {
+          return this.fmtNumber((row.monthly_purchased || {})[this.branchExpenseMonth]);
+        }
+        return this.fmtNumber(row.purchased_total);
+      },
+      visibleBranchExpenseMonths() {
+        const months = (this.branchExpenseReport && this.branchExpenseReport.months) || [];
+        if (this.branchExpenseMonth) return [this.branchExpenseMonth];
+        return months;
+      },
       openBranchDownloadModal(row) {
         this.branchDownloadRow = row;
         this.showBranchDownloadModal = true;
@@ -17703,7 +17735,7 @@
         };
         const buildTable = (title, headers, rows, moneyCols) => {
           if (!rows || !rows.length) {
-            return `<h3>${esc(title)}</h3><p class="empty">No records</p>`;
+            return `<h3>${esc(title)}</h3><p class="empty">No records for this month</p>`;
           }
           let html = `<h3>${esc(title)}</h3><table><thead><tr>`;
           headers.forEach((h, i) => {
@@ -17741,13 +17773,11 @@
             .empty { font-size: 11px; color: #9ca3af; font-style: italic; }
             @media print { body { margin: 10px; } }
           </style></head><body>
-          <h1>Branch Expance Report</h1>
-          <div class="meta">Branch: <b>${esc(branchName)}</b> &nbsp;|&nbsp; SOL ID: <b>${esc(row.sol_id)}</b> &nbsp;|&nbsp; Generated: ${esc(new Date().toLocaleString())}</div>
-          ${buildTable("Expense (Used)", data.usageRows[0], data.usageRows.slice(1), [4, 5, 6])}
-          ${buildTable("Transferred Out", data.transferRows[0], data.transferRows.slice(1), [4, 5])}
-          ${buildTable("Purchases", data.prRows[0], data.prRows.slice(1), [5, 6, 7])}
-          ${buildTable("Requested Items", data.reqRows[0], data.reqRows.slice(1), [4, 5])}
-          ${buildTable("In Stock", data.stockRows[0], data.stockRows.slice(1), [2])}
+          <h1>${esc(data.title)}</h1>
+          <div class="meta">Branch: <b>${esc(branchName)}</b> &nbsp;|&nbsp; SOL ID: <b>${esc(row.sol_id)}</b>
+            &nbsp;|&nbsp; Month: <b>${esc(data.month || "All")}</b>
+            &nbsp;|&nbsp; Generated: ${esc(new Date().toLocaleString())}</div>
+          ${buildTable(data.title, data.headers, data.rows, data.moneyCols)}
           </body></html>`;
         win.document.write(html);
         win.document.close();
@@ -17765,118 +17795,78 @@
           });
           const d = res.message || {};
           const branchName = (d.branch && d.branch.branch) || row.branch || "";
-          const baseName = `Branch_Expance_${row.sol_id}_${new Date().toISOString().slice(0, 10)}`;
 
-          const usageRows = [
-            ["Month", "Stock Entry", "Date", "Item", "Qty", "Rate", "Amount"],
-            ...(d.usage || []).map((u) => [
-              u.month || "",
-              u.se_name || "",
-              u.posting_date ? String(u.posting_date).slice(0, 10) : "",
-              u.item_code || "",
-              u.qty || 0,
-              u.rate || 0,
-              u.amount || 0,
-            ]),
-          ];
+          const mode = this.branchExpenseMode || "expense";
+          const month = this.branchExpenseMonth || "";
+          const isExpense = mode === "expense";
+          const title = isExpense ? "Expense (Used)" : "Purchases";
+          const headers = isExpense
+            ? ["Month", "Stock Entry", "Date", "Item", "Qty", "Rate", "Amount"]
+            : ["Month", "PR No", "Date", "Supplier", "Item", "Qty", "Rate", "Amount"];
+          const moneyCols = isExpense ? [4, 5, 6] : [5, 6, 7];
 
-          const transferRows = [
-            ["Month", "Stock Entry", "Date", "To Warehouse", "Item", "Qty", "Amount"],
-            ...(d.transfers_out || []).map((t) => [
-              t.month || "",
-              t.se_name || "",
-              t.posting_date ? String(t.posting_date).slice(0, 10) : "",
-              t.to_warehouse || "",
-              t.item_code || "",
-              t.qty || 0,
-              t.amount || 0,
-            ]),
-          ];
+          const source = isExpense ? d.usage || [] : d.monthly_records || [];
+          const rows = source
+            .filter((r) => (month ? r.month === month : true))
+            .map((r) =>
+              isExpense
+                ? [
+                    r.month || "",
+                    r.se_name || "",
+                    r.posting_date ? String(r.posting_date).slice(0, 10) : "",
+                    r.item_code || "",
+                    r.qty || 0,
+                    r.rate || 0,
+                    r.amount || 0,
+                  ]
+                : [
+                    r.month || "",
+                    r.pr_name || "",
+                    r.posting_date ? String(r.posting_date).slice(0, 10) : "",
+                    r.supplier || "",
+                    r.item_code || "",
+                    r.qty || 0,
+                    r.rate || 0,
+                    r.amount || 0,
+                  ]
+            );
 
-          const prRows = [
-            ["Month", "PR No", "Date", "Supplier", "Item", "Qty", "Rate", "Amount"],
-            ...(d.monthly_records || []).map((m) => [
-              m.month || "",
-              m.pr_name || "",
-              m.posting_date ? String(m.posting_date).slice(0, 10) : "",
-              m.supplier || "",
-              m.item_code || "",
-              m.qty || 0,
-              m.rate || 0,
-              m.amount || 0,
-            ]),
-          ];
-
-          const reqRows = [
-            ["EMR", "Employee", "Item", "Item Name", "Qty", "Approved Qty", "Status"],
-            ...(d.requested || []).map((r) => [
-              r.emr || "",
-              r.employee || "",
-              r.item_code || "",
-              r.item_name || "",
-              r.quantity || 0,
-              r.approved_quantity || 0,
-              r.status || "",
-            ]),
-          ];
-
-          const stockRows = [
-            ["Item Code", "Item Name", "Closing Balance"],
-            ...(d.in_stock || []).map((s) => [
-              s.item_code || "",
-              s.item_name || "",
-              s.closing_balance || 0,
-            ]),
-          ];
+          const baseName = `Branch_${isExpense ? "Expance" : "Purchase"}_${row.sol_id}${month ? "_" + month : ""}_${new Date().toISOString().slice(0, 10)}`;
 
           if (format === "pdf") {
-            this.printBranchExpancePdf(row, branchName, {
-              usageRows,
-              transferRows,
-              prRows,
-              reqRows,
-              stockRows,
-            });
+            this.printBranchExpancePdf(row, branchName, { title, headers, rows, moneyCols, month });
             return;
           }
 
           if (format !== "csv" && typeof XLSX !== "undefined") {
             const wb = XLSX.utils.book_new();
-            const addSheet = (name, data) => {
-              if (!data || !data.length) return;
-              const ws = XLSX.utils.aoa_to_sheet(data);
-              ws["!cols"] = data[0].map((h, i) => ({
-                wch: Math.max(
-                  String(h).length,
-                  ...data.slice(1).map((r) => String(r[i] === undefined || r[i] === null ? "" : r[i]).length),
-                  10
-                ),
-              }));
-              XLSX.utils.book_append_sheet(wb, ws, name);
-            };
-            addSheet("Expense (Used)", usageRows);
-            addSheet("Transferred Out", transferRows);
-            addSheet("Purchases", prRows);
-            addSheet("Requested Items", reqRows);
-            addSheet("In Stock", stockRows);
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            ws["!cols"] = headers.map((h, i) => ({
+              wch: Math.max(
+                String(h).length,
+                ...rows.map((r) => String(r[i] === undefined || r[i] === null ? "" : r[i]).length),
+                10
+              ),
+            }));
+            XLSX.utils.book_append_sheet(wb, ws, title);
             XLSX.writeFile(wb, baseName + ".xlsx");
           } else {
             const csvCell = (v) =>
               '"' + String(v === undefined || v === null ? "" : v).replace(/"/g, '""') + '"';
             const lines = [];
-            lines.push([csvCell("Branch Expance Report")].join(","));
-            lines.push([csvCell("Branch"), csvCell(branchName), csvCell("SOL ID"), csvCell(row.sol_id)].join(","));
-            const section = (title, headers, rows) => {
-              lines.push("");
-              lines.push([csvCell(title)].join(","));
-              lines.push(headers.map(csvCell).join(","));
-              rows.forEach((r) => lines.push(r.map(csvCell).join(",")));
-            };
-            section("Expense (Used)", usageRows[0], usageRows.slice(1));
-            section("Transferred Out", transferRows[0], transferRows.slice(1));
-            section("Purchases", prRows[0], prRows.slice(1));
-            section("Requested Items", reqRows[0], reqRows.slice(1));
-            section("In Stock", stockRows[0], stockRows.slice(1));
+            lines.push([csvCell(title)].join(","));
+            lines.push(
+              [
+                csvCell("Branch"),
+                csvCell(branchName),
+                csvCell("SOL ID"),
+                csvCell(row.sol_id),
+                csvCell("Month"),
+                csvCell(month || "All"),
+              ].join(",")
+            );
+            lines.push(headers.map(csvCell).join(","));
+            rows.forEach((r) => lines.push(r.map(csvCell).join(",")));
             const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
