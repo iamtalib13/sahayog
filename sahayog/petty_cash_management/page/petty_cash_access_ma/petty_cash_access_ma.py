@@ -145,6 +145,8 @@ def get_branch_label(branch_id):
 def get_branch_access_data():
     validate_access()
 
+    cleanup_disabled_user_access()
+
     all_branches = get_all_branches()
 
     employees = get_employees_with_branch_user_role()
@@ -808,3 +810,56 @@ def reassign_and_replace_branch_employee(user_id, branch_id):
             else None
         ),
     }
+
+
+def cleanup_disabled_user_access():
+    """Remove Branch User role and petty_cash_branch from disabled users."""
+
+    disabled_users = frappe.get_all(
+        "User",
+        filters={
+            "enabled": 0,
+            "name": ["!=", "Administrator"],
+        },
+        pluck="name",
+    )
+
+    if not disabled_users:
+        return
+
+    employees = frappe.get_all(
+        "Employee",
+        filters={
+            "user_id": ["in", disabled_users],
+            "petty_cash_branch": ["is", "set"],
+        },
+        fields=["name", "user_id", "petty_cash_branch"],
+    )
+
+    for emp in employees:
+        employee = frappe.get_doc("Employee", emp.name)
+
+        old_branch = employee.petty_cash_branch
+        employee.petty_cash_branch = None
+        employee.save(ignore_permissions=True)
+
+        user = frappe.get_doc("User", emp.user_id)
+        current_roles = {row.role for row in user.roles if row.role}
+
+        if TARGET_ROLE in current_roles:
+            user.roles = [
+                row for row in user.roles if row.role != TARGET_ROLE
+            ]
+            user.save(ignore_permissions=True)
+            clear_user_access_cache(emp.user_id)
+
+        frappe.logger("petty_cash_access_ma").info(
+            {
+                "action_by": frappe.session.user,
+                "action_on": emp.user_id,
+                "employee": emp.name,
+                "role": TARGET_ROLE,
+                "branch": old_branch,
+                "status": "disabled_user_access_cleaned",
+            }
+        )
