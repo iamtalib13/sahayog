@@ -291,6 +291,7 @@
    "label": "Identity Verification"
   },
   {
+   "allow_on_submit": 1,
    "description": "Upload and verify ID proofs (Aadhaar, PAN, etc.).",
    "fieldname": "kyc_documents",
    "fieldtype": "Table",
