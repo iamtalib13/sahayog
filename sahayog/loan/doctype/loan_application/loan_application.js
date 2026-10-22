@@ -508,7 +508,7 @@ frappe.ui.form.on("Loan Application", {
 
             if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
                 
-                let required_docs = ["Account Open Form", "Valuation Report", "Ornament Image", "Packet Image", "Pledge(Group) Image"];
+                let required_docs = ["Loan Agreement", "Valuation Report", "Ornament Image", "Packet Image", "Pledge(Group) Image"];
                 let val_errors = [];
 
                 // Loop through the required documents list
@@ -947,11 +947,11 @@ frappe.ui.form.on("Loan Application", {
     }
 
     // ==========================================
-    // AUTO-ADD: ACCOUNT OPEN FORM
+    // AUTO-ADD: LOAN AGREEMENT
     // ==========================================
-    // If we are in Valuation Pending, ensure the Account Open Form exists
+    // If we are in Valuation Pending, ensure the Loan Agreement exists
     if (frm.doc.status === "Valuation Pending") {
-      let doc_type = "Account Open Form";
+      let doc_type = "Loan Agreement";
       let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
       
       if (!exists) {
@@ -964,7 +964,7 @@ frappe.ui.form.on("Loan Application", {
           frappe.msgprint({
               title: __('Document Required'),
               indicator: 'blue',
-              message: __('An <b>Account Open Form</b> row has been added. Please attach the document before proceeding.')
+              message: __('A <b>Loan Agreement</b> row has been added. Please attach the document before proceeding.')
           });
           
           // Optionally auto-save so it persists even if they leave the page
