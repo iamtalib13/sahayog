@@ -4635,7 +4635,7 @@
 
       <!-- Split View Wrapper -->
       <div
-        v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
+        v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || activeItem === 'Branch Expance' || currentView.isReportSection"
         :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView || showStockHistoryView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'"
       >
         <!-- Stock History Side View -->
