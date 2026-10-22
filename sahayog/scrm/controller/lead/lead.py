@@ -221,7 +221,7 @@ def validate_lead_products(doc, method=None):
         # Validate Account Number and Account Creation Date when Approved or Converted (for Operation Lead)
         is_operation_lead = bool(doc.get("custom_is_operation_lead"))
         is_converted = doc.get("status") == "Converted"
-        is_approved = doc.get("custom_lead_audit_status") == "Approved"
+        is_row_approved = row.get("audit_status") == "Approved"
 
         # Validate Account Number format: exactly 15 digits numeric
         acc_no = str(row.get("account_number") or "").strip()
@@ -233,8 +233,8 @@ def validate_lead_products(doc, method=None):
                 )
 
         # Validate Account Number and Account Creation Date when Approved or Converted (for Operation Lead)
-        if is_approved or (is_operation_lead and is_converted):
-            reason = "Lead Audit Status is Approved" if is_approved else "Converting an Operation Lead"
+        if is_row_approved or (is_operation_lead and is_converted):
+            reason = "Product Audit Status is Approved" if is_row_approved else "Converting an Operation Lead"
             if not row.get("account_number"):
                 frappe.throw(
                     title=_("Missing Account Details"),
@@ -639,8 +639,8 @@ def get_open_activities(ref_doctype=None, ref_docname=None):
         return {"tasks": [], "events": []}
 
 def validate_lead_audit_lock(doc, method=None):
-    """Validate Lead Audit Status permissions and locking.
-    Only Administrator and employee 1034 can change custom_lead_audit_status or edit an Approved lead.
+    """Validate Lead Product Audit Status permissions and row-level locking.
+    Only Administrator and employee 1034 can change audit_status or edit an Approved product row.
     """
     current_user = frappe.session.user
     is_admin = current_user == "Administrator"
@@ -648,22 +648,54 @@ def validate_lead_audit_lock(doc, method=None):
     is_emp_1034 = emp_number == "1034" or current_user == "1034@sahayog.com"
     can_audit = is_admin or is_emp_1034
 
-    if not doc.is_new():
-        prev_status = frappe.db.get_value("Lead", doc.name, "custom_lead_audit_status")
-        # Prevent non-1034 / non-admin from changing audit status
-        if doc.get("custom_lead_audit_status") != prev_status and not can_audit:
-            frappe.throw(
-                title=_("Permission Denied"),
-                msg=_("Only Administrator and Authorized Auditor (Employee 1034) can update Lead Audit Status.")
-            )
+    products = doc.get("products") or []
 
-        # Lock Approved lead from being modified by others
-        if prev_status == "Approved" and not can_audit:
-            frappe.throw(
-                title=_("Lead Locked"),
-                msg=_("This lead is Approved / Audited and cannot be edited. Only Administrator and Authorized Auditor (1034) can modify.")
-            )
+    if not doc.is_new():
+        # Fetch existing product rows from DB
+        prev_rows = frappe.db.get_all(
+            "Lead Product",
+            filters={"parent": doc.name},
+            fields=["name", "product", "product_amount", "account_number", "account_creation_date", "audit_status"]
+        )
+        prev_map = {r.name: r for r in prev_rows}
+        current_names = set()
+
+        for idx, row in enumerate(products, 1):
+            if row.name and row.name in prev_map:
+                current_names.add(row.name)
+                prev = prev_map[row.name]
+
+                # Non-auditor cannot change audit_status
+                if row.get("audit_status") != prev.get("audit_status") and not can_audit:
+                    frappe.throw(
+                        title=_("Permission Denied"),
+                        msg=_("Row {0}: Only Administrator and Authorized Auditor (Employee 1034) can update Audit Status.").format(idx)
+                    )
+
+                # If previously Approved, non-auditor cannot modify fields in this row
+                if prev.get("audit_status") == "Approved" and not can_audit:
+                    fields_to_check = ["product", "product_amount", "account_number", "account_creation_date", "audit_status"]
+                    for f in fields_to_check:
+                        if str(row.get(f) or "") != str(prev.get(f) or ""):
+                            frappe.throw(
+                                title=_("Row Locked"),
+                                msg=_("Row {0} ({1}) is Approved and locked. Only Administrator and Authorized Auditor (1034) can modify it.").format(idx, row.product_name or row.product)
+                            )
+            else:
+                # Newly added row: non-auditor cannot set audit_status other than Pending
+                if row.get("audit_status") and row.get("audit_status") != "Pending" and not can_audit:
+                    row.audit_status = "Pending"
+
+        # Check for deleted rows that were Approved
+        if not can_audit:
+            for prev_name, prev in prev_map.items():
+                if prev_name not in current_names and prev.get("audit_status") == "Approved":
+                    frappe.throw(
+                        title=_("Row Locked"),
+                        msg=_("An Approved product row cannot be deleted by non-auditors.")
+                    )
     else:
-        # If new document and non-auditor attempts to set audit status
-        if doc.get("custom_lead_audit_status") and doc.get("custom_lead_audit_status") != "Pending" and not can_audit:
-            doc.custom_lead_audit_status = "Pending"
+        # For new documents, ensure audit_status defaults to Pending for non-auditors
+        for row in products:
+            if not can_audit and row.get("audit_status") != "Pending":
+                row.audit_status = "Pending"
