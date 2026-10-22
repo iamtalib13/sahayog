@@ -8407,28 +8407,67 @@
             v-if="activeItem === 'Branch Expance'"
             style="padding: 24px; overflow: auto; height: 100%;"
           >
-            <h2 style="margin: 0 0 16px 0; font-weight: 800; color: var(--text-main);">Branch Expance</h2>
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
+              <h2 style="margin: 0; font-weight: 800; color: var(--text-main);">Branch Expance</h2>
+              <div style="display: flex; gap: 4px; border: 1px solid var(--border-color); border-radius: 8px; padding: 3px; background: var(--bg-secondary);">
+                <button
+                  @click="branchExpenseMode = 'expense'"
+                  :style="branchExpenseMode === 'expense'
+                    ? 'padding: 6px 14px; border: none; border-radius: 6px; background: #369696; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer;'
+                    : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
+                >Expense (Used)</button>
+                <button
+                  @click="branchExpenseMode = 'purchased'"
+                  :style="branchExpenseMode === 'purchased'
+                    ? 'padding: 6px 14px; border: none; border-radius: 6px; background: #369696; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer;'
+                    : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
+                >Purchased</button>
+              </div>
+              <input
+                v-model="branchExpenseSearch"
+                type="text"
+                placeholder="Search branch / SOL ID"
+                style="padding: 7px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; min-width: 220px; background: var(--bg-primary); color: var(--text-main);"
+              />
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" v-model="branchExpenseOnlyActive" />
+                Only with activity
+              </label>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">
+              <template v-if="branchExpenseMode === 'expense'">
+                Expense = value of material issued / consumed from the branch (Stock Entry - Material Issue). Click any row for the full breakdown.
+              </template>
+              <template v-else>
+                Purchased = value of material received at the branch (Purchase Receipt). Click any row for the full breakdown.
+              </template>
+            </div>
             <div v-if="branchExpenseLoading" style="color: var(--text-muted); padding: 20px;">Loading...</div>
-            <div v-else-if="branchExpenseReport && branchExpenseReport.branches && branchExpenseReport.branches.length" style="overflow-x: auto;">
-              <table class="items-table" style="width: 100%; min-width: 700px;">
+            <div v-else-if="filteredBranchExpenseRows().length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%; min-width: 900px;">
                 <thead>
                   <tr>
                     <th style="padding: 10px 12px;">Branch</th>
                     <th style="padding: 10px 12px;">SOL ID</th>
                     <th style="padding: 10px 12px;" v-for="m in branchExpenseReport.months" :key="m">[[ m ]]</th>
-                    <th style="padding: 10px 12px;">Unused Requested</th>
+                    <th style="padding: 10px 12px; text-align: right;">Used (Total)</th>
+                    <th style="padding: 10px 12px; text-align: right;">Purchased (Total)</th>
+                    <th style="padding: 10px 12px; text-align: center;">Unused Requested</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="b in branchExpenseReport.branches" :key="b.sol_id" style="cursor: pointer;" @click="openBranchDetail(b.sol_id)" title="Click for breakdown">
+                  <tr v-for="b in filteredBranchExpenseRows()" :key="b.sol_id" style="cursor: pointer;" @click="openBranchDetail(b.sol_id)" title="Click for breakdown">
                     <td style="padding: 10px 12px; font-weight: 700;">[[ b.branch ]]</td>
                     <td style="padding: 10px 12px;">[[ b.sol_id ]]</td>
-                    <td style="padding: 10px 12px; text-align: right;" v-for="m in branchExpenseReport.months" :key="m">[[ (b.monthly_expense[m] || 0).toLocaleString() ]]</td>
+                    <td style="padding: 10px 12px; text-align: right;" v-for="m in branchExpenseReport.months" :key="m">[[ fmtBranchExpense(b, m) ]]</td>
+                    <td style="padding: 10px 12px; text-align: right; font-weight: 700;">[[ fmtNumber(b.used_total) ]]</td>
+                    <td style="padding: 10px 12px; text-align: right;">[[ fmtNumber(b.purchased_total) ]]</td>
                     <td style="padding: 10px 12px; text-align: center;">[[ b.unused_requested ]]</td>
                   </tr>
                 </tbody>
               </table>
             </div>
+            <div v-else-if="branchExpenseReport" style="color: var(--text-muted); padding: 20px;">No branch data for this filter.</div>
             <div v-else style="color: var(--text-muted); padding: 20px;">No branch data.</div>
           </div>
 
@@ -9377,8 +9416,89 @@
         <button class="profile-close" @click="showBranchDetailModal = false">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 20px;">
+        <div v-if="branchDetail" style="display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary);">
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total Used (Expense)</div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-main);">[[ fmtNumber(branchDetailUsedTotal()) ]]</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total Purchased</div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-main);">[[ fmtNumber(branchDetailPurchasedTotal()) ]]</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Requested Items</div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-main);">[[ (branchDetail.requested || []).length ]]</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">In Stock Items</div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-main);">[[ (branchDetail.in_stock || []).length ]]</div>
+          </div>
+        </div>
         <div v-if="branchDetailLoading" style="color: var(--text-muted); padding: 20px;">Loading...</div>
         <template v-else-if="branchDetail">
+          <!-- Material issued / consumed (expense) -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
+              Material Used / Issued (Stock Entry - Material Issue) &mdash; this is the branch expense
+            </div>
+            <div v-if="branchDetail.usage && branchDetail.usage.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Month</th>
+                    <th style="padding: 8px 10px;">Stock Entry</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px; text-align: right;">Rate</th>
+                    <th style="padding: 8px 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(u, idx) in branchDetail.usage" :key="'u' + idx">
+                    <td style="padding: 8px 10px;">[[ u.month ]]</td>
+                    <td style="padding: 8px 10px;">[[ u.se_name ]]</td>
+                    <td style="padding: 8px 10px;">[[ u.item_code ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ u.qty ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ fmtNumber(u.rate) ]]</td>
+                    <td style="padding: 8px 10px; text-align: right; font-weight: 700;">[[ fmtNumber(u.amount) ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No material issued from this branch.</div>
+          </div>
+
+          <!-- Material transferred out -->
+          <div v-if="branchDetail.transfers_out && branchDetail.transfers_out.length" style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
+              Transferred Out (Material Transfer)
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Month</th>
+                    <th style="padding: 8px 10px;">Stock Entry</th>
+                    <th style="padding: 8px 10px;">To Warehouse</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(t, idx) in branchDetail.transfers_out" :key="'t' + idx">
+                    <td style="padding: 8px 10px;">[[ t.month ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.se_name ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.to_warehouse ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.item_code ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ t.qty ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ fmtNumber(t.amount) ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
           <!-- Monthly Purchase Receipt records -->
           <div style="margin-bottom: 20px;">
             <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">Purchase Receipts (monthly records)</div>
@@ -14419,6 +14539,9 @@
       fixedFixLines: [],
       branchExpenseReport: null,
       branchExpenseLoading: false,
+      branchExpenseMode: "expense",
+      branchExpenseSearch: "",
+      branchExpenseOnlyActive: false,
       branchDetail: null,
       showBranchDetailModal: false,
       branchDetailLoading: false,
@@ -17464,6 +17587,44 @@
         this.creatingBulkInward = false;
         this.collapsedFixRows = [];
         this.fixedFixLines = [];
+      },
+      fmtNumber(value) {
+        const n = Number(value || 0);
+        if (!n) return "-";
+        return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+      },
+      fmtBranchExpense(row, month) {
+        const src = this.branchExpenseMode === "purchased" ? row.monthly_purchased : row.monthly_expense;
+        const val = Number((src && src[month]) || 0);
+        if (!val) return "-";
+        return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(val);
+      },
+      filteredBranchExpenseRows() {
+        const report = this.branchExpenseReport;
+        if (!report || !report.branches) return [];
+        const term = (this.branchExpenseSearch || "").trim().toLowerCase();
+        return report.branches.filter((b) => {
+          if (term) {
+            const name = String(b.branch || "").toLowerCase();
+            const sol = String(b.sol_id || "").toLowerCase();
+            if (name.indexOf(term) === -1 && sol.indexOf(term) === -1) return false;
+          }
+          if (this.branchExpenseOnlyActive) {
+            const used = Number(b.used_total || 0);
+            const purchased = Number(b.purchased_total || 0);
+            const unused = Number(b.unused_requested || 0);
+            if (!used && !purchased && !unused) return false;
+          }
+          return true;
+        });
+      },
+      branchDetailUsedTotal() {
+        const rows = (this.branchDetail && this.branchDetail.usage) || [];
+        return rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      },
+      branchDetailPurchasedTotal() {
+        const rows = (this.branchDetail && this.branchDetail.monthly_records) || [];
+        return rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
       },
       async openBranchDetail(solId) {
         this.showBranchDetailModal = true;
