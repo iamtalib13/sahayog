@@ -8466,7 +8466,7 @@
                     <td style="padding: 10px 12px; text-align: center;">[[ b.unused_requested ]]</td>
                     <td style="padding: 10px 12px; text-align: center;">
                       <button
-                        @click.stop="downloadBranchExpance(b)"
+                        @click.stop="openBranchDownloadModal(b)"
                         title="Download this branch expense details"
                         style="padding: 4px 10px; border: none; border-radius: 6px; background: #369696; color: #fff; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;"
                       >
@@ -9410,6 +9410,55 @@
       </div>
     </section>
   </main>
+
+  <!-- Branch Download Format Modal -->
+  <div
+    v-if="showBranchDownloadModal"
+    class="profile-modal-overlay"
+    @click.self="showBranchDownloadModal = false"
+  >
+    <div class="profile-modal" style="max-width: 420px;">
+      <div class="profile-modal-header">
+        <h3>
+          <i class="fas fa-download" style="margin-right: 8px; color: #369696;"></i>
+          Download Branch Expance
+        </h3>
+        <button class="profile-close" @click="showBranchDownloadModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 20px;">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+          Branch: <span style="font-weight: 800; color: var(--text-main);">[[ branchDownloadRow && branchDownloadRow.branch ]]</span>
+          <span v-if="branchDownloadRow"> ([[ branchDownloadRow.sol_id ]])</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button
+            @click="downloadBranchExpance(branchDownloadRow, 'pdf'); showBranchDownloadModal = false;"
+            style="width: 100%; padding: 11px 14px; background: rgba(239,68,68,0.08); border: 1.5px solid rgba(239,68,68,0.3); border-radius: 8px; color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;"
+          >
+            <i class="fas fa-file-pdf" style="color:#ef4444;font-size:15px;"></i>
+            PDF (.pdf)
+          </button>
+          <button
+            @click="downloadBranchExpance(branchDownloadRow, 'xlsx'); showBranchDownloadModal = false;"
+            style="width: 100%; padding: 11px 14px; background: rgba(16,185,129,0.08); border: 1.5px solid rgba(16,185,129,0.3); border-radius: 8px; color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;"
+          >
+            <i class="fas fa-file-excel" style="color:#10b981;font-size:15px;"></i>
+            Excel (.xlsx)
+          </button>
+          <button
+            @click="downloadBranchExpance(branchDownloadRow, 'csv'); showBranchDownloadModal = false;"
+            style="width: 100%; padding: 11px 14px; background: rgba(69,231,231,0.08); border: 1.5px solid rgba(69,231,231,0.35); border-radius: 8px; color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;"
+          >
+            <i class="fas fa-file-csv" style="color:#12a7a7;font-size:15px;"></i>
+            CSV (.csv)
+          </button>
+        </div>
+      </div>
+      <div class="profile-modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+        <button class="btn-create" @click="showBranchDownloadModal = false" style="padding: 8px 20px; border-radius: 6px;">Cancel</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Branch Detail Modal -->
   <div
@@ -14555,6 +14604,8 @@
       branchDetail: null,
       showBranchDetailModal: false,
       branchDetailLoading: false,
+      showBranchDownloadModal: false,
+      branchDownloadRow: null,
       collapsedFixRows: [],
       bulkInsertPreview: null,
       bulkInsertFileName: "",
@@ -17636,13 +17687,84 @@
         const rows = (this.branchDetail && this.branchDetail.monthly_records) || [];
         return rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
       },
+      openBranchDownloadModal(row) {
+        this.branchDownloadRow = row;
+        this.showBranchDownloadModal = true;
+      },
+      printBranchExpancePdf(row, branchName, data) {
+        const esc = (v) =>
+          String(v === undefined || v === null ? "" : v)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        const fmtNum = (v) => {
+          const n = Number(v || 0);
+          return n ? n.toLocaleString("en-IN", { maximumFractionDigits: 0 }) : "";
+        };
+        const buildTable = (title, headers, rows, moneyCols) => {
+          if (!rows || !rows.length) {
+            return `<h3>${esc(title)}</h3><p class="empty">No records</p>`;
+          }
+          let html = `<h3>${esc(title)}</h3><table><thead><tr>`;
+          headers.forEach((h, i) => {
+            html += `<th class="${moneyCols && moneyCols.indexOf(i) !== -1 ? "num" : ""}">${esc(h)}</th>`;
+          });
+          html += "</tr></thead><tbody>";
+          rows.forEach((r) => {
+            html += "<tr>";
+            r.forEach((c, i) => {
+              const isNum = moneyCols && moneyCols.indexOf(i) !== -1;
+              html += `<td class="${isNum ? "num" : ""}">${isNum ? fmtNum(c) : esc(c)}</td>`;
+            });
+            html += "</tr>";
+          });
+          html += "</tbody></table>";
+          return html;
+        };
+
+        const win = window.open("", "_blank", "width=1100,height=850");
+        if (!win) {
+          frappe.msgprint("Please allow popups to download the PDF");
+          return;
+        }
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8" />
+          <title>Branch Expance - ${esc(branchName)}</title>
+          <style>
+            body { font-family: Arial, Helvetica, sans-serif; color: #1f2937; margin: 24px; }
+            h1 { font-size: 20px; margin: 0 0 4px 0; }
+            h3 { font-size: 14px; margin: 18px 0 6px 0; border-bottom: 1px solid #d1d5db; padding-bottom: 4px; }
+            .meta { font-size: 12px; color: #6b7280; margin-bottom: 14px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th, td { border: 1px solid #d1d5db; padding: 4px 6px; text-align: left; }
+            th { background: #f3f4f6; font-weight: 700; }
+            td.num, th.num { text-align: right; }
+            .empty { font-size: 11px; color: #9ca3af; font-style: italic; }
+            @media print { body { margin: 10px; } }
+          </style></head><body>
+          <h1>Branch Expance Report</h1>
+          <div class="meta">Branch: <b>${esc(branchName)}</b> &nbsp;|&nbsp; SOL ID: <b>${esc(row.sol_id)}</b> &nbsp;|&nbsp; Generated: ${esc(new Date().toLocaleString())}</div>
+          ${buildTable("Expense (Used)", data.usageRows[0], data.usageRows.slice(1), [4, 5, 6])}
+          ${buildTable("Transferred Out", data.transferRows[0], data.transferRows.slice(1), [4, 5])}
+          ${buildTable("Purchases", data.prRows[0], data.prRows.slice(1), [5, 6, 7])}
+          ${buildTable("Requested Items", data.reqRows[0], data.reqRows.slice(1), [4, 5])}
+          ${buildTable("In Stock", data.stockRows[0], data.stockRows.slice(1), [2])}
+          </body></html>`;
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => {
+          win.focus();
+          win.print();
+        }, 300);
+      },
       async downloadBranchExpance(row, format = "xlsx") {
+        if (!row) return;
         try {
           const res = await frappe.call({
             method: "sahayog.procurement.api.stock_balance_ledger.get_branch_detail",
             args: { sol_id: row.sol_id },
           });
           const d = res.message || {};
+          const branchName = (d.branch && d.branch.branch) || row.branch || "";
           const baseName = `Branch_Expance_${row.sol_id}_${new Date().toISOString().slice(0, 10)}`;
 
           const usageRows = [
@@ -17655,6 +17777,19 @@
               u.qty || 0,
               u.rate || 0,
               u.amount || 0,
+            ]),
+          ];
+
+          const transferRows = [
+            ["Month", "Stock Entry", "Date", "To Warehouse", "Item", "Qty", "Amount"],
+            ...(d.transfers_out || []).map((t) => [
+              t.month || "",
+              t.se_name || "",
+              t.posting_date ? String(t.posting_date).slice(0, 10) : "",
+              t.to_warehouse || "",
+              t.item_code || "",
+              t.qty || 0,
+              t.amount || 0,
             ]),
           ];
 
@@ -17694,6 +17829,17 @@
             ]),
           ];
 
+          if (format === "pdf") {
+            this.printBranchExpancePdf(row, branchName, {
+              usageRows,
+              transferRows,
+              prRows,
+              reqRows,
+              stockRows,
+            });
+            return;
+          }
+
           if (format !== "csv" && typeof XLSX !== "undefined") {
             const wb = XLSX.utils.book_new();
             const addSheet = (name, data) => {
@@ -17709,15 +17855,29 @@
               XLSX.utils.book_append_sheet(wb, ws, name);
             };
             addSheet("Expense (Used)", usageRows);
+            addSheet("Transferred Out", transferRows);
             addSheet("Purchases", prRows);
             addSheet("Requested Items", reqRows);
             addSheet("In Stock", stockRows);
             XLSX.writeFile(wb, baseName + ".xlsx");
           } else {
-            let csv = usageRows
-              .map((r) => r.map((v) => '"' + String(v === undefined || v === null ? "" : v).replace(/"/g, '""') + '"').join(","))
-              .join("\r\n");
-            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const csvCell = (v) =>
+              '"' + String(v === undefined || v === null ? "" : v).replace(/"/g, '""') + '"';
+            const lines = [];
+            lines.push([csvCell("Branch Expance Report")].join(","));
+            lines.push([csvCell("Branch"), csvCell(branchName), csvCell("SOL ID"), csvCell(row.sol_id)].join(","));
+            const section = (title, headers, rows) => {
+              lines.push("");
+              lines.push([csvCell(title)].join(","));
+              lines.push(headers.map(csvCell).join(","));
+              rows.forEach((r) => lines.push(r.map(csvCell).join(",")));
+            };
+            section("Expense (Used)", usageRows[0], usageRows.slice(1));
+            section("Transferred Out", transferRows[0], transferRows.slice(1));
+            section("Purchases", prRows[0], prRows.slice(1));
+            section("Requested Items", reqRows[0], reqRows.slice(1));
+            section("In Stock", stockRows[0], stockRows.slice(1));
+            const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
             link.setAttribute("href", url);
