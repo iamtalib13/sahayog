@@ -9807,6 +9807,7 @@
           var extra = document.getElementById("nt-edit-extra");
           if (extra) {
             extra.innerHTML = editExtraHTML(ev);
+            bindFlyerUI(ev, extra);
             var eeToggle = document.getElementById("ee-toggle");
             if (eeToggle)
               eeToggle.addEventListener("click", function () {
@@ -9837,6 +9838,136 @@
           }
           addModal.classList.add("open");
           refreshModalAttendanceRow(ev);
+        }
+        function flyerCardHTML(ev) {
+          var r = role();
+          var url = ev.flyer || "";
+          var fname = "";
+          if (url) {
+            try {
+              fname = decodeURIComponent(
+                String(url).split("?")[0].split("/").pop() || "",
+              );
+            } catch (e) {
+              fname = "";
+            }
+            fname = fname || "Flyer";
+          }
+          return (
+            '<div class="drawer-section ee-card" id="flyer-card">' +
+            '<div class="drawer-section-title">Email Flyer</div>' +
+            (url
+              ? '<div style="display:flex;align-items:center;gap:8px;min-width:0;">' +
+                '<a href="' +
+                esc(url) +
+                '" target="_blank" rel="noopener" style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;color:var(--accent-ink);">' +
+                esc(fname) +
+                "</a>" +
+                (r.canEdit
+                  ? '<button type="button" class="btn-mini" id="btn-remove-flyer">Remove</button>'
+                  : "") +
+                "</div>"
+              : '<div style="font-size:12px;color:var(--ink-3)">No flyer attached</div>') +
+            (r.canEdit
+              ? '<label class="btn" style="margin-top:8px;display:inline-flex;align-items:center;height:30px;font-size:12px;cursor:pointer;">' +
+                (url ? "Replace flyer" : "Attach flyer") +
+                '<input type="file" id="training-flyer-input" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/*" style="display:none" /></label>'
+              : "") +
+            '<div style="margin-top:6px;font-size:11px;color:var(--ink-3)">This file is attached to invitation &amp; closure emails for this training.</div>' +
+            "</div>"
+          );
+        }
+        function refreshFlyerCard(ev, root) {
+          if (!root) root = document.getElementById("nt-edit-extra");
+          if (!root) return;
+          var card = root.querySelector("#flyer-card");
+          if (!card) return;
+          card.outerHTML = flyerCardHTML(ev);
+          bindFlyerUI(ev, root);
+        }
+        function bindFlyerUI(ev, root) {
+          if (!root) root = document.getElementById("nt-edit-extra");
+          if (!root) return;
+          var input = root.querySelector("#training-flyer-input");
+          if (input) {
+            input.onchange = function () {
+              var file = input.files && input.files[0];
+              if (!file) return;
+              if (file.size > 10 * 1024 * 1024) {
+                showToast("Flyer must be 10 MB or smaller");
+                input.value = "";
+                return;
+              }
+              var label = input.closest("label");
+              var baseText =
+                label && label.firstChild ? label.firstChild.nodeValue : "";
+              if (label) {
+                label.style.pointerEvents = "none";
+                if (label.firstChild) label.firstChild.nodeValue = "Uploading...";
+              }
+              var fd = new FormData();
+              fd.append("file", file);
+              fd.append("doctype", "Training");
+              fd.append("docname", ev.name);
+              fd.append("is_private", 1);
+              fetch("/api/method/upload_file", {
+                method: "POST",
+                headers: { "X-Frappe-CSRF-Token": csrf },
+                body: fd,
+                credentials: "include",
+              })
+                .then(function (res) {
+                  return res.json();
+                })
+                .then(function (d) {
+                  if (d.exc_type || !d.message || !d.message.file_url)
+                    throw new Error(d.exception || "Upload failed");
+                  return api("update_training_flyer", {
+                    training_name: ev.name,
+                    flyer: d.message.file_url,
+                  });
+                })
+                .then(function (res) {
+                  ev.flyer = (res && res.flyer) || "";
+                  refreshFlyerCard(ev, root);
+                  showToast("Flyer attached");
+                })
+                .catch(function (e) {
+                  if (label) {
+                    label.style.pointerEvents = "";
+                    if (label.firstChild)
+                      label.firstChild.nodeValue = baseText;
+                  }
+                  showToast(
+                    "Could not attach flyer: " + ((e && e.message) || e),
+                  );
+                })
+                .then(function () {
+                  input.value = "";
+                });
+            };
+          }
+          var rm = root.querySelector("#btn-remove-flyer");
+          if (rm) {
+            rm.onclick = function () {
+              rm.disabled = true;
+              api("update_training_flyer", {
+                training_name: ev.name,
+                flyer: "",
+              })
+                .then(function () {
+                  ev.flyer = "";
+                  refreshFlyerCard(ev, root);
+                  showToast("Flyer removed");
+                })
+                .catch(function (e) {
+                  rm.disabled = false;
+                  showToast(
+                    "Could not remove flyer: " + ((e && e.message) || e),
+                  );
+                });
+            };
+          }
         }
         function editExtraHTML(ev) {
           var r = role();
@@ -9933,6 +10064,7 @@
           } else {
             html += '<div id="ee-body">' + statusHtml + "</div>";
           }
+          html += flyerCardHTML(ev);
           return html;
         }
         function fmtTimeInput(t) {
