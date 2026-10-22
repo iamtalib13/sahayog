@@ -219,10 +219,11 @@ def validate_lead_products(doc, method=None):
                 msg=_("Row {0}: Product amount must be a valid number greater than 0.").format(i)
             )
 
-        # Validate Account Number and Account Creation Date when Approved or Converted (for Operation Lead)
+        # Validate Account Number and Account Creation Date when Approved, Rejected or Converted (for Operation Lead)
         is_operation_lead = bool(doc.get("custom_is_operation_lead"))
         is_converted = doc.get("status") == "Converted"
-        is_row_approved = row.get("audit_status") == "Approved"
+        row_status = row.get("audit_status")
+        is_row_decided = row_status in ("Approved", "Rejected")
 
         # Validate Account Number format: exactly 15 digits numeric
         acc_no = str(row.get("account_number") or "").strip()
@@ -233,9 +234,9 @@ def validate_lead_products(doc, method=None):
                     msg=_("Row {0}: Account Number must be exactly 15 numeric digits (numbers only).").format(i)
                 )
 
-        # Validate Account Number and Account Creation Date when Approved or Converted (for Operation Lead)
-        if is_row_approved or (is_operation_lead and is_converted):
-            reason = "Product Audit Status is Approved" if is_row_approved else "Converting an Operation Lead"
+        # Validate Account Number and Account Creation Date when Approved/Rejected or Converted (for Operation Lead)
+        if is_row_decided or (is_operation_lead and is_converted):
+            reason = f"Product Audit Status is {row_status}" if is_row_decided else "Converting an Operation Lead"
             if not row.get("account_number"):
                 frappe.throw(
                     title=_("Missing Account Details"),
@@ -675,8 +676,8 @@ def validate_lead_audit_lock(doc, method=None):
                         msg=_("Row {0}: Only Administrator and Authorized Auditor (Employee 1034) can update Audit Status.").format(idx)
                     )
 
-                # If previously Approved, non-auditor cannot modify fields in this row
-                if prev.get("audit_status") == "Approved" and not can_audit:
+                # If previously Approved or Rejected, non-auditor cannot modify fields in this row
+                if prev.get("audit_status") in ("Approved", "Rejected") and not can_audit:
                     has_changed = False
                     if str(row.get("product") or "").strip() != str(prev.get("product") or "").strip():
                         has_changed = True
@@ -692,20 +693,20 @@ def validate_lead_audit_lock(doc, method=None):
                     if has_changed:
                         frappe.throw(
                             title=_("Row Locked"),
-                            msg=_("Row {0} ({1}) is Approved and locked. Only Administrator and Authorized Auditor (1034) can modify it.").format(idx, row.product_name or row.product)
+                            msg=_("Row {0} ({1}) is {2} and locked. Only Administrator and Authorized Auditor can modify it.").format(idx, row.product_name or row.product, prev.get("audit_status"))
                         )
             else:
                 # Newly added row: non-auditor cannot set audit_status other than Pending
                 if row.get("audit_status") and row.get("audit_status") != "Pending" and not can_audit:
                     row.audit_status = "Pending"
 
-        # Check for deleted rows that were Approved
+        # Check for deleted rows that were Approved or Rejected
         if not can_audit:
             for prev_name, prev in prev_map.items():
-                if prev_name not in current_names and prev.get("audit_status") == "Approved":
+                if prev_name not in current_names and prev.get("audit_status") in ("Approved", "Rejected"):
                     frappe.throw(
                         title=_("Row Locked"),
-                        msg=_("An Approved product row cannot be deleted by non-auditors.")
+                        msg=_("An {0} product row cannot be deleted by non-auditors.").format(prev.get("audit_status"))
                     )
     else:
         # For new documents, ensure audit_status defaults to Pending for non-auditors
