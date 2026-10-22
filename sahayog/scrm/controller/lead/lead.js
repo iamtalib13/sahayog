@@ -515,7 +515,7 @@ function toggleCallingSource(frm) {
   frm.toggle_display("custom_calling_source", is_operations);
 }
 
-// Handle Lead Audit Status read-only/editability and form locking
+// Handle Lead Product Audit Status read-only/editability in child table
 function toggleAuditStatusAndLock(frm) {
   const is_admin = frappe.session.user === "Administrator";
   const is_emp_1034 =
@@ -524,21 +524,14 @@ function toggleAuditStatusAndLock(frm) {
 
   const can_audit = is_admin || is_emp_1034;
 
-  // Field visible to all, but READ-ONLY for everyone except Admin and Employee 1034
-  frm.toggle_display("custom_lead_audit_status", true);
-  frm.set_df_property("custom_lead_audit_status", "read_only", can_audit ? 0 : 1);
-
-  // Lock entire form if Approved, unless Administrator or employee 1034
-  if (frm.doc.custom_lead_audit_status === "Approved" && !frm.is_new()) {
-    if (!can_audit) {
-      frm.disable_save();
-      frm.set_read_only();
-      frm.dashboard.set_headline(
-        __("This lead is Approved / Audited and locked. Only Administrator and Authorized Auditor (1034) can edit."),
-        "blue"
-      );
-    }
-  }
+  // Make audit_status read-only in the child table grid for non-auditors
+  frm.fields_dict["custom_product_table"] &&
+    frm.fields_dict["custom_product_table"].grid &&
+    frm.fields_dict["custom_product_table"].grid.update_docfield_property(
+      "audit_status",
+      "read_only",
+      can_audit ? 0 : 1
+    );
 }
 
 // Format timeline & sidebar activity timestamps as: 'Day, DD-MMM-YYYY hh:mm A'
