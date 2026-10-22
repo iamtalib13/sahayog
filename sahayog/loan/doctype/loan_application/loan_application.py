@@ -73,6 +73,7 @@ class LoanApplication(Document):
                 "Ornament Image",
                 "Packet Image",
                 "Pledge(Group) Image",
+                "Checklist",
             ]
             existing_docs = [d.document_type for d in self.kyc_documents]
             for doc_type in valuation_docs:
