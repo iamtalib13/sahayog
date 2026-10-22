@@ -1243,6 +1243,22 @@
             Edit
           </button>
           <button
+            v-if="currentView === 'details' && selectedApp && selectedApp.status !== 'Draft' && canManageDocs && !isEditing"
+            @click="isEditing = true; currentSection = 'kyc'"
+            style="
+              background: var(--accent);
+              color: white;
+              border: none;
+              padding: 0.5rem 1rem;
+              border-radius: 6px;
+              font-weight: 600;
+              cursor: pointer;
+              font-size: 0.85rem;
+            "
+          >
+            Upload Documents
+          </button>
+          <button
             v-if="currentView === 'details' && isEditing"
             @click="isEditing = false; viewDetails(selectedApp.name)"
             style="
@@ -1451,7 +1467,7 @@
                     <td>
                       <select v-if="isEditing" v-model="doc.document_type" class="info-input" style="font-size: 12px;">
                         <option value="">Select</option>
-                        <option v-for="type in kycDocumentTypes" :value="type">[[ type ]]</option>
+                        <option v-for="type in kycDocumentTypes" :value="type">[[ type ]][[ isMandatoryDoc(type) ? ' *' : '' ]]</option>
                       </select>
                       <span v-else>[[ doc.document_type || '-' ]]</span>
                     </td>
@@ -1490,6 +1506,27 @@
           "
         >
           <h4 style="margin: 0 0 1rem 0">KYC Documents</h4>
+
+          <div v-if="isEditing" style="margin-bottom: 0.75rem;">
+            <button
+              @click="addEditKycRow"
+              style="
+                background: #f1f5f9;
+                color: var(--text-main);
+                border: 1px solid var(--sidebar-border);
+                padding: 0.4rem 0.75rem;
+                border-radius: 6px;
+                font-weight: 600;
+                cursor: pointer;
+                font-size: 0.8rem;
+              "
+            >
+              + Add Document
+            </button>
+            <span style="margin-left: 8px; font-size: 11px; color: var(--text-muted);">
+              Documents marked with * are mandatory.
+            </span>
+          </div>
           
           <!-- Desktop Table View -->
           <div v-if="!isMobile" style="border: 1px solid var(--sidebar-border); border-radius: 8px; overflow: hidden;">
@@ -1507,7 +1544,7 @@
                 <td style="padding: 0.75rem 1rem">
                   <select v-if="isEditing" v-model="doc.document_type" style="width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 12px; background: white;">
                     <option value="">Select</option>
-                    <option v-for="type in kycDocumentTypes" :value="type">[[ type ]]</option>
+                    <option v-for="type in kycDocumentTypes" :value="type">[[ type ]][[ isMandatoryDoc(type) ? ' *' : '' ]]</option>
                   </select>
                   <span v-else>[[ doc.document_type ]]</span>
                 </td>
@@ -1569,7 +1606,7 @@
                 <label style="font-size: 11px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Document Type</label>
                 <select v-if="isEditing" v-model="doc.document_type" style="width: 100%; padding: 0.5rem 0.75rem; border: 1px solid var(--sidebar-border); border-radius: 6px; font-size: 13px; background: white;">
                   <option value="">Select</option>
-                  <option v-for="type in kycDocumentTypes" :value="type">[[ type ]]</option>
+                  <option v-for="type in kycDocumentTypes" :value="type">[[ type ]][[ isMandatoryDoc(type) ? ' *' : '' ]]</option>
                 </select>
                 <div v-else style="font-size: 13px; font-weight: 600; color: var(--text-main); padding: 0.5rem 0.75rem; background: white; border: 1px solid var(--sidebar-border); border-radius: 6px;">[[ doc.document_type ]]</div>
               </div>
@@ -1905,7 +1942,7 @@
                             <td>
                               <select v-model="doc.document_type" class="info-input" style="font-size: 12px;">
                                 <option value="">Select</option>
-                                <option v-for="type in kycDocumentTypes" :value="type">[[ type ]]</option>
+                                <option v-for="type in kycDocumentTypes" :value="type">[[ type ]][[ isMandatoryDoc(type) ? ' *' : '' ]]</option>
                               </select>
                             </td>
                             <td>
@@ -2583,6 +2620,9 @@
           kycDocumentTypes: [
             "Aadhaar Card",
             "PAN Card",
+            "Application Form",
+            "Account Open Form",
+            "Customer Signature",
             "Photograph",
             "Address Proof",
             "Income Document",
@@ -2591,7 +2631,39 @@
             "Electricity Bill",
             "Utility Bill",
             "Bank Statement",
+            "Gold Purchase Bill",
+            "Dedup - Sahayog Bank Details",
+            "7/12 Extract",
+            "Bureau Report",
+            "Valuation Report Image",
+            "Ornament Image",
+            "Packet Image",
+            "Pledge(Group) Image",
+            "Loan Agreement",
+            "Sanction Letter",
+            "Gold Rate",
+            "LTV Table",
+            "Other Documents",
+            "Co-Applicant / Nominee Aadhaar Card",
+            "Co-Applicant / Nominee PAN Card",
+            "Copy - Applicant Documents",
+            "Copy - Co-Applicant / Nominee Documents",
           ],
+          // Documents marked with * in the Gold Loan checklist
+          mandatoryDocTypes: [
+            "Aadhaar Card",
+            "PAN Card",
+            "Application Form",
+            "Customer Signature",
+            "Bureau Report",
+            "Valuation Report Image",
+            "Ornament Image",
+            "Packet Image",
+            "Pledge(Group) Image",
+            "Loan Agreement",
+            "Sanction Letter",
+          ],
+          canManageDocs: false,
           kycStatusOptions: ["Pending", "Verified", "Rejected"],
           showUserDropdown: false,
           userSearchQuery: "",
@@ -2772,6 +2844,10 @@
 
           hasCreateFieldValue(value) {
             return value !== null && value !== undefined && String(value).trim() !== "";
+          },
+
+          isMandatoryDoc(type) {
+            return this.mandatoryDocTypes.includes(type);
           },
 
           isCreateSectionComplete(section) {
@@ -3082,6 +3158,21 @@
             });
           },
 
+          addEditKycRow() {
+            if (!this.selectedApp.kyc_documents) {
+              this.selectedApp.kyc_documents = [];
+            }
+            this.selectedApp.kyc_documents.push({
+              doctype: "Loan Document",
+              document_type: "",
+              document_number: "",
+              document_file: "",
+              file_name: "",
+              file: null,
+              status: "Pending",
+            });
+          },
+
           areAllNewKycRowsSelected() {
             return !!(
               this.newApp.kyc_documents &&
@@ -3210,6 +3301,23 @@
           async updateApplication() {
             this.saving = true;
             try {
+              // After approval only document rows can be updated
+              if (this.selectedApp.status !== "Draft") {
+                for (let i = 0; i < (this.selectedApp.kyc_documents || []).length; i++) {
+                  const d = this.selectedApp.kyc_documents[i];
+                  if (!d.document_type) {
+                    frappe.show_alert({ message: `Row ${i + 1}: Please select a Document Type`, indicator: "red" });
+                    this.saving = false;
+                    return;
+                  }
+                  if (!d.name && !d.file && !d.document_file) {
+                    frappe.show_alert({ message: `Row ${i + 1}: Please attach the document file`, indicator: "red" });
+                    this.saving = false;
+                    return;
+                  }
+                }
+              }
+
               // Upload any pending files first
               if (this.selectedApp.kyc_documents) {
                 for (let i = 0; i < this.selectedApp.kyc_documents.length; i++) {
@@ -3335,9 +3443,18 @@
               // Validate each KYC row
               for (let i = 0; i < this.newApp.kyc_documents.length; i++) {
                 const doc = this.newApp.kyc_documents[i];
-                if (!doc.document_type || !doc.document_number) {
+                if (!doc.document_type) {
                   frappe.show_alert({
-                    message: `Row ${i + 1}: KYC Type and Number are mandatory`,
+                    message: `Row ${i + 1}: Document Type is mandatory`,
+                    indicator: "red",
+                  });
+                  this.saving = false;
+                  return;
+                }
+                // Number is mandatory only for Aadhaar & PAN (other documents are optional)
+                if ((doc.document_type === "Aadhaar Card" || doc.document_type === "PAN Card") && !doc.document_number) {
+                  frappe.show_alert({
+                    message: `Row ${i + 1}: ${doc.document_type} Number is mandatory`,
                     indicator: "red",
                   });
                   this.saving = false;
@@ -3495,6 +3612,10 @@
             this.fetchLoanTypes();
             this.fetchBranches();
             this.fetchUsers();
+            fetch("/api/method/sahayog.api.loan_application.can_manage_loan_docs", { credentials: "include" })
+              .then((r) => r.json())
+              .then((r) => { this.canManageDocs = !!r.message; })
+              .catch(() => {});
             this.initScrollObserver();
             this.restoreViewFromUrl();
             window.addEventListener("resize", () => {

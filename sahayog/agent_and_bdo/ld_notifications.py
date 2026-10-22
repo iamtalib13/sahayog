@@ -50,6 +50,31 @@ def _get_sender():
         return None
 
 
+def _get_flyer_attachments(training_name):
+    """Return the training's flyer as sendmail attachments, or None.
+
+    Stored in Training.flyer (Attach). A missing/unreadable file must never
+    block an email, so failures are logged and the mail goes out without it.
+    """
+    try:
+        url = frappe.db.get_value("Training", training_name, "flyer")
+        if not url:
+            return None
+        file_name = frappe.db.get_value("File", {"file_url": url}, "name")
+        if not file_name:
+            return None
+        file_doc = frappe.get_doc("File", file_name)
+        content = file_doc.get_content()
+        if not content:
+            return None
+        return [{"fname": file_doc.file_name or "flyer", "fcontent": content}]
+    except Exception as e:
+        frappe.log_error(
+            f"Training flyer attach failed for {training_name}: {e}", "LD Notification"
+        )
+        return None
+
+
 def _fmt_time(t):
     if not t:
         return "—"
@@ -108,6 +133,7 @@ def _send_milestone_invitations(days_before, flag_field):
                 sender=_get_sender(),
                 subject=subject,
                 message=message,
+                attachments=_get_flyer_attachments(training.name),
                 expose_recipients="header",
                 now=False,
             )
@@ -184,6 +210,7 @@ def send_closure_for_training(training_name):
         sender=_get_sender(),
         subject=subject,
         message=message,
+        attachments=_get_flyer_attachments(training_name),
         expose_recipients="header",
         now=False,
     )

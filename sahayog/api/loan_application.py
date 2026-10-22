@@ -65,21 +65,38 @@ def update_loan_application(name, **kwargs):
     """Update an existing loan application"""
     try:
         doc = frappe.get_doc("Loan Application", name)
-        
-        # Only allow updates if in Draft status (optional, but good practice if requested)
+
         if doc.status != "Draft":
-            frappe.throw("Only applications in Draft status can be updated.")
-            
+            # After approval, only Credit/CPC team may update documents
+            allowed_roles = {"Credit Loan User", "CPC Loan User", "Administrator", "System Manager"}
+            if not allowed_roles.intersection(set(frappe.get_roles(frappe.session.user))):
+                frappe.throw("Only Credit / CPC team can upload documents after approval.")
+
+            kwargs = {k: v for k, v in kwargs.items() if k == "kyc_documents"}
+            if not kwargs:
+                frappe.throw("Only documents can be updated after approval.")
+
+            doc.flags.ignore_validate = True
+            doc.flags.ignore_validate_update_after_submit = True
+            doc.flags.ignore_permissions = True
+
         doc.update(kwargs)
         doc.save()
         frappe.db.commit()
-        
+
         return {"name": doc.name, "status": "success"}
 
     except Exception as e:
         frappe.log_error(f"Error updating loan application {name}: {str(e)}")
         frappe.throw(str(e))
         return None
+
+
+@frappe.whitelist()
+def can_manage_loan_docs():
+    """True if the logged-in user can upload documents after approval."""
+    allowed_roles = {"Credit Loan User", "CPC Loan User", "Administrator", "System Manager"}
+    return bool(allowed_roles.intersection(set(frappe.get_roles(frappe.session.user))))
 
 
 @frappe.whitelist()

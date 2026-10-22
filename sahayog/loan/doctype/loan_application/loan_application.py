@@ -57,9 +57,23 @@ class LoanApplication(Document):
                     "status": "Pending"
                 })
 
+        # Credit Check Logic: Bureau Report is mandatory from this stage
+        if self.status == "Credit Check" and self.security_type == "Gold":
+            existing_docs = [d.document_type for d in self.kyc_documents]
+            if "Bureau Report" not in existing_docs:
+                self.append("kyc_documents", {
+                    "document_type": "Bureau Report",
+                    "status": "Pending"
+                })
+
         # Valuation Pending Logic
         if self.status == "Valuation Pending" and self.security_type == "Gold":
-            valuation_docs = ["Valuation Report Image", "Ornament Image"]
+            valuation_docs = [
+                "Valuation Report Image",
+                "Ornament Image",
+                "Packet Image",
+                "Pledge(Group) Image",
+            ]
             existing_docs = [d.document_type for d in self.kyc_documents]
             for doc_type in valuation_docs:
                 if doc_type not in existing_docs:
@@ -229,6 +243,56 @@ def add_workflow_comment(docname, comment):
         doc.add_comment("Comment", comment)
         return True
     return False
+
+
+@frappe.whitelist()
+def add_document_after_approval(docname, document_type, document_file, document_number=None, remark=None):
+    """Allow Credit/CPC team to upload or re-upload a document after approval."""
+    allowed_roles = {"Credit Loan User", "CPC Loan User", "Administrator", "System Manager"}
+    if not allowed_roles.intersection(set(frappe.get_roles(frappe.session.user))):
+        frappe.throw(_("Only Credit / CPC team can upload documents after approval."))
+
+    document_type = (document_type or "").strip()
+    if not document_type:
+        frappe.throw(_("Document Type is required."))
+    if not document_file:
+        frappe.throw(_("Please attach the document file."))
+
+    doc = frappe.get_doc("Loan Application", docname)
+    if doc.status == "Draft":
+        frappe.throw(_("Please use the regular form to edit documents before approval."))
+
+    existing_row = None
+    for row in doc.kyc_documents:
+        if (row.document_type or "").strip() == document_type:
+            existing_row = row
+            break
+
+    if existing_row:
+        # Re-upload: replace the file on the existing row instead of adding a duplicate
+        existing_row.document_file = document_file
+        if document_number:
+            existing_row.document_number = document_number
+        if remark:
+            existing_row.remark = remark
+        existing_row.status = "Pending"
+        existing_row.verified_by = None
+        existing_row.verification_date = None
+    else:
+        doc.append("kyc_documents", {
+            "document_type": document_type,
+            "document_number": document_number,
+            "document_file": document_file,
+            "status": "Pending",
+            "remark": remark,
+        })
+
+    doc.flags.ignore_permissions = True
+    doc.flags.ignore_validate = True
+    doc.flags.ignore_validate_update_after_submit = True
+    doc.save()
+    doc.add_comment("Comment", _("Document '{0}' uploaded by {1}").format(document_type, frappe.session.user))
+    return {"status": "success", "name": doc.name}
 
 
 @frappe.whitelist()
