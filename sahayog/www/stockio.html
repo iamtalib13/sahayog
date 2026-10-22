@@ -15326,17 +15326,8 @@
         // Fetch item groups and departments (non-blocking)
         this.fetchItemGroupsAndDepartments();
 
-        // Fetch Sahayog Serial Configuration config_type options
-        try {
-          frappe.model.with_doctype("Sahayog Serial Configuration", () => {
-            const configField = frappe.meta.get_docfield("Sahayog Serial Configuration", "config_type");
-            if (configField && configField.options) {
-              this.configTypes = configField.options.split('\n').filter(Boolean);
-            }
-          });
-        } catch (e) {
-          console.warn("Failed to fetch Sahayog Serial Configuration metadata:", e);
-        }
+         // Fetch Sahayog Serial Configuration config_type options (optional; defaults already set)
+         // (with_doctype removed: doctype is not list-enabled and caused console errors)
 
         // Reset create views
         this.showEMRCreateView = false;
