@@ -69,7 +69,7 @@ class LoanApplication(Document):
         # Valuation Pending Logic
         if self.status == "Valuation Pending" and self.security_type == "Gold":
             valuation_docs = [
-                "Valuation Report Image",
+                "Valuation Report",
                 "Ornament Image",
                 "Packet Image",
                 "Pledge(Group) Image",
