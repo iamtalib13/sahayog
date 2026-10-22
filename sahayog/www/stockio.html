@@ -9690,10 +9690,7 @@
               <div v-if="!collapsedFixRows.includes(ri.line)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
                 <div v-if="findHeaderByAliases(['supplier','vendor']) && rowHasIssue(ri, 'supplier')">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Supplier</label>
-                  <select class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['supplier','vendor'])" @change="fixInwardRowField(ri.line, ['supplier','vendor'], $event.target.value)">
-                    <option value="">-- select --</option>
-                    <option v-for="s in suppliers" :value="s.name" :key="s.name">[[ s.name ]]</option>
-                  </select>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixSuppliers" :value="getInwardRowField(ri.line, ['supplier','vendor'])" @change="fixInwardRowField(ri.line, ['supplier','vendor'], $event.target.value)" />
                 </div>
                 <div v-if="findHeaderByAliases(['invoiceno','invoicenumber','invno','billno']) && rowHasIssue(ri, 'invoice_no')">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Invoice No</label>
@@ -9705,10 +9702,7 @@
                 </div>
                 <div v-if="findHeaderByAliases(['setwarehouse','warehouse','store','location']) && rowHasIssue(ri, 'set_warehouse')">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Warehouse</label>
-                  <select class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'])" @change="fixInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'], $event.target.value)">
-                    <option value="">-- select --</option>
-                    <option v-for="w in warehouses" :value="w" :key="w">[[ w ]]</option>
-                  </select>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixWarehouses" :value="getInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'])" @change="fixInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'], $event.target.value)" />
                 </div>
                 <div v-if="findHeaderByAliases(['itemcode','item','material','sku','productcode']) && rowHasIssue(ri, 'item_code')">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Item Code</label>
@@ -9727,6 +9721,12 @@
           </div>
           <datalist id="inwardFixItems">
             <option v-for="it in itemsList" :value="it.name" :key="it.name">[[ it.item_name ]]</option>
+          </datalist>
+          <datalist id="inwardFixSuppliers">
+            <option v-for="s in suppliers" :value="s.name" :key="s.name">[[ s.supplier_name || s.name ]]</option>
+          </datalist>
+          <datalist id="inwardFixWarehouses">
+            <option v-for="w in warehouses" :value="w" :key="w">[[ w ]]</option>
           </datalist>
         </div>
       </div>
