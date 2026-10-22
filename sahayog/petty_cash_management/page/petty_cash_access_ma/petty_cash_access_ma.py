@@ -165,7 +165,7 @@ def get_branch_label(branch_id):
 def get_branch_access_data():
     validate_access()
 
-    cleanup_disabled_user_access()
+    # cleanup_disabled_user_access()
 
     all_branches = get_all_branches()
 
