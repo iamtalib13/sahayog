@@ -9721,6 +9721,10 @@
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Item Code</label>
                   <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixItems" :value="getInwardRowField(ri.line, ['itemcode','item','material','sku','productcode'])" @change="fixInwardRowField(ri.line, ['itemcode','item','material','sku','productcode'], $event.target.value)" />
                 </div>
+                <div v-if="findHeaderByAliases(['serialno','serial','sn']) && rowHasIssue(ri, 'serial_no')">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Serial No</label>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['serialno','serial','sn'])" @change="fixInwardRowField(ri.line, ['serialno','serial','sn'], $event.target.value)" />
+                </div>
                 <div v-if="findHeaderByAliases(['rate','price','unitprice','amount']) && rowHasIssue(ri, 'rate')">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Rate</label>
                   <input type="number" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['rate','price','unitprice','amount'])" @change="fixInwardRowField(ri.line, ['rate','price','unitprice','amount'], $event.target.value)" />
@@ -16912,6 +16916,7 @@
           invoice_date: "Invoice Date",
           set_warehouse: "Warehouse",
           item_code: "Item",
+          serial_no: "Serial",
           rate: "Rate",
         };
         const kw = map[fieldKey];
@@ -17055,6 +17060,13 @@
 
           if (!item) issues.push("Item Code empty");
           else if (itemNames.size && !itemNames.has(item.toLowerCase())) issues.push(`Item not found: ${item}`);
+
+          // Serial No required for IT items (or unknown items) when the column is present
+          if (col("serial_no")) {
+            const itemObj = (this.itemsList || []).find(i => String(i.name).toLowerCase() === item.toLowerCase());
+            const isIT = !itemObj || (String(itemObj.custom_item_department || "").toUpperCase() === "IT");
+            if (isIT && !get(r, "serial_no")) issues.push("Serial No is empty");
+          }
 
           const q = Number(qty);
           if (col("qty") && qty && (isNaN(q) || q <= 0)) issues.push(`Qty must be > 0 (got "${qty}")`);
