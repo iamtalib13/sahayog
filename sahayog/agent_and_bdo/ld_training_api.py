@@ -1165,6 +1165,22 @@ def update_training_emails(training_name, additional_cc=None, additional_to=None
 
 
 @frappe.whitelist()
+def update_training_flyer(training_name, flyer=None):
+    """Attach/clear the flyer that goes out with this training's emails.
+
+    `flyer` is the File URL returned by `upload_file`; empty string clears it.
+    """
+    doc = frappe.get_doc("Training", training_name)
+    _ensure_can_update(doc)
+    url = (flyer or "").strip()
+    if url and not frappe.db.exists("File", {"file_url": url}):
+        frappe.throw(_("Uploaded flyer not found. Please upload it again."))
+    frappe.db.set_value("Training", training_name, "flyer", url)
+    frappe.db.commit()
+    return {"success": True, "flyer": url}
+
+
+@frappe.whitelist()
 def get_mail_recipients(training_name):
     """Preview who gets the invitation/closure mail, grouped by source.
 
@@ -1232,6 +1248,7 @@ def send_training_invitation_now(training_name):
         sender=_ldn._get_sender(),
         subject=_ldn._training_invitation_subject(doc),
         message=_ldn._training_invitation_email_body(doc),
+        attachments=_ldn._get_flyer_attachments(doc.name),
         expose_recipients="header",
         now=False,
     )
