@@ -143,8 +143,8 @@ frappe.ui.form.on("Loan Application", {
 
                 // Stage-wise mandatory Gold Loan checklist (all must exist with a file)
                 const mandatory_docs = [
-                    "Aadhaar Card", "PAN Card", "Application Form", "Customer Signature",
-                    "Bureau Report", "Valuation Report Image", "Ornament Image",
+                    "Aadhaar Card", "PAN Card", "Application Form",
+                    "Bureau Report", "Valuation Report", "Ornament Image",
                     "Packet Image", "Pledge(Group) Image", "Loan Agreement", "Sanction Letter"
                 ];
                 mandatory_docs.forEach(doc_type => {
@@ -359,14 +359,15 @@ frappe.ui.form.on("Loan Application", {
                 let has_aadhaar = false;
                 let has_pan = false;
                 let has_app_form = false;
-                let has_signature = false;
+                let has_valuation = false;
+                let has_ornament = false;
 
                 // Ensure table has rows
                 if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
                     frappe.msgprint({
                         title: __('Missing Mandatory Documents'),
                         indicator: 'red',
-                        message: __('You must add Aadhaar Card, PAN Card, Application Form, and Customer Signature to the KYC table.')
+                        message: __('You must add Aadhaar Card, PAN Card, Application Form, Valuation Report, and Ornament Image to the KYC table.')
                     });
                     frappe.validated = false;
                     reject();
@@ -405,10 +406,16 @@ frappe.ui.form.on("Loan Application", {
                             doc_errors.push(`<b>Application Form</b>: Must have an Attachment.`);
                         }
                     }
-                    else if (row.document_type === "Customer Signature") {
-                        has_signature = true;
+                    else if (row.document_type === "Valuation Report") {
+                        has_valuation = true;
                         if (!row.document_file) {
-                            doc_errors.push(`<b>Customer Signature</b>: Must have an Attachment.`);
+                            doc_errors.push(`<b>Valuation Report</b>: Must have an Attachment.`);
+                        }
+                    }
+                    else if (row.document_type === "Ornament Image") {
+                        has_ornament = true;
+                        if (!row.document_file) {
+                            doc_errors.push(`<b>Ornament Image</b>: Must have an Attachment.`);
                         }
                     }
                 });
@@ -417,7 +424,8 @@ frappe.ui.form.on("Loan Application", {
                 if (!has_aadhaar) doc_errors.push(`<b>Aadhaar Card</b> row is missing from the table.`);
                 if (!has_pan) doc_errors.push(`<b>PAN Card</b> row is missing from the table.`);
                 if (!has_app_form) doc_errors.push(`<b>Application Form</b> row is missing from the table.`);
-                if (!has_signature) doc_errors.push(`<b>Customer Signature</b> row is missing from the table.`);
+                if (!has_valuation) doc_errors.push(`<b>Valuation Report</b> row is missing from the table.`);
+                if (!has_ornament) doc_errors.push(`<b>Ornament Image</b> row is missing from the table.`);
 
                 // If any errors exist, block the submission
                 if (doc_errors.length > 0) {
@@ -500,7 +508,7 @@ frappe.ui.form.on("Loan Application", {
 
             if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
                 
-                let required_docs = ["Account Open Form", "Valuation Report Image", "Ornament Image", "Packet Image", "Pledge(Group) Image"];
+                let required_docs = ["Account Open Form", "Valuation Report", "Ornament Image", "Packet Image", "Pledge(Group) Image"];
                 let val_errors = [];
 
                 // Loop through the required documents list
@@ -1168,7 +1176,7 @@ frappe.ui.form.on("Loan Application", {
 
     // Pre-populate KYC Documents for new applications
     if (frm.is_new() && (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0)) {
-      const default_docs = ["Aadhaar Card", "PAN Card", "Application Form", "Customer Signature"];
+      const default_docs = ["Aadhaar Card", "PAN Card", "Application Form", "Valuation Report", "Ornament Image"];
       default_docs.forEach((doc_type) => {
         let row = frm.add_child("kyc_documents");
         row.document_type = doc_type;
