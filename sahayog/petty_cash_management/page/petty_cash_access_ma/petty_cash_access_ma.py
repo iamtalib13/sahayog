@@ -36,12 +36,21 @@ def validate_access():
     frappe.only_for(ALLOWED_ROLES)
 
 
+# def get_all_branches():
+#     """Load every branch from Sahayog Branch. Branch identity/value = sol_id."""
+#     return frappe.get_all(
+#         "Sahayog Branch",
+#         fields=["name", "sol_id", "branch"],
+#         order_by="branch asc",
+#     )
+
+
 def get_all_branches():
-    """Load every branch from Sahayog Branch. Branch identity/value = sol_id."""
+    """Load every branch from Branch Petty Cash Account."""
     return frappe.get_all(
-        "Sahayog Branch",
-        fields=["name", "sol_id", "branch"],
-        order_by="branch asc",
+        "Branch Petty Cash Account",
+        fields=["name", "branch", "branch_name"],
+        order_by="branch_name asc",
     )
 
 
@@ -76,14 +85,25 @@ def get_employees_with_branch_user_role():
     )
 
 
+# def get_branch_label(branch_id):
+#     if not branch_id:
+#         return "Unknown"
+
+#     return frappe.db.get_value(
+#         "Sahayog Branch",
+#         {"sol_id": branch_id},
+#         "branch",
+#     ) or "Unknown"
+
+
 def get_branch_label(branch_id):
     if not branch_id:
         return "Unknown"
 
     return frappe.db.get_value(
-        "Sahayog Branch",
-        {"sol_id": branch_id},
-        "branch",
+        "Branch Petty Cash Account",
+        {"branch": branch_id},
+        "branch_name",
     ) or "Unknown"
 
 
@@ -172,8 +192,22 @@ def get_branch_access_data():
 
     branch_list = []
 
+    # for branch in all_branches:
+    #     branch_id = branch.sol_id
+
+    #     if not branch_id:
+    #         continue
+
+    #     branch_list.append(
+    #         {
+    #             "branch_id": branch_id,
+    #             "branch_name": branch.branch or branch_id,
+    #             "employees": employees_by_branch.get(branch_id, []),
+    #         }
+    #     )
+
     for branch in all_branches:
-        branch_id = branch.sol_id
+        branch_id = branch.branch
 
         if not branch_id:
             continue
@@ -181,7 +215,7 @@ def get_branch_access_data():
         branch_list.append(
             {
                 "branch_id": branch_id,
-                "branch_name": branch.branch or branch_id,
+                "branch_name": branch.branch_name or branch_id,
                 "employees": employees_by_branch.get(branch_id, []),
             }
         )
