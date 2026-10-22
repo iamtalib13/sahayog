@@ -209,7 +209,10 @@ def get_branch_access_data():
     for branch in all_branches:
         branch_id = branch.branch
 
-        if not branch_id:
+        # if not branch_id:
+        #     continue
+
+        if not branch_id or branch_id == "1000":
             continue
 
         branch_list.append(
