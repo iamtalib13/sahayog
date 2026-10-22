@@ -17064,75 +17064,89 @@
               } catch (e) { /* ignore */ }
               if (!company) company = "Sahayog Multistate Credit Co-op Society Ltd";
 
-              const items = [];
-              for (const r of grows) {
-                const itemCode = get(r, "item_code");
-                if (!itemCode) continue;
-                let uom = "";
-                try {
-                  const u = await frappe.call({ method: "frappe.client.get_value", args: { doctype: "Item", filters: { name: itemCode }, fieldname: "stock_uom" } });
-                  if (u.message) uom = u.message.stock_uom;
-                } catch (e) { /* ignore */ }
+               // Group rows by item_code so the same item with multiple serials becomes
+               // ONE PR line with a single Serial & Batch Bundle (qty = serial count).
+               const itemMap = new Map();
+               for (const r of grows) {
+                 const itemCode = get(r, "item_code");
+                 if (!itemCode) continue;
+                 if (!itemMap.has(itemCode)) {
+                   itemMap.set(itemCode, { itemCode, qty: 0, rate: Number(get(r, "rate")) || 0, description: get(r, "description"), serials: [] });
+                 }
+                 const it = itemMap.get(itemCode);
+                 it.qty += (Number(get(r, "qty")) || 0);
+                 if (!it.description) it.description = get(r, "description");
+                 if (get(r, "rate")) it.rate = Number(get(r, "rate")) || it.rate;
+                 const sn = get(r, "serial_no");
+                 if (sn) it.serials.push(r);
+               }
 
-                const qty = Number(get(r, "qty")) || 1;
-                const rate = Number(get(r, "rate")) || 0;
-                const serialNo = get(r, "serial_no");
-                const serialNames = [];
-                let bundleName = null;
+               const items = [];
+               for (const [itemCode, it] of itemMap) {
+                 let uom = "";
+                 try {
+                   const u = await frappe.call({ method: "frappe.client.get_value", args: { doctype: "Item", filters: { name: itemCode }, fieldname: "stock_uom" } });
+                   if (u.message) uom = u.message.stock_uom;
+                 } catch (e) { /* ignore */ }
 
-                if (serialNo) {
-                  // 1) create Serial No
-                  try {
-                    const serialDoc = {
-                      doctype: "Serial No",
-                      serial_no: serialNo,
-                      item_code: itemCode,
-                      purchase_rate: rate,
-                      status: "Active",
-                      company: company,
-                      purchase_document_no: invNo,
-                      warranty_expiry_date: this.normalizeDateValue(flatGet(r, ["warrantyenddate", "warrantyend"])) || null,
-                      configuration_table: buildSerialConfigTable(r),
-                    };
-                    const sRes = await frappe.call({ method: "frappe.client.insert", args: { doc: serialDoc } });
-                    if (sRes.message && sRes.message.name) serialNames.push(sRes.message.name);
-                  } catch (e) {
-                    console.error("Serial No creation failed", serialNo, e);
-                    frappe.msgprint(`Serial No ${serialNo} failed: ${e.message || e}`);
-                  }
-                  // 2) create Serial and Batch Bundle
-                  if (serialNames.length) {
-                    try {
-                      const bRes = await frappe.call({
-                        method: "frappe.client.insert",
-                        args: {
-                          doc: {
-                            doctype: "Serial and Batch Bundle",
-                            item_code: itemCode,
-                            type_of_transaction: "Inward",
-                            voucher_type: "Purchase Receipt",
-                            warehouse: warehouse,
-                            entries: serialNames.map((sn) => ({ serial_no: sn, warehouse: warehouse, qty: 1 })),
-                          },
-                        },
-                      });
-                      if (bRes.message && bRes.message.name) bundleName = bRes.message.name;
-                    } catch (e) {
-                      console.error("Bundle creation failed", serialNo, e);
-                    }
-                  }
-                }
+                 let bundleName = null;
+                 const serialNames = [];
+                 if (it.serials.length) {
+                   for (const r of it.serials) {
+                     const serialNo = get(r, "serial_no");
+                     const rate = Number(get(r, "rate")) || it.rate;
+                     try {
+                       const serialDoc = {
+                         doctype: "Serial No",
+                         serial_no: serialNo,
+                         item_code: itemCode,
+                         purchase_rate: rate,
+                         status: "Active",
+                         company: company,
+                         purchase_document_no: invNo,
+                         warranty_expiry_date: this.normalizeDateValue(flatGet(r, ["warrantyenddate", "warrantyend"])) || null,
+                         configuration_table: buildSerialConfigTable(r),
+                       };
+                       const sRes = await frappe.call({ method: "frappe.client.insert", args: { doc: serialDoc } });
+                       if (sRes.message && sRes.message.name) serialNames.push(sRes.message.name);
+                     } catch (e) {
+                       console.error("Serial No creation failed", serialNo, e);
+                       frappe.msgprint(`Serial No ${serialNo} failed: ${e.message || e}`);
+                     }
+                   }
+                   if (serialNames.length) {
+                     try {
+                       const bRes = await frappe.call({
+                         method: "frappe.client.insert",
+                         args: {
+                           doc: {
+                             doctype: "Serial and Batch Bundle",
+                             item_code: itemCode,
+                             type_of_transaction: "Inward",
+                             voucher_type: "Purchase Receipt",
+                             warehouse: warehouse,
+                             entries: serialNames.map((sn) => ({ serial_no: sn, warehouse: warehouse, qty: 1 })),
+                           },
+                         },
+                       });
+                       if (bRes.message && bRes.message.name) bundleName = bRes.message.name;
+                     } catch (e) {
+                       console.error("Bundle creation failed", e);
+                     }
+                   }
+                 }
 
-                items.push({
-                  item_code: itemCode,
-                  description: get(r, "description") || undefined,
-                  qty: serialNames.length ? serialNames.length : qty,
-                  uom: uom || undefined,
-                  warehouse: warehouse,
-                  rate: rate,
-                  serial_and_batch_bundle: bundleName || undefined,
-                });
-              }
+                 const qty = it.serials.length ? it.serials.length : (it.qty > 0 ? it.qty : 1);
+                 items.push({
+                   item_code: itemCode,
+                   description: it.description || undefined,
+                   qty: qty,
+                   uom: uom || undefined,
+                   warehouse: warehouse,
+                   rate: it.rate,
+                   serial_and_batch_bundle: bundleName || undefined,
+                 });
+               }
 
               const doc = {
                 doctype: "Purchase Receipt",
