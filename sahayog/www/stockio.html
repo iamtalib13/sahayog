@@ -15364,16 +15364,9 @@
           defaultItemLabel = "Requests";
         }
 
-        // Initialize from URL
-        const hash = window.location.hash.split('/');
+        // Initialize from URL (disabled: any refresh lands on Items/Requests default)
+        const hash = [];
         let initialRecordId = null;
-
-        if (hash.length > 1) {
-          const itemLabel = hash[1].toLowerCase();
-          const item = this.findSidebarItem(itemLabel);
-          if (item) defaultItemLabel = item.label;
-          if (hash.length > 2) initialRecordId = hash[2];
-        }
 
         const defaultItem =
           this.findSidebarItem(this.activeItem || defaultItemLabel) ||
