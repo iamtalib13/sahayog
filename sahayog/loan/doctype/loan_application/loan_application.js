@@ -103,6 +103,36 @@ frappe.ui.form.on("Loan Application", {
             // }
 
             // ==========================================
+            // CREDIT DECISION -> CPC PROCESSING VALIDATION
+            // ==========================================
+            if (frm.doc.status === "Credit Decision" && frm.selected_workflow_action === "Approve") {
+                let credit_decision_docs = ["Gold Rate", "LTV Table", "Sanction Letter"];
+                let cd_errors = [];
+
+                credit_decision_docs.forEach(doc_type => {
+                    let row = (frm.doc.kyc_documents || []).find(d => d.document_type === doc_type);
+
+                    if (!row) {
+                        cd_errors.push(`<b>${doc_type}</b> row is missing from the KYC table.`);
+                    } else if (!row.document_file) {
+                        cd_errors.push(`Missing file attachment for <b>${doc_type}</b>.`);
+                    }
+                });
+
+                if (cd_errors.length > 0) {
+                    frappe.msgprint({
+                        title: __('Missing Required Documents'),
+                        indicator: 'red',
+                        message: __('Please resolve the following before approving:<br><br><ul style="margin-bottom: 0;"><li>' + cd_errors.join('</li><li>') + '</li></ul>')
+                    });
+
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
+            }
+
+            // ==========================================
             // 2. CPC PROCESSING VERIFICATION (STRICT MANUAL CHECK)
             // ==========================================
             if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
