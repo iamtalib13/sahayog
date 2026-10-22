@@ -465,6 +465,18 @@ function validateMobileNumber(mobile) {
   }
 }
 
+function canAuditLeadProduct() {
+  const user_roles = frappe.user_roles || [];
+  const is_admin = frappe.session.user === "Administrator";
+  const is_sys_mgr = user_roles.includes("System Manager");
+  const is_ops_mgr = user_roles.includes("Operations Support Manager");
+  const is_emp_1034 =
+    frappe.session.user === "1034@sahayog.com" ||
+    (frappe.boot && frappe.boot.user && (frappe.boot.user.name === "1034" || frappe.boot.user.employee_number === "1034"));
+
+  return is_admin || is_sys_mgr || is_ops_mgr || is_emp_1034;
+}
+
 frappe.ui.form.on("Lead Product", {
   account_number(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
@@ -485,7 +497,9 @@ frappe.ui.form.on("Lead Product", {
       (frappe.session.user === "Administrator");
 
     const row = locals[cdt][cdn];
+    const can_audit = canAuditLeadProduct();
     const grid_row = frm.fields_dict["custom_product_table"].grid.get_row(cdn);
+
     if (grid_row) {
       grid_row.toggle_display("account_number", is_operations);
       grid_row.toggle_display("account_creation_date", is_operations);
@@ -498,6 +512,17 @@ frappe.ui.form.on("Lead Product", {
           input_field.off("input.ac_filter").on("input.ac_filter", function () {
             this.value = this.value.replace(/[^0-9]/g, "").slice(0, 15);
           });
+        }
+      }
+
+      // If Approved row and user is NOT authorized, lock all fields and hide delete button
+      if (row.audit_status === "Approved" && !can_audit) {
+        ["product", "product_name", "product_amount", "account_number", "account_creation_date", "audit_status"].forEach((fn) => {
+          grid_row.toggle_editable(fn, false);
+        });
+        if (grid_row.grid_form && grid_row.grid_form.wrapper) {
+          grid_row.grid_form.wrapper.find("input, select, textarea, button.btn-open-row").prop("disabled", true);
+          grid_row.grid_form.wrapper.find(".grid-delete-row, .grid-duplicate-row").hide();
         }
       }
     }
@@ -517,21 +542,44 @@ function toggleCallingSource(frm) {
 
 // Handle Lead Product Audit Status read-only/editability in child table
 function toggleAuditStatusAndLock(frm) {
-  const is_admin = frappe.session.user === "Administrator";
-  const is_emp_1034 =
-    frappe.session.user === "1034@sahayog.com" ||
-    (frappe.boot && frappe.boot.user && (frappe.boot.user.name === "1034" || frappe.boot.user.employee_number === "1034"));
-
-  const can_audit = is_admin || is_emp_1034;
+  const can_audit = canAuditLeadProduct();
+  const grid = frm.fields_dict["custom_product_table"] && frm.fields_dict["custom_product_table"].grid;
+  if (!grid) return;
 
   // Make audit_status read-only in the child table grid for non-auditors
-  frm.fields_dict["custom_product_table"] &&
-    frm.fields_dict["custom_product_table"].grid &&
-    frm.fields_dict["custom_product_table"].grid.update_docfield_property(
-      "audit_status",
-      "read_only",
-      can_audit ? 0 : 1
-    );
+  grid.update_docfield_property(
+    "audit_status",
+    "read_only",
+    can_audit ? 0 : 1
+  );
+
+  // If not auditor, lock grid rows that are Approved completely
+  if (!can_audit) {
+    const lockRows = () => {
+      (grid.grid_rows || []).forEach((grid_row) => {
+        if (grid_row.doc && grid_row.doc.audit_status === "Approved") {
+          if (grid_row.row) {
+            // Disable inline inputs in grid view
+            grid_row.row.find("input, select, textarea").prop("disabled", true);
+            // Hide delete & duplicate/move action buttons
+            grid_row.row.find(".grid-delete-row, .grid-duplicate-row, .grid-move-row").hide();
+            // Locked visual styling on data columns, while keeping pencil (btn-open-row) clickable
+            grid_row.row.css({
+              "background-color": "#f8fafc"
+            });
+            grid_row.row.find(".grid-static-col:not(:has(.btn-open-row)), .col:not(:has(.btn-open-row))").css({
+              "pointer-events": "none",
+              "cursor": "not-allowed"
+            });
+          }
+        }
+      });
+    };
+
+    lockRows();
+    setTimeout(lockRows, 200);
+    setTimeout(lockRows, 600);
+  }
 }
 
 // Format timeline & sidebar activity timestamps as: 'Day, DD-MMM-YYYY hh:mm A'
