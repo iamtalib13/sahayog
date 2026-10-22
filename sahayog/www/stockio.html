@@ -16913,12 +16913,11 @@
         const errors = [];
         const out = { canCreate: false, errors: [], rowIssues: [], inwardCount: 0, rowCount: rows.length };
 
-        // 1) required columns present?
-        ["supplier", "invoice_no", "invoice_date", "set_warehouse", "item_code", "qty", "rate"].forEach((k) => {
-          if (!D[k]) errors.push(`Missing column: ${D[k] ? "" : (this.inwardBulkHeaderTargets().find(t => t.key === k) || {}).label}`);
+        // 1) required columns present? (Qty is optional — defaults to 1 / serial count)
+        ["supplier", "invoice_no", "invoice_date", "set_warehouse", "item_code", "rate"].forEach((k) => {
+          if (!D[k]) errors.push(`Missing column: ${(this.inwardBulkHeaderTargets().find(t => t.key === k) || {}).label}`);
         });
         if (errors.length) {
-          errors[0] = errors[0].replace("Missing column: ", "Missing column: ");
           out.errors = errors;
           this.inwardBulkValidation = out;
           return;
@@ -16958,7 +16957,7 @@
           else if (itemNames.size && !itemNames.has(item.toLowerCase())) issues.push(`Item not found: ${item}`);
 
           const q = Number(qty);
-          if (!qty || isNaN(q) || q <= 0) issues.push(`Qty must be > 0 (got "${qty}")`);
+          if (col("qty") && qty && (isNaN(q) || q <= 0)) issues.push(`Qty must be > 0 (got "${qty}")`);
 
           const rt = Number(rate);
           if (rate === "" || isNaN(rt) || rt < 0) issues.push(`Rate invalid (got "${rate}")`);
@@ -17233,12 +17232,12 @@
         const serialNo = "SN" + today.getFullYear() + String(Math.floor(Math.random() * 900000) + 100000);
         const mac = Array.from({ length: 6 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, "0").toUpperCase()).join(":");
 
-        const inwardHeaders = ["Supplier", "Invoice No", "Invoice Date", "Set Warehouse", "Item Code", "Description", "Qty", "Rate"];
+        const inwardHeaders = ["Supplier", "Invoice No", "Invoice Date", "Set Warehouse", "Item Code", "Description", "Rate"];
         const serialHeaders = ["Serial No", "MAC Address", "Make", "Model Number", "Processor", "RAM", "Storage", "Operating System", "Windows Key", "Office Key", "Warranty Start Date", "Warranty End Date"];
         const headers = [...inwardHeaders, ...serialHeaders];
         const example = [
           supplierName, "INV-2024-0001", iso(today), warehouseName,
-          itemCode, itemName, "1", rate,
+          itemCode, itemName, rate,
           serialNo, mac, "", "", "", "", "", "", "", "", warrantyStart, warrantyEnd,
         ];
         const csv = headers.join(",") + "\n" + example.join(",") + "\n";
