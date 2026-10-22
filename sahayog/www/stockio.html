@@ -4635,7 +4635,7 @@
 
       <!-- Split View Wrapper -->
       <div
-        v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
+        v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || activeItem === 'Branch Exp.' || currentView.isReportSection"
         :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView || showStockHistoryView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'"
       >
         <!-- Stock History Side View -->
@@ -8398,13 +8398,99 @@
 
         <div
           v-show="!showDetailView || activeItem === 'Items'"
-          v-if="currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
+          v-if="currentView.doctype || activeItem === 'Dashboard' || activeItem === 'Branch Exp.' || currentView.isReportSection"
           class="list-view-container"
           :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
         >
+          <!-- Branch Expance (branch-wise monthly expense + unused requested) -->
+          <div
+            v-if="activeItem === 'Branch Exp.'"
+            style="padding: 24px; overflow: auto; height: 100%;"
+          >
+            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
+              <h2 style="margin: 0; font-weight: 800; color: var(--text-main);">Branch Expance</h2>
+              <div style="display: flex; gap: 4px; border: 1px solid var(--border-color); border-radius: 8px; padding: 3px; background: var(--bg-secondary);">
+                <button
+                  @click="branchExpenseMode = 'expense'"
+                  :style="branchExpenseMode === 'expense'
+                    ? 'padding: 6px 14px; border: none; border-radius: 6px; background: #369696; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer;'
+                    : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
+                >Expense (Used)</button>
+                <button
+                  @click="branchExpenseMode = 'purchased'"
+                  :style="branchExpenseMode === 'purchased'
+                    ? 'padding: 6px 14px; border: none; border-radius: 6px; background: #369696; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer;'
+                    : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
+                >Purchased</button>
+              </div>
+              <select
+                v-model="branchExpenseMonth"
+                style="padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; background: var(--bg-primary); color: var(--text-main); min-width: 130px;"
+              >
+                <option value="">All Months</option>
+                <option v-for="m in branchExpenseReport && branchExpenseReport.months ? branchExpenseReport.months.slice().reverse() : []" :key="m" :value="m">[[ m ]]</option>
+              </select>
+              <input
+                v-model="branchExpenseSearch"
+                type="text"
+                placeholder="Search branch / SOL ID"
+                style="padding: 7px 12px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; min-width: 220px; background: var(--bg-primary); color: var(--text-main);"
+              />
+              <label style="display: flex; align-items: center; gap: 6px; font-size: 0.85rem; color: var(--text-muted); cursor: pointer;">
+                <input type="checkbox" v-model="branchExpenseOnlyActive" />
+                Only with activity
+              </label>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">
+              <template v-if="branchExpenseMode === 'expense'">
+                Expense = value of material issued / consumed from the branch (Stock Entry - Material Issue). Click any row for the full breakdown.
+              </template>
+              <template v-else>
+                Purchased = value of material received at the branch (Purchase Receipt). Click any row for the full breakdown.
+              </template>
+            </div>
+            <div v-if="branchExpenseLoading" style="color: var(--text-muted); padding: 20px;">Loading...</div>
+            <div v-else-if="filteredBranchExpenseRows().length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%; min-width: 900px;">
+                <thead>
+                  <tr>
+                    <th style="padding: 10px 12px;">Branch</th>
+                    <th style="padding: 10px 12px;">SOL ID</th>
+                    <th style="padding: 10px 12px;" v-for="m in visibleBranchExpenseMonths()" :key="m">[[ m ]]</th>
+                    <th style="padding: 10px 12px; text-align: right;">Used (Total)</th>
+                    <th style="padding: 10px 12px; text-align: right;">Purchased (Total)</th>
+                    <th style="padding: 10px 12px; text-align: center;">Unused Requested</th>
+                    <th style="padding: 10px 12px; text-align: center;">Download</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="b in filteredBranchExpenseRows()" :key="b.sol_id" style="cursor: pointer;" @click="openBranchDetail(b.sol_id)" title="Click for breakdown">
+                    <td style="padding: 10px 12px; font-weight: 700;">[[ b.branch ]]</td>
+                    <td style="padding: 10px 12px;">[[ b.sol_id ]]</td>
+                    <td style="padding: 10px 12px; text-align: right;" v-for="m in visibleBranchExpenseMonths()" :key="m">[[ fmtBranchExpense(b, m) ]]</td>
+                    <td style="padding: 10px 12px; text-align: right; font-weight: 700;">[[ fmtBranchUsedTotal(b) ]]</td>
+                    <td style="padding: 10px 12px; text-align: right;">[[ fmtBranchPurchasedTotal(b) ]]</td>
+                    <td style="padding: 10px 12px; text-align: center;">[[ b.unused_requested ]]</td>
+                    <td style="padding: 10px 12px; text-align: center;">
+                      <button
+                        @click.stop="openBranchDownloadModal(b)"
+                        title="Download this branch expense details"
+                        style="padding: 4px 10px; border: none; border-radius: 6px; background: #369696; color: #fff; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;"
+                      >
+                        <i class="fas fa-download" style="margin-right: 4px;"></i>Download
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else-if="branchExpenseReport" style="color: var(--text-muted); padding: 20px;">No branch data for this filter.</div>
+            <div v-else style="color: var(--text-muted); padding: 20px;">No branch data.</div>
+          </div>
+
           <!-- Analytics Dashboard -->
           <div
-            v-if="activeItem === 'Dashboard'"
+            v-else-if="activeItem === 'Dashboard'"
             class="analytics-dashboard"
             style="
               position: relative;
@@ -9316,7 +9402,7 @@
       <!-- End of Split View Wrapper -->
 
       <div
-        v-if="!showDetailView && !currentView.doctype && activeItem !== 'Dashboard' && !currentView.isReportSection"
+        v-if="!showDetailView && !currentView.doctype && activeItem !== 'Dashboard' && activeItem !== 'Branch Exp.' && !currentView.isReportSection"
         class="content-container"
       >
         <div class="empty-state-card">
@@ -9331,6 +9417,252 @@
       </div>
     </section>
   </main>
+
+  <!-- Branch Download Format Modal -->
+  <div
+    v-if="showBranchDownloadModal"
+    class="profile-modal-overlay"
+    @click.self="showBranchDownloadModal = false"
+  >
+    <div class="profile-modal" style="max-width: 420px;">
+      <div class="profile-modal-header">
+        <h3>
+          <i class="fas fa-download" style="margin-right: 8px; color: #369696;"></i>
+          Download Branch Expance
+        </h3>
+        <button class="profile-close" @click="showBranchDownloadModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 20px;">
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 14px;">
+          Branch: <span style="font-weight: 800; color: var(--text-main);">[[ branchDownloadRow && branchDownloadRow.branch ]]</span>
+          <span v-if="branchDownloadRow"> ([[ branchDownloadRow.sol_id ]])</span>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--text-main); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; margin-bottom: 14px;">
+          <i class="fas fa-filter" style="margin-right: 6px; color: #369696;"></i>
+          Showing:
+          <b>[[ branchExpenseMode === 'purchased' ? 'Purchase Receipts' : 'Expense (Material Used)' ]]</b>
+          &mdash; Month:
+          <b>[[ branchExpenseMonth || 'All Months' ]]</b>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+          <button
+            @click="downloadBranchExpance(branchDownloadRow, 'pdf'); showBranchDownloadModal = false;"
+            style="width: 100%; padding: 11px 14px; background: rgba(239,68,68,0.08); border: 1.5px solid rgba(239,68,68,0.3); border-radius: 8px; color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;"
+          >
+            <i class="fas fa-file-pdf" style="color:#ef4444;font-size:15px;"></i>
+            PDF (.pdf)
+          </button>
+          <button
+            @click="downloadBranchExpance(branchDownloadRow, 'xlsx'); showBranchDownloadModal = false;"
+            style="width: 100%; padding: 11px 14px; background: rgba(16,185,129,0.08); border: 1.5px solid rgba(16,185,129,0.3); border-radius: 8px; color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;"
+          >
+            <i class="fas fa-file-excel" style="color:#10b981;font-size:15px;"></i>
+            Excel (.xlsx)
+          </button>
+          <button
+            @click="downloadBranchExpance(branchDownloadRow, 'csv'); showBranchDownloadModal = false;"
+            style="width: 100%; padding: 11px 14px; background: rgba(69,231,231,0.08); border: 1.5px solid rgba(69,231,231,0.35); border-radius: 8px; color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;"
+          >
+            <i class="fas fa-file-csv" style="color:#12a7a7;font-size:15px;"></i>
+            CSV (.csv)
+          </button>
+        </div>
+      </div>
+      <div class="profile-modal-footer" style="padding: 14px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+        <button class="btn-create" @click="showBranchDownloadModal = false" style="padding: 8px 20px; border-radius: 6px;">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Branch Detail Modal -->
+  <div
+    v-if="showBranchDetailModal"
+    class="profile-modal-overlay"
+    @click.self="showBranchDetailModal = false"
+  >
+    <div class="profile-modal" style="max-width: 900px; max-height: 85vh; overflow: auto;">
+      <div class="profile-modal-header">
+        <h3>
+          <i class="fas fa-building" style="margin-right: 8px; color: #369696;"></i>
+          [[ branchDetail && branchDetail.branch ? branchDetail.branch.branch : 'Branch' ]] ([[ branchDetail && branchDetail.branch ? branchDetail.branch.sol_id : '' ]])
+        </h3>
+        <button class="profile-close" @click="showBranchDetailModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 20px;">
+        <div v-if="branchDetail" style="display: flex; gap: 26px; flex-wrap: wrap; margin-bottom: 18px; padding: 12px 14px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-secondary);">
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total Used (Expense)</div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-main);">[[ fmtNumber(branchDetailUsedTotal()) ]]</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Total Purchased</div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-main);">[[ fmtNumber(branchDetailPurchasedTotal()) ]]</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">Requested Items</div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-main);">[[ (branchDetail.requested || []).length ]]</div>
+          </div>
+          <div>
+            <div style="font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;">In Stock Items</div>
+            <div style="font-weight: 800; font-size: 1.05rem; color: var(--text-main);">[[ (branchDetail.in_stock || []).length ]]</div>
+          </div>
+        </div>
+        <div v-if="branchDetailLoading" style="color: var(--text-muted); padding: 20px;">Loading...</div>
+        <template v-else-if="branchDetail">
+          <!-- Material issued / consumed (expense) -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
+              Material Used / Issued (Stock Entry - Material Issue) &mdash; this is the branch expense
+            </div>
+            <div v-if="branchDetail.usage && branchDetail.usage.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Month</th>
+                    <th style="padding: 8px 10px;">Stock Entry</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px; text-align: right;">Rate</th>
+                    <th style="padding: 8px 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(u, idx) in branchDetail.usage" :key="'u' + idx">
+                    <td style="padding: 8px 10px;">[[ u.month ]]</td>
+                    <td style="padding: 8px 10px;">[[ u.se_name ]]</td>
+                    <td style="padding: 8px 10px;">[[ u.item_code ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ u.qty ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ fmtNumber(u.rate) ]]</td>
+                    <td style="padding: 8px 10px; text-align: right; font-weight: 700;">[[ fmtNumber(u.amount) ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No material issued from this branch.</div>
+          </div>
+
+          <!-- Material transferred out -->
+          <div v-if="branchDetail.transfers_out && branchDetail.transfers_out.length" style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
+              Transferred Out (Material Transfer)
+            </div>
+            <div style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Month</th>
+                    <th style="padding: 8px 10px;">Stock Entry</th>
+                    <th style="padding: 8px 10px;">To Warehouse</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(t, idx) in branchDetail.transfers_out" :key="'t' + idx">
+                    <td style="padding: 8px 10px;">[[ t.month ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.se_name ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.to_warehouse ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.item_code ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ t.qty ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ fmtNumber(t.amount) ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Monthly Purchase Receipt records -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">Purchase Receipts (monthly records)</div>
+            <div v-if="branchDetail.monthly_records && branchDetail.monthly_records.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Month</th>
+                    <th style="padding: 8px 10px;">PR No</th>
+                    <th style="padding: 8px 10px;">Supplier</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px; text-align: right;">Rate</th>
+                    <th style="padding: 8px 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(rec, idx) in branchDetail.monthly_records" :key="idx">
+                    <td style="padding: 8px 10px;">[[ rec.month ]]</td>
+                    <td style="padding: 8px 10px;">[[ rec.pr_name ]]</td>
+                    <td style="padding: 8px 10px;">[[ rec.supplier ]]</td>
+                    <td style="padding: 8px 10px;">[[ rec.item_code ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ rec.qty ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ rec.rate ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ (rec.amount || 0).toLocaleString() ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No purchase receipts for this branch.</div>
+          </div>
+
+          <!-- Requested items (EMMR) -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">Requested Items (EMMR) — not yet received</div>
+            <div v-if="branchDetail.requested && branchDetail.requested.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">EMR</th>
+                    <th style="padding: 8px 10px;">Employee</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(req, idx) in branchDetail.requested" :key="idx">
+                    <td style="padding: 8px 10px;">[[ req.emr ]]</td>
+                    <td style="padding: 8px 10px;">[[ req.employee ]]</td>
+                    <td style="padding: 8px 10px;">[[ req.item_code ]] [[ req.item_name ? '(' + req.item_name + ')' : '' ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ req.quantity ]]</td>
+                    <td style="padding: 8px 10px;">[[ req.status ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No pending requested items for this branch.</div>
+          </div>
+
+          <!-- In-stock items -->
+          <div>
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">In Stock (Branch Stock)</div>
+            <div v-if="branchDetail.in_stock && branchDetail.in_stock.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Item Code</th>
+                    <th style="padding: 8px 10px;">Item Name</th>
+                    <th style="padding: 8px 10px; text-align: right;">Closing Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(st, idx) in branchDetail.in_stock" :key="idx">
+                    <td style="padding: 8px 10px;">[[ st.item_code ]]</td>
+                    <td style="padding: 8px 10px;">[[ st.item_name ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ st.closing_balance ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No stock for this branch.</div>
+          </div>
+        </template>
+        <div v-else style="color: var(--text-muted); padding: 20px;">No data.</div>
+      </div>
+      <div class="profile-modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+        <button class="btn-create" @click="showBranchDetailModal = false" style="padding: 8px 20px; border-radius: 6px;">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Asset Availability Modal -->
   <div
@@ -13440,6 +13772,7 @@
                 color: "#3b82f6",
                 doctype: "Branch Stock",
               },
+              { label: "Branch Exp.", color: "#f97316" },
             ],
           },
           {
@@ -14277,6 +14610,17 @@
       creatingBulkInward: false,
       collapsedFixRows: [],
       fixedFixLines: [],
+      branchExpenseReport: null,
+      branchExpenseLoading: false,
+      branchExpenseMode: "expense",
+      branchExpenseMonth: "",
+      branchExpenseSearch: "",
+      branchExpenseOnlyActive: false,
+      branchDetail: null,
+      showBranchDetailModal: false,
+      branchDetailLoading: false,
+      showBranchDownloadModal: false,
+      branchDownloadRow: null,
       collapsedFixRows: [],
       bulkInsertPreview: null,
       bulkInsertFileName: "",
@@ -15355,9 +15699,16 @@
           defaultItemLabel = "Requests";
         }
 
-        // Initialize from URL (disabled: any refresh lands on Items/Requests default)
-        const hash = [];
+        // Initialize from URL
+        const hash = window.location.hash.split("/");
         let initialRecordId = null;
+
+        if (hash.length > 1) {
+          const itemLabel = hash[1].toLowerCase();
+          const item = this.findSidebarItem(itemLabel);
+          if (item) defaultItemLabel = item.label;
+          if (hash.length > 2) initialRecordId = hash[2];
+        }
 
         const defaultItem =
           this.findSidebarItem(this.activeItem || defaultItemLabel) ||
@@ -15409,6 +15760,10 @@
 
         if (item.label === "Branch Stock") {
           this.branchStockFilter = "My Stock";
+        }
+
+        if (item.label === "Branch Exp.") {
+          this.fetchBranchExpenseReport();
         }
 
         if (item.label === "Serial No") {
@@ -17308,6 +17663,254 @@
         this.creatingBulkInward = false;
         this.collapsedFixRows = [];
         this.fixedFixLines = [];
+      },
+      fmtNumber(value) {
+        const n = Number(value || 0);
+        if (!n) return "-";
+        return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+      },
+      fmtBranchExpense(row, month) {
+        const src = this.branchExpenseMode === "purchased" ? row.monthly_purchased : row.monthly_expense;
+        const val = Number((src && src[month]) || 0);
+        if (!val) return "-";
+        return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(val);
+      },
+      filteredBranchExpenseRows() {
+        const report = this.branchExpenseReport;
+        if (!report || !report.branches) return [];
+        const term = (this.branchExpenseSearch || "").trim().toLowerCase();
+        return report.branches.filter((b) => {
+          if (term) {
+            const name = String(b.branch || "").toLowerCase();
+            const sol = String(b.sol_id || "").toLowerCase();
+            if (name.indexOf(term) === -1 && sol.indexOf(term) === -1) return false;
+          }
+          if (this.branchExpenseOnlyActive) {
+            const used = Number(b.used_total || 0);
+            const purchased = Number(b.purchased_total || 0);
+            const unused = Number(b.unused_requested || 0);
+            if (!used && !purchased && !unused) return false;
+          }
+          return true;
+        });
+      },
+      branchDetailUsedTotal() {
+        const rows = (this.branchDetail && this.branchDetail.usage) || [];
+        return rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      },
+      branchDetailPurchasedTotal() {
+        const rows = (this.branchDetail && this.branchDetail.monthly_records) || [];
+        return rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      },
+      fmtBranchUsedTotal(row) {
+        if (this.branchExpenseMonth) {
+          return this.fmtNumber((row.monthly_expense || {})[this.branchExpenseMonth]);
+        }
+        return this.fmtNumber(row.used_total);
+      },
+      fmtBranchPurchasedTotal(row) {
+        if (this.branchExpenseMonth) {
+          return this.fmtNumber((row.monthly_purchased || {})[this.branchExpenseMonth]);
+        }
+        return this.fmtNumber(row.purchased_total);
+      },
+      visibleBranchExpenseMonths() {
+        const months = (this.branchExpenseReport && this.branchExpenseReport.months) || [];
+        if (this.branchExpenseMonth) return [this.branchExpenseMonth];
+        return months;
+      },
+      openBranchDownloadModal(row) {
+        this.branchDownloadRow = row;
+        this.showBranchDownloadModal = true;
+      },
+      printBranchExpancePdf(row, branchName, data) {
+        const esc = (v) =>
+          String(v === undefined || v === null ? "" : v)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        const fmtNum = (v) => {
+          const n = Number(v || 0);
+          return n ? n.toLocaleString("en-IN", { maximumFractionDigits: 0 }) : "";
+        };
+        const buildTable = (title, headers, rows, moneyCols) => {
+          if (!rows || !rows.length) {
+            return `<h3>${esc(title)}</h3><p class="empty">No records for this month</p>`;
+          }
+          let html = `<h3>${esc(title)}</h3><table><thead><tr>`;
+          headers.forEach((h, i) => {
+            html += `<th class="${moneyCols && moneyCols.indexOf(i) !== -1 ? "num" : ""}">${esc(h)}</th>`;
+          });
+          html += "</tr></thead><tbody>";
+          rows.forEach((r) => {
+            html += "<tr>";
+            r.forEach((c, i) => {
+              const isNum = moneyCols && moneyCols.indexOf(i) !== -1;
+              html += `<td class="${isNum ? "num" : ""}">${isNum ? fmtNum(c) : esc(c)}</td>`;
+            });
+            html += "</tr>";
+          });
+          html += "</tbody></table>";
+          return html;
+        };
+
+        const win = window.open("", "_blank", "width=1100,height=850");
+        if (!win) {
+          frappe.msgprint("Please allow popups to download the PDF");
+          return;
+        }
+        const html = `<!DOCTYPE html><html><head><meta charset="utf-8" />
+          <title>Branch Expance - ${esc(branchName)}</title>
+          <style>
+            body { font-family: Arial, Helvetica, sans-serif; color: #1f2937; margin: 24px; }
+            h1 { font-size: 20px; margin: 0 0 4px 0; }
+            h3 { font-size: 14px; margin: 18px 0 6px 0; border-bottom: 1px solid #d1d5db; padding-bottom: 4px; }
+            .meta { font-size: 12px; color: #6b7280; margin-bottom: 14px; }
+            table { width: 100%; border-collapse: collapse; font-size: 11px; }
+            th, td { border: 1px solid #d1d5db; padding: 4px 6px; text-align: left; }
+            th { background: #f3f4f6; font-weight: 700; }
+            td.num, th.num { text-align: right; }
+            .empty { font-size: 11px; color: #9ca3af; font-style: italic; }
+            @media print { body { margin: 10px; } }
+          </style></head><body>
+          <h1>${esc(data.title)}</h1>
+          <div class="meta">Branch: <b>${esc(branchName)}</b> &nbsp;|&nbsp; SOL ID: <b>${esc(row.sol_id)}</b>
+            &nbsp;|&nbsp; Month: <b>${esc(data.month || "All")}</b>
+            &nbsp;|&nbsp; Generated: ${esc(new Date().toLocaleString())}</div>
+          ${buildTable(data.title, data.headers, data.rows, data.moneyCols)}
+          </body></html>`;
+        win.document.write(html);
+        win.document.close();
+        setTimeout(() => {
+          win.focus();
+          win.print();
+        }, 300);
+      },
+      async downloadBranchExpance(row, format = "xlsx") {
+        if (!row) return;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_branch_detail",
+            args: { sol_id: row.sol_id },
+          });
+          const d = res.message || {};
+          const branchName = (d.branch && d.branch.branch) || row.branch || "";
+
+          const mode = this.branchExpenseMode || "expense";
+          const month = this.branchExpenseMonth || "";
+          const isExpense = mode === "expense";
+          const title = isExpense ? "Expense (Used)" : "Purchases";
+          const headers = isExpense
+            ? ["Month", "Stock Entry", "Date", "Item", "Qty", "Rate", "Amount"]
+            : ["Month", "PR No", "Date", "Supplier", "Item", "Qty", "Rate", "Amount"];
+          const moneyCols = isExpense ? [4, 5, 6] : [5, 6, 7];
+
+          const source = isExpense ? d.usage || [] : d.monthly_records || [];
+          const rows = source
+            .filter((r) => (month ? r.month === month : true))
+            .map((r) =>
+              isExpense
+                ? [
+                    r.month || "",
+                    r.se_name || "",
+                    r.posting_date ? String(r.posting_date).slice(0, 10) : "",
+                    r.item_code || "",
+                    r.qty || 0,
+                    r.rate || 0,
+                    r.amount || 0,
+                  ]
+                : [
+                    r.month || "",
+                    r.pr_name || "",
+                    r.posting_date ? String(r.posting_date).slice(0, 10) : "",
+                    r.supplier || "",
+                    r.item_code || "",
+                    r.qty || 0,
+                    r.rate || 0,
+                    r.amount || 0,
+                  ]
+            );
+
+          const baseName = `Branch_${isExpense ? "Expance" : "Purchase"}_${row.sol_id}${month ? "_" + month : ""}_${new Date().toISOString().slice(0, 10)}`;
+
+          if (format === "pdf") {
+            this.printBranchExpancePdf(row, branchName, { title, headers, rows, moneyCols, month });
+            return;
+          }
+
+          if (format !== "csv" && typeof XLSX !== "undefined") {
+            const wb = XLSX.utils.book_new();
+            const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+            ws["!cols"] = headers.map((h, i) => ({
+              wch: Math.max(
+                String(h).length,
+                ...rows.map((r) => String(r[i] === undefined || r[i] === null ? "" : r[i]).length),
+                10
+              ),
+            }));
+            XLSX.utils.book_append_sheet(wb, ws, title);
+            XLSX.writeFile(wb, baseName + ".xlsx");
+          } else {
+            const csvCell = (v) =>
+              '"' + String(v === undefined || v === null ? "" : v).replace(/"/g, '""') + '"';
+            const lines = [];
+            lines.push([csvCell(title)].join(","));
+            lines.push(
+              [
+                csvCell("Branch"),
+                csvCell(branchName),
+                csvCell("SOL ID"),
+                csvCell(row.sol_id),
+                csvCell("Month"),
+                csvCell(month || "All"),
+              ].join(",")
+            );
+            lines.push(headers.map(csvCell).join(","));
+            rows.forEach((r) => lines.push(r.map(csvCell).join(",")));
+            const blob = new Blob([lines.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", baseName + ".csv");
+            link.click();
+            URL.revokeObjectURL(url);
+          }
+        } catch (e) {
+          console.error("Branch expense download error:", e);
+          frappe.msgprint("Failed to download branch expense data");
+        }
+      },
+      async openBranchDetail(solId) {
+        this.showBranchDetailModal = true;
+        this.branchDetailLoading = true;
+        this.branchDetail = null;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_branch_detail",
+            args: { sol_id: solId },
+          });
+          this.branchDetail = res.message || null;
+        } catch (e) {
+          console.error("Branch detail error:", e);
+          this.branchDetail = null;
+        } finally {
+          this.branchDetailLoading = false;
+        }
+      },
+      async fetchBranchExpenseReport() {
+        this.branchExpenseLoading = true;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_branch_expense_report",
+            args: { months: 6 },
+          });
+          this.branchExpenseReport = res.message || null;
+        } catch (e) {
+          console.error("Branch expense report error:", e);
+          this.branchExpenseReport = null;
+        } finally {
+          this.branchExpenseLoading = false;
+        }
       },
       async downloadInwardTemplate() {
         // Pull REAL master data so the sample row is valid & usable.

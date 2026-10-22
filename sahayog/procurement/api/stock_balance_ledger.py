@@ -1404,3 +1404,270 @@ def get_inward_list(limit=20, start=0, search_text=None, receipt=None, supplier=
         "total": total_count
     }
 
+
+
+def _branch_expense_rates():
+    """Return (last_purchase_rate_map, item_valuation_rate_map) used to value issued material."""
+    pr_rate = {}
+    for item_code, rate in frappe.db.sql("""
+        SELECT pri.item_code, pri.rate
+        FROM `tabPurchase Receipt Item` pri
+        JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
+        WHERE pr.docstatus = 1 AND pri.rate > 0
+        ORDER BY pr.posting_date DESC
+    """):
+        if item_code and item_code not in pr_rate:
+            pr_rate[item_code] = float(rate)
+
+    val_rate = {}
+    for item_code, rate in frappe.db.sql(
+        "SELECT name, valuation_rate FROM `tabItem` WHERE valuation_rate > 0"
+    ):
+        val_rate[item_code] = float(rate)
+
+    return pr_rate, val_rate
+
+
+def _resolve_item_rate(item_code, rate, pr_rate, val_rate):
+    """Stock entry rate -> last purchase rate -> item valuation rate -> 0."""
+    if rate and float(rate) > 0:
+        return float(rate)
+    if item_code and item_code in pr_rate:
+        return pr_rate[item_code]
+    if item_code and item_code in val_rate:
+        return val_rate[item_code]
+    return 0.0
+
+
+def _month_key(value):
+    if not value:
+        return None
+    if isinstance(value, str):
+        return value[:7]
+    return value.strftime("%Y-%m")
+
+
+@frappe.whitelist()
+def get_branch_expense_report(months=6):
+    """Branch-wise monthly expense.
+
+    monthly_expense   -> value of material ISSUED / consumed from the branch (Stock Entry: Material Issue)
+    monthly_purchased -> value of material RECEIVED at the branch (Purchase Receipt)
+    unused_requested  -> EMMR items requested by branch users that are not yet received
+    """
+    from datetime import date
+    from collections import defaultdict
+    import calendar
+
+    months = int(months) if months else 6
+    today = date.today()
+    month_list = []
+    y, m = today.year, today.month
+    for i in range(months):
+        month_list.append(f"{y:04d}-{m:02d}")
+        m -= 1
+        if m == 0:
+            m = 12
+            y -= 1
+    month_list.reverse()
+
+    branches = frappe.get_all("Sahayog Branch", fields=["name", "branch", "sol_id", "branch_type"], limit_page_length=0)
+    sol_to_branch = {}
+    for b in branches:
+        if b.sol_id:
+            sol_to_branch[str(b.sol_id)] = b
+
+    start_date = f"{month_list[0]}-01"
+    last_y, last_m = today.year, today.month
+    last_day = calendar.monthrange(last_y, last_m)[1]
+    end_date = f"{last_y:04d}-{last_m:02d}-{last_day:02d}"
+
+    pr_rate, val_rate = _branch_expense_rates()
+
+    # ---------- Purchases (Purchase Receipt -> branch warehouse) ----------
+    purchased_map = defaultdict(lambda: defaultdict(float))
+    pr_items = frappe.db.sql("""
+        SELECT pr.set_warehouse AS warehouse, pr.posting_date, pri.qty, pri.rate
+        FROM `tabPurchase Receipt` pr
+        JOIN `tabPurchase Receipt Item` pri ON pri.parent = pr.name
+        WHERE pr.docstatus = 1
+          AND pr.posting_date BETWEEN %s AND %s
+    """, (start_date, end_date), as_dict=True)
+    for row in pr_items:
+        wh = str(row.get("warehouse") or "")
+        if not wh or wh not in sol_to_branch:
+            continue
+        mo = _month_key(row.get("posting_date"))
+        if not mo:
+            continue
+        rate = row.get("rate") or 0
+        purchased_map[wh][mo] += (row.get("qty") or 0) * rate
+
+    # ---------- Expense (Stock Entry: Material Issue -> branch warehouse) ----------
+    expense_map = defaultdict(lambda: defaultdict(float))
+    se_rows = frappe.db.sql("""
+        SELECT se.posting_date AS posting_date,
+               sei.s_warehouse AS s_warehouse,
+               se.from_warehouse AS from_warehouse,
+               sei.item_code AS item_code,
+               sei.qty AS qty,
+               sei.basic_rate AS basic_rate
+        FROM `tabStock Entry` se
+        JOIN `tabStock Entry Detail` sei ON sei.parent = se.name
+        WHERE se.docstatus = 1
+          AND se.stock_entry_type = 'Material Issue'
+          AND se.posting_date BETWEEN %s AND %s
+    """, (start_date, end_date), as_dict=True)
+    for row in se_rows:
+        wh = str(row.get("s_warehouse") or row.get("from_warehouse") or "")
+        if not wh or wh not in sol_to_branch:
+            continue
+        mo = _month_key(row.get("posting_date"))
+        if not mo:
+            continue
+        rate = _resolve_item_rate(row.get("item_code"), row.get("basic_rate"), pr_rate, val_rate)
+        expense_map[wh][mo] += (row.get("qty") or 0) * rate
+
+    # ---------- Unused requested items (EMMR) ----------
+    unused_map = defaultdict(int)
+    emrs = frappe.get_all("Employee Material Request",
+        filters={"status": ["in", ["Approved", "Partially Dispatched"]]},
+        fields=["name", "employee"], limit_page_length=0)
+    for emr in emrs:
+        emp = frappe.get_value("Employee", emr.employee, ["sol_id"], as_dict=True) if emr.employee else None
+        sol = str(emp.sol_id) if emp and emp.sol_id else None
+        if not sol or sol not in sol_to_branch:
+            continue
+        items = frappe.get_all("Material Request Items", filters={"parent": emr.name}, fields=["item_code", "quantity", "approved_quantity", "available_qty", "status"])
+        for it in items:
+            # Unused = requested/approved but not yet Received
+            st = (it.status or "").strip()
+            if st in ("Received", "Rejected"):
+                continue
+            unused_map[sol] += 1
+
+    result = []
+    for b in branches:
+        sol = str(b.sol_id) if b.sol_id else None
+        if not sol:
+            continue
+        monthly_expense = {m: round(expense_map.get(sol, {}).get(m, 0), 2) for m in month_list}
+        monthly_purchased = {m: round(purchased_map.get(sol, {}).get(m, 0), 2) for m in month_list}
+        result.append({
+            "branch": b.branch,
+            "sol_id": sol,
+            "branch_type": b.branch_type,
+            "monthly_expense": monthly_expense,
+            "monthly_purchased": monthly_purchased,
+            "used_total": round(sum(monthly_expense.values()), 2),
+            "purchased_total": round(sum(monthly_purchased.values()), 2),
+            "unused_requested": unused_map.get(sol, 0),
+        })
+
+    return {"months": month_list, "branches": result}
+
+
+@frappe.whitelist()
+def get_branch_detail(sol_id):
+    """Breakdown for one branch: purchases, material issued (usage), requests and in-stock items."""
+    if not sol_id:
+        return {"branch": None, "monthly_records": [], "usage": [], "transfers_out": [], "requested": [], "in_stock": []}
+
+    sol_id = str(sol_id)
+    branch = frappe.get_value("Sahayog Branch", {"sol_id": sol_id}, ["name", "branch", "sol_id", "branch_type"], as_dict=True)
+    if not branch:
+        branch = {"name": sol_id, "branch": sol_id, "sol_id": sol_id, "branch_type": ""}
+
+    pr_rate, val_rate = _branch_expense_rates()
+
+    # ---------- Purchase Receipts (inward) ----------
+    monthly_records = frappe.db.sql("""
+        SELECT pr.name AS pr_name, pr.posting_date, pr.supplier, pri.item_code, pri.qty, pri.rate
+        FROM `tabPurchase Receipt` pr
+        JOIN `tabPurchase Receipt Item` pri ON pri.parent = pr.name
+        WHERE pr.docstatus = 1 AND pr.set_warehouse = %s
+        ORDER BY pr.posting_date DESC
+    """, (sol_id,), as_dict=True)
+    for r in monthly_records:
+        r["amount"] = (r.get("qty") or 0) * (r.get("rate") or 0)
+        r["month"] = _month_key(r.get("posting_date"))
+
+    # ---------- Stock Entry: Material Issue (usage / expense) ----------
+    usage = frappe.db.sql("""
+        SELECT se.name AS se_name, se.posting_date, se.stock_entry_type,
+               sei.item_code, sei.qty, sei.basic_rate, sei.s_warehouse
+        FROM `tabStock Entry` se
+        JOIN `tabStock Entry Detail` sei ON sei.parent = se.name
+        WHERE se.docstatus = 1
+          AND se.stock_entry_type = 'Material Issue'
+          AND (sei.s_warehouse = %s OR se.from_warehouse = %s)
+        ORDER BY se.posting_date DESC
+    """, (sol_id, sol_id), as_dict=True)
+    for r in usage:
+        rate = _resolve_item_rate(r.get("item_code"), r.get("basic_rate"), pr_rate, val_rate)
+        r["rate"] = rate
+        r["amount"] = (r.get("qty") or 0) * rate
+        r["month"] = _month_key(r.get("posting_date"))
+
+    # ---------- Stock Entry: Material Transfer (moved out of this branch) ----------
+    transfers_out = frappe.db.sql("""
+        SELECT se.name AS se_name, se.posting_date, se.to_warehouse,
+               sei.item_code, sei.qty, sei.basic_rate
+        FROM `tabStock Entry` se
+        JOIN `tabStock Entry Detail` sei ON sei.parent = se.name
+        WHERE se.docstatus = 1
+          AND se.stock_entry_type = 'Material Transfer'
+          AND (sei.s_warehouse = %s OR se.from_warehouse = %s)
+        ORDER BY se.posting_date DESC
+    """, (sol_id, sol_id), as_dict=True)
+    for r in transfers_out:
+        rate = _resolve_item_rate(r.get("item_code"), r.get("basic_rate"), pr_rate, val_rate)
+        r["rate"] = rate
+        r["amount"] = (r.get("qty") or 0) * rate
+        r["month"] = _month_key(r.get("posting_date"))
+
+    # ---------- Requested items (EMMR) ----------
+    requested = []
+    emrs = frappe.get_all("Employee Material Request",
+        filters={"status": ["in", ["Approved", "Partially Dispatched", "Pending Reporting Person", "Pending HO Officer Approval"]]},
+        fields=["name", "employee", "status"], limit_page_length=0)
+    for emr in emrs:
+        emp = frappe.get_value("Employee", emr.employee, ["sol_id"], as_dict=True) if emr.employee else None
+        if not emp or str(emp.sol_id) != sol_id:
+            continue
+        items = frappe.get_all("Material Request Items", filters={"parent": emr.name},
+            fields=["item_code", "item_name", "quantity", "approved_quantity", "status"])
+        for it in items:
+            requested.append({
+                "emr": emr.name,
+                "employee": emr.employee,
+                "emr_status": emr.status,
+                "item_code": it.item_code,
+                "item_name": it.item_name,
+                "quantity": it.quantity,
+                "approved_quantity": it.approved_quantity,
+                "status": it.status,
+            })
+
+    # ---------- In-stock items ----------
+    in_stock = []
+    try:
+        from sahayog.procurement.report.branch_stock.branch_stock import execute
+        _, data = execute({"warehouse": sol_id})
+        for row in (data or []):
+            in_stock.append({
+                "item_code": row.get("item_code"),
+                "item_name": row.get("item_name"),
+                "closing_balance": row.get("closing_balance"),
+            })
+    except Exception:
+        pass
+
+    return {
+        "branch": branch,
+        "monthly_records": monthly_records,
+        "usage": usage,
+        "transfers_out": transfers_out,
+        "requested": requested,
+        "in_stock": in_stock,
+    }
