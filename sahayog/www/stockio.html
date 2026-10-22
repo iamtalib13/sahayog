@@ -9514,12 +9514,12 @@
   <div
     class="profile-modal-overlay"
     v-if="showInwardBulkInsertModal"
-    @click.self="showInwardBulkInsertModal = false"
+    @click.self="resetInwardBulkInsert()"
   >
     <div class="profile-modal" style="max-width: 640px;">
       <div class="profile-modal-header">
         <h3><i class="fas fa-file-upload" style="margin-right: 8px; color: #369696;"></i>Bulk Insert</h3>
-        <button class="profile-close" @click="showInwardBulkInsertModal = false">&times;</button>
+        <button class="profile-close" @click="resetInwardBulkInsert()">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 24px;">
         <div class="form-group">
@@ -9683,7 +9683,7 @@
           <span>Download Template</span>
         </button>
         <div style="display: flex; gap: 8px;">
-          <button class="btn-cancel" @click="showInwardBulkInsertModal = false" style="padding: 8px 16px; font-size: 0.85rem;">Cancel</button>
+          <button class="btn-cancel" @click="resetInwardBulkInsert()" style="padding: 8px 16px; font-size: 0.85rem;">Cancel</button>
           <button
             class="btn-create"
             :disabled="creatingBulkInward || (inwardBulkValidation && !inwardBulkValidation.canCreate)"
@@ -17168,12 +17168,7 @@
           if (createdPRs.length) {
             frappe.show_alert({ message: `${createdPRs.length} Inward(s) created: ${createdPRs.join(", ")}`, indicator: "green" }, 10);
             await this.fetchData("Purchase Receipt");
-            this.showInwardBulkInsertModal = false;
-            this.inwardBulkInsertFileName = "";
-            this.inwardBulkRows = [];
-            this.inwardBulkValidation = null;
-            this.inwardBulkHeaders = [];
-            this.inwardBulkDetected = {};
+            this.resetInwardBulkInsert();
           }
           if (errors.length) {
             frappe.msgprint({ title: "Some inwards failed", message: errors.join("<br>"), indicator: "red" });
@@ -17181,6 +17176,16 @@
         } finally {
           this.creatingBulkInward = false;
         }
+      },
+      resetInwardBulkInsert() {
+        this.showInwardBulkInsertModal = false;
+        this.inwardBulkInsertFileName = "";
+        this.inwardBulkInsertRowCount = 0;
+        this.inwardBulkHeaders = [];
+        this.inwardBulkDetected = {};
+        this.inwardBulkRows = [];
+        this.inwardBulkValidation = null;
+        this.creatingBulkInward = false;
       },
       async downloadInwardTemplate() {
         // Pull REAL master data so the sample row is valid & usable.
