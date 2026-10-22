@@ -3,6 +3,7 @@ frappe.ui.form.on("Lead", {
     hideNamingSeries();
     frm.set_df_property("custom_verification_section", "collapsible", 0);
     setVerificationHighlight(frm);
+    toggleBMVerificationSection(frm);
     toggleCallingSource(frm);
     frm.toggle_display("custom_lead_audit_status", false);
     toggleAuditStatusAndLock(frm);
@@ -529,6 +530,45 @@ frappe.ui.form.on("Lead Product", {
     }
   }
 });
+
+// Show BM Lead Verification section only to users with manager access
+function toggleBMVerificationSection(frm) {
+  const checkAccessAndToggle = (can_verify) => {
+    frm.toggle_display("custom_verification_section", can_verify);
+    frm.set_df_property("custom_verification_status", "read_only", can_verify ? 0 : 1);
+    frm.set_df_property("custom_verification_remarks", "read_only", can_verify ? 0 : 1);
+  };
+
+  const user_roles = frappe.user_roles || [];
+  const is_admin = frappe.session.user === "Administrator";
+  const is_manager_role =
+    is_admin ||
+    user_roles.includes("System Manager") ||
+    user_roles.includes("Branch Manager") ||
+    user_roles.includes("Operations Support Manager") ||
+    user_roles.includes("Sales Manager");
+
+  if (is_manager_role) {
+    checkAccessAndToggle(true);
+    return;
+  }
+
+  // Check designation via user boot or API call
+  const designation = (frappe.boot && frappe.boot.user && frappe.boot.user.designation) || "";
+  const desig_lower = designation.toLowerCase();
+  if (desig_lower.includes("manager") || desig_lower.includes("bm")) {
+    checkAccessAndToggle(true);
+    return;
+  }
+
+  // Fallback to backend verification helper
+  frappe.call({
+    method: "sahayog.permissions.has_bm_verification_permission",
+    callback: function (r) {
+      checkAccessAndToggle(Boolean(r && r.message));
+    }
+  });
+}
 
 // Show custom_calling_source only for Operations roles
 function toggleCallingSource(frm) {
