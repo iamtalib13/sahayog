@@ -16818,6 +16818,23 @@
         }
         return null;
       },
+      normalizeDateValue(v) {
+        v = (v == null ? "" : String(v).trim());
+        if (!v) return "";
+        // Excel serial number (e.g. 46296) -> ISO date
+        if (/^\d{4,6}$/.test(v)) {
+          const serial = Number(v);
+          if (serial > 40000) {
+            const ms = (serial - 25569) * 86400 * 1000;
+            const d = new Date(ms);
+            if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+          }
+        }
+        if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+        const t = Date.parse(v);
+        if (!isNaN(t)) return new Date(t).toISOString().slice(0, 10);
+        return v;
+      },
       onInwardBulkFileSelect(event) {
         const file = event.target.files && event.target.files[0];
         if (!file) return;
@@ -16842,7 +16859,11 @@
             this.inwardBulkRows = lines.slice(1).map((line) => {
               const cells = line.split(",");
               const obj = {};
-              this.inwardBulkHeaders.forEach((h, i) => { obj[h] = (cells[i] || "").trim().replace(/^"|"$/g, ""); });
+              this.inwardBulkHeaders.forEach((h, i) => {
+                let v = (cells[i] || "").trim().replace(/^"|"$/g, "");
+                if (/date/i.test(h)) v = this.normalizeDateValue(v);
+                obj[h] = v;
+              });
               return obj;
             });
             this.validateInwardRows();
@@ -16863,7 +16884,11 @@
               this.inwardBulkInsertRowCount = dataRows.length;
               this.inwardBulkRows = dataRows.map((r) => {
                 const obj = {};
-                this.inwardBulkHeaders.forEach((h, i) => { obj[h] = r[i] != null ? String(r[i]).trim() : ""; });
+                this.inwardBulkHeaders.forEach((h, i) => {
+                  let v = r[i] != null ? String(r[i]).trim() : "";
+                  if (/date/i.test(h)) v = this.normalizeDateValue(v);
+                  obj[h] = v;
+                });
                 return obj;
               });
               this.validateInwardRows();
@@ -17008,8 +17033,8 @@
           { config_type: "Operating System", config_value: flatGet(r, ["operatingsystem", "os"]) },
           { config_type: "Windows Key", config_value: flatGet(r, ["windowskey", "winkey"]) },
           { config_type: "Office Key", config_value: flatGet(r, ["officekey"]) },
-          { config_type: "Warranty start date", config_value: flatGet(r, ["warrantystartdate", "warrantystart"]) },
-          { config_type: "Warranty end date", config_value: flatGet(r, ["warrantyenddate", "warrantyend"]) },
+          { config_type: "Warranty start date", config_value: this.normalizeDateValue(flatGet(r, ["warrantystartdate", "warrantystart"])) },
+          { config_type: "Warranty end date", config_value: this.normalizeDateValue(flatGet(r, ["warrantyenddate", "warrantyend"])) },
         ].filter((x) => x.config_value);
 
         // group rows by invoice no
@@ -17061,12 +17086,11 @@
                       doctype: "Serial No",
                       serial_no: serialNo,
                       item_code: itemCode,
-                      warehouse: warehouse,
                       purchase_rate: rate,
                       status: "Active",
                       company: company,
                       purchase_document_no: invNo,
-                      warranty_expiry_date: flatGet(r, ["warrantyenddate", "warrantyend"]) || null,
+                      warranty_expiry_date: this.normalizeDateValue(flatGet(r, ["warrantyenddate", "warrantyend"])) || null,
                       configuration_table: buildSerialConfigTable(r),
                     };
                     const sRes = await frappe.call({ method: "frappe.client.insert", args: { doc: serialDoc } });
