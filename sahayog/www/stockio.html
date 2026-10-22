@@ -8398,13 +8398,67 @@
 
         <div
           v-show="!showDetailView || activeItem === 'Items'"
-          v-if="currentView.doctype || activeItem === 'Dashboard' || currentView.isReportSection"
+          v-if="currentView.doctype || activeItem === 'Dashboard' || activeItem === 'Branch Expance' || currentView.isReportSection"
           class="list-view-container"
           :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
         >
+          <!-- Branch Expance (static requirements list) -->
+          <div
+            v-if="activeItem === 'Branch Expance'"
+            style="padding: 24px; overflow: auto; height: 100%;"
+          >
+            <h2 style="margin: 0 0 16px 0; font-weight: 800; color: var(--text-main);">Branch Expance</h2>
+            <table class="items-table" style="width: 100%;">
+              <thead>
+                <tr>
+                  <th style="padding: 10px 12px;">#</th>
+                  <th style="padding: 10px 12px;">Title</th>
+                  <th style="padding: 10px 12px;">Type</th>
+                  <th style="padding: 10px 12px;">Problem</th>
+                  <th style="padding: 10px 12px;">Action</th>
+                  <th style="padding: 10px 12px;">Requirement</th>
+                  <th style="padding: 10px 12px;">Purpose</th>
+                  <th style="padding: 10px 12px;">Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding: 10px 12px;">1</td>
+                  <td style="padding: 10px 12px; font-weight: 700;">Month-wise Proforma Report</td>
+                  <td style="padding: 10px 12px;">Enhancement</td>
+                  <td style="padding: 10px 12px;">Month-wise report is not available for each branch.</td>
+                  <td style="padding: 10px 12px;">Add month-wise reporting.</td>
+                  <td style="padding: 10px 12px;">Provide a month-wise Proforma Report for every branch.</td>
+                  <td style="padding: 10px 12px;">For monthly review.</td>
+                  <td style="padding: 10px 12px;"><span class="badge pending">Inprogress</span></td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 12px;">4</td>
+                  <td style="padding: 10px 12px; font-weight: 700;">Monthly Report in PDF Format</td>
+                  <td style="padding: 10px 12px;">Enhancement</td>
+                  <td style="padding: 10px 12px;">Monthly reports are required in PDF format for audit purposes.</td>
+                  <td style="padding: 10px 12px;">Provide an option to generate and download monthly reports in PDF format.</td>
+                  <td style="padding: 10px 12px;">Enable PDF generation and download for monthly reports for audit and documentation purposes.</td>
+                  <td style="padding: 10px 12px;">For monthly audit and record-keeping.</td>
+                  <td style="padding: 10px 12px;"><span class="badge pending">Inprogress</span></td>
+                </tr>
+                <tr>
+                  <td style="padding: 10px 12px;">3</td>
+                  <td style="padding: 10px 12px; font-weight: 700;">Stationery Expense Code &amp; Report</td>
+                  <td style="padding: 10px 12px;">New Requirement</td>
+                  <td style="padding: 10px 12px;">Branch-wise and warehouse-wise expense tracking is required.</td>
+                  <td style="padding: 10px 12px;">Create separate expense codes and a report.</td>
+                  <td style="padding: 10px 12px;">Provide separate stationery expense codes and a monthly expense report for each branch and warehouse.</td>
+                  <td style="padding: 10px 12px;">For monthly expense tracking.</td>
+                  <td style="padding: 10px 12px;"><span class="badge pending">Inprogress</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
           <!-- Analytics Dashboard -->
           <div
-            v-if="activeItem === 'Dashboard'"
+            v-else-if="activeItem === 'Dashboard'"
             class="analytics-dashboard"
             style="
               position: relative;
