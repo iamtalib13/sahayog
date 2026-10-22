@@ -4635,7 +4635,7 @@
 
       <!-- Split View Wrapper -->
       <div
-        v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || activeItem === 'Branch Expance' || currentView.isReportSection"
+        v-if="showDetailView || currentView.doctype || activeItem === 'Dashboard' || activeItem === 'Branch Exp.' || currentView.isReportSection"
         :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView || showStockHistoryView) ? 'display: flex; flex-direction: row-reverse; gap: 24px; align-items: flex-start;' : 'display: block;'"
       >
         <!-- Stock History Side View -->
@@ -8398,13 +8398,13 @@
 
         <div
           v-show="!showDetailView || activeItem === 'Items'"
-          v-if="currentView.doctype || activeItem === 'Dashboard' || activeItem === 'Branch Expance' || currentView.isReportSection"
+          v-if="currentView.doctype || activeItem === 'Dashboard' || activeItem === 'Branch Exp.' || currentView.isReportSection"
           class="list-view-container"
           :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
         >
           <!-- Branch Expance (branch-wise monthly expense + unused requested) -->
           <div
-            v-if="activeItem === 'Branch Expance'"
+            v-if="activeItem === 'Branch Exp.'"
             style="padding: 24px; overflow: auto; height: 100%;"
           >
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
@@ -9402,7 +9402,7 @@
       <!-- End of Split View Wrapper -->
 
       <div
-        v-if="!showDetailView && !currentView.doctype && activeItem !== 'Dashboard' && activeItem !== 'Branch Expance' && !currentView.isReportSection"
+        v-if="!showDetailView && !currentView.doctype && activeItem !== 'Dashboard' && activeItem !== 'Branch Exp.' && !currentView.isReportSection"
         class="content-container"
       >
         <div class="empty-state-card">
@@ -13772,7 +13772,7 @@
                 color: "#3b82f6",
                 doctype: "Branch Stock",
               },
-              { label: "Branch Expance", color: "#f97316" },
+              { label: "Branch Exp.", color: "#f97316" },
             ],
           },
           {
@@ -15762,7 +15762,7 @@
           this.branchStockFilter = "My Stock";
         }
 
-        if (item.label === "Branch Expance") {
+        if (item.label === "Branch Exp.") {
           this.fetchBranchExpenseReport();
         }
 
