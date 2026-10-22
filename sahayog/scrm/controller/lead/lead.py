@@ -1,5 +1,6 @@
 import frappe
 from frappe import _
+from frappe.utils import flt
 import re
 
 # Function to update employee details in the Lead document
@@ -640,15 +641,17 @@ def get_open_activities(ref_doctype=None, ref_docname=None):
 
 def validate_lead_audit_lock(doc, method=None):
     """Validate Lead Product Audit Status permissions and row-level locking.
-    Only Administrator and employee 1034 can change audit_status or edit an Approved product row.
+    Administrator, System Manager, Operations Support Manager, and Employee 1034 can audit.
     """
     current_user = frappe.session.user
-    is_admin = current_user == "Administrator"
+    roles = frappe.get_roles(current_user)
+    is_admin = current_user == "Administrator" or "System Manager" in roles
+    is_ops_manager = "Operations Support Manager" in roles
     emp_number = frappe.db.get_value("Employee", {"user_id": current_user}, "employee_number") if not is_admin else None
     is_emp_1034 = emp_number == "1034" or current_user == "1034@sahayog.com"
-    can_audit = is_admin or is_emp_1034
+    can_audit = is_admin or is_ops_manager or is_emp_1034
 
-    products = doc.get("products") or []
+    products = doc.get("custom_product_table") or []
 
     if not doc.is_new():
         # Fetch existing product rows from DB
@@ -674,13 +677,23 @@ def validate_lead_audit_lock(doc, method=None):
 
                 # If previously Approved, non-auditor cannot modify fields in this row
                 if prev.get("audit_status") == "Approved" and not can_audit:
-                    fields_to_check = ["product", "product_amount", "account_number", "account_creation_date", "audit_status"]
-                    for f in fields_to_check:
-                        if str(row.get(f) or "") != str(prev.get(f) or ""):
-                            frappe.throw(
-                                title=_("Row Locked"),
-                                msg=_("Row {0} ({1}) is Approved and locked. Only Administrator and Authorized Auditor (1034) can modify it.").format(idx, row.product_name or row.product)
-                            )
+                    has_changed = False
+                    if str(row.get("product") or "").strip() != str(prev.get("product") or "").strip():
+                        has_changed = True
+                    elif flt(row.get("product_amount")) != flt(prev.get("product_amount")):
+                        has_changed = True
+                    elif str(row.get("account_number") or "").strip() != str(prev.get("account_number") or "").strip():
+                        has_changed = True
+                    elif str(row.get("account_creation_date") or "")[:10] != str(prev.get("account_creation_date") or "")[:10]:
+                        has_changed = True
+                    elif str(row.get("audit_status") or "").strip() != str(prev.get("audit_status") or "").strip():
+                        has_changed = True
+
+                    if has_changed:
+                        frappe.throw(
+                            title=_("Row Locked"),
+                            msg=_("Row {0} ({1}) is Approved and locked. Only Administrator and Authorized Auditor (1034) can modify it.").format(idx, row.product_name or row.product)
+                        )
             else:
                 # Newly added row: non-auditor cannot set audit_status other than Pending
                 if row.get("audit_status") and row.get("audit_status") != "Pending" and not can_audit:
