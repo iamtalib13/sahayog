@@ -1488,3 +1488,68 @@ def get_branch_expense_report(months=6):
         })
 
     return {"months": month_list, "branches": result}
+
+
+@frappe.whitelist()
+def get_branch_detail(sol_id):
+    """Return monthly Purchase Receipt records, requested items (EMMR), and in-stock items for a branch."""
+    if not sol_id:
+        return {"branch": None, "monthly_records": [], "requested": [], "in_stock": []}
+
+    branch = frappe.get_value("Sahayog Branch", {"sol_id": sol_id}, ["name", "branch", "sol_id", "branch_type"], as_dict=True)
+    if not branch:
+        branch = {"name": sol_id, "branch": sol_id, "sol_id": sol_id, "branch_type": ""}
+
+    monthly_records = frappe.db.sql("""
+        SELECT pr.name AS pr_name, pr.posting_date, pr.supplier, pri.item_code, pri.qty, pri.rate
+        FROM `tabPurchase Receipt` pr
+        JOIN `tabPurchase Receipt Item` pri ON pri.parent = pr.name
+        WHERE pr.docstatus = 1 AND pr.set_warehouse = %s
+        ORDER BY pr.posting_date DESC
+    """, (sol_id,), as_dict=True)
+    for r in monthly_records:
+        r["amount"] = (r.get("qty") or 0) * (r.get("rate") or 0)
+        pd = r.get("posting_date")
+        r["month"] = pd.strftime("%Y-%m") if hasattr(pd, "strftime") else str(pd)[:7]
+
+    requested = []
+    emrs = frappe.get_all("Employee Material Request",
+        filters={"status": ["in", ["Approved", "Partially Dispatched", "Pending Reporting Person", "Pending HO Officer Approval"]]},
+        fields=["name", "employee", "status"], limit_page_length=0)
+    for emr in emrs:
+        emp = frappe.get_value("Employee", emr.employee, ["sol_id"], as_dict=True) if emr.employee else None
+        if not emp or emp.sol_id != sol_id:
+            continue
+        items = frappe.get_all("Material Request Items", filters={"parent": emr.name},
+            fields=["item_code", "item_name", "quantity", "approved_quantity", "status"])
+        for it in items:
+            requested.append({
+                "emr": emr.name,
+                "employee": emr.employee,
+                "emr_status": emr.status,
+                "item_code": it.item_code,
+                "item_name": it.item_name,
+                "quantity": it.quantity,
+                "approved_quantity": it.approved_quantity,
+                "status": it.status,
+            })
+
+    in_stock = []
+    try:
+        from sahayog.procurement.report.branch_stock.branch_stock import execute
+        _, data = execute({"warehouse": sol_id})
+        for row in (data or []):
+            in_stock.append({
+                "item_code": row.get("item_code"),
+                "item_name": row.get("item_name"),
+                "closing_balance": row.get("closing_balance"),
+            })
+    except Exception:
+        pass
+
+    return {
+        "branch": branch,
+        "monthly_records": monthly_records,
+        "requested": requested,
+        "in_stock": in_stock,
+    }

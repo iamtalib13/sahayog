@@ -8420,7 +8420,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="b in branchExpenseReport.branches" :key="b.sol_id">
+                  <tr v-for="b in branchExpenseReport.branches" :key="b.sol_id" style="cursor: pointer;" @click="openBranchDetail(b.sol_id)" title="Click for breakdown">
                     <td style="padding: 10px 12px; font-weight: 700;">[[ b.branch ]]</td>
                     <td style="padding: 10px 12px;">[[ b.sol_id ]]</td>
                     <td style="padding: 10px 12px; text-align: right;" v-for="m in branchExpenseReport.months" :key="m">[[ (b.monthly_expense[m] || 0).toLocaleString() ]]</td>
@@ -9361,6 +9361,115 @@
       </div>
     </section>
   </main>
+
+  <!-- Branch Detail Modal -->
+  <div
+    v-if="showBranchDetailModal"
+    class="profile-modal-overlay"
+    @click.self="showBranchDetailModal = false"
+  >
+    <div class="profile-modal" style="max-width: 900px; max-height: 85vh; overflow: auto;">
+      <div class="profile-modal-header">
+        <h3>
+          <i class="fas fa-building" style="margin-right: 8px; color: #369696;"></i>
+          [[ branchDetail && branchDetail.branch ? branchDetail.branch.branch : 'Branch' ]] ([[ branchDetail && branchDetail.branch ? branchDetail.branch.sol_id : '' ]])
+        </h3>
+        <button class="profile-close" @click="showBranchDetailModal = false">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 20px;">
+        <div v-if="branchDetailLoading" style="color: var(--text-muted); padding: 20px;">Loading...</div>
+        <template v-else-if="branchDetail">
+          <!-- Monthly Purchase Receipt records -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">Purchase Receipts (monthly records)</div>
+            <div v-if="branchDetail.monthly_records && branchDetail.monthly_records.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Month</th>
+                    <th style="padding: 8px 10px;">PR No</th>
+                    <th style="padding: 8px 10px;">Supplier</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px; text-align: right;">Rate</th>
+                    <th style="padding: 8px 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(rec, idx) in branchDetail.monthly_records" :key="idx">
+                    <td style="padding: 8px 10px;">[[ rec.month ]]</td>
+                    <td style="padding: 8px 10px;">[[ rec.pr_name ]]</td>
+                    <td style="padding: 8px 10px;">[[ rec.supplier ]]</td>
+                    <td style="padding: 8px 10px;">[[ rec.item_code ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ rec.qty ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ rec.rate ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ (rec.amount || 0).toLocaleString() ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No purchase receipts for this branch.</div>
+          </div>
+
+          <!-- Requested items (EMMR) -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">Requested Items (EMMR) — not yet received</div>
+            <div v-if="branchDetail.requested && branchDetail.requested.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">EMR</th>
+                    <th style="padding: 8px 10px;">Employee</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px;">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(req, idx) in branchDetail.requested" :key="idx">
+                    <td style="padding: 8px 10px;">[[ req.emr ]]</td>
+                    <td style="padding: 8px 10px;">[[ req.employee ]]</td>
+                    <td style="padding: 8px 10px;">[[ req.item_code ]] [[ req.item_name ? '(' + req.item_name + ')' : '' ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ req.quantity ]]</td>
+                    <td style="padding: 8px 10px;">[[ req.status ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No pending requested items for this branch.</div>
+          </div>
+
+          <!-- In-stock items -->
+          <div>
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">In Stock (Branch Stock)</div>
+            <div v-if="branchDetail.in_stock && branchDetail.in_stock.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Item Code</th>
+                    <th style="padding: 8px 10px;">Item Name</th>
+                    <th style="padding: 8px 10px; text-align: right;">Closing Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(st, idx) in branchDetail.in_stock" :key="idx">
+                    <td style="padding: 8px 10px;">[[ st.item_code ]]</td>
+                    <td style="padding: 8px 10px;">[[ st.item_name ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ st.closing_balance ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No stock for this branch.</div>
+          </div>
+        </template>
+        <div v-else style="color: var(--text-muted); padding: 20px;">No data.</div>
+      </div>
+      <div class="profile-modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end;">
+        <button class="btn-create" @click="showBranchDetailModal = false" style="padding: 8px 20px; border-radius: 6px;">Close</button>
+      </div>
+    </div>
+  </div>
 
   <!-- Asset Availability Modal -->
   <div
@@ -14310,6 +14419,9 @@
       fixedFixLines: [],
       branchExpenseReport: null,
       branchExpenseLoading: false,
+      branchDetail: null,
+      showBranchDetailModal: false,
+      branchDetailLoading: false,
       collapsedFixRows: [],
       bulkInsertPreview: null,
       bulkInsertFileName: "",
@@ -17352,6 +17464,23 @@
         this.creatingBulkInward = false;
         this.collapsedFixRows = [];
         this.fixedFixLines = [];
+      },
+      async openBranchDetail(solId) {
+        this.showBranchDetailModal = true;
+        this.branchDetailLoading = true;
+        this.branchDetail = null;
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_branch_detail",
+            args: { sol_id: solId },
+          });
+          this.branchDetail = res.message || null;
+        } catch (e) {
+          console.error("Branch detail error:", e);
+          this.branchDetail = null;
+        } finally {
+          this.branchDetailLoading = false;
+        }
       },
       async fetchBranchExpenseReport() {
         this.branchExpenseLoading = true;
