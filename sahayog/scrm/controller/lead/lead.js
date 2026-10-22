@@ -4,6 +4,7 @@ frappe.ui.form.on("Lead", {
     frm.set_df_property("custom_verification_section", "collapsible", 0);
     setVerificationHighlight(frm);
     toggleCallingSource(frm);
+    frm.toggle_display("custom_lead_audit_status", false);
     toggleAuditStatusAndLock(frm);
     customizeTimelineTimestamps(frm);
 
