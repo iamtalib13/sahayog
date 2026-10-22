@@ -546,7 +546,12 @@ function toggleAuditStatusAndLock(frm) {
   const grid = frm.fields_dict["custom_product_table"] && frm.fields_dict["custom_product_table"].grid;
   if (!grid) return;
 
-  // Make audit_status read-only in the child table grid for non-auditors
+  // Enforce options and read-only property in child table grid
+  grid.update_docfield_property(
+    "audit_status",
+    "options",
+    "Pending\nApproved\nRejected"
+  );
   grid.update_docfield_property(
     "audit_status",
     "read_only",
