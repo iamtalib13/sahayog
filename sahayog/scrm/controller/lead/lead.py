@@ -439,8 +439,28 @@ def get_users_by_branch_and_designation(
 
 
 def validate_lead_conversion_verification(doc, method=None):
-    """BM verification check disabled — leads can be converted directly."""
-    return
+    """Enforce that only Branch Managers and authorized Manager designations can modify Lead Verification Status."""
+    if doc.is_new():
+        return
+
+    prev_status = frappe.db.get_value("Lead", doc.name, "custom_verification_status")
+    prev_remarks = frappe.db.get_value("Lead", doc.name, "custom_verification_remarks")
+
+    status_changed = (doc.get("custom_verification_status") or "Pending") != (prev_status or "Pending")
+    remarks_changed = (doc.get("custom_verification_remarks") or "") != (prev_remarks or "")
+
+    if status_changed or remarks_changed:
+        from sahayog.permissions import has_bm_verification_permission
+        if not has_bm_verification_permission():
+            frappe.throw(
+                title=_("Permission Denied"),
+                msg=_("Only Branch Managers and authorized Manager-level designations can modify the Lead Verification Status.")
+            )
+
+        # Auto-set Verified By and Verified On when status is updated to Verified or Rejected
+        if status_changed and doc.get("custom_verification_status") in ("Verified", "Rejected"):
+            doc.custom_verified_by = frappe.session.user
+            doc.custom_verified_on = frappe.utils.now()
 
 
 
