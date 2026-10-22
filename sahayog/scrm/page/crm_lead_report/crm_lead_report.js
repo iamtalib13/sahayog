@@ -917,7 +917,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             <button class="btn btn-xs btn-default border font-weight-bold" @click="openLeadTransferDialog">
                                 Reassign
                             </button>
-                            <button class="btn btn-xs btn-default border font-weight-bold" style="background:#e0e7ff; color:#3730a3;" @click="openBMVerificationDialog">
+                            <button v-if="can_verify_leads" class="btn btn-xs btn-default border font-weight-bold" style="background:#e0e7ff; color:#3730a3;" @click="openBMVerificationDialog">
                                 BM Verification
                                 <span v-if="bm_pending_count > 0" class="badge badge-danger ml-1">{{ bm_pending_count }}</span>
                             </button>
@@ -1197,6 +1197,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_from_date: "", // Init mein set hoga
     employee_to_date: "", // Init mein set hoga
 
+    can_verify_leads: false,
     bm_pending_count: 0,
     employee_performance_data: [],
     has_pref: true,
@@ -2226,7 +2227,17 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
     // 3. INITIALIZATION (Fix yahan tha)
     async init() {
-      this.fetchBMPendingCount();
+      // Check BM Lead Verification Permission
+      frappe.call({
+        method: "sahayog.permissions.has_bm_verification_permission",
+        callback: (r) => {
+          this.can_verify_leads = Boolean(r && r.message);
+          if (this.can_verify_leads) {
+            this.fetchBMPendingCount();
+          }
+        }
+      });
+
       // Preference load karein
       let res = await frappe.call(
         "sahayog.scrm.api.report_access.get_user_report_preference_record",

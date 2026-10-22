@@ -10,7 +10,8 @@
   "product_name",
   "product_amount",
   "account_number",
-  "account_creation_date"
+  "account_creation_date",
+  "audit_status"
  ],
  "fields": [
   {
@@ -49,6 +50,14 @@
    "fieldtype": "Data",
    "label": "Account Number",
    "in_list_view": 0
+  },
+  {
+   "default": "Pending",
+   "fieldname": "audit_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Audit Status",
+   "options": "Pending\nApproved\nRejected"
   }
  ],
  "index_web_pages_for_search": 1,
