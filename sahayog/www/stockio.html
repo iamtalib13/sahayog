@@ -17037,24 +17037,25 @@
           { config_type: "Warranty end date", config_value: this.normalizeDateValue(flatGet(r, ["warrantyenddate", "warrantyend"])) },
         ].filter((x) => x.config_value);
 
-        // group rows by invoice no
+        // group rows by uniqueness of (Supplier, Invoice No, Invoice Date)
         const groups = new Map();
         for (const r of rows) {
-          const inv = get(r, "invoice_no") || "__none__";
-          if (!groups.has(inv)) groups.set(inv, []);
-          groups.get(inv).push(r);
+          const key = [get(r, "supplier"), get(r, "invoice_no"), get(r, "invoice_date")].join("||");
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(r);
         }
 
         this.creatingBulkInward = true;
         const createdPRs = [];
         const errors = [];
         try {
-          for (const [invNo, grows] of groups) {
+          for (const [groupKey, grows] of groups) {
             try {
               const first = grows[0];
               const supplier = get(first, "supplier");
               const warehouse = get(first, "set_warehouse");
               const invoiceDate = get(first, "invoice_date");
+              const invNo = get(first, "invoice_no");
 
               let company = "";
               try {
