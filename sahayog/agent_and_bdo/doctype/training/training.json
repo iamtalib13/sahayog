@@ -17,6 +17,7 @@
    "program_duration_hours",
    "training_location",
   "training_type",
+  "flyer",
   "trainer",
   "section_break_geo",
   "zone",
@@ -125,6 +126,12 @@
    "fieldtype": "Select",
    "label": "Training Type",
    "options": "\nClassroom\nVirtual"
+  },
+  {
+   "description": "Attached to the invitation and closure emails for this training",
+   "fieldname": "flyer",
+   "fieldtype": "Attach",
+   "label": "Training Flyer (Email Attachment)"
   },
   {
    "fieldname": "section_break_geo",
@@ -321,7 +328,7 @@
  "grid_page_length": 50,
  "is_submittable": 0,
  "links": [],
- "modified": "2026-09-22 11:46:08.251763",
+ "modified": "2026-10-21 16:30:00.000000",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Training",
