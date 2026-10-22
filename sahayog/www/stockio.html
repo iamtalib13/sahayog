@@ -9685,12 +9685,16 @@
               :key="'fix' + ri.line"
               style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; background: var(--bg-surface);"
             >
-              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+              <div
+                style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; cursor: pointer; user-select: none;"
+                @click="toggleFixRow(ri.line)"
+              >
+                <i class="fas" :class="collapsedFixRows.includes(ri.line) ? 'fa-chevron-right' : 'fa-chevron-down'" style="font-size: 0.7rem; color: var(--text-muted);"></i>
                 <span style="font-weight: 800; color: #dc2626; font-size: 0.85rem;">Row [[ ri.line ]]</span>
                 <span style="color: var(--text-muted); font-size: 0.78rem;">([[ ri.item ]])</span>
                 <span style="color: #dc2626; font-size: 0.78rem; margin-left: auto;">[[ ri.issues.join(' · ') ]]</span>
               </div>
-              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+              <div v-if="!collapsedFixRows.includes(ri.line)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
                 <div v-if="findHeaderByAliases(['supplier','vendor']) && rowHasIssue(ri, 'supplier')">
                   <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Supplier</label>
                   <select class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['supplier','vendor'])" @change="fixInwardRowField(ri.line, ['supplier','vendor'], $event.target.value)">
@@ -14273,6 +14277,8 @@
       inwardBulkRows: [],
       inwardBulkValidation: null,
       creatingBulkInward: false,
+      collapsedFixRows: [],
+      collapsedFixRows: [],
       bulkInsertPreview: null,
       bulkInsertFileName: "",
       bulkInsertFileUrl: "",
@@ -16893,6 +16899,11 @@
         row[h] = /date/i.test(h) ? this.normalizeDateValue(value) : value;
         this.validateInwardRows();
       },
+      toggleFixRow(lineNo) {
+        const i = this.collapsedFixRows.indexOf(lineNo);
+        if (i > -1) this.collapsedFixRows.splice(i, 1);
+        else this.collapsedFixRows.push(lineNo);
+      },
       rowHasIssue(ri, fieldKey) {
         if (!ri || !ri.issues) return false;
         const map = {
@@ -17288,6 +17299,7 @@
         this.inwardBulkRows = [];
         this.inwardBulkValidation = null;
         this.creatingBulkInward = false;
+        this.collapsedFixRows = [];
       },
       async downloadInwardTemplate() {
         // Pull REAL master data so the sample row is valid & usable.
