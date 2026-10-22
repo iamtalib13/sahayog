@@ -9210,6 +9210,15 @@
                 <span>Bulk Actions</span>
               </div>
               <button
+                v-if="activeItem === 'Inward'"
+                class="btn-load-more"
+                @click="showInwardBulkInsertModal = true"
+                style="margin-left: auto;"
+              >
+                <i class="fas fa-file-import"></i>
+                <span>Bulke Insert</span>
+              </button>
+              <button
                 v-if="activeItem === 'Serial No' && selectedRows.length > 0"
                 class="btn-create-inline"
                 style="
@@ -9488,6 +9497,261 @@
           <button @click="downloadInsertTemplate()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #10b981; color: #10b981; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;" onmouseover="this.style.background='#10b981';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='#10b981'">
             <i class="fas fa-download"></i>
             <span>Download Template</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Inward Bulk Insert Modal (file select only) -->
+  <div
+    class="profile-modal-overlay"
+    v-if="showInwardBulkInsertModal"
+    @click.self="resetInwardBulkInsert()"
+  >
+    <div class="profile-modal" style="max-width: 1800px;">
+      <div class="profile-modal-header">
+        <h3><i class="fas fa-file-upload" style="margin-right: 8px; color: #369696;"></i>Bulk Insert</h3>
+        <button class="profile-close" @click="resetInwardBulkInsert()">&times;</button>
+      </div>
+      <div class="profile-modal-body" style="padding: 24px;">
+        <div class="form-group">
+          <label class="form-label">Select the File</label>
+          <label
+            style="
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+              padding: 22px;
+              border: 2px dashed var(--border-color);
+              border-radius: 10px;
+              cursor: pointer;
+              font-weight: 600;
+              color: var(--text-muted);
+              transition: all 0.2s;
+            "
+            onmouseover="this.style.borderColor='#369696';this.style.color='#369696'"
+            onmouseout="this.style.borderColor='';this.style.color=''"
+          >
+            <i class="fas fa-folder-open"></i>
+            <span>Choose File (.csv, .xlsx, .xls)</span>
+            <input
+              type="file"
+              accept=".csv,.xlsx,.xls"
+              style="display: none;"
+              @change="onInwardBulkFileSelect($event)"
+            />
+          </label>
+        </div>
+
+        <!-- File Info: name + row count only -->
+        <div
+          v-if="inwardBulkInsertFileName"
+          style="
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 18px;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: var(--bg-card);
+            margin-top: 4px;
+          "
+        >
+          <div style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+            <i class="fas fa-file-csv" style="color: #369696;"></i>
+            <span style="font-weight: 700; color: var(--text-main); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              [[ inwardBulkInsertFileName ]]
+            </span>
+          </div>
+          <span
+            style="
+              flex-shrink: 0;
+              padding: 4px 14px;
+              border-radius: 20px;
+              background: rgba(54, 150, 150, 0.12);
+              border: 1px solid rgba(54, 150, 150, 0.3);
+              color: #369696;
+              font-weight: 800;
+              font-size: 0.85rem;
+            "
+          >
+            [[ inwardBulkInsertRowCount ]] Rows
+          </span>
+        </div>
+
+        <!-- Header Column Detection -->
+        <div
+          v-if="inwardBulkInsertFileName && inwardBulkHeaders.length"
+          style="margin-top: 16px;"
+        >
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 8px;">
+            Detected Columns
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px;">
+            <div
+              v-for="t in inwardBulkHeaderTargets()"
+              :key="t.key"
+              style="display: flex; align-items: center; gap: 8px; padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card); font-size: 0.82rem;"
+            >
+              <i
+                class="fas"
+                :class="inwardBulkDetected[t.key] ? 'fa-check-circle' : 'fa-times-circle'"
+                :style="{ color: inwardBulkDetected[t.key] ? '#10b981' : '#ef4444', flexShrink: 0 }"
+              ></i>
+              <span style="font-weight: 700; color: var(--text-main); flex-shrink: 0;">[[ t.label ]]</span>
+              <span
+                v-if="inwardBulkDetected[t.key]"
+                style="color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-left: auto;"
+                :title="inwardBulkDetected[t.key].header"
+              >
+                [[ inwardBulkDetected[t.key].header ]]
+              </span>
+              <span v-else style="color: #ef4444; font-weight: 600; margin-left: auto; flex-shrink: 0;">Missing</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Creation Feasibility Verdict -->
+        <div
+          v-if="inwardBulkValidation && inwardBulkInsertFileName"
+          style="margin-top: 16px; border-radius: 10px; border: 1px solid; overflow: hidden;"
+          :style="inwardBulkValidation.canCreate
+            ? 'border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.08);'
+            : 'border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.08);'"
+        >
+          <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; font-weight: 800; font-size: 0.9rem;">
+            <i
+              class="fas"
+              :class="inwardBulkValidation.canCreate ? 'fa-check-circle' : 'fa-times-circle'"
+              :style="{ color: inwardBulkValidation.canCreate ? '#10b981' : '#ef4444' }"
+            ></i>
+            <span :style="{ color: inwardBulkValidation.canCreate ? '#059669' : '#dc2626' }">
+              <span v-if="inwardBulkValidation.canCreate">
+                Can create — [[ inwardBulkValidation.rowCount ]] record(s) → [[ inwardBulkValidation.inwardCount ]] Inward entr[[ inwardBulkValidation.inwardCount === 1 ? 'y' : 'ies' ]]
+              </span>
+              <span v-else>
+                Cannot create — [[ inwardBulkValidation.rowIssues ? inwardBulkValidation.rowIssues.length : 0 ]] issue(s) found
+              </span>
+            </span>
+          </div>
+
+          <!-- Header-level errors (missing columns / no rows) -->
+          <div
+            v-if="inwardBulkValidation.errors && inwardBulkValidation.errors.length"
+            style="padding: 0 16px 10px 42px;"
+          >
+            <div v-for="(err, i) in inwardBulkValidation.errors" :key="'e' + i" style="font-size: 0.82rem; font-weight: 600; color: #dc2626; margin-top: 3px;">
+              [[ err ]]
+            </div>
+          </div>
+
+          <!-- Row-level issues -->
+          <div
+            v-if="inwardBulkValidation.rowIssues && inwardBulkValidation.rowIssues.length"
+            style="padding: 0 16px 12px 42px; max-height: 150px; overflow-y: auto;"
+          >
+            <div
+              v-for="ri in inwardBulkValidation.rowIssues"
+              :key="ri.line"
+              style="font-size: 0.8rem; margin-top: 4px; color: var(--text-main);"
+            >
+              <span style="font-weight: 800; color: #dc2626;">Row [[ ri.line ]]</span>
+              <span style="color: var(--text-muted);">([[ ri.item ]]):</span>
+              [[ ri.issues.join(' · ') ]]
+            </div>
+          </div>
+        </div>
+        <!-- Inline Fix Editor for errored rows -->
+        <div
+          v-if="inwardBulkValidation && getFixEditorRows().length"
+          style="margin-top: 16px; border: 1px solid var(--border-color); border-radius: 10px; background: var(--bg-card); padding: 14px 16px;"
+        >
+          <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 10px;">
+            Fix Records Inline (edits update instantly)
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px; max-height: 260px; overflow-y: auto;">
+            <div
+              v-for="ri in getFixEditorRows()"
+              :key="'fix' + ri.line"
+              style="border: 1px solid var(--border-color); border-radius: 8px; padding: 10px 12px; background: var(--bg-surface);"
+            >
+              <div
+                style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; cursor: pointer; user-select: none;"
+                @click="toggleFixRow(ri.line)"
+              >
+                <i class="fas" :class="collapsedFixRows.includes(ri.line) ? 'fa-chevron-right' : 'fa-chevron-down'" style="font-size: 0.7rem; color: var(--text-muted);"></i>
+                <span style="font-weight: 800; color: #dc2626; font-size: 0.85rem;" v-if="!ri.fixed">Row [[ ri.line ]]</span>
+                <span style="font-weight: 800; color: #059669; font-size: 0.85rem;" v-if="ri.fixed">Row [[ ri.line ]] ✓ Fixed</span>
+                <span style="color: var(--text-muted); font-size: 0.78rem;">([[ ri.item ]])</span>
+                <span style="color: #dc2626; font-size: 0.78rem; margin-left: auto;" v-if="!ri.fixed">[[ ri.issues.join(' · ') ]]</span>
+              </div>
+              <div v-if="!ri.fixed && !collapsedFixRows.includes(ri.line)" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px;">
+                <div v-if="findHeaderByAliases(['supplier','vendor'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Supplier</label>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixSuppliers" :value="getInwardRowField(ri.line, ['supplier','vendor'])" @change="fixInwardRowField(ri.line, ['supplier','vendor'], $event.target.value)" />
+                </div>
+                <div v-if="findHeaderByAliases(['invoiceno','invoicenumber','invno','billno'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Invoice No</label>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['invoiceno','invoicenumber','invno','billno'])" @change="fixInwardRowField(ri.line, ['invoiceno','invoicenumber','invno','billno'], $event.target.value)" />
+                </div>
+                <div v-if="findHeaderByAliases(['invoicedate','invdate','billdate'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Invoice Date</label>
+                  <input type="date" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['invoicedate','invdate','billdate'])" @change="fixInwardRowField(ri.line, ['invoicedate','invdate','billdate'], $event.target.value)" />
+                </div>
+                <div v-if="findHeaderByAliases(['setwarehouse','warehouse','store','location'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Warehouse</label>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixWarehouses" :value="getInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'])" @change="fixInwardRowField(ri.line, ['setwarehouse','warehouse','store','location'], $event.target.value)" />
+                </div>
+                <div v-if="findHeaderByAliases(['itemcode','item','material','sku','productcode'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Item Code</label>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" list="inwardFixItems" :value="getInwardRowField(ri.line, ['itemcode','item','material','sku','productcode'])" @change="fixInwardRowField(ri.line, ['itemcode','item','material','sku','productcode'], $event.target.value)" />
+                </div>
+                <div v-if="findHeaderByAliases(['serialno','serial','sn'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Serial No</label>
+                  <input type="text" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['serialno','serial','sn'])" @change="fixInwardRowField(ri.line, ['serialno','serial','sn'], $event.target.value)" />
+                </div>
+                <div v-if="findHeaderByAliases(['rate','price','unitprice','amount'])">
+                  <label style="font-size: 0.7rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 3px;">Rate</label>
+                  <input type="number" class="form-input" style="padding: 6px 8px; font-size: 0.8rem;" :value="getInwardRowField(ri.line, ['rate','price','unitprice','amount'])" @change="fixInwardRowField(ri.line, ['rate','price','unitprice','amount'], $event.target.value)" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <datalist id="inwardFixItems">
+            <option v-for="it in itemsList" :value="it.name" :key="it.name">[[ it.item_name ]]</option>
+          </datalist>
+          <datalist id="inwardFixSuppliers">
+            <option v-for="s in suppliers" :value="s.name" :key="s.name">[[ s.supplier_name || s.name ]]</option>
+          </datalist>
+          <datalist id="inwardFixWarehouses">
+            <option v-for="w in warehouses" :value="w" :key="w">[[ w ]]</option>
+          </datalist>
+        </div>
+      </div>
+      <div class="profile-modal-footer" style="padding: 16px 24px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; gap: 10px;">
+        <button
+          @click="downloadInwardTemplate()"
+          style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 18px; background: transparent; border: 1px solid #369696; color: #369696; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s;"
+          onmouseover="this.style.background='#369696';this.style.color='white'"
+          onmouseout="this.style.background='transparent';this.style.color='#369696'"
+        >
+          <i class="fas fa-download"></i>
+          <span>Download Template</span>
+        </button>
+        <div style="display: flex; gap: 8px;">
+          <button class="btn-cancel" @click="resetInwardBulkInsert()" style="padding: 8px 16px; font-size: 0.85rem;">Cancel</button>
+          <button
+            class="btn-create"
+            :disabled="creatingBulkInward || (inwardBulkValidation && !inwardBulkValidation.canCreate)"
+            @click="bulkCreateInward()"
+            style="padding: 8px 20px; border-radius: 6px;"
+          >
+            <i class="fas fa-spinner fa-spin" v-if="creatingBulkInward"></i>
+            <i class="fas fa-layer-group" v-else></i>
+            <span>[[ creatingBulkInward ? 'Creating...' : 'Bulk Creation' ]]</span>
           </button>
         </div>
       </div>
@@ -14003,6 +14267,17 @@
       scrappedSerialsList: [],
       showBulkAssetModal: false,
       showBulkAssetInsertModal: false,
+      showInwardBulkInsertModal: false,
+      inwardBulkInsertFileName: "",
+      inwardBulkInsertRowCount: 0,
+      inwardBulkHeaders: [],
+      inwardBulkDetected: {},
+      inwardBulkRows: [],
+      inwardBulkValidation: null,
+      creatingBulkInward: false,
+      collapsedFixRows: [],
+      fixedFixLines: [],
+      collapsedFixRows: [],
       bulkInsertPreview: null,
       bulkInsertFileName: "",
       bulkInsertFileUrl: "",
@@ -15051,17 +15326,8 @@
         // Fetch item groups and departments (non-blocking)
         this.fetchItemGroupsAndDepartments();
 
-        // Fetch Sahayog Serial Configuration config_type options
-        try {
-          frappe.model.with_doctype("Sahayog Serial Configuration", () => {
-            const configField = frappe.meta.get_docfield("Sahayog Serial Configuration", "config_type");
-            if (configField && configField.options) {
-              this.configTypes = configField.options.split('\n').filter(Boolean);
-            }
-          });
-        } catch (e) {
-          console.warn("Failed to fetch Sahayog Serial Configuration metadata:", e);
-        }
+         // Fetch Sahayog Serial Configuration config_type options (optional; defaults already set)
+         // (with_doctype removed: doctype is not list-enabled and caused console errors)
 
         // Reset create views
         this.showEMRCreateView = false;
@@ -15089,16 +15355,9 @@
           defaultItemLabel = "Requests";
         }
 
-        // Initialize from URL
-        const hash = window.location.hash.split('/');
+        // Initialize from URL (disabled: any refresh lands on Items/Requests default)
+        const hash = [];
         let initialRecordId = null;
-
-        if (hash.length > 1) {
-          const itemLabel = hash[1].toLowerCase();
-          const item = this.findSidebarItem(itemLabel);
-          if (item) defaultItemLabel = item.label;
-          if (hash.length > 2) initialRecordId = hash[2];
-        }
 
         const defaultItem =
           this.findSidebarItem(this.activeItem || defaultItemLabel) ||
@@ -16575,6 +16834,251 @@
         }
         event.target.value = "";
       },
+      inwardBulkHeaderTargets() {
+        return [
+          { key: "supplier",      label: "Supplier",       aliases: ["supplier", "vendor"] },
+          { key: "invoice_date",  label: "Invoice Date",   aliases: ["invoicedate", "invdate", "billdate"] },
+          { key: "invoice_no",    label: "Invoice No",     aliases: ["invoiceno", "invoicenumber", "invno", "billno"] },
+          { key: "serial_no",     label: "Serial No",      aliases: ["serialno", "serial", "sn"] },
+          { key: "rate",          label: "Rate",           aliases: ["rate", "price", "unitprice", "amount"] },
+          { key: "item_code",     label: "Item Code",      aliases: ["itemcode", "item", "material", "sku", "productcode"] },
+          { key: "set_warehouse", label: "Set Warehouse",  aliases: ["setwarehouse", "warehouse", "store", "location"] },
+        ];
+      },
+      matchInwardHeader(headers) {
+        const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        const normHeaders = (headers || []).map((h) => ({ raw: h, n: norm(h) }));
+        const detected = {};
+        for (const t of this.inwardBulkHeaderTargets()) {
+          const hit = normHeaders.find((h) => h.n && t.aliases.some((a) => h.n.includes(a)));
+          detected[t.key] = hit ? { header: hit.raw, label: t.label } : null;
+        }
+        return detected;
+      },
+      findHeaderByAliases(aliases) {
+        const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+        for (const h of (this.inwardBulkHeaders || [])) {
+          const n = norm(h);
+          if (n && (aliases || []).some((a) => n.includes(a))) return h;
+        }
+        return null;
+      },
+      getInwardRow(lineNo) {
+        const idx = (lineNo || 0) - 2;
+        return (this.inwardBulkRows || [])[idx] || null;
+      },
+      getInwardRowField(lineNo, aliases) {
+        const row = this.getInwardRow(lineNo);
+        if (!row) return "";
+        const h = this.findHeaderByAliases(aliases);
+        return h ? String(row[h] != null ? row[h] : "").trim() : "";
+      },
+      fixInwardRowField(lineNo, aliases, value) {
+        const row = this.getInwardRow(lineNo);
+        if (!row) return;
+        const h = this.findHeaderByAliases(aliases);
+        if (!h) return;
+        row[h] = /date/i.test(h) ? this.normalizeDateValue(value) : value;
+        this.validateInwardRows();
+      },
+      toggleFixRow(lineNo) {
+        const i = this.collapsedFixRows.indexOf(lineNo);
+        if (i > -1) this.collapsedFixRows.splice(i, 1);
+        else this.collapsedFixRows.push(lineNo);
+      },
+      rowHasIssue(ri, fieldKey) {
+        if (!ri || !ri.issues) return false;
+        const map = {
+          supplier: "Supplier",
+          invoice_no: "Invoice No",
+          invoice_date: "Invoice Date",
+          set_warehouse: "Warehouse",
+          item_code: "Item",
+          serial_no: "Serial",
+          rate: "Rate",
+        };
+        const kw = map[fieldKey];
+        if (!kw) return false;
+        return ri.issues.some((msg) => String(msg).toLowerCase().includes(kw.toLowerCase()));
+      },
+      getFixEditorRows() {
+        const vi = this.inwardBulkValidation;
+        const rows = (vi && vi.rowIssues) ? vi.rowIssues.map((r) => ({ line: r.line, item: r.item, issues: r.issues, fixed: false })) : [];
+        const fixed = (this.fixedFixLines || [])
+          .filter((ln) => !rows.some((r) => r.line === ln))
+          .map((ln) => {
+            const r = this.getInwardRow(ln);
+            const item = r ? (this.getInwardRowField(ln, ["itemcode", "item", "material", "sku", "productcode"]) || "-") : "-";
+            return { line: ln, item: item, issues: [], fixed: true };
+          });
+        return rows.concat(fixed);
+      },
+      normalizeDateValue(v) {
+        v = (v == null ? "" : String(v).trim());
+        if (!v) return "";
+        // Excel serial number (e.g. 46296) -> ISO date
+        if (/^\d{4,6}$/.test(v)) {
+          const serial = Number(v);
+          if (serial > 40000) {
+            const ms = (serial - 25569) * 86400 * 1000;
+            const d = new Date(ms);
+            if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+          }
+        }
+        if (/^\d{4}-\d{2}-\d{2}/.test(v)) return v.slice(0, 10);
+        const t = Date.parse(v);
+        if (!isNaN(t)) return new Date(t).toISOString().slice(0, 10);
+        return v;
+      },
+      onInwardBulkFileSelect(event) {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        this.inwardBulkInsertFileName = file.name;
+        this.inwardBulkInsertRowCount = 0;
+        this.inwardBulkHeaders = [];
+        this.inwardBulkDetected = {};
+        this.inwardBulkRows = [];
+        this.inwardBulkValidation = null;
+        const ext = (file.name.split(".").pop() || "").toLowerCase();
+        if (ext === "csv" || ext === "txt") {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            const lines = String(e.target.result || "")
+              .split(/\r\n|\n|\r/)
+              .filter((l) => l.trim() !== "");
+            this.inwardBulkInsertRowCount = lines.length > 0 ? lines.length - 1 : 0;
+            // first non-empty line = header
+            this.inwardBulkHeaders = lines.length ? lines[0].split(",").map((c) => c.trim().replace(/^"|"$/g, "")) : [];
+            this.inwardBulkDetected = this.matchInwardHeader(this.inwardBulkHeaders);
+            // data rows as objects keyed by header
+            this.inwardBulkRows = lines.slice(1).map((line) => {
+              const cells = line.split(",");
+              const obj = {};
+              this.inwardBulkHeaders.forEach((h, i) => {
+                let v = (cells[i] || "").trim().replace(/^"|"$/g, "");
+                if (/date/i.test(h)) v = this.normalizeDateValue(v);
+                obj[h] = v;
+              });
+              return obj;
+            });
+            this.validateInwardRows();
+          };
+          reader.readAsText(file);
+        } else if (ext === "xlsx" || ext === "xls") {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            try {
+              const wb = XLSX.read(new Uint8Array(e.target.result), { type: "array" });
+              const ws = wb.Sheets[wb.SheetNames[0]];
+              const ref = ws && ws["!ref"] ? XLSX.utils.decode_range(ws["!ref"]) : null;
+              const rows = XLSX.utils.sheet_to_json(ws, { header: 1, blankrows: false, defval: "" });
+              const headerRow = rows.length ? rows[0] : [];
+              this.inwardBulkHeaders = headerRow.map((c) => String(c).trim());
+              this.inwardBulkDetected = this.matchInwardHeader(this.inwardBulkHeaders);
+              const dataRows = rows.slice(1).filter((r) => r.some((c) => String(c).trim() !== ""));
+              this.inwardBulkInsertRowCount = dataRows.length;
+              this.inwardBulkRows = dataRows.map((r) => {
+                const obj = {};
+                this.inwardBulkHeaders.forEach((h, i) => {
+                  let v = r[i] != null ? String(r[i]).trim() : "";
+                  if (/date/i.test(h)) v = this.normalizeDateValue(v);
+                  obj[h] = v;
+                });
+                return obj;
+              });
+              this.validateInwardRows();
+            } catch (err) {
+              console.error("Bulk insert file parse error:", err);
+              this.inwardBulkInsertRowCount = 0;
+              this.inwardBulkHeaders = [];
+              this.inwardBulkDetected = {};
+              this.inwardBulkRows = [];
+              this.inwardBulkValidation = { canCreate: false, errors: ["Could not read/parse the file."] };
+            }
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      },
+      // Check whether the loaded rows can actually create records
+      async validateInwardRows() {
+        const D = this.inwardBulkDetected || {};
+        const rows = this.inwardBulkRows || [];
+        const prevIssueLines = (this.inwardBulkValidation && this.inwardBulkValidation.rowIssues)
+          ? this.inwardBulkValidation.rowIssues.map((r) => r.line)
+          : [];
+        const col = (key) => (D[key] ? D[key].header : null);
+        const get = (r, key) => { const c = col(key); return c ? String(r[c] != null ? r[c] : "").trim() : ""; };
+        const errors = [];
+        const out = { canCreate: false, errors: [], rowIssues: [], inwardCount: 0, rowCount: rows.length };
+
+        // 1) required columns present? (Qty is optional — defaults to 1 / serial count)
+        ["supplier", "invoice_no", "invoice_date", "set_warehouse", "item_code", "rate"].forEach((k) => {
+          if (!D[k]) errors.push(`Missing column: ${(this.inwardBulkHeaderTargets().find(t => t.key === k) || {}).label}`);
+        });
+        if (errors.length) {
+          out.errors = errors;
+          this.inwardBulkValidation = out;
+          return;
+        }
+
+        // 2) load master data to verify supplier/item/warehouse exist
+        try { await this.fetchItemGroupsAndDepartments(); } catch (e) { /* fall back to empty lists */ }
+        const supNames = new Set((this.suppliers || []).map(s => String(s.name || "").toLowerCase()));
+        const itemNames = new Set((this.itemsList || []).map(i => String(i.name || "").toLowerCase()));
+        const whNames = new Set((this.warehouses || []).map(w => String(w.name || w).toLowerCase()));
+
+        const invoiceKeys = new Set();
+        rows.forEach((r, idx) => {
+          const lineNo = idx + 2; // 1-based + header
+          const issues = [];
+          const sup = get(r, "supplier");
+          const invNo = get(r, "invoice_no");
+          const invDate = get(r, "invoice_date");
+          const wh = get(r, "set_warehouse");
+          const item = get(r, "item_code");
+          const qty = get(r, "qty");
+          const rate = get(r, "rate");
+
+          if (!sup) issues.push("Supplier empty");
+          else if (supNames.size && !supNames.has(sup.toLowerCase())) issues.push(`Supplier not found: ${sup}`);
+
+          if (!invNo) issues.push("Invoice No empty");
+          else invoiceKeys.add([sup, invNo, invDate].join("||"));
+
+          if (!invDate) issues.push("Invoice Date empty");
+          else if (isNaN(Date.parse(invDate))) issues.push(`Invalid date: ${invDate}`);
+
+          if (!wh) issues.push("Warehouse empty");
+          else if (whNames.size && !whNames.has(wh.toLowerCase())) issues.push(`Warehouse not found: ${wh}`);
+
+          if (!item) issues.push("Item Code empty");
+          else if (itemNames.size && !itemNames.has(item.toLowerCase())) issues.push(`Item not found: ${item}`);
+
+          // Serial No required when the column is present in the file
+          if (col("serial_no") && !get(r, "serial_no")) issues.push("Serial No is empty");
+
+          const rt = Number(rate);
+          if (rate === "" || isNaN(rt) || rt < 0) issues.push(`Rate invalid (got "${rate}")`);
+
+          if (issues.length) out.rowIssues.push({ line: lineNo, item: item || "-", issues });
+        });
+
+        out.inwardCount = invoiceKeys.size;
+        out.validRows = out.rowCount - out.rowIssues.length;
+        out.canCreate = out.rowIssues.length === 0 && out.rowCount > 0;
+        if (out.rowCount === 0) out.errors.push("File has no data rows.");
+        if (out.rowIssues.length) out.errors.push(`${out.rowIssues.length} of ${out.rowCount} row(s) cannot be created.`);
+
+        // Track rows that just became valid so their fixed values stay visible
+        const newIssueLines = (out.rowIssues || []).map((r) => r.line);
+        const fixedLines = (this.fixedFixLines || []).slice();
+        for (const ln of prevIssueLines) {
+          if (!newIssueLines.includes(ln) && !fixedLines.includes(ln)) fixedLines.push(ln);
+        }
+        // drop any that became errored again
+        this.fixedFixLines = fixedLines.filter((ln) => !newIssueLines.includes(ln));
+        this.inwardBulkValidation = out;
+      },
       async downloadInsertTemplate() {
         let configTypes = [];
         let dropdowns = { brands: [], zones: [], divisions: [] };
@@ -16609,6 +17113,248 @@
         const link = document.createElement("a");
         link.href = url;
         link.download = "asset_update_template.csv";
+        link.click();
+        URL.revokeObjectURL(url);
+      },
+      async bulkCreateInward() {
+        if (this.creatingBulkInward) return;
+        if (this.inwardBulkValidation && !this.inwardBulkValidation.canCreate) {
+          frappe.msgprint("Cannot create — fix the issues listed first.");
+          return;
+        }
+        const rows = this.inwardBulkRows || [];
+        if (!rows.length) { frappe.msgprint("No data rows to create."); return; }
+
+        const D = this.inwardBulkDetected || {};
+        const col = (key) => (D[key] ? D[key].header : null);
+        const get = (r, key) => { const c = col(key); return c ? String(r[c] != null ? r[c] : "").trim() : ""; };
+        const flatGet = (r, aliases) => { const h = this.findHeaderByAliases(aliases); return h ? String(r[h] != null ? r[h] : "").trim() : ""; };
+        const buildSerialConfigTable = (r) => [
+          { config_type: "MAC Address", config_value: flatGet(r, ["macaddress", "mac"]) },
+          { config_type: "Make", config_value: flatGet(r, ["make"]) },
+          { config_type: "Model Number", config_value: flatGet(r, ["modelnumber", "model"]) },
+          { config_type: "Processor", config_value: flatGet(r, ["processor"]) },
+          { config_type: "RAM", config_value: flatGet(r, ["ram"]) },
+          { config_type: "Storage", config_value: flatGet(r, ["storage"]) },
+          { config_type: "Operating System", config_value: flatGet(r, ["operatingsystem", "os"]) },
+          { config_type: "Windows Key", config_value: flatGet(r, ["windowskey", "winkey"]) },
+          { config_type: "Office Key", config_value: flatGet(r, ["officekey"]) },
+          { config_type: "Warranty start date", config_value: this.normalizeDateValue(flatGet(r, ["warrantystartdate", "warrantystart"])) },
+          { config_type: "Warranty end date", config_value: this.normalizeDateValue(flatGet(r, ["warrantyenddate", "warrantyend"])) },
+        ].filter((x) => x.config_value);
+
+        // group rows by uniqueness of (Supplier, Invoice No, Invoice Date)
+        const groups = new Map();
+        for (const r of rows) {
+          const key = [get(r, "supplier"), get(r, "invoice_no"), get(r, "invoice_date")].join("||");
+          if (!groups.has(key)) groups.set(key, []);
+          groups.get(key).push(r);
+        }
+
+        this.creatingBulkInward = true;
+        const createdPRs = [];
+        const errors = [];
+        try {
+          for (const [groupKey, grows] of groups) {
+            try {
+              const first = grows[0];
+              const supplier = get(first, "supplier");
+              const warehouse = get(first, "set_warehouse");
+              const invoiceDate = get(first, "invoice_date");
+              const invNo = get(first, "invoice_no");
+
+              let company = "";
+              try {
+                const compRes = await frappe.call({ method: "sahayog.procurement.api.stock_balance_ledger.get_warehouse_company", args: { warehouse } });
+                company = compRes.message || "";
+              } catch (e) { /* ignore */ }
+              if (!company) company = "Sahayog Multistate Credit Co-op Society Ltd";
+
+               // Group rows by item_code so the same item with multiple serials becomes
+               // ONE PR line with a single Serial & Batch Bundle (qty = serial count).
+               const itemMap = new Map();
+               for (const r of grows) {
+                 const itemCode = get(r, "item_code");
+                 if (!itemCode) continue;
+                 if (!itemMap.has(itemCode)) {
+                   itemMap.set(itemCode, { itemCode, qty: 0, rate: Number(get(r, "rate")) || 0, description: get(r, "description"), serials: [] });
+                 }
+                 const it = itemMap.get(itemCode);
+                 it.qty += (Number(get(r, "qty")) || 0);
+                 if (!it.description) it.description = get(r, "description");
+                 if (get(r, "rate")) it.rate = Number(get(r, "rate")) || it.rate;
+                 const sn = get(r, "serial_no");
+                 if (sn) it.serials.push(r);
+               }
+
+               const items = [];
+               for (const [itemCode, it] of itemMap) {
+                 let uom = "";
+                 try {
+                   const u = await frappe.call({ method: "frappe.client.get_value", args: { doctype: "Item", filters: { name: itemCode }, fieldname: "stock_uom" } });
+                   if (u.message) uom = u.message.stock_uom;
+                 } catch (e) { /* ignore */ }
+
+                 let bundleName = null;
+                 const serialNames = [];
+                 if (it.serials.length) {
+                   for (const r of it.serials) {
+                     const serialNo = get(r, "serial_no");
+                     const rate = Number(get(r, "rate")) || it.rate;
+                     try {
+                       const serialDoc = {
+                         doctype: "Serial No",
+                         serial_no: serialNo,
+                         item_code: itemCode,
+                         purchase_rate: rate,
+                         status: "Active",
+                         company: company,
+                         purchase_document_no: invNo,
+                         warranty_expiry_date: this.normalizeDateValue(flatGet(r, ["warrantyenddate", "warrantyend"])) || null,
+                         configuration_table: buildSerialConfigTable(r),
+                       };
+                       const sRes = await frappe.call({ method: "frappe.client.insert", args: { doc: serialDoc } });
+                       if (sRes.message && sRes.message.name) serialNames.push(sRes.message.name);
+                     } catch (e) {
+                       console.error("Serial No creation failed", serialNo, e);
+                       frappe.msgprint(`Serial No ${serialNo} failed: ${e.message || e}`);
+                     }
+                   }
+                   if (serialNames.length) {
+                     try {
+                       const bRes = await frappe.call({
+                         method: "frappe.client.insert",
+                         args: {
+                           doc: {
+                             doctype: "Serial and Batch Bundle",
+                             item_code: itemCode,
+                             type_of_transaction: "Inward",
+                             voucher_type: "Purchase Receipt",
+                             warehouse: warehouse,
+                             entries: serialNames.map((sn) => ({ serial_no: sn, warehouse: warehouse, qty: 1 })),
+                           },
+                         },
+                       });
+                       if (bRes.message && bRes.message.name) bundleName = bRes.message.name;
+                     } catch (e) {
+                       console.error("Bundle creation failed", e);
+                     }
+                   }
+                 }
+
+                 const qty = it.serials.length ? it.serials.length : (it.qty > 0 ? it.qty : 1);
+                 items.push({
+                   item_code: itemCode,
+                   description: it.description || undefined,
+                   qty: qty,
+                   uom: uom || undefined,
+                   warehouse: warehouse,
+                   rate: it.rate,
+                   serial_and_batch_bundle: bundleName || undefined,
+                 });
+               }
+
+              const doc = {
+                doctype: "Purchase Receipt",
+                company: company,
+                supplier: supplier,
+                custom_invoice_number: invNo === "__none__" ? "" : invNo,
+                custom_invoice_date: invoiceDate || null,
+                posting_date: invoiceDate || frappe.datetime.now_date(),
+                set_warehouse: warehouse,
+                custom_po_wo: "Purchase Order",
+                custom_request_for: "Store",
+                items: items,
+              };
+
+              const res = await frappe.call({ method: "frappe.client.insert", args: { doc } });
+              if (res.message && res.message.name) {
+                const prName = res.message.name;
+                // submit
+                try {
+                  await frappe.call({ method: "frappe.client.submit", args: { doc: res.message } });
+                } catch (e) {
+                  console.error("Submit failed", prName, e);
+                  frappe.msgprint(`Created ${prName} as draft (submit failed: ${e.message || e})`);
+                }
+                createdPRs.push(prName);
+              }
+            } catch (e) {
+              console.error("Inward creation failed for", invNo, e);
+              errors.push(`${invNo}: ${e.message || e}`);
+            }
+          }
+
+          if (createdPRs.length) {
+            frappe.show_alert({ message: `${createdPRs.length} Inward(s) created: ${createdPRs.join(", ")}`, indicator: "green" }, 10);
+            await this.fetchData("Purchase Receipt");
+            this.resetInwardBulkInsert();
+          }
+          if (errors.length) {
+            frappe.msgprint({ title: "Some inwards failed", message: errors.join("<br>"), indicator: "red" });
+          }
+        } finally {
+          this.creatingBulkInward = false;
+        }
+      },
+      resetInwardBulkInsert() {
+        this.showInwardBulkInsertModal = false;
+        this.inwardBulkInsertFileName = "";
+        this.inwardBulkInsertRowCount = 0;
+        this.inwardBulkHeaders = [];
+        this.inwardBulkDetected = {};
+        this.inwardBulkRows = [];
+        this.inwardBulkValidation = null;
+        this.creatingBulkInward = false;
+        this.collapsedFixRows = [];
+        this.fixedFixLines = [];
+      },
+      async downloadInwardTemplate() {
+        // Pull REAL master data so the sample row is valid & usable.
+        // Nothing is written to any doctype — it all only goes into the file.
+        if (!this.suppliers.length || !this.itemsList.length || !this.warehouses.length) {
+          try { await this.fetchItemGroupsAndDepartments(); } catch (e) { /* keep fallbacks */ }
+        }
+        const pick = (arr) => (arr && arr.length ? arr[Math.floor(Math.random() * arr.length)] : null);
+
+        const sup = pick(this.suppliers) || {};
+        const supplierName = sup.name || sup.supplier_name || "";
+
+        const item = pick(this.itemsList) || {};
+        const itemCode = item.name || "";
+        const itemName = item.item_name || "";
+
+        const warehouseName = pick(this.warehouses) || "";
+
+        let rate = "";
+        if (itemCode) {
+          try {
+            const r = await frappe.call({ method: "frappe.client.get_value", args: { doctype: "Item", filters: { name: itemCode }, fieldname: "valuation_rate" } });
+            if (r.message && r.message.valuation_rate != null) rate = String(r.message.valuation_rate);
+          } catch (e) { /* leave blank */ }
+        }
+
+        const today = new Date();
+        const iso = (d) => d.toISOString().slice(0, 10);
+        const warrantyStart = iso(today);
+        const warrantyEnd = iso(new Date(today.getFullYear() + 3, today.getMonth(), today.getDate() - 1));
+        const serialNo = "SN" + today.getFullYear() + String(Math.floor(Math.random() * 900000) + 100000);
+        const mac = Array.from({ length: 6 }, () => Math.floor(Math.random() * 256).toString(16).padStart(2, "0").toUpperCase()).join(":");
+
+        const inwardHeaders = ["Supplier", "Invoice No", "Invoice Date", "Set Warehouse", "Item Code", "Description", "Rate"];
+        const serialHeaders = ["Serial No", "MAC Address", "Make", "Model Number", "Processor", "RAM", "Storage", "Operating System", "Windows Key", "Office Key", "Warranty Start Date", "Warranty End Date"];
+        const headers = [...inwardHeaders, ...serialHeaders];
+        const example = [
+          supplierName, "INV-2024-0001", iso(today), warehouseName,
+          itemCode, itemName, rate,
+          serialNo, mac, "", "", "", "", "", "", "", "", warrantyStart, warrantyEnd,
+        ];
+        const csv = headers.join(",") + "\n" + example.join(",") + "\n";
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "inward_bulk_insert_template.csv";
         link.click();
         URL.revokeObjectURL(url);
       },
