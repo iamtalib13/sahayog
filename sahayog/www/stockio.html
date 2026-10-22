@@ -8453,6 +8453,7 @@
                     <th style="padding: 10px 12px; text-align: right;">Used (Total)</th>
                     <th style="padding: 10px 12px; text-align: right;">Purchased (Total)</th>
                     <th style="padding: 10px 12px; text-align: center;">Unused Requested</th>
+                    <th style="padding: 10px 12px; text-align: center;">Download</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -8463,6 +8464,15 @@
                     <td style="padding: 10px 12px; text-align: right; font-weight: 700;">[[ fmtNumber(b.used_total) ]]</td>
                     <td style="padding: 10px 12px; text-align: right;">[[ fmtNumber(b.purchased_total) ]]</td>
                     <td style="padding: 10px 12px; text-align: center;">[[ b.unused_requested ]]</td>
+                    <td style="padding: 10px 12px; text-align: center;">
+                      <button
+                        @click.stop="downloadBranchExpance(b)"
+                        title="Download this branch expense details"
+                        style="padding: 4px 10px; border: none; border-radius: 6px; background: #369696; color: #fff; font-size: 0.75rem; font-weight: 700; cursor: pointer; white-space: nowrap;"
+                      >
+                        <i class="fas fa-download" style="margin-right: 4px;"></i>Download
+                      </button>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -17625,6 +17635,100 @@
       branchDetailPurchasedTotal() {
         const rows = (this.branchDetail && this.branchDetail.monthly_records) || [];
         return rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
+      },
+      async downloadBranchExpance(row, format = "xlsx") {
+        try {
+          const res = await frappe.call({
+            method: "sahayog.procurement.api.stock_balance_ledger.get_branch_detail",
+            args: { sol_id: row.sol_id },
+          });
+          const d = res.message || {};
+          const baseName = `Branch_Expance_${row.sol_id}_${new Date().toISOString().slice(0, 10)}`;
+
+          const usageRows = [
+            ["Month", "Stock Entry", "Date", "Item", "Qty", "Rate", "Amount"],
+            ...(d.usage || []).map((u) => [
+              u.month || "",
+              u.se_name || "",
+              u.posting_date ? String(u.posting_date).slice(0, 10) : "",
+              u.item_code || "",
+              u.qty || 0,
+              u.rate || 0,
+              u.amount || 0,
+            ]),
+          ];
+
+          const prRows = [
+            ["Month", "PR No", "Date", "Supplier", "Item", "Qty", "Rate", "Amount"],
+            ...(d.monthly_records || []).map((m) => [
+              m.month || "",
+              m.pr_name || "",
+              m.posting_date ? String(m.posting_date).slice(0, 10) : "",
+              m.supplier || "",
+              m.item_code || "",
+              m.qty || 0,
+              m.rate || 0,
+              m.amount || 0,
+            ]),
+          ];
+
+          const reqRows = [
+            ["EMR", "Employee", "Item", "Item Name", "Qty", "Approved Qty", "Status"],
+            ...(d.requested || []).map((r) => [
+              r.emr || "",
+              r.employee || "",
+              r.item_code || "",
+              r.item_name || "",
+              r.quantity || 0,
+              r.approved_quantity || 0,
+              r.status || "",
+            ]),
+          ];
+
+          const stockRows = [
+            ["Item Code", "Item Name", "Closing Balance"],
+            ...(d.in_stock || []).map((s) => [
+              s.item_code || "",
+              s.item_name || "",
+              s.closing_balance || 0,
+            ]),
+          ];
+
+          if (format !== "csv" && typeof XLSX !== "undefined") {
+            const wb = XLSX.utils.book_new();
+            const addSheet = (name, data) => {
+              if (!data || !data.length) return;
+              const ws = XLSX.utils.aoa_to_sheet(data);
+              ws["!cols"] = data[0].map((h, i) => ({
+                wch: Math.max(
+                  String(h).length,
+                  ...data.slice(1).map((r) => String(r[i] === undefined || r[i] === null ? "" : r[i]).length),
+                  10
+                ),
+              }));
+              XLSX.utils.book_append_sheet(wb, ws, name);
+            };
+            addSheet("Expense (Used)", usageRows);
+            addSheet("Purchases", prRows);
+            addSheet("Requested Items", reqRows);
+            addSheet("In Stock", stockRows);
+            XLSX.writeFile(wb, baseName + ".xlsx");
+          } else {
+            let csv = usageRows
+              .map((r) => r.map((v) => '"' + String(v === undefined || v === null ? "" : v).replace(/"/g, '""') + '"').join(","))
+              .join("\r\n");
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", baseName + ".csv");
+            link.click();
+            URL.revokeObjectURL(url);
+          }
+        } catch (e) {
+          console.error("Branch expense download error:", e);
+          frappe.msgprint("Failed to download branch expense data");
+        }
       },
       async openBranchDetail(solId) {
         this.showBranchDetailModal = true;
