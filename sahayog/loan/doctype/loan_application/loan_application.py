@@ -102,6 +102,16 @@ class LoanApplication(Document):
                     "status": "Pending"
                 })
 
+            # Credit Decision stage mandatory documents
+            credit_decision_docs = ["Gold Rate", "LTV Table", "Sanction Letter"]
+            existing_cd_docs = [d.document_type for d in self.kyc_documents]
+            for doc_type in credit_decision_docs:
+                if doc_type not in existing_cd_docs:
+                    self.append("kyc_documents", {
+                        "document_type": doc_type,
+                        "status": "Pending"
+                    })
+
         # Valuer Mandatory Check for Branch Team
         if self.security_type == "Gold" and self.ornaments_list:
             branch_roles = {"Branch Loan User", "Branch Manager"}
