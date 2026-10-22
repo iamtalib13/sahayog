@@ -16862,7 +16862,6 @@
           { key: "invoice_no",    label: "Invoice No",     aliases: ["invoiceno", "invoicenumber", "invno", "billno"] },
           { key: "serial_no",     label: "Serial No",      aliases: ["serialno", "serial", "sn"] },
           { key: "rate",          label: "Rate",           aliases: ["rate", "price", "unitprice", "amount"] },
-          { key: "qty",           label: "Qty",            aliases: ["qty", "quantity", "units", "noofunits"] },
           { key: "item_code",     label: "Item Code",      aliases: ["itemcode", "item", "material", "sku", "productcode"] },
           { key: "set_warehouse", label: "Set Warehouse",  aliases: ["setwarehouse", "warehouse", "store", "location"] },
         ];
@@ -17063,9 +17062,6 @@
 
           // Serial No required when the column is present in the file
           if (col("serial_no") && !get(r, "serial_no")) issues.push("Serial No is empty");
-
-          const q = Number(qty);
-          if (col("qty") && qty && (isNaN(q) || q <= 0)) issues.push(`Qty must be > 0 (got "${qty}")`);
 
           const rt = Number(rate);
           if (rate === "" || isNaN(rt) || rt < 0) issues.push(`Rate invalid (got "${rate}")`);
