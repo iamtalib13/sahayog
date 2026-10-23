@@ -144,7 +144,7 @@
    "fieldname": "overall_assessment",
    "fieldtype": "Select",
    "label": "Overall Assessment",
-   "options": "\nExcellent\nGood\nSatisfactory\nNeeds Improvement"
+   "options": "\nExcellent\nGood\nAverage\nSatisfactory\nNeeds Improvement"
   },
   {
    "fieldname": "signoff_section",
