@@ -14,6 +14,29 @@ class LoanApplication(Document):
             self.run_rule_engine()
         self.calculate_payouts()
 
+    def on_update(self):
+        self.add_send_back_comment()
+
+    def add_send_back_comment(self):
+        before = self.get_doc_before_save()
+        old_remark = before.get("send_back_remark") if before else None
+
+        if not self.get("send_back_remark") or self.get("send_back_remark") == old_remark:
+            return
+
+        frappe.get_doc({
+            "doctype": "Comment",
+            "comment_type": "Comment",
+            "reference_doctype": self.doctype,
+            "reference_name": self.name,
+            "comment_email": frappe.session.user,
+            "comment_by": frappe.utils.get_fullname(frappe.session.user),
+            "content": _("Sent back to <b>{0}</b><br>Remark: {1}").format(
+                frappe.utils.escape_html(self.status or ""),
+                frappe.utils.escape_html(self.get("send_back_remark")),
+            ),
+        }).insert(ignore_permissions=True)
+
     def set_lead_converter_from_user(self):
         # Auto-set Lead Converter (LC) from current user
         if not self.lead_converter:
