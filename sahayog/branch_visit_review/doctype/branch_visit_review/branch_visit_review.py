@@ -46,7 +46,7 @@ class BranchVisitReview(Document):
 		district: DF.Data | None
 		key_strengths: DF.Data | None
 		leadership_remarks: DF.Text | None
-		overall_assessment: DF.Literal["", "Excellent", "Good", "Satisfactory", "Needs Improvement"]
+		overall_assessment: DF.Literal["", "Excellent", "Good", "Average", "Satisfactory", "Needs Improvement"]
 		region_zone: DF.Data | None
 		responses: DF.Table[BranchVisitResponse]
 		template: DF.Link | None
