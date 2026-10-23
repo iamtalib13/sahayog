@@ -287,10 +287,10 @@ def add_workflow_comment(docname, comment):
 
 @frappe.whitelist()
 def add_document_after_approval(docname, document_type, document_file, document_number=None, remark=None):
-    """Allow Credit/CPC team to upload or re-upload a document after approval."""
-    allowed_roles = {"Credit Loan User", "CPC Loan User", "Administrator", "System Manager"}
+    """Allow Credit team to upload or re-upload a document after approval."""
+    allowed_roles = {"Credit Loan User", "Administrator", "System Manager"}
     if not allowed_roles.intersection(set(frappe.get_roles(frappe.session.user))):
-        frappe.throw(_("Only Credit / CPC team can upload documents after approval."))
+        frappe.throw(_("Only Credit team can upload documents after approval."))
 
     document_type = (document_type or "").strip()
     if not document_type:
