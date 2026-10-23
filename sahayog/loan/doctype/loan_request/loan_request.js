@@ -39,9 +39,9 @@ frappe.ui.form.on("Loan Request", {
 			frm.toggle_reqd("scheme_code");
 			frm.toggle_reqd("approved_loan_amount", true);
 
-			// Clear default/old values so mandatory check works
-			if (frm.doc.approved_loan_amount === "0.000000000" || frm.doc.approved_loan_amount === "0" || frm.doc.approved_loan_amount === "0.00") {
-				frm.set_value("approved_loan_amount", "");
+			// Clear default/old zero values so mandatory check works
+			if (!frm.doc.approved_loan_amount || frm.doc.approved_loan_amount === 0) {
+				frm.set_value("approved_loan_amount", null);
 			}
 		}
 
@@ -75,7 +75,7 @@ frappe.ui.form.on("Loan Request", {
 					frappe.msgprint(__('Scheme Code is required before approving'));
 					return;
 				}
-				if (!frm.doc.approved_loan_amount || frm.doc.approved_loan_amount === 0 || frm.doc.approved_loan_amount === "0.000000000") {
+				if (!frm.doc.approved_loan_amount || frm.doc.approved_loan_amount === 0) {
 					frappe.msgprint(__('Approved Loan Amount is required and cannot be zero'));
 					return;
 				}
