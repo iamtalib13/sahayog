@@ -61,10 +61,26 @@ class BranchVisitReview(Document):
 
 	def validate(self):
 		self.set_district_from_sol_id()
+		self.format_numbered_fields()
 		# self.validate_visited_by_designation()
 		# self.validate_visit_details_edit()
 		self.validate_visitor_signoff()
 		self.validate_branch_head_signoff()
+
+	def format_numbered_fields(self):
+		if self.key_strengths:
+			self.key_strengths = self._number_lines(self.key_strengths)
+
+	@staticmethod
+	def _number_lines(text: str) -> str:
+		import re
+		lines = [line.strip() for line in text.split("\n") if line.strip()]
+		cleaned = []
+		for line in lines:
+			clean = re.sub(r"^\d+\.\s*", "", line).strip()
+			if clean:
+				cleaned.append(clean)
+		return "\n".join(f"{idx + 1}. {item}" for idx, item in enumerate(cleaned))
 
 	def set_district_from_sol_id(self):
 		if not self.district:

@@ -37,7 +37,7 @@ frappe.ui.form.on("Branch Visit Review", {
 				.filter(function (r) {
 					return r.response && (parseInt(r.response) >= 3 || r.response === "Good" || r.response === "Excellent");
 				})
-				.map(function (r) { return r.parameter_name; })
+				.map(function (r, idx) { return (idx + 1) + ". " + r.parameter_name; })
 				.join("\n");
 			frm.set_value("key_strengths", strengths);
 		}
@@ -554,7 +554,8 @@ function render_checklist(frm, template) {
 			let ks_lines = (frm.doc.key_strengths || "").split("\n").filter(function (l) { return l.trim(); });
 			let ks_list_html = "<ol class='ks-numbered-list'>";
 			ks_lines.forEach(function (line, ki) {
-				ks_list_html += "<li class='ks-list-item'><input type='text' class='form-control ks-item-input' data-index='" + ki + "' placeholder='Enter strength' value='" + bvr_escape(line) + "'><button type='button' class='bvr-btn-remove ks-remove-btn' title='Remove'>&times;</button></li>";
+				let clean_line = line.replace(/^\d+\.\s*/, "").trim();
+				ks_list_html += "<li class='ks-list-item'><input type='text' class='form-control ks-item-input' data-index='" + ki + "' placeholder='Enter strength' value='" + bvr_escape(clean_line) + "'><button type='button' class='bvr-btn-remove ks-remove-btn' title='Remove'>&times;</button></li>";
 			});
 			ks_list_html += "</ol>";
 			let leadership_html = "";
@@ -746,23 +747,25 @@ function render_checklist(frm, template) {
 				frm.fields_dict.checklist.$wrapper.find(".ks-list-item .ks-item-input").each(function (ki) {
 					$(this).attr("data-index", ki);
 				});
-				// save
+				// save with numbering
 				let items = [];
 				frm.fields_dict.checklist.$wrapper.find(".ks-item-input").each(function () {
-					let v = $(this).val().trim();
+					let v = $(this).val().trim().replace(/^\d+\.\s*/, "");
 					if (v) items.push(v);
 				});
-				frm.set_value("key_strengths", items.join("\n"));
+				let numbered = items.map(function(item, idx) { return (idx + 1) + ". " + item; }).join("\n");
+				frm.set_value("key_strengths", numbered);
 			});
 
-			// Key Strengths list inputs: save on blur
+			// Key Strengths list inputs: save on blur with numbering
 			frm.fields_dict.checklist.$wrapper.off("blur.ks-list", ".ks-item-input").on("blur.ks-list", ".ks-item-input", function () {
 				let items = [];
 				frm.fields_dict.checklist.$wrapper.find(".ks-item-input").each(function () {
-					let v = $(this).val().trim();
+					let v = $(this).val().trim().replace(/^\d+\.\s*/, "");
 					if (v) items.push(v);
 				});
-				frm.set_value("key_strengths", items.join("\n"));
+				let numbered = items.map(function(item, idx) { return (idx + 1) + ". " + item; }).join("\n");
+				frm.set_value("key_strengths", numbered);
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".bvr-overall-select").on("change", function () {
