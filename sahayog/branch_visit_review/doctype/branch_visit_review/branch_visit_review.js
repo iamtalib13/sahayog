@@ -517,18 +517,6 @@ function render_checklist(frm, template) {
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Areas Requiring Attention (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Leadership Remarks</h5></div><textarea class='form-control leadership-input' data-field='leadership_remarks' rows='4' placeholder='Enter leadership remarks'>" + (frm.doc.leadership_remarks || "") + "</textarea></div>";
 
-			let overall_field = frm.get_field("overall_assessment");
-			let overall_options = [];
-			if (overall_field && overall_field.df.options) {
-				overall_options = overall_field.df.options.split("\n").filter(function (opt) { return opt; });
-			}
-			let overall_html = "<span class='bvr-overall-badge'>Overall Assessment: <select class='bvr-overall-select'>";
-			overall_html += "<option value=''" + (frm.doc.overall_assessment ? "" : " selected") + ">&mdash;</option>";
-			overall_options.forEach(function (opt) {
-				overall_html += "<option value='" + opt + "'" + (frm.doc.overall_assessment === opt ? " selected" : "") + ">" + opt + "</option>";
-			});
-			overall_html += "</select></span>";
-
 			let active_tab = "review";
 			let $cw = frm.fields_dict.checklist.$wrapper;
 			if ($cw.find(".tab-content-action").is(":visible")) {
@@ -536,6 +524,20 @@ function render_checklist(frm, template) {
 			} else if ($cw.find(".tab-content-leadership").is(":visible")) {
 				active_tab = "leadership";
 			}
+
+			let overall_field = frm.get_field("overall_assessment");
+			let overall_options = [];
+			if (overall_field && overall_field.df.options) {
+				overall_options = overall_field.df.options.split("\n").filter(function (opt) { return opt; });
+			}
+			let overall_display = active_tab === "leadership" ? "inline-flex" : "none";
+			let overall_html = "<span class='bvr-overall-badge' style='display:" + overall_display + ";'>Overall Assessment: <select class='bvr-overall-select'>";
+			overall_html += "<option value=''" + (frm.doc.overall_assessment ? "" : " selected") + ">&mdash;</option>";
+			overall_options.forEach(function (opt) {
+				overall_html += "<option value='" + opt + "'" + (frm.doc.overall_assessment === opt ? " selected" : "") + ">" + opt + "</option>";
+			});
+			overall_html += "</select></span>";
+
 			let li_active = {
 				review: active_tab === "review" ? "active" : "",
 				action: active_tab === "action" ? "active" : "",
@@ -651,6 +653,11 @@ function render_checklist(frm, template) {
 						frm.fields_dict.checklist.$wrapper.find(tab_map[sel]).hide();
 					});
 					frm.fields_dict.checklist.$wrapper.find(tab_map[tab_sel]).show();
+					if (tab_sel === ".tab-leadership") {
+						frm.fields_dict.checklist.$wrapper.find(".bvr-overall-badge").css("display", "inline-flex");
+					} else {
+						frm.fields_dict.checklist.$wrapper.find(".bvr-overall-badge").css("display", "none");
+					}
 				});
 			});
 
