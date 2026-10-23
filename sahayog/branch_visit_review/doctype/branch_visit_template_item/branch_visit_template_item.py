@@ -16,7 +16,7 @@ class BranchVisitTemplateItem(Document):
 		category: DF.Data
 		is_mandatory: DF.Check
 		parameter_name: DF.Data
-		response_type: DF.Literal["", "Text Observation", "Rating (1 to 5)", "Yes / No", "Number"]
+		response_type: DF.Literal["", "Text Observation", "Rating (1 to 5)", "Yes / No", "Number", "Multiple Select"]
 
 	# end: auto-generated types
 	pass
