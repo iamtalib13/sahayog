@@ -97,6 +97,8 @@ class LoanApplication(Document):
                 "Packet Image",
                 "Pledge(Group) Image",
                 "Checklist",
+                "Stamp Paper",
+                "Signature Declaration",
             ]
             existing_docs = [d.document_type for d in self.kyc_documents]
             for doc_type in valuation_docs:
@@ -105,6 +107,12 @@ class LoanApplication(Document):
                         "document_type": doc_type,
                         "status": "Pending"
                     })
+
+            # Stamp Paper is mandatory at Valuation Pending stage
+            if "Stamp Paper" in existing_docs:
+                stamp_paper = next((d for d in self.kyc_documents if d.document_type == "Stamp Paper"), None)
+                if stamp_paper and not stamp_paper.document_file:
+                    frappe.throw(_("Stamp Paper document is mandatory at Valuation Pending stage."))
 
         # Credit Decision Logic
         if self.status == "Credit Decision" and self.security_type == "Gold":
