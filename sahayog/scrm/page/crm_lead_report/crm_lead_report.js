@@ -1671,6 +1671,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
     updateQuarterlyDates() {
       const year = this.selected_year || new Date().getFullYear();
+      const today = frappe.datetime.nowdate();
       const quarterMap = {
         Q1: { from: `${year}-01-01`, to: `${year}-03-31` },
         Q2: { from: `${year}-04-01`, to: `${year}-06-30` },
@@ -1679,7 +1680,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       };
       const q = quarterMap[this.selected_quarter] || quarterMap["Q1"];
       this.employee_from_date = q.from;
-      this.employee_to_date = q.to;
+      // If quarter end is in the future, clamp to today so reports have data
+      this.employee_to_date = q.to > today ? today : q.to;
     },
     onQuarterChange() {
       this.updateQuarterlyDates();
@@ -1690,23 +1692,41 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.updateQuarterlyDates();
       } else if (this.date_range_mode === "Yearly") {
         const year = this.selected_year || new Date().getFullYear();
+        const today = frappe.datetime.nowdate();
         this.employee_from_date = `${year}-01-01`;
-        this.employee_to_date = `${year}-12-31`;
+        const yearEnd = `${year}-12-31`;
+        this.employee_to_date = yearEnd > today ? today : yearEnd;
       }
       this.fetchEmployeePerformance();
     },
     onDateChange() {
       const today = frappe.datetime.nowdate();
 
-      if (this.employee_from_date > today || this.employee_to_date > today) {
+      if (this.employee_from_date && this.employee_from_date > today) {
         frappe.msgprint({
           title: "Invalid Date",
-          message: "You cannot select a future date.",
+          message: "From date cannot be a future date.",
           indicator: "red",
         });
-
         this.employee_from_date = today;
+      }
+
+      if (this.employee_to_date && this.employee_to_date > today) {
+        frappe.msgprint({
+          title: "Invalid Date",
+          message: "To date cannot be a future date.",
+          indicator: "red",
+        });
         this.employee_to_date = today;
+      }
+
+      if (this.employee_from_date && this.employee_to_date && this.employee_from_date > this.employee_to_date) {
+        frappe.msgprint({
+          title: "Invalid Date",
+          message: "From Date cannot be after To Date.",
+          indicator: "red",
+        });
+        this.employee_from_date = this.employee_to_date;
         return;
       }
 
