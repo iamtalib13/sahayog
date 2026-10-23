@@ -24,10 +24,9 @@
   },
   {
    "fieldname": "verified_by",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Verified By",
-   "options": "User"
+   "label": "Verified By"
   },
   {
    "fieldname": "document_type",
