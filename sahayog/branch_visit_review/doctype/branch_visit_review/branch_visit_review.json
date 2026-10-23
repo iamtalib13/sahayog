@@ -10,6 +10,7 @@
   "visit_details_section",
   "branch",
   "branch_code",
+  "district",
   "region",
   "zone",
   "column_break_visit",
@@ -61,6 +62,12 @@
    "fieldname": "branch_code",
    "fieldtype": "Data",
    "label": "Branch Code"
+  },
+  {
+   "fetch_from": "branch.district",
+   "fieldname": "district",
+   "fieldtype": "Data",
+   "label": "District"
   },
   {
    "fieldname": "column_break_visit",
