@@ -98,7 +98,6 @@ class LoanApplication(Document):
                 "Pledge(Group) Image",
                 "Checklist",
                 "Stamp Paper",
-                "Signature Declaration",
             ]
             existing_docs = [d.document_type for d in self.kyc_documents]
             for doc_type in valuation_docs:
@@ -108,14 +107,13 @@ class LoanApplication(Document):
                         "status": "Pending"
                     })
 
-            # Stamp Paper is mandatory at Valuation Pending stage
-            if "Stamp Paper" in existing_docs:
-                stamp_paper = next((d for d in self.kyc_documents if d.document_type == "Stamp Paper"), None)
-                if stamp_paper and not stamp_paper.document_file:
-                    frappe.throw(_("Stamp Paper document is mandatory at Valuation Pending stage."))
-
         # Credit Decision Logic
         if self.status == "Credit Decision" and self.security_type == "Gold":
+            before = self.get_doc_before_save()
+            if before and before.status == "Valuation Pending":
+                stamp_paper = next((d for d in self.kyc_documents if d.document_type == "Stamp Paper"), None)
+                if not stamp_paper or not stamp_paper.document_file:
+                    frappe.throw(_("Stamp Paper document is mandatory before submitting post valuation."))
             if not self.ornaments_list:
                 frappe.throw(_("Ornaments List is mandatory when status is 'Credit Decision'."))
             
