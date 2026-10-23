@@ -221,11 +221,11 @@ class LoanApplication(Document):
         elif cibil >= 650: score += 8
         elif cibil > 0: score += 5
         
-        income = flt(self.monthly_income) or 1
-        foir = (flt(self.existing_emi) / income) * 100
-        if foir <= 40: score += 30
-        elif foir <= 50: score += 20
-        elif foir <= 60: score += 10
+        if flt(self.monthly_income) > 0:
+            foir = (flt(self.existing_emi) / flt(self.monthly_income)) * 100
+            if foir <= 40: score += 30
+            elif foir <= 50: score += 20
+            elif foir <= 60: score += 10
         self.total_risk_score = score
 
         if score < flt(policy.min_passing_score):
