@@ -18,7 +18,9 @@ class BranchVisitResponse(Document):
 		observation: DF.Data | None
 		parameter_name: DF.Data | None
 		rating_score: DF.Data | None
+		response: DF.Data | None
 		response_type: DF.Literal["", "Text Observation", "Rating (1 to 5)", "Yes / No", "Number", "Multiple Select"]
+		review: DF.Data | None
 
 	# end: auto-generated types
 	pass
