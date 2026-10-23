@@ -16,6 +16,7 @@ from sahayog.branch_visit_review.api import (
 VISIT_DETAILS_FIELDS = (
 	"branch",
 	"branch_code",
+	"district",
 	"region",
 	"zone",
 	"visit_date",
@@ -42,9 +43,10 @@ class BranchVisitReview(Document):
 		branch_head: DF.Data | None
 		branch_head_signoff: DF.Check
 		branch_head_signed_at: DF.Datetime | None
+		district: DF.Data | None
 		key_strengths: DF.Data | None
 		leadership_remarks: DF.Text | None
-		overall_assessment: DF.Literal["", "Excellent", "Good", "Satisfactory", "Needs Improvement"]
+		overall_assessment: DF.Literal["", "Excellent", "Good", "Average", "Satisfactory", "Needs Improvement"]
 		region_zone: DF.Data | None
 		responses: DF.Table[BranchVisitResponse]
 		template: DF.Link | None
@@ -58,10 +60,38 @@ class BranchVisitReview(Document):
 	# end: auto-generated types
 
 	def validate(self):
+		self.set_district_from_sol_id()
+		self.format_numbered_fields()
 		# self.validate_visited_by_designation()
 		# self.validate_visit_details_edit()
 		self.validate_visitor_signoff()
 		self.validate_branch_head_signoff()
+
+	def format_numbered_fields(self):
+		if self.key_strengths:
+			self.key_strengths = self._number_lines(self.key_strengths)
+
+	@staticmethod
+	def _number_lines(text: str) -> str:
+		import re
+		lines = [line.strip() for line in text.split("\n") if line.strip()]
+		cleaned = []
+		for line in lines:
+			clean = re.sub(r"^\d+\.\s*", "", line).strip()
+			if clean:
+				cleaned.append(clean)
+		return "\n".join(f"{idx + 1}. {item}" for idx, item in enumerate(cleaned))
+
+	def set_district_from_sol_id(self):
+		if not self.district:
+			if self.branch_code:
+				self.district = frappe.db.get_value(
+					"Sahayog Branch", {"sol_id": self.branch_code}, "district"
+				)
+			elif self.branch:
+				self.district = frappe.db.get_value(
+					"Sahayog Branch", self.branch, "district"
+				)
 
 	def validate_visited_by_designation(self):
 		if not self.visited_by:

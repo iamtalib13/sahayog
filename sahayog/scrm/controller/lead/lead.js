@@ -3,7 +3,9 @@ frappe.ui.form.on("Lead", {
     hideNamingSeries();
     frm.set_df_property("custom_verification_section", "collapsible", 0);
     setVerificationHighlight(frm);
+    toggleBMVerificationSection(frm);
     toggleCallingSource(frm);
+    frm.toggle_display("custom_lead_audit_status", false);
     toggleAuditStatusAndLock(frm);
     customizeTimelineTimestamps(frm);
 
@@ -465,6 +467,18 @@ function validateMobileNumber(mobile) {
   }
 }
 
+function canAuditLeadProduct() {
+  const user_roles = frappe.user_roles || [];
+  const is_admin = frappe.session.user === "Administrator";
+  const is_sys_mgr = user_roles.includes("System Manager");
+  const is_ops_mgr = user_roles.includes("Operations Support Manager");
+  const is_emp_1034 =
+    frappe.session.user === "1034@sahayog.com" ||
+    (frappe.boot && frappe.boot.user && (frappe.boot.user.name === "1034" || frappe.boot.user.employee_number === "1034"));
+
+  return is_admin || is_sys_mgr || is_ops_mgr || is_emp_1034;
+}
+
 frappe.ui.form.on("Lead Product", {
   account_number(frm, cdt, cdn) {
     const row = locals[cdt][cdn];
@@ -485,7 +499,9 @@ frappe.ui.form.on("Lead Product", {
       (frappe.session.user === "Administrator");
 
     const row = locals[cdt][cdn];
+    const can_audit = canAuditLeadProduct();
     const grid_row = frm.fields_dict["custom_product_table"].grid.get_row(cdn);
+
     if (grid_row) {
       grid_row.toggle_display("account_number", is_operations);
       grid_row.toggle_display("account_creation_date", is_operations);
@@ -500,9 +516,59 @@ frappe.ui.form.on("Lead Product", {
           });
         }
       }
+
+      // If Approved or Rejected row and user is NOT authorized, lock all fields and hide delete button
+      if (["Approved", "Rejected"].includes(row.audit_status) && !can_audit) {
+        ["product", "product_name", "product_amount", "account_number", "account_creation_date", "audit_status"].forEach((fn) => {
+          grid_row.toggle_editable(fn, false);
+        });
+        if (grid_row.grid_form && grid_row.grid_form.wrapper) {
+          grid_row.grid_form.wrapper.find("input, select, textarea, button.btn-open-row").prop("disabled", true);
+          grid_row.grid_form.wrapper.find(".grid-delete-row, .grid-duplicate-row").hide();
+        }
+      }
     }
   }
 });
+
+// Show BM Lead Verification section only to users with manager access
+function toggleBMVerificationSection(frm) {
+  const checkAccessAndToggle = (can_verify) => {
+    frm.toggle_display("custom_verification_section", can_verify);
+    frm.set_df_property("custom_verification_status", "read_only", can_verify ? 0 : 1);
+    frm.set_df_property("custom_verification_remarks", "read_only", can_verify ? 0 : 1);
+  };
+
+  const user_roles = frappe.user_roles || [];
+  const is_admin = frappe.session.user === "Administrator";
+  const is_manager_role =
+    is_admin ||
+    user_roles.includes("System Manager") ||
+    user_roles.includes("Branch Manager") ||
+    user_roles.includes("Operations Support Manager") ||
+    user_roles.includes("Sales Manager");
+
+  if (is_manager_role) {
+    checkAccessAndToggle(true);
+    return;
+  }
+
+  // Check designation via user boot or API call
+  const designation = (frappe.boot && frappe.boot.user && frappe.boot.user.designation) || "";
+  const desig_lower = designation.toLowerCase();
+  if (desig_lower.includes("manager") || desig_lower.includes("bm")) {
+    checkAccessAndToggle(true);
+    return;
+  }
+
+  // Fallback to backend verification helper
+  frappe.call({
+    method: "sahayog.permissions.has_bm_verification_permission",
+    callback: function (r) {
+      checkAccessAndToggle(Boolean(r && r.message));
+    }
+  });
+}
 
 // Show custom_calling_source only for Operations roles
 function toggleCallingSource(frm) {
@@ -515,29 +581,50 @@ function toggleCallingSource(frm) {
   frm.toggle_display("custom_calling_source", is_operations);
 }
 
-// Handle Lead Audit Status read-only/editability and form locking
+// Handle Lead Product Audit Status read-only/editability in child table
 function toggleAuditStatusAndLock(frm) {
-  const is_admin = frappe.session.user === "Administrator";
-  const is_emp_1034 =
-    frappe.session.user === "1034@sahayog.com" ||
-    (frappe.boot && frappe.boot.user && (frappe.boot.user.name === "1034" || frappe.boot.user.employee_number === "1034"));
+  const can_audit = canAuditLeadProduct();
+  const grid = frm.fields_dict["custom_product_table"] && frm.fields_dict["custom_product_table"].grid;
+  if (!grid) return;
 
-  const can_audit = is_admin || is_emp_1034;
+  // Enforce options and read-only property in child table grid
+  grid.update_docfield_property(
+    "audit_status",
+    "options",
+    "Pending\nApproved\nRejected"
+  );
+  grid.update_docfield_property(
+    "audit_status",
+    "read_only",
+    can_audit ? 0 : 1
+  );
 
-  // Field visible to all, but READ-ONLY for everyone except Admin and Employee 1034
-  frm.toggle_display("custom_lead_audit_status", true);
-  frm.set_df_property("custom_lead_audit_status", "read_only", can_audit ? 0 : 1);
+  // If not auditor, lock grid rows that are Approved or Rejected completely
+  if (!can_audit) {
+    const lockRows = () => {
+      (grid.grid_rows || []).forEach((grid_row) => {
+        if (grid_row.doc && ["Approved", "Rejected"].includes(grid_row.doc.audit_status)) {
+          if (grid_row.row) {
+            // Disable inline inputs in grid view
+            grid_row.row.find("input, select, textarea").prop("disabled", true);
+            // Hide delete & duplicate/move action buttons
+            grid_row.row.find(".grid-delete-row, .grid-duplicate-row, .grid-move-row").hide();
+            // Locked visual styling on data columns, while keeping pencil (btn-open-row) clickable
+            grid_row.row.css({
+              "background-color": "#f8fafc"
+            });
+            grid_row.row.find(".grid-static-col:not(:has(.btn-open-row)), .col:not(:has(.btn-open-row))").css({
+              "pointer-events": "none",
+              "cursor": "not-allowed"
+            });
+          }
+        }
+      });
+    };
 
-  // Lock entire form if Approved, unless Administrator or employee 1034
-  if (frm.doc.custom_lead_audit_status === "Approved" && !frm.is_new()) {
-    if (!can_audit) {
-      frm.disable_save();
-      frm.set_read_only();
-      frm.dashboard.set_headline(
-        __("This lead is Approved / Audited and locked. Only Administrator and Authorized Auditor (1034) can edit."),
-        "blue"
-      );
-    }
+    lockRows();
+    setTimeout(lockRows, 200);
+    setTimeout(lockRows, 600);
   }
 }
 

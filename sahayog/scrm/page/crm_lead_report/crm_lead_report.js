@@ -917,7 +917,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             <button class="btn btn-xs btn-default border font-weight-bold" @click="openLeadTransferDialog">
                                 Reassign
                             </button>
-                            <button class="btn btn-xs btn-default border font-weight-bold" style="background:#e0e7ff; color:#3730a3;" @click="openBMVerificationDialog">
+                            <button v-if="can_verify_leads" class="btn btn-xs btn-default border font-weight-bold" style="background:#e0e7ff; color:#3730a3;" @click="openBMVerificationDialog">
                                 BM Verification
                                 <span v-if="bm_pending_count > 0" class="badge badge-danger ml-1">{{ bm_pending_count }}</span>
                             </button>
@@ -1197,6 +1197,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     employee_from_date: "", // Init mein set hoga
     employee_to_date: "", // Init mein set hoga
 
+    can_verify_leads: false,
     bm_pending_count: 0,
     employee_performance_data: [],
     has_pref: true,
@@ -1670,6 +1671,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     },
     updateQuarterlyDates() {
       const year = this.selected_year || new Date().getFullYear();
+      const today = frappe.datetime.nowdate();
       const quarterMap = {
         Q1: { from: `${year}-01-01`, to: `${year}-03-31` },
         Q2: { from: `${year}-04-01`, to: `${year}-06-30` },
@@ -1678,7 +1680,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       };
       const q = quarterMap[this.selected_quarter] || quarterMap["Q1"];
       this.employee_from_date = q.from;
-      this.employee_to_date = q.to;
+      // If quarter end is in the future, clamp to today so reports have data
+      this.employee_to_date = q.to > today ? today : q.to;
     },
     onQuarterChange() {
       this.updateQuarterlyDates();
@@ -1689,23 +1692,41 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.updateQuarterlyDates();
       } else if (this.date_range_mode === "Yearly") {
         const year = this.selected_year || new Date().getFullYear();
+        const today = frappe.datetime.nowdate();
         this.employee_from_date = `${year}-01-01`;
-        this.employee_to_date = `${year}-12-31`;
+        const yearEnd = `${year}-12-31`;
+        this.employee_to_date = yearEnd > today ? today : yearEnd;
       }
       this.fetchEmployeePerformance();
     },
     onDateChange() {
       const today = frappe.datetime.nowdate();
 
-      if (this.employee_from_date > today || this.employee_to_date > today) {
+      if (this.employee_from_date && this.employee_from_date > today) {
         frappe.msgprint({
           title: "Invalid Date",
-          message: "You cannot select a future date.",
+          message: "From date cannot be a future date.",
           indicator: "red",
         });
-
         this.employee_from_date = today;
+      }
+
+      if (this.employee_to_date && this.employee_to_date > today) {
+        frappe.msgprint({
+          title: "Invalid Date",
+          message: "To date cannot be a future date.",
+          indicator: "red",
+        });
         this.employee_to_date = today;
+      }
+
+      if (this.employee_from_date && this.employee_to_date && this.employee_from_date > this.employee_to_date) {
+        frappe.msgprint({
+          title: "Invalid Date",
+          message: "From Date cannot be after To Date.",
+          indicator: "red",
+        });
+        this.employee_from_date = this.employee_to_date;
         return;
       }
 
@@ -2226,7 +2247,17 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
     // 3. INITIALIZATION (Fix yahan tha)
     async init() {
-      this.fetchBMPendingCount();
+      // Check BM Lead Verification Permission
+      frappe.call({
+        method: "sahayog.permissions.has_bm_verification_permission",
+        callback: (r) => {
+          this.can_verify_leads = Boolean(r && r.message);
+          if (this.can_verify_leads) {
+            this.fetchBMPendingCount();
+          }
+        }
+      });
+
       // Preference load karein
       let res = await frappe.call(
         "sahayog.scrm.api.report_access.get_user_report_preference_record",

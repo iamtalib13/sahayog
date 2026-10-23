@@ -36,12 +36,21 @@ def validate_access():
     frappe.only_for(ALLOWED_ROLES)
 
 
+# def get_all_branches():
+#     """Load every branch from Sahayog Branch. Branch identity/value = sol_id."""
+#     return frappe.get_all(
+#         "Sahayog Branch",
+#         fields=["name", "sol_id", "branch"],
+#         order_by="branch asc",
+#     )
+
+
 def get_all_branches():
-    """Load every branch from Sahayog Branch. Branch identity/value = sol_id."""
+    """Load every branch from Branch Petty Cash Account."""
     return frappe.get_all(
-        "Sahayog Branch",
-        fields=["name", "sol_id", "branch"],
-        order_by="branch asc",
+        "Branch Petty Cash Account",
+        fields=["name", "branch", "branch_name"],
+        order_by="branch_name asc",
     )
 
 
@@ -76,14 +85,25 @@ def get_employees_with_branch_user_role():
     )
 
 
+# def get_branch_label(branch_id):
+#     if not branch_id:
+#         return "Unknown"
+
+#     return frappe.db.get_value(
+#         "Sahayog Branch",
+#         {"sol_id": branch_id},
+#         "branch",
+#     ) or "Unknown"
+
+
 def get_branch_label(branch_id):
     if not branch_id:
         return "Unknown"
 
     return frappe.db.get_value(
-        "Sahayog Branch",
-        {"sol_id": branch_id},
-        "branch",
+        "Branch Petty Cash Account",
+        {"branch": branch_id},
+        "branch_name",
     ) or "Unknown"
 
 
@@ -145,6 +165,8 @@ def get_branch_label(branch_id):
 def get_branch_access_data():
     validate_access()
 
+    # cleanup_disabled_user_access()
+
     all_branches = get_all_branches()
 
     employees = get_employees_with_branch_user_role()
@@ -170,16 +192,33 @@ def get_branch_access_data():
 
     branch_list = []
 
-    for branch in all_branches:
-        branch_id = branch.sol_id
+    # for branch in all_branches:
+    #     branch_id = branch.sol_id
 
-        if not branch_id:
+    #     if not branch_id:
+    #         continue
+
+    #     branch_list.append(
+    #         {
+    #             "branch_id": branch_id,
+    #             "branch_name": branch.branch or branch_id,
+    #             "employees": employees_by_branch.get(branch_id, []),
+    #         }
+    #     )
+
+    for branch in all_branches:
+        branch_id = branch.branch
+
+        # if not branch_id:
+        #     continue
+
+        if not branch_id or branch_id == "1000":
             continue
 
         branch_list.append(
             {
                 "branch_id": branch_id,
-                "branch_name": branch.branch or branch_id,
+                "branch_name": branch.branch_name or branch_id,
                 "employees": employees_by_branch.get(branch_id, []),
             }
         )
@@ -808,3 +847,56 @@ def reassign_and_replace_branch_employee(user_id, branch_id):
             else None
         ),
     }
+
+
+def cleanup_disabled_user_access():
+    """Remove Branch User role and petty_cash_branch from disabled users."""
+
+    disabled_users = frappe.get_all(
+        "User",
+        filters={
+            "enabled": 0,
+            "name": ["!=", "Administrator"],
+        },
+        pluck="name",
+    )
+
+    if not disabled_users:
+        return
+
+    employees = frappe.get_all(
+        "Employee",
+        filters={
+            "user_id": ["in", disabled_users],
+            "petty_cash_branch": ["is", "set"],
+        },
+        fields=["name", "user_id", "petty_cash_branch"],
+    )
+
+    for emp in employees:
+        employee = frappe.get_doc("Employee", emp.name)
+
+        old_branch = employee.petty_cash_branch
+        employee.petty_cash_branch = None
+        employee.save(ignore_permissions=True)
+
+        user = frappe.get_doc("User", emp.user_id)
+        current_roles = {row.role for row in user.roles if row.role}
+
+        if TARGET_ROLE in current_roles:
+            user.roles = [
+                row for row in user.roles if row.role != TARGET_ROLE
+            ]
+            user.save(ignore_permissions=True)
+            clear_user_access_cache(emp.user_id)
+
+        frappe.logger("petty_cash_access_ma").info(
+            {
+                "action_by": frappe.session.user,
+                "action_on": emp.user_id,
+                "employee": emp.name,
+                "role": TARGET_ROLE,
+                "branch": old_branch,
+                "status": "disabled_user_access_cleaned",
+            }
+        )

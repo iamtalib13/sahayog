@@ -752,7 +752,7 @@ frappe.pages["operation-lead-repor"].on_page_load = function (wrapper) {
             Customer: lead.lead_name || "",
             Contact: lead.mobile_no || "",
             Status: lead.status || "",
-            "Lead Audit Status": lead.lead_audit_status || "",
+            "Lead Audit Status": p.audit_status || lead.lead_audit_status || "Pending",
             Source: lead.source || "",
             "Calling Source": lead.calling_source || "",
             "Product Code": p.product || "",

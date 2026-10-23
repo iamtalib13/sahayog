@@ -32,7 +32,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Response Type",
-   "options": "\nText Observation\nRating (1 to 5)\nYes / No\nNumber"
+   "options": "\nText Observation\nRating (1 to 5)\nYes / No\nNumber\nMultiple Select"
   },
   {
    "columns": 1,

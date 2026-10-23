@@ -144,7 +144,7 @@ def execute():
                 "label": "Lead Audit Status",
                 "fieldname": "custom_lead_audit_status",
                 "fieldtype": "Select",
-                "options": "Pending\nApproved\nRejected\nUnder Audit",
+                "options": "Pending\nApproved\nRejected",
                 "default": "Pending",
                 "insert_after": "status",
                 "in_standard_filter": 1,
