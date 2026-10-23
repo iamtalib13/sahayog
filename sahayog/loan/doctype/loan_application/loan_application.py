@@ -331,7 +331,13 @@ def add_document_after_approval(docname, document_type, document_file, document_
     doc.flags.ignore_validate = True
     doc.flags.ignore_validate_update_after_submit = True
     doc.save()
-    doc.add_comment("Comment", _("Document '{0}' uploaded by {1}").format(document_type, frappe.session.user))
+
+    stored_remark = existing_row.remark if existing_row else remark
+    comment = _("Document '{0}' uploaded by {1}").format(document_type, frappe.session.user)
+    if stored_remark:
+        comment += "<br>" + _("Remark: {0}").format(frappe.utils.escape_html(stored_remark))
+    doc.add_comment("Comment", comment)
+
     return {"status": "success", "name": doc.name}
 
 
