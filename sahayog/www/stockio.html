@@ -8402,13 +8402,13 @@
           class="list-view-container"
           :style="((activeItem === 'Items' && showDetailView) || showBranchStockUseView) ? 'flex: 1; min-width: 0; transition: all 0.3s;' : ''"
         >
-          <!-- Branch Expance (branch-wise monthly expense + unused requested) -->
+          <!-- Branch Expense (branch-wise monthly expense + unused requested) -->
           <div
             v-if="activeItem === 'Branch Exp.'"
             style="padding: 24px; overflow: auto; height: 100%;"
           >
             <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 8px;">
-              <h2 style="margin: 0; font-weight: 800; color: var(--text-main);">Branch Expance</h2>
+              <h2 style="margin: 0; font-weight: 800; color: var(--text-main);">Branch Expense</h2>
               <div style="display: flex; gap: 4px; border: 1px solid var(--border-color); border-radius: 8px; padding: 3px; background: var(--bg-secondary);">
                 <button
                   @click="branchExpenseMode = 'expense'"
@@ -9428,7 +9428,7 @@
       <div class="profile-modal-header">
         <h3>
           <i class="fas fa-download" style="margin-right: 8px; color: #369696;"></i>
-          Download Branch Expance
+          Download Branch Expense
         </h3>
         <button class="profile-close" @click="showBranchDownloadModal = false">&times;</button>
       </div>
@@ -9446,21 +9446,21 @@
         </div>
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <button
-            @click="downloadBranchExpance(branchDownloadRow, 'pdf'); showBranchDownloadModal = false;"
+            @click="downloadBranchExpense(branchDownloadRow, 'pdf'); showBranchDownloadModal = false;"
             style="width: 100%; padding: 11px 14px; background: rgba(239,68,68,0.08); border: 1.5px solid rgba(239,68,68,0.3); border-radius: 8px; color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;"
           >
             <i class="fas fa-file-pdf" style="color:#ef4444;font-size:15px;"></i>
             PDF (.pdf)
           </button>
           <button
-            @click="downloadBranchExpance(branchDownloadRow, 'xlsx'); showBranchDownloadModal = false;"
+            @click="downloadBranchExpense(branchDownloadRow, 'xlsx'); showBranchDownloadModal = false;"
             style="width: 100%; padding: 11px 14px; background: rgba(16,185,129,0.08); border: 1.5px solid rgba(16,185,129,0.3); border-radius: 8px; color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;"
           >
             <i class="fas fa-file-excel" style="color:#10b981;font-size:15px;"></i>
             Excel (.xlsx)
           </button>
           <button
-            @click="downloadBranchExpance(branchDownloadRow, 'csv'); showBranchDownloadModal = false;"
+            @click="downloadBranchExpense(branchDownloadRow, 'csv'); showBranchDownloadModal = false;"
             style="width: 100%; padding: 11px 14px; background: rgba(69,231,231,0.08); border: 1.5px solid rgba(69,231,231,0.35); border-radius: 8px; color: var(--text-main); font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 10px; text-align: left;"
           >
             <i class="fas fa-file-csv" style="color:#12a7a7;font-size:15px;"></i>
@@ -17723,7 +17723,7 @@
         this.branchDownloadRow = row;
         this.showBranchDownloadModal = true;
       },
-      printBranchExpancePdf(row, branchName, data) {
+      printBranchExpensePdf(row, branchName, data) {
         const esc = (v) =>
           String(v === undefined || v === null ? "" : v)
             .replace(/&/g, "&amp;")
@@ -17760,7 +17760,7 @@
           return;
         }
         const html = `<!DOCTYPE html><html><head><meta charset="utf-8" />
-          <title>Branch Expance - ${esc(branchName)}</title>
+          <title>Branch Expense - ${esc(branchName)}</title>
           <style>
             body { font-family: Arial, Helvetica, sans-serif; color: #1f2937; margin: 24px; }
             h1 { font-size: 20px; margin: 0 0 4px 0; }
@@ -17786,7 +17786,7 @@
           win.print();
         }, 300);
       },
-      async downloadBranchExpance(row, format = "xlsx") {
+      async downloadBranchExpense(row, format = "xlsx") {
         if (!row) return;
         try {
           const res = await frappe.call({
@@ -17831,10 +17831,10 @@
                   ]
             );
 
-          const baseName = `Branch_${isExpense ? "Expance" : "Purchase"}_${row.sol_id}${month ? "_" + month : ""}_${new Date().toISOString().slice(0, 10)}`;
+          const baseName = `Branch_${isExpense ? "Expense" : "Purchase"}_${row.sol_id}${month ? "_" + month : ""}_${new Date().toISOString().slice(0, 10)}`;
 
           if (format === "pdf") {
-            this.printBranchExpancePdf(row, branchName, { title, headers, rows, moneyCols, month });
+            this.printBranchExpensePdf(row, branchName, { title, headers, rows, moneyCols, month });
             return;
           }
 
