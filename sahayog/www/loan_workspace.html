@@ -1106,6 +1106,18 @@
         color: var(--lw-approved-text);
     }
 
+    .status-card-tone-not-disbursed {
+        background: #fefce8;
+        border-color: #fde047;
+        color: #a16207;
+    }
+
+    .status-card-tone-all {
+        background: #f0fdf4;
+        border-color: #bbf7d0;
+        color: #166534;
+    }
+
     .status-card-tone-rejected {
         background: var(--lw-rejected-bg);
         border-color: var(--lw-rejected-border);
@@ -2376,13 +2388,15 @@
 <script>
     const TEMPLATE_USER_ROLES = (window.parent?.frappe?.boot?.user?.roles) || [];
     const WORKSPACE_STATUS_CARDS = [
-    { key: "Role Pending", label: "Pending", note: "Applications in your live queue", tone: "status-card-tone-pending" },
+        { key: "All", label: "All Cases", note: "All loan applications", tone: "status-card-tone-all" },
+        { key: "Role Pending", label: "Pending", note: "Applications in your live queue", tone: "status-card-tone-pending" },
         { key: "Draft", label: "Draft", note: "New applications created by branch", tone: "status-card-tone-draft" },
         { key: "Credit Check", label: "Credit Check", note: "Risk validation underway", tone: "status-card-tone-credit-check" },
         { key: "Valuation Pending", label: "Valuation Pending", note: "Collateral review pending", tone: "status-card-tone-valuation" },
         { key: "Credit Decision", label: "Credit Decision", note: "Credit team decision stage", tone: "status-card-tone-credit-decision" },
         { key: "CPC Processing", label: "CPC", note: "Final operations handling", tone: "status-card-tone-cpc" },
         { key: "Approved", label: "Approved", note: "Ready for sanction execution", tone: "status-card-tone-approved" },
+        { key: "Approved Not Disbursed", label: "Approved (Not Disbursed)", note: "Approved loans awaiting disbursement", tone: "status-card-tone-not-disbursed" },
         { key: "Rejected", label: "Rejected", note: "Closed without approval", tone: "status-card-tone-rejected" }
     ];
 
@@ -2907,6 +2921,21 @@
                 statuses.forEach((status, index) => {
                     counts[status] = results[index + 1] || 0;
                 });
+
+                // Calculate Approved Not Disbursed count (using loan_disbursement_date field - no extra permission needed)
+                try {
+                    const approvedNotDisbursedFilters = this.getLoanApplicationFilters("Approved");
+                    approvedNotDisbursedFilters.push(["loan_disbursement_date", "is", "not set"]);
+                    const notDisbursedCount = await this.apiCall("frappe.client.get_count", {
+                        doctype: "Loan Application",
+                        filters: approvedNotDisbursedFilters
+                    });
+                    counts["Approved Not Disbursed"] = notDisbursedCount || 0;
+                } catch (e) {
+                    console.error("Failed to calculate not disbursed count", e);
+                    counts["Approved Not Disbursed"] = 0;
+                }
+
                 return counts;
             },
 
@@ -2914,7 +2943,7 @@
                 return this.apiCall("frappe.client.get_list", {
                     doctype: "Loan Application",
                     filters: this.getLoanApplicationFilters(),
-                    fields: ["name", "customer_name", "mobile_number", "branch_code", "loan_type", "loan_amount", "status", "lead_converter", "modified"],
+                    fields: ["name", "customer_name", "mobile_number", "branch_code", "loan_type", "loan_amount", "status", "lead_converter", "modified", "loan_disbursement_date"],
                     order_by: "modified desc",
                     limit_page_length: 30
                 });
@@ -3026,6 +3055,9 @@
             matchesFilter(application) {
                 if (this.activeFilter === "All") return true;
                 if (this.activeFilter === "Role Pending") return this.matchesRolePending(application);
+                if (this.activeFilter === "Approved Not Disbursed") {
+                    return application.status === "Approved" && !application.loan_disbursement_date;
+                }
                 return application.status === this.activeFilter;
             },
 

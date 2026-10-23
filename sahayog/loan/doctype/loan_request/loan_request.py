@@ -30,7 +30,7 @@ class LoanRequest(Document):
 
 	def set_default_documents(self):
 		"""Same fixed docs as Loan Application first form"""
-		default_docs = ["Aadhaar Card", "PAN Card", "Application Form", "Customer Signature"]
+		default_docs = ["Aadhaar Card", "PAN Card", "Application Form", "Valuation Report", "Ornament Image"]
 		existing = [d.document_type for d in (self.document_checklist or [])]
 		if self.is_new() and not existing:
 			for doc_type in default_docs:

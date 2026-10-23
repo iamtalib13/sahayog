@@ -11,7 +11,7 @@ frappe.ui.form.on("Loan Request", {
 	refresh(frm) {
 		// Show fixed doc types before first save
 		if (frm.is_new() && (!frm.doc.document_checklist || !frm.doc.document_checklist.length)) {
-			["Aadhaar Card", "PAN Card", "Application Form", "Customer Signature"].forEach(function(t) {
+			["Aadhaar Card", "PAN Card", "Application Form", "Valuation Report", "Ornament Image"].forEach(function(t) {
 				frm.add_child("document_checklist", {document_type: t, status: "Pending"});
 			});
 			frm.refresh_field("document_checklist");
@@ -39,9 +39,9 @@ frappe.ui.form.on("Loan Request", {
 			frm.toggle_reqd("scheme_code");
 			frm.toggle_reqd("approved_loan_amount", true);
 
-			// Clear default/old values so mandatory check works
-			if (frm.doc.approved_loan_amount === "0.000000000" || frm.doc.approved_loan_amount === "0" || frm.doc.approved_loan_amount === "0.00") {
-				frm.set_value("approved_loan_amount", "");
+			// Clear default/old zero values so mandatory check works
+			if (!frm.doc.approved_loan_amount || frm.doc.approved_loan_amount === 0) {
+				frm.set_value("approved_loan_amount", null);
 			}
 		}
 
@@ -75,7 +75,7 @@ frappe.ui.form.on("Loan Request", {
 					frappe.msgprint(__('Scheme Code is required before approving'));
 					return;
 				}
-				if (!frm.doc.approved_loan_amount || frm.doc.approved_loan_amount === 0 || frm.doc.approved_loan_amount === "0.000000000") {
+				if (!frm.doc.approved_loan_amount || frm.doc.approved_loan_amount === 0) {
 					frappe.msgprint(__('Approved Loan Amount is required and cannot be zero'));
 					return;
 				}
@@ -111,11 +111,22 @@ frappe.ui.form.on("Loan Request", {
 			}, dropdown);
 
 			frm.add_custom_button(__('Send Back'), function() {
-				frappe.confirm(
-					__('Send this Loan Request back to Branch User?'),
-					function() {
+				let d = new frappe.ui.Dialog({
+					title: __('Send Back to Branch User'),
+					fields: [
+						{
+							label: __('Remark'),
+							fieldname: 'remark',
+							fieldtype: 'Small Text',
+							reqd: 1
+						}
+					],
+					primary_action_label: __('Send Back'),
+					primary_action(values) {
+						frm.set_value("remark", values.remark);
 						frm.set_value("status", "Sent Back");
 						frm.save().then(function() {
+							d.hide();
 							frm.reload_doc();
 							frappe.show_alert({
 								message: __("Loan Request sent back to Branch User"),
@@ -123,7 +134,8 @@ frappe.ui.form.on("Loan Request", {
 							}, 3);
 						});
 					}
-				);
+				});
+				d.show();
 			}, dropdown);
 		}
 

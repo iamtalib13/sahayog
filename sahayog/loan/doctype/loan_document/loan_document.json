@@ -24,17 +24,16 @@
   },
   {
    "fieldname": "verified_by",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Verified By",
-   "options": "User"
+   "label": "Verified By"
   },
   {
    "fieldname": "document_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Document Type",
-   "options": "\nAadhaar Card\nPAN Card\nApplication Form\nAccount Open Form\nCustomer Signature\nPhotograph\nAddress Proof\nIncome Document\nPassport\nVoter ID\nElectricity Bill\nUtility Bill\nBank Statement\nOrnament Image\nPacket Image\nPledge(Group) Image\nValuation Report Image\nNominee Image\nGuarantor Image\nLoan Agreement\nSanction Letter\nBureau Report\nGold Purchase Bill\nDedup - Sahayog Bank Details\n7/12 Extract\nGold Rate\nLTV Table\nOther Documents\nCo-Applicant / Nominee Aadhaar Card\nCo-Applicant / Nominee PAN Card\nCopy - Applicant Documents\nCopy - Co-Applicant / Nominee Documents",
+   "options": "\nAadhaar Card\nPAN Card\nApplication Form\nAccount Open Form\nCustomer Signature\nPhotograph\nAddress Proof\nIncome Document\nPassport\nVoter ID\nElectricity Bill\nUtility Bill\nBank Statement\nOrnament Image\nPacket Image\nPledge(Group) Image\nValuation Report\nNominee Image\nGuarantor Image\nLoan Agreement\nSanction Letter\nBureau Report\nGold Purchase Bill\nDedup - Sahayog Bank Details\n7/12 Extract\nGold Rate\nLTV Table\nOther Documents\nCo-Applicant / Nominee Aadhaar Card\nCo-Applicant / Nominee PAN Card\nCopy - Applicant Documents\nCopy - Co-Applicant / Nominee Documents\nChecklist\nStamp Paper\nSignature Declaration",
    "reqd": 1
   },
   {

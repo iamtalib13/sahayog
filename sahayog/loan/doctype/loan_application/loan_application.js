@@ -25,6 +25,58 @@ frappe.ui.form.on("Loan Application", {
  before_workflow_action: function (frm) {
         frappe.dom.unfreeze();
         return new Promise((resolve, reject) => {
+
+            // ==========================================
+            // SEND BACK / REASSIGN: MANDATORY REMARK
+            // ==========================================
+            const send_back_actions = ["Send Back", "Reassign to Branch", "Reassign to Credit", "Reject"];
+            if (send_back_actions.includes(frm.selected_workflow_action)) {
+                const is_reject = frm.selected_workflow_action === "Reject";
+                const d = new frappe.ui.Dialog({
+                    title: is_reject ? __('Reason for Rejection') : __('Reason for Send Back'),
+                    size: 'small',
+                    fields: [
+                        {
+                            label: __('Remark'),
+                            fieldname: 'remark',
+                            fieldtype: 'Small Text',
+                            reqd: 1,
+                            description: __('This remark will be visible to the previous user of this stage.')
+                        }
+                    ],
+                    primary_action_label: is_reject ? __('Reject') : __('Send Back'),
+                    primary_action(values) {
+                        d.hide();
+                        frappe.call({
+                            method: "sahayog.loan.doctype.loan_application.loan_application.update_loan_field_without_validation",
+                            args: {
+                                docname: frm.doc.name,
+                                fieldname: "send_back_remark",
+                                value: values.remark
+                            },
+                            callback: function() {
+                                frm.doc.send_back_remark = values.remark;
+                                resolve();
+                            }
+                        });
+                    }
+                });
+                d.show();
+                return;
+            }
+
+            // Clear stale remark once the case moves forward again
+            if (!send_back_actions.includes(frm.selected_workflow_action) && frm.doc.send_back_remark) {
+                frappe.call({
+                    method: "sahayog.loan.doctype.loan_application.loan_application.update_loan_field_without_validation",
+                    args: {
+                        docname: frm.doc.name,
+                        fieldname: "send_back_remark",
+                        value: ""
+                    }
+                });
+                frm.doc.send_back_remark = "";
+            }
             
             // ==========================================
             // 1. CREDIT CHECK VALIDATION
@@ -103,10 +155,48 @@ frappe.ui.form.on("Loan Application", {
             // }
 
             // ==========================================
+            // CREDIT DECISION -> CPC PROCESSING VALIDATION
+            // ==========================================
+            if (frm.doc.status === "Credit Decision" && frm.selected_workflow_action === "Approve") {
+                let credit_decision_docs = ["Gold Rate", "LTV Table", "Sanction Letter"];
+                let cd_errors = [];
+
+                credit_decision_docs.forEach(doc_type => {
+                    let row = (frm.doc.kyc_documents || []).find(d => d.document_type === doc_type);
+
+                    if (!row) {
+                        cd_errors.push(`<b>${doc_type}</b> row is missing from the KYC table.`);
+                    } else if (!row.document_file) {
+                        cd_errors.push(`Missing file attachment for <b>${doc_type}</b>.`);
+                    }
+                });
+
+                if (cd_errors.length > 0) {
+                    frappe.msgprint({
+                        title: __('Missing Required Documents'),
+                        indicator: 'red',
+                        message: __('Please resolve the following before approving:<br><br><ul style="margin-bottom: 0;"><li>' + cd_errors.join('</li><li>') + '</li></ul>')
+                    });
+
+                    frappe.validated = false;
+                    reject();
+                    return;
+                }
+            }
+
+            // ==========================================
             // 2. CPC PROCESSING VERIFICATION (STRICT MANUAL CHECK)
             // ==========================================
             if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
                 let errors = [];
+
+                if (!frm.doc.loan_account_number) {
+                    errors.push("<b>Loan Account Number</b>: Required before approving.");
+                }
+
+                if (!frm.doc.loan_disbursement_date) {
+                    errors.push("<b>Loan Disbursement Date</b>: Required before approving.");
+                }
 
                 if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
                     frappe.msgprint({
@@ -143,8 +233,8 @@ frappe.ui.form.on("Loan Application", {
 
                 // Stage-wise mandatory Gold Loan checklist (all must exist with a file)
                 const mandatory_docs = [
-                    "Aadhaar Card", "PAN Card", "Application Form", "Customer Signature",
-                    "Bureau Report", "Valuation Report Image", "Ornament Image",
+                    "Aadhaar Card", "PAN Card", "Application Form",
+                    "Bureau Report", "Valuation Report", "Ornament Image",
                     "Packet Image", "Pledge(Group) Image", "Loan Agreement", "Sanction Letter"
                 ];
                 mandatory_docs.forEach(doc_type => {
@@ -359,14 +449,15 @@ frappe.ui.form.on("Loan Application", {
                 let has_aadhaar = false;
                 let has_pan = false;
                 let has_app_form = false;
-                let has_signature = false;
+                let has_valuation = false;
+                let has_ornament = false;
 
                 // Ensure table has rows
                 if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
                     frappe.msgprint({
                         title: __('Missing Mandatory Documents'),
                         indicator: 'red',
-                        message: __('You must add Aadhaar Card, PAN Card, Application Form, and Customer Signature to the KYC table.')
+                        message: __('You must add Aadhaar Card, PAN Card, Application Form, Valuation Report, and Ornament Image to the KYC table.')
                     });
                     frappe.validated = false;
                     reject();
@@ -405,10 +496,16 @@ frappe.ui.form.on("Loan Application", {
                             doc_errors.push(`<b>Application Form</b>: Must have an Attachment.`);
                         }
                     }
-                    else if (row.document_type === "Customer Signature") {
-                        has_signature = true;
+                    else if (row.document_type === "Valuation Report") {
+                        has_valuation = true;
                         if (!row.document_file) {
-                            doc_errors.push(`<b>Customer Signature</b>: Must have an Attachment.`);
+                            doc_errors.push(`<b>Valuation Report</b>: Must have an Attachment.`);
+                        }
+                    }
+                    else if (row.document_type === "Ornament Image") {
+                        has_ornament = true;
+                        if (!row.document_file) {
+                            doc_errors.push(`<b>Ornament Image</b>: Must have an Attachment.`);
                         }
                     }
                 });
@@ -417,7 +514,8 @@ frappe.ui.form.on("Loan Application", {
                 if (!has_aadhaar) doc_errors.push(`<b>Aadhaar Card</b> row is missing from the table.`);
                 if (!has_pan) doc_errors.push(`<b>PAN Card</b> row is missing from the table.`);
                 if (!has_app_form) doc_errors.push(`<b>Application Form</b> row is missing from the table.`);
-                if (!has_signature) doc_errors.push(`<b>Customer Signature</b> row is missing from the table.`);
+                if (!has_valuation) doc_errors.push(`<b>Valuation Report</b> row is missing from the table.`);
+                if (!has_ornament) doc_errors.push(`<b>Ornament Image</b> row is missing from the table.`);
 
                 // If any errors exist, block the submission
                 if (doc_errors.length > 0) {
@@ -500,7 +598,7 @@ frappe.ui.form.on("Loan Application", {
 
             if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
                 
-                let required_docs = ["Account Open Form", "Valuation Report Image", "Ornament Image", "Packet Image", "Pledge(Group) Image"];
+                let required_docs = ["Loan Agreement", "Valuation Report", "Ornament Image", "Packet Image", "Pledge(Group) Image", "Checklist", "Stamp Paper"];
                 let val_errors = [];
 
                 // Loop through the required documents list
@@ -681,6 +779,14 @@ frappe.ui.form.on("Loan Application", {
 
   refresh: function (frm) {
     frm.trigger("apply_branch_user_rules");
+
+    if (frm.doc.send_back_remark && ["Rejected", "Valuation Pending", "Credit Decision"].includes(frm.doc.status)) {
+      frm.dashboard.set_headline(
+        __("Send Back Remark: {0}", [frappe.utils.escape_html(frm.doc.send_back_remark)]),
+        "orange"
+      );
+    }
+
     let can_verify = frappe.user_roles.some(r => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(r));
     let kgrid = frm.get_field("kyc_documents");
     if (kgrid && kgrid.grid) {
@@ -881,7 +987,7 @@ frappe.ui.form.on("Loan Application", {
     // ==========================================
     // MANAGE DOCUMENTS AFTER APPROVAL (Credit / CPC team)
     // ==========================================
-    const can_manage_docs = frappe.user_roles.some(role => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(role));
+    const can_manage_docs = frappe.user_roles.includes("Credit Loan User");
     if (!frm.is_new() && can_manage_docs && ["Approved", "Disbursed", "Closed"].includes(frm.doc.status)) {
       frm.add_custom_button(__("Add Document"), function () {
         let doc_type_options = (frappe.meta.get_docfield("Loan Document", "document_type").options || "")
@@ -939,11 +1045,11 @@ frappe.ui.form.on("Loan Application", {
     }
 
     // ==========================================
-    // AUTO-ADD: ACCOUNT OPEN FORM
+    // AUTO-ADD: LOAN AGREEMENT
     // ==========================================
-    // If we are in Valuation Pending, ensure the Account Open Form exists
+    // If we are in Valuation Pending, ensure the Loan Agreement exists
     if (frm.doc.status === "Valuation Pending") {
-      let doc_type = "Account Open Form";
+      let doc_type = "Loan Agreement";
       let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
       
       if (!exists) {
@@ -952,15 +1058,24 @@ frappe.ui.form.on("Loan Application", {
           row.status = "Pending";
           
           frm.refresh_field("kyc_documents");
-          
-          frappe.msgprint({
-              title: __('Document Required'),
-              indicator: 'blue',
-              message: __('An <b>Account Open Form</b> row has been added. Please attach the document before proceeding.')
-          });
-          
-          // Optionally auto-save so it persists even if they leave the page
           frm.save(); 
+      }
+    }
+
+    // ==========================================
+    // AUTO-ADD: CHECKLIST (VALUATION PENDING)
+    // ==========================================
+    if (frm.doc.status === "Valuation Pending") {
+      let doc_type = "Checklist";
+      let exists = (frm.doc.kyc_documents || []).some(row => row.document_type === doc_type);
+
+      if (!exists) {
+          let row = frm.add_child("kyc_documents");
+          row.document_type = doc_type;
+          row.status = "Pending";
+
+          frm.refresh_field("kyc_documents");
+          frm.save();
       }
     }
 
@@ -1168,7 +1283,7 @@ frappe.ui.form.on("Loan Application", {
 
     // Pre-populate KYC Documents for new applications
     if (frm.is_new() && (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0)) {
-      const default_docs = ["Aadhaar Card", "PAN Card", "Application Form", "Customer Signature"];
+      const default_docs = ["Aadhaar Card", "PAN Card", "Application Form", "Valuation Report", "Ornament Image"];
       default_docs.forEach((doc_type) => {
         let row = frm.add_child("kyc_documents");
         row.document_type = doc_type;
@@ -1562,18 +1677,24 @@ frappe.ui.form.on("Loan Ornament", {
 
 // KYC Standardized Input
 frappe.ui.form.on("Loan Document", {
-  // --- NEW: Auto-stamp user when status changes ---
+  // --- Auto-stamp user and employee info when status changes ---
   status: function(frm, cdt, cdn) {
     let row = locals[cdt][cdn];
     
     if (row.status === "Verified" || row.status === "Rejected") {
-        // Set the logged-in user's email/ID
-        frappe.model.set_value(cdt, cdn, "verified_by", frappe.session.user);
+        frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name"])
+            .then(r => {
+                let display_verifier = frappe.session.user;
+                if (r && r.message && r.message.employee_name) {
+                    display_verifier = `${r.message.employee_name} - ${r.message.name}`;
+                } else if (frappe.session.user_fullname) {
+                    display_verifier = frappe.session.user_fullname;
+                }
+                frappe.model.set_value(cdt, cdn, "verified_by", display_verifier);
+            });
         
-        // Optional: Also set the verification date to today (if you want to automate your 'verification_date' column)
         frappe.model.set_value(cdt, cdn, "verification_date", frappe.datetime.get_today());
     } else {
-        // If they change it back to Pending or Rejected, clear the user stamp
         frappe.model.set_value(cdt, cdn, "verified_by", "");
         frappe.model.set_value(cdt, cdn, "verification_date", "");
     }

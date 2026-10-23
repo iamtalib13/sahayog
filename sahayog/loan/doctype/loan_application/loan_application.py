@@ -14,6 +14,29 @@ class LoanApplication(Document):
             self.run_rule_engine()
         self.calculate_payouts()
 
+    def on_update(self):
+        self.add_send_back_comment()
+
+    def add_send_back_comment(self):
+        before = self.get_doc_before_save()
+        old_remark = before.get("send_back_remark") if before else None
+
+        if not self.get("send_back_remark") or self.get("send_back_remark") == old_remark:
+            return
+
+        frappe.get_doc({
+            "doctype": "Comment",
+            "comment_type": "Comment",
+            "reference_doctype": self.doctype,
+            "reference_name": self.name,
+            "comment_email": frappe.session.user,
+            "comment_by": frappe.utils.get_fullname(frappe.session.user),
+            "content": _("Case moved to <b>{0}</b><br>Remark: {1}").format(
+                frappe.utils.escape_html(self.status or ""),
+                frappe.utils.escape_html(self.get("send_back_remark")),
+            ),
+        }).insert(ignore_permissions=True)
+
     def set_lead_converter_from_user(self):
         # Auto-set Lead Converter (LC) from current user
         if not self.lead_converter:
@@ -69,10 +92,12 @@ class LoanApplication(Document):
         # Valuation Pending Logic
         if self.status == "Valuation Pending" and self.security_type == "Gold":
             valuation_docs = [
-                "Valuation Report Image",
+                "Valuation Report",
                 "Ornament Image",
                 "Packet Image",
                 "Pledge(Group) Image",
+                "Checklist",
+                "Stamp Paper",
             ]
             existing_docs = [d.document_type for d in self.kyc_documents]
             for doc_type in valuation_docs:
@@ -84,6 +109,11 @@ class LoanApplication(Document):
 
         # Credit Decision Logic
         if self.status == "Credit Decision" and self.security_type == "Gold":
+            before = self.get_doc_before_save()
+            if before and before.status == "Valuation Pending":
+                stamp_paper = next((d for d in self.kyc_documents if d.document_type == "Stamp Paper"), None)
+                if not stamp_paper or not stamp_paper.document_file:
+                    frappe.throw(_("Stamp Paper document is mandatory before submitting post valuation."))
             if not self.ornaments_list:
                 frappe.throw(_("Ornaments List is mandatory when status is 'Credit Decision'."))
             
@@ -100,6 +130,16 @@ class LoanApplication(Document):
                     "document_type": "Ornament Image",
                     "status": "Pending"
                 })
+
+            # Credit Decision stage mandatory documents
+            credit_decision_docs = ["Gold Rate", "LTV Table", "Sanction Letter"]
+            existing_cd_docs = [d.document_type for d in self.kyc_documents]
+            for doc_type in credit_decision_docs:
+                if doc_type not in existing_cd_docs:
+                    self.append("kyc_documents", {
+                        "document_type": doc_type,
+                        "status": "Pending"
+                    })
 
         # Valuer Mandatory Check for Branch Team
         if self.security_type == "Gold" and self.ornaments_list:
@@ -118,6 +158,15 @@ class LoanApplication(Document):
                         "document_type": doc_type,
                         "status": "Pending"
                     })
+
+        # Mandatory checks when Approving from CPC Processing
+        if self.status == "Approved":
+            before = self.get_doc_before_save()
+            if before and before.status == "CPC Processing":
+                if not self.loan_account_number:
+                    frappe.throw(_("Loan Account Number is mandatory before approving CPC Processing."))
+                if not self.get("loan_disbursement_date"):
+                    frappe.throw(_("Loan Disbursement Date is mandatory before approving CPC Processing."))
 
     def validate_basic_fields(self):
         # Mobile Validation
@@ -178,14 +227,14 @@ class LoanApplication(Document):
         elif cibil >= 650: score += 8
         elif cibil > 0: score += 5
         
-        income = flt(self.monthly_income) or 1
-        foir = (flt(self.existing_emi) / income) * 100
-        if foir <= 40: score += 30
-        elif foir <= 50: score += 20
-        elif foir <= 60: score += 10
+        if flt(self.monthly_income) > 0:
+            foir = (flt(self.existing_emi) / flt(self.monthly_income)) * 100
+            if foir <= 40: score += 30
+            elif foir <= 50: score += 20
+            elif foir <= 60: score += 10
         self.total_risk_score = score
 
-        if score < flt(policy.min_passing_score):
+        if score < flt(policy.min_passing_score) and flt(self.cibil_score) <= 350:
             self.rule_engine_status = _("Rejected: Risk Score ({0}) below threshold").format(score)
             return
 
@@ -247,10 +296,10 @@ def add_workflow_comment(docname, comment):
 
 @frappe.whitelist()
 def add_document_after_approval(docname, document_type, document_file, document_number=None, remark=None):
-    """Allow Credit/CPC team to upload or re-upload a document after approval."""
-    allowed_roles = {"Credit Loan User", "CPC Loan User", "Administrator", "System Manager"}
+    """Allow Credit team to upload or re-upload a document after approval."""
+    allowed_roles = {"Credit Loan User", "Administrator", "System Manager"}
     if not allowed_roles.intersection(set(frappe.get_roles(frappe.session.user))):
-        frappe.throw(_("Only Credit / CPC team can upload documents after approval."))
+        frappe.throw(_("Only Credit team can upload documents after approval."))
 
     document_type = (document_type or "").strip()
     if not document_type:
@@ -291,7 +340,13 @@ def add_document_after_approval(docname, document_type, document_file, document_
     doc.flags.ignore_validate = True
     doc.flags.ignore_validate_update_after_submit = True
     doc.save()
-    doc.add_comment("Comment", _("Document '{0}' uploaded by {1}").format(document_type, frappe.session.user))
+
+    stored_remark = existing_row.remark if existing_row else remark
+    comment = _("Document '{0}' uploaded by {1}").format(document_type, frappe.session.user)
+    if stored_remark:
+        comment += "<br>" + _("Remark: {0}").format(frappe.utils.escape_html(stored_remark))
+    doc.add_comment("Comment", comment)
+
     return {"status": "success", "name": doc.name}
 
 
