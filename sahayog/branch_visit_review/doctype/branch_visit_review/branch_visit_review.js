@@ -34,10 +34,23 @@ frappe.ui.form.on("Branch Visit Review", {
 	validate(frm) {
 		if (!frm.doc.key_strengths && frm.doc.responses && frm.doc.responses.length > 0) {
 			let strengths = frm.doc.responses
-				.filter(function (r) { return r.response && parseInt(r.response) >= 3; })
+				.filter(function (r) {
+					return r.response && (parseInt(r.response) >= 3 || r.response === "Good" || r.response === "Excellent");
+				})
 				.map(function (r) { return r.parameter_name; })
 				.join("\n");
 			frm.set_value("key_strengths", strengths);
+		}
+		if (!frm.doc.areas_requiring_attention && frm.doc.responses && frm.doc.responses.length > 0) {
+			let areas = frm.doc.responses
+				.filter(function (r) {
+					return r.response && (r.response === "Needs Improvement" || (parseInt(r.response) <= 2 && parseInt(r.response) > 0));
+				})
+				.map(function (r) { return r.parameter_name; })
+				.join("\n");
+			if (areas) {
+				frm.set_value("areas_requiring_attention", areas);
+			}
 		}
 	},
 	branch(frm) {
@@ -246,6 +259,24 @@ function bindCustomEvents(frm, $row, cat, $area) {
 			frm.refresh_field("responses");
 		}
 	});
+
+	$area.find(".custom-multiple-select").on("change", function () {
+		let val = $(this).val();
+		let parameter = $row.find(".custom-parameter").val() || "";
+		if (parameter) {
+			let existing = frm.doc.responses.find(function (r) { return r.parameter_name === parameter; });
+			if (existing) {
+				existing.response = val;
+			} else {
+				frm.add_child("responses", {
+					category: cat.replace(/_/g, " "),
+					parameter_name: parameter,
+					response: val,
+				});
+			}
+			frm.refresh_field("responses");
+		}
+	});
 }
 
 function bvr_escape(value) {
@@ -423,6 +454,15 @@ function render_checklist(frm, template) {
 							response_html += '<label style="margin-right:10px;"><input type="radio" name="yesno_' + i + '" value="Yes" ' + yes_checked + '> Yes</label>';
 							response_html += '<label><input type="radio" name="yesno_' + i + '" value="No" ' + no_checked + '> No</label>';
 							response_html += '</span>';
+						} else if (row.response_type === "Multiple Select") {
+							let ms_opts = ["Good", "Excellent", "Average", "Needs Improvement"];
+							response_html = '<select class="form-control multiple-select-input" data-parameter="' + i + '">';
+							response_html += '<option value="">Select Option</option>';
+							ms_opts.forEach(function (opt) {
+								let selected = (saved_val && saved_val.toLowerCase() === opt.toLowerCase()) ? "selected" : "";
+								response_html += '<option value="' + opt + '" ' + selected + '>' + opt + '</option>';
+							});
+							response_html += '</select>';
 						} else {
 							response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
 						}
@@ -764,6 +804,24 @@ function render_checklist(frm, template) {
 				}
 			});
 
+			frm.fields_dict.checklist.$wrapper.find(".multiple-select-input").on("change", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				let item = template_items[param_idx];
+				let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
+				if (existing) {
+					existing.response = val;
+				} else {
+					frm.add_child("responses", {
+						category: item.category,
+						parameter_name: item.parameter_name,
+						response: val,
+					});
+				}
+				frm.refresh_field("responses");
+			});
+
 			frm.fields_dict.checklist.$wrapper.find(".add-category-row").on("click", function () {
 				let cat = $(this).data("category");
 				let $table = frm.fields_dict.checklist.$wrapper.find(".category-table[data-category='" + cat + "']");
@@ -773,6 +831,7 @@ function render_checklist(frm, template) {
 				select_html += "<option value=''>Select response type</option>";
 				select_html += "<option value='Rating (1 to 5)'>Stars</option>";
 				select_html += "<option value='Yes / No'>Y/N</option>";
+				select_html += "<option value='Multiple Select'>Multiple Select</option>";
 				select_html += "<option value='Text'>Text</option>";
 				select_html += "</select>";
 				let response_html = "<div class='custom-response-area' data-custom='" + custom_idx + "'>" + select_html + "</div>";
@@ -810,6 +869,15 @@ function render_checklist(frm, template) {
 						yn += '<label><input type="radio" name="custom_yn_' + cidx + '" value="No"> No</label>';
 						yn += '</span>';
 						$area.html(yn);
+					} else if (val === "Multiple Select") {
+						let ms = '<select class="form-control custom-multiple-select" data-custom="' + cidx + '">';
+						ms += '<option value="">Select Option</option>';
+						ms += '<option value="Good">Good</option>';
+						ms += '<option value="Excellent">Excellent</option>';
+						ms += '<option value="Average">Average</option>';
+						ms += '<option value="Needs Improvement">Needs Improvement</option>';
+						ms += '</select>';
+						$area.html(ms);
 					} else if (val === "Text") {
 						$area.html('<input type="text" class="form-control custom-response-input" placeholder="Enter the text">');
 					} else {
