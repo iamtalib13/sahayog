@@ -550,8 +550,28 @@ function render_checklist(frm, template) {
 			action_html += "</tbody></table>";
 			action_html += "<button class='bvr-btn-add bvr-btn-action add-action-row'>+ Add Action Item</button>";
 
+			// Parse key_strengths into up to 3 lines
+			let ks_lines = (frm.doc.key_strengths || "").split("\n").filter(function (l) { return l.trim(); });
+			while (ks_lines.length < 3) ks_lines.push("");
+			let ks_list_html = "<ol class='ks-numbered-list'>";
+			for (let ki = 0; ki < 3; ki++) {
+				ks_list_html += "<li><input type='text' class='form-control ks-item-input' data-index='" + ki + "' placeholder='Strength " + (ki + 1) + "' value='" + bvr_escape(ks_lines[ki]) + "'></li>";
+			}
+			ks_list_html += "</ol>";
+			let ks_textarea_html = "<textarea class='form-control leadership-input' data-field='key_strengths' rows='4' placeholder='Enter key strengths'>" + (frm.doc.key_strengths || "") + "</textarea>";
+			// Default: show list view if any strengths exist, else textarea
+			let ks_list_mode = true;
+			let ks_list_display = ks_list_mode ? "block" : "none";
+			let ks_textarea_display = ks_list_mode ? "none" : "block";
 			let leadership_html = "";
-			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Key Strengths (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='key_strengths' rows='4' placeholder='Enter key strengths'>" + (frm.doc.key_strengths || "") + "</textarea></div>";
+			leadership_html += "<div class='leadership-field'>";
+			leadership_html += "<div class='category-header'>";
+			leadership_html += "<h5>Key Strengths (Top 3)</h5>";
+			leadership_html += "<button type='button' class='bvr-btn-add ks-toggle-btn' title='Toggle numbered list / text area' style='font-size:18px;line-height:1;padding:0 8px;height:26px;'>+</button>";
+			leadership_html += "</div>";
+			leadership_html += "<div class='ks-list-view' style='display:" + ks_list_display + ";'>" + ks_list_html + "</div>";
+			leadership_html += "<div class='ks-textarea-view' style='display:" + ks_textarea_display + ";'>" + ks_textarea_html + "</div>";
+			leadership_html += "</div>";
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Areas Requiring Attention (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Leadership Remarks</h5></div><textarea class='form-control leadership-input' data-field='leadership_remarks' rows='4' placeholder='Enter leadership remarks'>" + (frm.doc.leadership_remarks || "") + "</textarea></div>";
 
@@ -653,6 +673,9 @@ function render_checklist(frm, template) {
 				.bvr-tabs .leadership-field .category-header { margin: 0; border-radius: 8px 8px 0 0; }
 				.bvr-tabs .leadership-field textarea { width: 100%; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; padding: 10px 12px; font-size: 13px; resize: vertical; background: #fff; transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box; }
 				.bvr-tabs .leadership-field textarea:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); outline: none; }
+				.bvr-tabs .ks-numbered-list { list-style: decimal; padding: 10px 12px 10px 36px; margin: 0; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; background: #fff; box-sizing: border-box; }
+				.bvr-tabs .ks-numbered-list li { padding: 5px 0; }
+				.bvr-tabs .ks-numbered-list li input { width: 100%; }
 				.bvr-tabs .tab-content-review { padding: 4px 0; }
 				.bvr-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); z-index: 2000; display: flex; align-items: flex-start; justify-content: center; padding: 60px 16px 16px; }
 				.bvr-modal { background: #fff; border-radius: 12px; width: 560px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }
@@ -708,6 +731,49 @@ function render_checklist(frm, template) {
 			frm.fields_dict.checklist.$wrapper.find(".leadership-input").on("blur change", function () {
 				let field = $(this).data("field");
 				frm.set_value(field, $(this).val());
+			});
+
+			// Key Strengths numbered list: toggle between list view and textarea
+			frm.fields_dict.checklist.$wrapper.off("click.ks-toggle").on("click.ks-toggle", ".ks-toggle-btn", function () {
+				let $field = $(this).closest(".leadership-field");
+				let $listView = $field.find(".ks-list-view");
+				let $textView = $field.find(".ks-textarea-view");
+				let listVisible = $listView.is(":visible");
+				if (listVisible) {
+					// switching to textarea — sync list → textarea
+					let items = [];
+					$listView.find(".ks-item-input").each(function () {
+						let v = $(this).val().trim();
+						if (v) items.push(v);
+					});
+					$textView.find("textarea").val(items.join("\n"));
+					frm.set_value("key_strengths", items.join("\n"));
+					$listView.hide();
+					$textView.show();
+				} else {
+					// switching to list view — sync textarea → list
+					let raw = $textView.find("textarea").val() || "";
+					let lines = raw.split("\n").filter(function (l) { return l.trim(); });
+					while (lines.length < 3) lines.push("");
+					$listView.find(".ks-item-input").each(function (ki) {
+						$(this).val(lines[ki] || "");
+					});
+					$textView.hide();
+					$listView.show();
+				}
+			});
+
+			// Key Strengths list inputs: save on blur
+			frm.fields_dict.checklist.$wrapper.off("blur.ks-list", ".ks-item-input").on("blur.ks-list", ".ks-item-input", function () {
+				let $field = $(this).closest(".leadership-field");
+				let items = [];
+				$field.find(".ks-item-input").each(function () {
+					let v = $(this).val().trim();
+					items.push(v);
+				});
+				// also keep textarea in sync
+				$field.find(".ks-textarea-view textarea").val(items.filter(Boolean).join("\n"));
+				frm.set_value("key_strengths", items.filter(Boolean).join("\n"));
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".bvr-overall-select").on("change", function () {
