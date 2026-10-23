@@ -553,6 +553,9 @@ function render_checklist(frm, template) {
 			if (overall_field && overall_field.df.options) {
 				overall_options = overall_field.df.options.split("\n").filter(function (opt) { return opt; });
 			}
+			if (!overall_options.length) {
+				overall_options = ["Excellent", "Good", "Average", "Satisfactory", "Needs Improvement"];
+			}
 			let overall_display = active_tab === "leadership" ? "inline-flex" : "none";
 			let overall_html = "<span class='bvr-overall-badge' style='display:" + overall_display + ";'>Overall Assessment: <select class='bvr-overall-select'>";
 			overall_html += "<option value=''" + (frm.doc.overall_assessment ? "" : " selected") + ">&mdash;</option>";
