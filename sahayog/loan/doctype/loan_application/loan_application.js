@@ -969,7 +969,7 @@ frappe.ui.form.on("Loan Application", {
     // ==========================================
     // MANAGE DOCUMENTS AFTER APPROVAL (Credit / CPC team)
     // ==========================================
-    const can_manage_docs = frappe.user_roles.some(role => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(role));
+    const can_manage_docs = frappe.user_roles.includes("Credit Loan User");
     if (!frm.is_new() && can_manage_docs && ["Approved", "Disbursed", "Closed"].includes(frm.doc.status)) {
       frm.add_custom_button(__("Add Document"), function () {
         let doc_type_options = (frappe.meta.get_docfield("Loan Document", "document_type").options || "")
