@@ -606,7 +606,7 @@
   {
    "fieldname": "send_back_remark",
    "fieldtype": "Small Text",
-   "label": "Last Send Back Remark",
+   "label": "Remark",
    "read_only": 1
   },
   {
@@ -817,7 +817,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-23 10:46:37.520914",
+ "modified": "2026-10-23 10:53:37.818921",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
