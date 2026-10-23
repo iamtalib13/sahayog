@@ -1674,18 +1674,24 @@ frappe.ui.form.on("Loan Ornament", {
 
 // KYC Standardized Input
 frappe.ui.form.on("Loan Document", {
-  // --- NEW: Auto-stamp user when status changes ---
+  // --- Auto-stamp user and employee info when status changes ---
   status: function(frm, cdt, cdn) {
     let row = locals[cdt][cdn];
     
     if (row.status === "Verified" || row.status === "Rejected") {
-        // Set the logged-in user's email/ID
-        frappe.model.set_value(cdt, cdn, "verified_by", frappe.session.user);
+        frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name"])
+            .then(r => {
+                let display_verifier = frappe.session.user;
+                if (r && r.message && r.message.employee_name) {
+                    display_verifier = `${r.message.employee_name} - ${r.message.name}`;
+                } else if (frappe.session.user_fullname) {
+                    display_verifier = frappe.session.user_fullname;
+                }
+                frappe.model.set_value(cdt, cdn, "verified_by", display_verifier);
+            });
         
-        // Optional: Also set the verification date to today (if you want to automate your 'verification_date' column)
         frappe.model.set_value(cdt, cdn, "verification_date", frappe.datetime.get_today());
     } else {
-        // If they change it back to Pending or Rejected, clear the user stamp
         frappe.model.set_value(cdt, cdn, "verified_by", "");
         frappe.model.set_value(cdt, cdn, "verification_date", "");
     }
