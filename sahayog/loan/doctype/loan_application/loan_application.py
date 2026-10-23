@@ -31,7 +31,7 @@ class LoanApplication(Document):
             "reference_name": self.name,
             "comment_email": frappe.session.user,
             "comment_by": frappe.utils.get_fullname(frappe.session.user),
-            "content": _("Sent back to <b>{0}</b><br>Remark: {1}").format(
+            "content": _("Case moved to <b>{0}</b><br>Remark: {1}").format(
                 frappe.utils.escape_html(self.status or ""),
                 frappe.utils.escape_html(self.get("send_back_remark")),
             ),
