@@ -61,20 +61,42 @@ frappe.ui.form.on("Branch Visit Review", {
 				args: {
 					doctype: "Sahayog Branch",
 					filters: { name: frm.doc.branch },
-					fieldname: "sol_id",
+					fieldname: ["sol_id", "district"],
 				},
 				callback: function (r) {
-					if (r.message && r.message.sol_id) {
-						frappe.call({
-							method: "sahayog.branch_visit_review.api.get_branch_manager",
-							args: { sol_id: r.message.sol_id },
-							callback: function (r) {
-								if (r.message && r.message.length > 0) {
-									console.log("Branch Manager:", r.message);
-									frm.set_value("branch_head", r.message[0].employee_name + "(" + r.message[0].name + ")");
-								}
-							},
-						});
+					if (r.message) {
+						if (r.message.district) {
+							frm.set_value("district", r.message.district);
+						}
+						if (r.message.sol_id) {
+							frappe.call({
+								method: "sahayog.branch_visit_review.api.get_branch_manager",
+								args: { sol_id: r.message.sol_id },
+								callback: function (res) {
+									if (res.message && res.message.length > 0) {
+										console.log("Branch Manager:", res.message);
+										frm.set_value("branch_head", res.message[0].employee_name + "(" + res.message[0].name + ")");
+									}
+								},
+							});
+						}
+					}
+				},
+			});
+		}
+	},
+	branch_code(frm) {
+		if (frm.doc.branch_code) {
+			frappe.call({
+				method: "frappe.client.get_value",
+				args: {
+					doctype: "Sahayog Branch",
+					filters: { sol_id: frm.doc.branch_code },
+					fieldname: "district",
+				},
+				callback: function (r) {
+					if (r.message && r.message.district) {
+						frm.set_value("district", r.message.district);
 					}
 				},
 			});
@@ -104,6 +126,7 @@ function update_overall_badge(frm) {
 const VISIT_DETAILS_FIELDS = [
 	"branch",
 	"branch_code",
+	"district",
 	"region",
 	"zone",
 	"visit_date",
