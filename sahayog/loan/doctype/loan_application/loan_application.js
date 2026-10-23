@@ -29,10 +29,11 @@ frappe.ui.form.on("Loan Application", {
             // ==========================================
             // SEND BACK / REASSIGN: MANDATORY REMARK
             // ==========================================
-            const send_back_actions = ["Send Back", "Reassign to Branch", "Reassign to Credit"];
+            const send_back_actions = ["Send Back", "Reassign to Branch", "Reassign to Credit", "Reject"];
             if (send_back_actions.includes(frm.selected_workflow_action) && !frm.doc.send_back_remark) {
+                const is_reject = frm.selected_workflow_action === "Reject";
                 const d = new frappe.ui.Dialog({
-                    title: __('Reason for Send Back'),
+                    title: is_reject ? __('Reason for Rejection') : __('Reason for Send Back'),
                     size: 'small',
                     fields: [
                         {
@@ -43,7 +44,7 @@ frappe.ui.form.on("Loan Application", {
                             description: __('This remark will be visible to the previous user of this stage.')
                         }
                     ],
-                    primary_action_label: __('Send Back'),
+                    primary_action_label: is_reject ? __('Reject') : __('Send Back'),
                     primary_action(values) {
                         frm.set_value("send_back_remark", values.remark);
                         d.hide();
