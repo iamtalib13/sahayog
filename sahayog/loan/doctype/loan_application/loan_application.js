@@ -30,7 +30,7 @@ frappe.ui.form.on("Loan Application", {
             // SEND BACK / REASSIGN: MANDATORY REMARK
             // ==========================================
             const send_back_actions = ["Send Back", "Reassign to Branch", "Reassign to Credit", "Reject"];
-            if (send_back_actions.includes(frm.selected_workflow_action) && !frm.doc.send_back_remark) {
+            if (send_back_actions.includes(frm.selected_workflow_action)) {
                 const is_reject = frm.selected_workflow_action === "Reject";
                 const d = new frappe.ui.Dialog({
                     title: is_reject ? __('Reason for Rejection') : __('Reason for Send Back'),
@@ -46,9 +46,19 @@ frappe.ui.form.on("Loan Application", {
                     ],
                     primary_action_label: is_reject ? __('Reject') : __('Send Back'),
                     primary_action(values) {
-                        frm.set_value("send_back_remark", values.remark);
                         d.hide();
-                        resolve();
+                        frappe.call({
+                            method: "sahayog.loan.doctype.loan_application.loan_application.update_loan_field_without_validation",
+                            args: {
+                                docname: frm.doc.name,
+                                fieldname: "send_back_remark",
+                                value: values.remark
+                            },
+                            callback: function() {
+                                frm.doc.send_back_remark = values.remark;
+                                resolve();
+                            }
+                        });
                     }
                 });
                 d.show();
@@ -57,7 +67,15 @@ frappe.ui.form.on("Loan Application", {
 
             // Clear stale remark once the case moves forward again
             if (!send_back_actions.includes(frm.selected_workflow_action) && frm.doc.send_back_remark) {
-                frm.set_value("send_back_remark", "");
+                frappe.call({
+                    method: "sahayog.loan.doctype.loan_application.loan_application.update_loan_field_without_validation",
+                    args: {
+                        docname: frm.doc.name,
+                        fieldname: "send_back_remark",
+                        value: ""
+                    }
+                });
+                frm.doc.send_back_remark = "";
             }
             
             // ==========================================

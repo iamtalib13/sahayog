@@ -8,6 +8,8 @@
  "engine": "InnoDB",
  "field_order": [
   "applicant_details_tab",
+  "send_back_section",
+  "send_back_remark",
   "product_selection_section",
   "loan_type",
   "column_break_ps",
@@ -88,8 +90,6 @@
   "stamp_duty",
   "final_payout",
   "remaining_balance",
-  "send_back_section",
-  "send_back_remark",
   "internal_ops_tab",
   "ops_section",
   "status",
@@ -126,6 +126,19 @@
    "fieldname": "applicant_details_tab",
    "fieldtype": "Tab Break",
    "label": "Applicant Info"
+  },
+  {
+   "depends_on": "eval:doc.send_back_remark",
+   "fieldname": "send_back_section",
+   "fieldtype": "Section Break",
+   "label": "Send Back Remark"
+  },
+  {
+   "depends_on": "eval:doc.send_back_remark",
+   "fieldname": "send_back_remark",
+   "fieldtype": "Small Text",
+   "label": "Remark",
+   "read_only": 1
   },
   {
    "fieldname": "product_selection_section",
@@ -596,18 +609,6 @@
    "fieldname": "remaining_balance",
    "fieldtype": "Currency",
    "label": "Outstanding Balance"
-  },
-  {
-   "collapsible": 1,
-   "fieldname": "send_back_section",
-   "fieldtype": "Section Break",
-   "label": "Send Back Remark"
-  },
-  {
-   "fieldname": "send_back_remark",
-   "fieldtype": "Small Text",
-   "label": "Remark",
-   "read_only": 1
   },
   {
    "depends_on": "eval:doc.status==\"CPC Processing\" || doc.status==\"Approved\"",
