@@ -815,7 +815,8 @@ fixtures = [
             "Ex Parte Enquiry",
             "Reminder Notice Of Enquiry",
             "Office Order Termination of Services",
-            "Termination due to abandonment"
+            "Termination due to abandonment",
+            "Branch Visit Review Print"
         ]]]
     },
 
