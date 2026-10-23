@@ -16,6 +16,7 @@ from sahayog.branch_visit_review.api import (
 VISIT_DETAILS_FIELDS = (
 	"branch",
 	"branch_code",
+	"district",
 	"region",
 	"zone",
 	"visit_date",
@@ -42,6 +43,7 @@ class BranchVisitReview(Document):
 		branch_head: DF.Data | None
 		branch_head_signoff: DF.Check
 		branch_head_signed_at: DF.Datetime | None
+		district: DF.Data | None
 		key_strengths: DF.Data | None
 		leadership_remarks: DF.Text | None
 		overall_assessment: DF.Literal["", "Excellent", "Good", "Satisfactory", "Needs Improvement"]
@@ -58,10 +60,22 @@ class BranchVisitReview(Document):
 	# end: auto-generated types
 
 	def validate(self):
+		self.set_district_from_sol_id()
 		# self.validate_visited_by_designation()
 		# self.validate_visit_details_edit()
 		self.validate_visitor_signoff()
 		self.validate_branch_head_signoff()
+
+	def set_district_from_sol_id(self):
+		if not self.district:
+			if self.branch_code:
+				self.district = frappe.db.get_value(
+					"Sahayog Branch", {"sol_id": self.branch_code}, "district"
+				)
+			elif self.branch:
+				self.district = frappe.db.get_value(
+					"Sahayog Branch", self.branch, "district"
+				)
 
 	def validate_visited_by_designation(self):
 		if not self.visited_by:
