@@ -21,7 +21,6 @@
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
  "name": "Branch Visit Review Print",
- "no_letterhead": 1,
  "owner": "Administrator",
  "page_number": "Hide",
  "pdf_generator": "chrome",
