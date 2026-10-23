@@ -1040,14 +1040,6 @@ frappe.ui.form.on("Loan Application", {
           row.status = "Pending";
           
           frm.refresh_field("kyc_documents");
-          
-          frappe.msgprint({
-              title: __('Document Required'),
-              indicator: 'blue',
-              message: __('A <b>Loan Agreement</b> row has been added. Please attach the document before proceeding.')
-          });
-          
-          // Optionally auto-save so it persists even if they leave the page
           frm.save(); 
       }
     }
@@ -1065,13 +1057,6 @@ frappe.ui.form.on("Loan Application", {
           row.status = "Pending";
 
           frm.refresh_field("kyc_documents");
-
-          frappe.msgprint({
-              title: __('Document Required'),
-              indicator: 'blue',
-              message: __('A <b>Checklist</b> row has been added. Please attach the document before proceeding.')
-          });
-
           frm.save();
       }
     }
