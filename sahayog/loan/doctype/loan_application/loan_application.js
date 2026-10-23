@@ -598,7 +598,7 @@ frappe.ui.form.on("Loan Application", {
 
             if (frm.doc.status === "Valuation Pending" && frm.selected_workflow_action === "Submit Post Valuation") {
                 
-                let required_docs = ["Loan Agreement", "Valuation Report", "Ornament Image", "Packet Image", "Pledge(Group) Image", "Checklist"];
+                let required_docs = ["Loan Agreement", "Valuation Report", "Ornament Image", "Packet Image", "Pledge(Group) Image", "Checklist", "Stamp Paper"];
                 let val_errors = [];
 
                 // Loop through the required documents list
