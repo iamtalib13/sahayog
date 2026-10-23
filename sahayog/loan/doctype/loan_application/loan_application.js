@@ -25,6 +25,39 @@ frappe.ui.form.on("Loan Application", {
  before_workflow_action: function (frm) {
         frappe.dom.unfreeze();
         return new Promise((resolve, reject) => {
+
+            // ==========================================
+            // SEND BACK / REASSIGN: MANDATORY REMARK
+            // ==========================================
+            const send_back_actions = ["Send Back", "Reassign to Branch", "Reassign to Credit"];
+            if (send_back_actions.includes(frm.selected_workflow_action) && !frm.doc.send_back_remark) {
+                const d = new frappe.ui.Dialog({
+                    title: __('Reason for Send Back'),
+                    size: 'small',
+                    fields: [
+                        {
+                            label: __('Remark'),
+                            fieldname: 'remark',
+                            fieldtype: 'Small Text',
+                            reqd: 1,
+                            description: __('This remark will be visible to the previous user of this stage.')
+                        }
+                    ],
+                    primary_action_label: __('Send Back'),
+                    primary_action(values) {
+                        frm.set_value("send_back_remark", values.remark);
+                        d.hide();
+                        resolve();
+                    }
+                });
+                d.show();
+                return;
+            }
+
+            // Clear stale remark once the case moves forward again
+            if (!send_back_actions.includes(frm.selected_workflow_action) && frm.doc.send_back_remark) {
+                frm.set_value("send_back_remark", "");
+            }
             
             // ==========================================
             // 1. CREDIT CHECK VALIDATION
@@ -727,6 +760,14 @@ frappe.ui.form.on("Loan Application", {
 
   refresh: function (frm) {
     frm.trigger("apply_branch_user_rules");
+
+    if (frm.doc.send_back_remark && ["Rejected", "Valuation Pending", "Credit Decision"].includes(frm.doc.status)) {
+      frm.dashboard.set_headline(
+        __("Send Back Remark: {0}", [frappe.utils.escape_html(frm.doc.send_back_remark)]),
+        "orange"
+      );
+    }
+
     let can_verify = frappe.user_roles.some(r => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(r));
     let kgrid = frm.get_field("kyc_documents");
     if (kgrid && kgrid.grid) {
