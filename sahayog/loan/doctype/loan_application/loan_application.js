@@ -138,6 +138,14 @@ frappe.ui.form.on("Loan Application", {
             if (frm.doc.status === "CPC Processing" && frm.selected_workflow_action === "Approve") {
                 let errors = [];
 
+                if (!frm.doc.loan_account_number) {
+                    errors.push("<b>Loan Account Number</b>: Required before approving.");
+                }
+
+                if (!frm.doc.loan_disbursement_date) {
+                    errors.push("<b>Loan Disbursement Date</b>: Required before approving.");
+                }
+
                 if (!frm.doc.kyc_documents || frm.doc.kyc_documents.length === 0) {
                     frappe.msgprint({
                         title: __('Missing Documents'),
