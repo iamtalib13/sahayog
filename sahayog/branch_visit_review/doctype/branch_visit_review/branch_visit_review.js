@@ -457,7 +457,7 @@ function render_checklist(frm, template) {
 				Object.keys(grouped).forEach(function (cat) {
 					let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
 					checklist_html += "<div class='category-header'><h5>" + cat + "</h5><button class='bvr-btn-add add-category-row' data-category='" + safe_cat + "' title='Add new row'>+</button></div>";
-					checklist_html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:280px;'>Response Type</th></tr></thead><tbody>";
+					checklist_html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
 					grouped[cat].forEach(function (row) {
 						let i = row._idx;
 						let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
@@ -489,7 +489,14 @@ function render_checklist(frm, template) {
 						} else {
 							response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
 						}
-						checklist_html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
+						let saved_review = saved ? (saved.review || saved.observation || "") : "";
+						let review_cell_html = "";
+						if (saved_review) {
+							review_cell_html = '<input type="text" class="form-control review-input" data-parameter="' + i + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">';
+						} else {
+							review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + i + '" title="Add review">+</button>';
+						}
+						checklist_html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
 						sr++;
 					});
 					checklist_html += "</tbody></table>";
@@ -503,10 +510,18 @@ function render_checklist(frm, template) {
 					});
 					if (custom_items.length > 0) {
 						checklist_html += "<div class='category-header'><h5>Additional Items</h5></div>";
-						checklist_html += "<table><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:280px;'>Response Type</th></tr></thead><tbody>";
+						checklist_html += "<table><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
 						custom_items.forEach(function (resp) {
-							let response_html = '<input type="text" class="form-control observation-input" placeholder="Enter the text" value="' + (resp.response || "") + '">';
-							checklist_html += "<tr><td>" + sr + "</td><td>" + (resp.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
+							let custom_i = all_items.length;
+							let response_html = '<input type="text" class="form-control observation-input" data-parameter="' + custom_i + '" placeholder="Enter the text" value="' + (resp.response || "") + '">';
+							let saved_review = resp.review || resp.observation || "";
+							let review_cell_html = "";
+							if (saved_review) {
+								review_cell_html = '<input type="text" class="form-control review-input" data-parameter="' + custom_i + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">';
+							} else {
+								review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + custom_i + '" title="Add review">+</button>';
+							}
+							checklist_html += "<tr><td>" + sr + "</td><td>" + (resp.parameter_name || "") + "</td><td>" + response_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
 							sr++;
 							all_items.push(resp);
 						});
@@ -626,6 +641,9 @@ function render_checklist(frm, template) {
 				.bvr-tabs .bvr-btn-action { margin-top: 10px; }
 				.bvr-tabs .bvr-btn-remove { background: transparent; color: #e74c3c; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 18px; line-height: 22px; text-align: center; cursor: pointer; padding: 0; transition: all 0.2s; }
 				.bvr-tabs .bvr-btn-remove:hover { background: #fdecea; color: #c0392b; transform: scale(1.15); }
+				.bvr-tabs .bvr-btn-add-review { background: transparent; color: #5e64ff; border: 1px dashed #5e64ff; border-radius: 50%; width: 26px; height: 26px; font-size: 16px; line-height: 24px; text-align: center; cursor: pointer; padding: 0; transition: all 0.2s; display: inline-block; }
+				.bvr-tabs .bvr-btn-add-review:hover { background: #5e64ff; color: #fff; }
+				.bvr-tabs .review-input { width: 100%; }
 				.bvr-tabs select.form-control, .bvr-tabs input.form-control { border-radius: 6px; border-color: #e2e8f0; font-size: 12px; padding: 6px 10px; height: auto; transition: border-color 0.2s, box-shadow 0.2s; }
 				.bvr-tabs select.form-control:focus, .bvr-tabs input.form-control:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); }
 				.bvr-tabs .tab-content-action { background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; padding: 12px; }
@@ -853,6 +871,43 @@ function render_checklist(frm, template) {
 					});
 				}
 				frm.refresh_field("responses");
+			});
+
+			frm.fields_dict.checklist.$wrapper.off("click.bvr-review").on("click.bvr-review", ".bvr-btn-add-review", function () {
+				let $btn = $(this);
+				let $cell = $btn.closest(".review-cell");
+				let param_idx = $btn.data("parameter");
+				let item = template_items[param_idx];
+				let saved_review = "";
+				if (item && frm.doc.responses) {
+					let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
+					if (existing) saved_review = existing.review || existing.observation || "";
+				}
+				$cell.html('<input type="text" class="form-control review-input" data-parameter="' + param_idx + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">');
+				$cell.find(".review-input").focus();
+			});
+
+			frm.fields_dict.checklist.$wrapper.off("blur.bvr-review", ".review-input").on("blur.bvr-review", ".review-input", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				let item = template_items[param_idx];
+				if (item) {
+					let existing = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; }) : null;
+					if (existing) {
+						existing.review = val;
+					} else {
+						frm.add_child("responses", {
+							category: item.category,
+							parameter_name: item.parameter_name,
+							review: val,
+						});
+					}
+					frm.refresh_field("responses");
+					if (!val) {
+						$this.closest(".review-cell").html('<button type="button" class="bvr-btn-add-review" data-parameter="' + param_idx + '" title="Add review">+</button>');
+					}
+				}
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".add-category-row").on("click", function () {
