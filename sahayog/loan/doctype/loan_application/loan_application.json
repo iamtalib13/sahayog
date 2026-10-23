@@ -106,6 +106,7 @@
   "verified_gold_details",
   "loan_sanctioned_by",
   "loan_account_number",
+  "loan_disbursement_date",
   "column_break_vlvq",
   "recommended_loan_amount",
   "margin_maintained",
@@ -704,7 +705,14 @@
   {
    "fieldname": "loan_account_number",
    "fieldtype": "Data",
-   "label": "Loan Account Number"
+   "label": "Loan Account Number",
+   "mandatory_depends_on": "eval:doc.status==\"CPC Processing\""
+  },
+  {
+   "fieldname": "loan_disbursement_date",
+   "fieldtype": "Date",
+   "label": "Loan Disbursement Date",
+   "mandatory_depends_on": "eval:doc.status==\"CPC Processing\""
   },
   {
    "fieldname": "column_break_vlvq",
@@ -795,7 +803,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-08-06 10:16:05.766015",
+ "modified": "2026-10-23 10:37:29.672518",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Application",
