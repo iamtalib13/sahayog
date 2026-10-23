@@ -131,7 +131,7 @@
   },
   {
    "fieldname": "approved_loan_amount",
-   "fieldtype": "Data",
+   "fieldtype": "Currency",
    "label": "Approved Loan Amount"
   },
   {
