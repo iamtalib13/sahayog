@@ -144,12 +144,6 @@ class LoanApplication(Document):
 
         # CPC Processing Logic
         if self.status == "CPC Processing":
-            if not self.loan_account_number:
-                frappe.throw(_("Loan Account Number is mandatory when status is 'CPC Processing'."))
-
-            if not self.get("loan_disbursement_date"):
-                frappe.throw(_("Loan Disbursement Date is mandatory when status is 'CPC Processing'."))
-
             required_docs = ["Loan Agreement", "Sanction Letter"]
             existing_docs = [d.document_type for d in self.kyc_documents]
             for doc_type in required_docs:
@@ -158,6 +152,15 @@ class LoanApplication(Document):
                         "document_type": doc_type,
                         "status": "Pending"
                     })
+
+        # Mandatory checks when Approving from CPC Processing
+        if self.status == "Approved":
+            before = self.get_doc_before_save()
+            if before and before.status == "CPC Processing":
+                if not self.loan_account_number:
+                    frappe.throw(_("Loan Account Number is mandatory before approving CPC Processing."))
+                if not self.get("loan_disbursement_date"):
+                    frappe.throw(_("Loan Disbursement Date is mandatory before approving CPC Processing."))
 
     def validate_basic_fields(self):
         # Mobile Validation
