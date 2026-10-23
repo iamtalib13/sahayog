@@ -34,10 +34,23 @@ frappe.ui.form.on("Branch Visit Review", {
 	validate(frm) {
 		if (!frm.doc.key_strengths && frm.doc.responses && frm.doc.responses.length > 0) {
 			let strengths = frm.doc.responses
-				.filter(function (r) { return r.response && parseInt(r.response) >= 3; })
-				.map(function (r) { return r.parameter_name; })
+				.filter(function (r) {
+					return r.response && (parseInt(r.response) >= 3 || r.response === "Good" || r.response === "Excellent");
+				})
+				.map(function (r, idx) { return (idx + 1) + ". " + r.parameter_name; })
 				.join("\n");
 			frm.set_value("key_strengths", strengths);
+		}
+		if (!frm.doc.areas_requiring_attention && frm.doc.responses && frm.doc.responses.length > 0) {
+			let areas = frm.doc.responses
+				.filter(function (r) {
+					return r.response && (r.response === "Needs Improvement" || (parseInt(r.response) <= 2 && parseInt(r.response) > 0));
+				})
+				.map(function (r) { return r.parameter_name; })
+				.join("\n");
+			if (areas) {
+				frm.set_value("areas_requiring_attention", areas);
+			}
 		}
 	},
 	branch(frm) {
@@ -48,20 +61,42 @@ frappe.ui.form.on("Branch Visit Review", {
 				args: {
 					doctype: "Sahayog Branch",
 					filters: { name: frm.doc.branch },
-					fieldname: "sol_id",
+					fieldname: ["sol_id", "district"],
 				},
 				callback: function (r) {
-					if (r.message && r.message.sol_id) {
-						frappe.call({
-							method: "sahayog.branch_visit_review.api.get_branch_manager",
-							args: { sol_id: r.message.sol_id },
-							callback: function (r) {
-								if (r.message && r.message.length > 0) {
-									console.log("Branch Manager:", r.message);
-									frm.set_value("branch_head", r.message[0].employee_name + "(" + r.message[0].name + ")");
-								}
-							},
-						});
+					if (r.message) {
+						if (r.message.district) {
+							frm.set_value("district", r.message.district);
+						}
+						if (r.message.sol_id) {
+							frappe.call({
+								method: "sahayog.branch_visit_review.api.get_branch_manager",
+								args: { sol_id: r.message.sol_id },
+								callback: function (res) {
+									if (res.message && res.message.length > 0) {
+										console.log("Branch Manager:", res.message);
+										frm.set_value("branch_head", res.message[0].employee_name + "(" + res.message[0].name + ")");
+									}
+								},
+							});
+						}
+					}
+				},
+			});
+		}
+	},
+	branch_code(frm) {
+		if (frm.doc.branch_code) {
+			frappe.call({
+				method: "frappe.client.get_value",
+				args: {
+					doctype: "Sahayog Branch",
+					filters: { sol_id: frm.doc.branch_code },
+					fieldname: "district",
+				},
+				callback: function (r) {
+					if (r.message && r.message.district) {
+						frm.set_value("district", r.message.district);
 					}
 				},
 			});
@@ -91,6 +126,7 @@ function update_overall_badge(frm) {
 const VISIT_DETAILS_FIELDS = [
 	"branch",
 	"branch_code",
+	"district",
 	"region",
 	"zone",
 	"visit_date",
@@ -233,6 +269,24 @@ function bindCustomEvents(frm, $row, cat, $area) {
 		let val = $(this).val();
 		let parameter = $row.find(".custom-parameter").val() || "";
 		if (val && parameter) {
+			let existing = frm.doc.responses.find(function (r) { return r.parameter_name === parameter; });
+			if (existing) {
+				existing.response = val;
+			} else {
+				frm.add_child("responses", {
+					category: cat.replace(/_/g, " "),
+					parameter_name: parameter,
+					response: val,
+				});
+			}
+			frm.refresh_field("responses");
+		}
+	});
+
+	$area.find(".custom-multiple-select").on("change", function () {
+		let val = $(this).val();
+		let parameter = $row.find(".custom-parameter").val() || "";
+		if (parameter) {
 			let existing = frm.doc.responses.find(function (r) { return r.parameter_name === parameter; });
 			if (existing) {
 				existing.response = val;
@@ -403,7 +457,7 @@ function render_checklist(frm, template) {
 				Object.keys(grouped).forEach(function (cat) {
 					let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
 					checklist_html += "<div class='category-header'><h5>" + cat + "</h5><button class='bvr-btn-add add-category-row' data-category='" + safe_cat + "' title='Add new row'>+</button></div>";
-					checklist_html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:280px;'>Response Type</th></tr></thead><tbody>";
+					checklist_html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
 					grouped[cat].forEach(function (row) {
 						let i = row._idx;
 						let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
@@ -423,10 +477,26 @@ function render_checklist(frm, template) {
 							response_html += '<label style="margin-right:10px;"><input type="radio" name="yesno_' + i + '" value="Yes" ' + yes_checked + '> Yes</label>';
 							response_html += '<label><input type="radio" name="yesno_' + i + '" value="No" ' + no_checked + '> No</label>';
 							response_html += '</span>';
+						} else if (row.response_type === "Multiple Select") {
+							let ms_opts = ["Good", "Excellent", "Average", "Needs Improvement"];
+							response_html = '<select class="form-control multiple-select-input" data-parameter="' + i + '">';
+							response_html += '<option value="">Select Option</option>';
+							ms_opts.forEach(function (opt) {
+								let selected = (saved_val && saved_val.toLowerCase() === opt.toLowerCase()) ? "selected" : "";
+								response_html += '<option value="' + opt + '" ' + selected + '>' + opt + '</option>';
+							});
+							response_html += '</select>';
 						} else {
 							response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
 						}
-						checklist_html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
+						let saved_review = saved ? (saved.review || saved.observation || "") : "";
+						let review_cell_html = "";
+						if (saved_review) {
+							review_cell_html = '<input type="text" class="form-control review-input" data-parameter="' + i + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">';
+						} else {
+							review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + i + '" title="Add review">+</button>';
+						}
+						checklist_html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
 						sr++;
 					});
 					checklist_html += "</tbody></table>";
@@ -440,10 +510,18 @@ function render_checklist(frm, template) {
 					});
 					if (custom_items.length > 0) {
 						checklist_html += "<div class='category-header'><h5>Additional Items</h5></div>";
-						checklist_html += "<table><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:280px;'>Response Type</th></tr></thead><tbody>";
+						checklist_html += "<table><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
 						custom_items.forEach(function (resp) {
-							let response_html = '<input type="text" class="form-control observation-input" placeholder="Enter the text" value="' + (resp.response || "") + '">';
-							checklist_html += "<tr><td>" + sr + "</td><td>" + (resp.parameter_name || "") + "</td><td>" + response_html + "</td></tr>";
+							let custom_i = all_items.length;
+							let response_html = '<input type="text" class="form-control observation-input" data-parameter="' + custom_i + '" placeholder="Enter the text" value="' + (resp.response || "") + '">';
+							let saved_review = resp.review || resp.observation || "";
+							let review_cell_html = "";
+							if (saved_review) {
+								review_cell_html = '<input type="text" class="form-control review-input" data-parameter="' + custom_i + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">';
+							} else {
+								review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + custom_i + '" title="Add review">+</button>';
+							}
+							checklist_html += "<tr><td>" + sr + "</td><td>" + (resp.parameter_name || "") + "</td><td>" + response_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
 							sr++;
 							all_items.push(resp);
 						});
@@ -472,22 +550,24 @@ function render_checklist(frm, template) {
 			action_html += "</tbody></table>";
 			action_html += "<button class='bvr-btn-add bvr-btn-action add-action-row'>+ Add Action Item</button>";
 
+			// Render saved key_strengths as existing rows (only non-empty lines)
+			let ks_lines = (frm.doc.key_strengths || "").split("\n").filter(function (l) { return l.trim(); });
+			let ks_list_html = "<ol class='ks-numbered-list'>";
+			ks_lines.forEach(function (line, ki) {
+				let clean_line = line.replace(/^\d+\.\s*/, "").trim();
+				ks_list_html += "<li class='ks-list-item'><input type='text' class='form-control ks-item-input' data-index='" + ki + "' placeholder='Enter strength' value='" + bvr_escape(clean_line) + "'><button type='button' class='bvr-btn-remove ks-remove-btn' title='Remove'>&times;</button></li>";
+			});
+			ks_list_html += "</ol>";
 			let leadership_html = "";
-			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Key Strengths (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='key_strengths' rows='4' placeholder='Enter key strengths'>" + (frm.doc.key_strengths || "") + "</textarea></div>";
+			leadership_html += "<div class='leadership-field'>";
+			leadership_html += "<div class='category-header'>";
+			leadership_html += "<h5>Key Strengths (Top 3)</h5>";
+			leadership_html += "<button type='button' class='bvr-btn-add ks-add-btn' title='Add strength' style='font-size:18px;line-height:1;padding:0 8px;height:26px;'>+</button>";
+			leadership_html += "</div>";
+			leadership_html += "<div class='ks-list-view'>" + ks_list_html + "</div>";
+			leadership_html += "</div>";
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Areas Requiring Attention (Top 3)</h5></div><textarea class='form-control leadership-input' data-field='areas_requiring_attention' rows='4' placeholder='Enter areas requiring attention'>" + (frm.doc.areas_requiring_attention || "") + "</textarea></div>";
 			leadership_html += "<div class='leadership-field'><div class='category-header'><h5>Leadership Remarks</h5></div><textarea class='form-control leadership-input' data-field='leadership_remarks' rows='4' placeholder='Enter leadership remarks'>" + (frm.doc.leadership_remarks || "") + "</textarea></div>";
-
-			let overall_field = frm.get_field("overall_assessment");
-			let overall_options = [];
-			if (overall_field && overall_field.df.options) {
-				overall_options = overall_field.df.options.split("\n").filter(function (opt) { return opt; });
-			}
-			let overall_html = "<span class='bvr-overall-badge'>Overall Assessment: <select class='bvr-overall-select'>";
-			overall_html += "<option value=''" + (frm.doc.overall_assessment ? "" : " selected") + ">&mdash;</option>";
-			overall_options.forEach(function (opt) {
-				overall_html += "<option value='" + opt + "'" + (frm.doc.overall_assessment === opt ? " selected" : "") + ">" + opt + "</option>";
-			});
-			overall_html += "</select></span>";
 
 			let active_tab = "review";
 			let $cw = frm.fields_dict.checklist.$wrapper;
@@ -496,6 +576,23 @@ function render_checklist(frm, template) {
 			} else if ($cw.find(".tab-content-leadership").is(":visible")) {
 				active_tab = "leadership";
 			}
+
+			let overall_field = frm.get_field("overall_assessment");
+			let overall_options = [];
+			if (overall_field && overall_field.df.options) {
+				overall_options = overall_field.df.options.split("\n").filter(function (opt) { return opt; });
+			}
+			if (!overall_options.length) {
+				overall_options = ["Excellent", "Good", "Average", "Satisfactory", "Needs Improvement"];
+			}
+			let overall_display = active_tab === "leadership" ? "inline-flex" : "none";
+			let overall_html = "<span class='bvr-overall-badge' style='display:" + overall_display + ";'>Overall Assessment: <select class='bvr-overall-select'>";
+			overall_html += "<option value=''" + (frm.doc.overall_assessment ? "" : " selected") + ">&mdash;</option>";
+			overall_options.forEach(function (opt) {
+				overall_html += "<option value='" + opt + "'" + (frm.doc.overall_assessment === opt ? " selected" : "") + ">" + opt + "</option>";
+			});
+			overall_html += "</select></span>";
+
 			let li_active = {
 				review: active_tab === "review" ? "active" : "",
 				action: active_tab === "action" ? "active" : "",
@@ -558,6 +655,9 @@ function render_checklist(frm, template) {
 				.bvr-tabs .bvr-btn-action { margin-top: 10px; }
 				.bvr-tabs .bvr-btn-remove { background: transparent; color: #e74c3c; border: none; border-radius: 50%; width: 24px; height: 24px; font-size: 18px; line-height: 22px; text-align: center; cursor: pointer; padding: 0; transition: all 0.2s; }
 				.bvr-tabs .bvr-btn-remove:hover { background: #fdecea; color: #c0392b; transform: scale(1.15); }
+				.bvr-tabs .bvr-btn-add-review { background: transparent; color: #5e64ff; border: 1px dashed #5e64ff; border-radius: 50%; width: 26px; height: 26px; font-size: 16px; line-height: 24px; text-align: center; cursor: pointer; padding: 0; transition: all 0.2s; display: inline-block; }
+				.bvr-tabs .bvr-btn-add-review:hover { background: #5e64ff; color: #fff; }
+				.bvr-tabs .review-input { width: 100%; }
 				.bvr-tabs select.form-control, .bvr-tabs input.form-control { border-radius: 6px; border-color: #e2e8f0; font-size: 12px; padding: 6px 10px; height: auto; transition: border-color 0.2s, box-shadow 0.2s; }
 				.bvr-tabs select.form-control:focus, .bvr-tabs input.form-control:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); }
 				.bvr-tabs .tab-content-action { background: #fff; border: 1px solid #e2e8f0; border-radius: 0 0 8px 8px; padding: 12px; }
@@ -567,6 +667,13 @@ function render_checklist(frm, template) {
 				.bvr-tabs .leadership-field .category-header { margin: 0; border-radius: 8px 8px 0 0; }
 				.bvr-tabs .leadership-field textarea { width: 100%; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; padding: 10px 12px; font-size: 13px; resize: vertical; background: #fff; transition: border-color 0.2s, box-shadow 0.2s; box-sizing: border-box; }
 				.bvr-tabs .leadership-field textarea:focus { border-color: #5e64ff; box-shadow: 0 0 0 3px rgba(94,100,255,0.12); outline: none; }
+				.bvr-tabs .ks-numbered-list { list-style: decimal; padding: 10px 12px 10px 36px; margin: 0; border: 1px solid #e2e8f0; border-top: none; border-radius: 0 0 8px 8px; background: #fff; box-sizing: border-box; }
+				.bvr-tabs .ks-numbered-list li { padding: 5px 0; }
+				.bvr-tabs .ks-numbered-list li input { width: 100%; }
+				.bvr-tabs .ks-list-item { display: flex; align-items: center; gap: 6px; }
+				.bvr-tabs .ks-list-item .ks-item-input { flex: 1; }
+				.bvr-tabs .ks-remove-btn { background: transparent; color: #e74c3c; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 16px; line-height: 20px; text-align: center; cursor: pointer; padding: 0; flex-shrink: 0; transition: all 0.2s; }
+				.bvr-tabs .ks-remove-btn:hover { background: #fdecea; color: #c0392b; }
 				.bvr-tabs .tab-content-review { padding: 4px 0; }
 				.bvr-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); z-index: 2000; display: flex; align-items: flex-start; justify-content: center; padding: 60px 16px 16px; }
 				.bvr-modal { background: #fff; border-radius: 12px; width: 560px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }
@@ -611,12 +718,54 @@ function render_checklist(frm, template) {
 						frm.fields_dict.checklist.$wrapper.find(tab_map[sel]).hide();
 					});
 					frm.fields_dict.checklist.$wrapper.find(tab_map[tab_sel]).show();
+					if (tab_sel === ".tab-leadership") {
+						frm.fields_dict.checklist.$wrapper.find(".bvr-overall-badge").css("display", "inline-flex");
+					} else {
+						frm.fields_dict.checklist.$wrapper.find(".bvr-overall-badge").css("display", "none");
+					}
 				});
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".leadership-input").on("blur change", function () {
 				let field = $(this).data("field");
 				frm.set_value(field, $(this).val());
+			});
+
+			// Key Strengths: "+" adds a new row
+			frm.fields_dict.checklist.$wrapper.off("click.ks-toggle").on("click.ks-toggle", ".ks-add-btn", function () {
+				let $ol = $(this).closest(".leadership-field").find(".ks-numbered-list");
+				let count = $ol.find(".ks-list-item").length;
+				let new_li = "<li class='ks-list-item'><input type='text' class='form-control ks-item-input' data-index='" + count + "' placeholder='Enter strength' value=''><button type='button' class='bvr-btn-remove ks-remove-btn' title='Remove'>&times;</button></li>";
+				$ol.append(new_li);
+				$ol.find(".ks-list-item:last .ks-item-input").focus();
+			});
+
+			// Key Strengths: remove a row
+			frm.fields_dict.checklist.$wrapper.off("click.ks-remove").on("click.ks-remove", ".ks-remove-btn", function () {
+				$(this).closest(".ks-list-item").remove();
+				// re-index
+				frm.fields_dict.checklist.$wrapper.find(".ks-list-item .ks-item-input").each(function (ki) {
+					$(this).attr("data-index", ki);
+				});
+				// save with numbering
+				let items = [];
+				frm.fields_dict.checklist.$wrapper.find(".ks-item-input").each(function () {
+					let v = $(this).val().trim().replace(/^\d+\.\s*/, "");
+					if (v) items.push(v);
+				});
+				let numbered = items.map(function(item, idx) { return (idx + 1) + ". " + item; }).join("\n");
+				frm.set_value("key_strengths", numbered);
+			});
+
+			// Key Strengths list inputs: save on blur with numbering
+			frm.fields_dict.checklist.$wrapper.off("blur.ks-list", ".ks-item-input").on("blur.ks-list", ".ks-item-input", function () {
+				let items = [];
+				frm.fields_dict.checklist.$wrapper.find(".ks-item-input").each(function () {
+					let v = $(this).val().trim().replace(/^\d+\.\s*/, "");
+					if (v) items.push(v);
+				});
+				let numbered = items.map(function(item, idx) { return (idx + 1) + ". " + item; }).join("\n");
+				frm.set_value("key_strengths", numbered);
 			});
 
 			frm.fields_dict.checklist.$wrapper.find(".bvr-overall-select").on("change", function () {
@@ -764,6 +913,61 @@ function render_checklist(frm, template) {
 				}
 			});
 
+			frm.fields_dict.checklist.$wrapper.find(".multiple-select-input").on("change", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				let item = template_items[param_idx];
+				let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
+				if (existing) {
+					existing.response = val;
+				} else {
+					frm.add_child("responses", {
+						category: item.category,
+						parameter_name: item.parameter_name,
+						response: val,
+					});
+				}
+				frm.refresh_field("responses");
+			});
+
+			frm.fields_dict.checklist.$wrapper.off("click.bvr-review").on("click.bvr-review", ".bvr-btn-add-review", function () {
+				let $btn = $(this);
+				let $cell = $btn.closest(".review-cell");
+				let param_idx = $btn.data("parameter");
+				let item = template_items[param_idx];
+				let saved_review = "";
+				if (item && frm.doc.responses) {
+					let existing = frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; });
+					if (existing) saved_review = existing.review || existing.observation || "";
+				}
+				$cell.html('<input type="text" class="form-control review-input" data-parameter="' + param_idx + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">');
+				$cell.find(".review-input").focus();
+			});
+
+			frm.fields_dict.checklist.$wrapper.off("blur.bvr-review", ".review-input").on("blur.bvr-review", ".review-input", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				let item = template_items[param_idx];
+				if (item) {
+					let existing = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; }) : null;
+					if (existing) {
+						existing.review = val;
+					} else {
+						frm.add_child("responses", {
+							category: item.category,
+							parameter_name: item.parameter_name,
+							review: val,
+						});
+					}
+					frm.refresh_field("responses");
+					if (!val) {
+						$this.closest(".review-cell").html('<button type="button" class="bvr-btn-add-review" data-parameter="' + param_idx + '" title="Add review">+</button>');
+					}
+				}
+			});
+
 			frm.fields_dict.checklist.$wrapper.find(".add-category-row").on("click", function () {
 				let cat = $(this).data("category");
 				let $table = frm.fields_dict.checklist.$wrapper.find(".category-table[data-category='" + cat + "']");
@@ -773,6 +977,7 @@ function render_checklist(frm, template) {
 				select_html += "<option value=''>Select response type</option>";
 				select_html += "<option value='Rating (1 to 5)'>Stars</option>";
 				select_html += "<option value='Yes / No'>Y/N</option>";
+				select_html += "<option value='Multiple Select'>Multiple Select</option>";
 				select_html += "<option value='Text'>Text</option>";
 				select_html += "</select>";
 				let response_html = "<div class='custom-response-area' data-custom='" + custom_idx + "'>" + select_html + "</div>";
@@ -810,6 +1015,15 @@ function render_checklist(frm, template) {
 						yn += '<label><input type="radio" name="custom_yn_' + cidx + '" value="No"> No</label>';
 						yn += '</span>';
 						$area.html(yn);
+					} else if (val === "Multiple Select") {
+						let ms = '<select class="form-control custom-multiple-select" data-custom="' + cidx + '">';
+						ms += '<option value="">Select Option</option>';
+						ms += '<option value="Good">Good</option>';
+						ms += '<option value="Excellent">Excellent</option>';
+						ms += '<option value="Average">Average</option>';
+						ms += '<option value="Needs Improvement">Needs Improvement</option>';
+						ms += '</select>';
+						$area.html(ms);
 					} else if (val === "Text") {
 						$area.html('<input type="text" class="form-control custom-response-input" placeholder="Enter the text">');
 					} else {
