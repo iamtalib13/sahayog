@@ -61,14 +61,7 @@ class LoanDocument(Document):
                     )
 
         # Role guard: only Credit/CPC/Admin can change verification fields
-        parent_status = self.parent.status if self.parent else None
-        if parent_status in ("Approved", "Disbursed", "Closed"):
-            verifier_roles = {"Credit Loan User", "Administrator", "System Manager"}
-            verifier_error = "Only Credit team can verify documents after approval."
-        else:
-            verifier_roles = {"Credit Loan User", "CPC Loan User", "Administrator", "System Manager"}
-            verifier_error = "Only Credit / CPC team can verify documents."
-
+        verifier_roles = {"Credit Loan User", "CPC Loan User", "Administrator", "System Manager"}
         user_roles = set(frappe.get_roles(frappe.session.user) or [])
         if not verifier_roles.intersection(user_roles):
             old_status, old_verifier = "Pending", None
@@ -80,7 +73,7 @@ class LoanDocument(Document):
             except Exception:
                 pass
             if self.status != old_status or (self.verified_by and self.verified_by != old_verifier):
-                frappe.throw(verifier_error)
+                frappe.throw("Only Credit / CPC team can verify documents.")
 
         # Verified Status Validation
         if self.status == "Verified":

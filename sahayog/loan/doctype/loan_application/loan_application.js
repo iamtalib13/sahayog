@@ -769,11 +769,7 @@ frappe.ui.form.on("Loan Application", {
       );
     }
 
-    const post_approval = ["Approved", "Disbursed", "Closed"].includes(frm.doc.status);
-    const verifier_roles = post_approval
-      ? ["Credit Loan User", "Administrator", "System Manager"]
-      : ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"];
-    let can_verify = frappe.user_roles.some(r => verifier_roles.includes(r));
+    let can_verify = frappe.user_roles.some(r => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(r));
     let kgrid = frm.get_field("kyc_documents");
     if (kgrid && kgrid.grid) {
       ["status", "verified_by", "verification_date"].forEach(function(f) {
