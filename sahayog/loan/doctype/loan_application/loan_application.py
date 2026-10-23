@@ -121,6 +121,12 @@ class LoanApplication(Document):
 
         # CPC Processing Logic
         if self.status == "CPC Processing":
+            if not self.loan_account_number:
+                frappe.throw(_("Loan Account Number is mandatory when status is 'CPC Processing'."))
+
+            if not self.get("loan_disbursement_date"):
+                frappe.throw(_("Loan Disbursement Date is mandatory when status is 'CPC Processing'."))
+
             required_docs = ["Loan Agreement", "Sanction Letter"]
             existing_docs = [d.document_type for d in self.kyc_documents]
             for doc_type in required_docs:
