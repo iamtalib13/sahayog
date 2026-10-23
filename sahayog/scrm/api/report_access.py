@@ -1239,42 +1239,66 @@ def download_fast_lead_report(from_date, to_date, filters=None):
                 sol_ids_pref = sol_ids_pref.intersection(ui_sols) if sol_ids_pref else ui_sols
 
             def parse_csv_date(date_str):
+                if not date_str:
+                    return None
                 try:
-                    clean_date = date_str.strip().split()[0]
-                    return datetime.datetime.strptime(clean_date, "%d-%m-%Y").date()
+                    clean_date = str(date_str).strip().split()[0]
+                    # Try %d-%m-%Y first (standard format in CSV)
+                    try:
+                        return datetime.datetime.strptime(clean_date, "%d-%m-%Y").date()
+                    except ValueError:
+                        # Fallback to %Y-%m-%d
+                        return datetime.datetime.strptime(clean_date, "%Y-%m-%d").date()
                 except Exception:
                     return None
 
             with open(target_path, "r", encoding="utf-8") as f_in:
                 reader = csv.reader(f_in)
+                csv_header = []
                 try:
-                    next(reader)
+                    csv_header = next(reader)
                 except StopIteration:
                     pass
 
+                # Dynamically map column positions from header to prevent column mismatch
+                def get_col_idx(name, default_idx):
+                    if csv_header and name in csv_header:
+                        return csv_header.index(name)
+                    return default_idx
+
+                idx_created_on = get_col_idx("Created On", 16)
+                idx_lead_owner = get_col_idx("Owner Email", 19)
+                idx_sol_id = get_col_idx("SOL ID", 11)
+                idx_zone = get_col_idx("Zone", 15)
+                idx_region = get_col_idx("Region", 14)
+                idx_prod = get_col_idx("Product Code", 5)
+                idx_source = get_col_idx("Source", 4)
+
+                max_needed_idx = max(idx_created_on, idx_sol_id, idx_zone, idx_region, idx_prod, idx_source)
+
                 for row in reader:
-                    if len(row) < 17:
+                    if len(row) <= max_needed_idx:
                         continue
-                    row_date = parse_csv_date(row[16])
+                    row_date = parse_csv_date(row[idx_created_on])
                     if not row_date or row_date < from_date_obj or row_date > to_date_obj:
                         continue
                     if user != "Administrator" and not has_pref:
-                        owner_val = row[19] if len(row) > 19 else (row[17] if len(row) > 17 else "")
+                        owner_val = row[idx_lead_owner] if len(row) > idx_lead_owner else ""
                         if owner_val and owner_val != user:
                             continue
-                    if sol_ids_pref and row[11] not in sol_ids_pref:
+                    if sol_ids_pref and row[idx_sol_id] not in sol_ids_pref:
                         continue
-                    if zones_pref and norm(row[15]) not in zones_pref:
+                    if zones_pref and norm(row[idx_zone]) not in zones_pref:
                         continue
                     if not is_all_regions and regions_pref:
                         allowed = set(regions_pref)
                         for r in list(regions_pref):
                             allowed |= REGION_ALIAS_MAP.get(r, set())
-                        if norm(row[14]) not in allowed:
+                        if norm(row[idx_region]) not in allowed:
                             continue
-                    if products_pref and norm(row[5]) not in products_pref:
+                    if products_pref and norm(row[idx_prod]) not in products_pref:
                         continue
-                    if sources_pref and norm(row[4]) not in sources_pref:
+                    if sources_pref and norm(row[idx_source]) not in sources_pref:
                         continue
 
                     matching_rows.append(row)
