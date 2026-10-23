@@ -228,7 +228,7 @@ class LoanApplication(Document):
             elif foir <= 60: score += 10
         self.total_risk_score = score
 
-        if score < flt(policy.min_passing_score):
+        if score < flt(policy.min_passing_score) and flt(self.cibil_score) <= 350:
             self.rule_engine_status = _("Rejected: Risk Score ({0}) below threshold").format(score)
             return
 
