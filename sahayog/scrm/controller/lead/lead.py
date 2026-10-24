@@ -662,15 +662,13 @@ def get_open_activities(ref_doctype=None, ref_docname=None):
 
 def validate_lead_audit_lock(doc, method=None):
     """Validate Lead Product Audit Status permissions and row-level locking.
-    Administrator, System Manager, Operations Support Manager, and Employee 1034 can audit.
+    Administrator, System Manager, Operations Support Manager, and Operation Lead Report Admin can audit.
     """
     current_user = frappe.session.user
     roles = frappe.get_roles(current_user)
     is_admin = current_user == "Administrator" or "System Manager" in roles
-    is_ops_manager = "Operations Support Manager" in roles
-    emp_number = frappe.db.get_value("Employee", {"user_id": current_user}, "employee_number") if not is_admin else None
-    is_emp_1034 = emp_number == "1034" or current_user == "1034@sahayog.com"
-    can_audit = is_admin or is_ops_manager or is_emp_1034
+    is_ops_manager = "Operations Support Manager" in roles or "Operation Lead Report Admin" in roles
+    can_audit = is_admin or is_ops_manager
 
     products = doc.get("custom_product_table") or []
 
