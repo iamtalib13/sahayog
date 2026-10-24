@@ -488,10 +488,12 @@ def ping_page_heartbeat(page="sahayog_dashboard"):
     user = frappe.session.user
     if not user or user in ("Guest", "Administrator"):
         stats = get_page_summary_stats(page=page)
+        is_cxo = has_cxo_access(user)
         return {
             "status": "success",
             "today_visitors_count": stats.get("today_visitors_count", 0),
-            "live_viewers_count": stats.get("live_viewers_count", 0)
+            "live_viewers_count": stats.get("live_viewers_count", 0),
+            "has_cxo_access": is_cxo
         }
 
     try:
@@ -504,13 +506,15 @@ def ping_page_heartbeat(page="sahayog_dashboard"):
         frappe.cache.set_value(live_key, live_dict, expires_in_sec=120)
 
         stats = get_page_summary_stats(page=page)
+        is_cxo = has_cxo_access(user)
         return {
             "status": "success",
             "today_visitors_count": stats.get("today_visitors_count", 0),
-            "live_viewers_count": stats.get("live_viewers_count", 0)
+            "live_viewers_count": stats.get("live_viewers_count", 0),
+            "has_cxo_access": is_cxo
         }
     except Exception as e:
-        return {"status": "error", "message": str(e), "today_visitors_count": 0, "live_viewers_count": 0}
+        return {"status": "error", "message": str(e), "today_visitors_count": 0, "live_viewers_count": 0, "has_cxo_access": False}
 
 
 @frappe.whitelist()
@@ -699,6 +703,18 @@ def get_page_visitors(page="sahayog_dashboard"):
 
     today_count = len(visitors_list)
     live_count = len(live_dict)
+
+    if not is_cxo:
+        return {
+            "status": "success",
+            "page": page,
+            "today_visitors_count": 0,
+            "live_viewers_count": 0,
+            "has_cxo_access": False,
+            "visitors": [],
+            "department_breakdown": {},
+            "zone_breakdown": {}
+        }
 
     return {
         "status": "success",
