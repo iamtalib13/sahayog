@@ -61,10 +61,13 @@
             <div class="lw-topbar-actions">
                 <div class="lw-toolbar-right">
                     <div class="lw-view-toggle">
-                        <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'cards' }" type="button" @click="setView('cards')">
-                            Card
+                        <button class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'requests' }" type="button" @click="showRequestsView()">
+                            Loan Requests
                         </button>
-                        <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'calendar' }" type="button" @click="setView('calendar')">
+                        <button class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'applications' && activeView === 'cards' }" type="button" @click="showApplicationsView()">
+                            Loan Applications
+                        </button>
+                        <button class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'applications' && activeView === 'calendar' }" type="button" @click="showCalendarView()">
                             Calendar
                         </button>
                     </div>
@@ -78,6 +81,18 @@
             </div>
         </div>
     </header>
+
+    <div class="lw-mobile-view-toggle" aria-label="Workspace view">
+        <button type="button" class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'requests' }" @click="showRequestsView()">
+            Loan Requests
+        </button>
+        <button type="button" class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'applications' && activeView === 'cards' }" @click="showApplicationsView()">
+            Loan Applications
+        </button>
+        <button type="button" class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'applications' && activeView === 'calendar' }" @click="showCalendarView()">
+            Calendar
+        </button>
+    </div>
 
     <div class="lw-content-shell">
         <main class="lw-shell">
@@ -93,13 +108,13 @@
                     </div>
                     <div class="lw-mobile-filter-grid">
                         <button
-                            v-for="card in statusCards()"
+                            v-for="card in (workspaceTab === 'requests' ? requestCards() : statusCards())"
                             :key="`mobile-${card.key}`"
                             type="button"
                             class="lw-mobile-filter-card"
-                            :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
+                            :class="[card.tone, { selected: (workspaceTab === 'requests' ? activeRequestFilter : activeFilter) === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
                             :disabled="card.disabled"
-                            @click="card.disabled ? null : setFilter(card.key)"
+                            @click="card.disabled ? null : (workspaceTab === 'requests' ? setRequestFilter(card.key) : setFilter(card.key))"
                         >
                             <span class="lw-mobile-filter-label">[[ card.label ]]</span>
                             <span class="lw-mobile-filter-count">[[ card.count ]]</span>
@@ -108,40 +123,31 @@
                 </section>
             </div>
 
-            <section class="lw-card-view" v-if="activeView === 'cards'">
-                <section class="lw-filter-grid">
-                    <!-- Loan Request Card (Branch Loan User only) -->
+            <section class="lw-card-view" v-if="workspaceTab === 'requests' || activeView === 'cards'">
+                <!-- Filter Grid for Loan Requests -->
+                <section class="lw-filter-grid" v-if="workspaceTab === 'requests'">
                     <article
-                        v-if="userRoles.includes('Branch Loan User') && branchLoanRequestCounts.total > 0"
-                        class="lw-status-card lw-status-card-loan-request"
-                        :class="{ selected: activeFilter === 'Branch Loan Requests', 'zero-count': branchLoanRequestCounts.total === 0 }"
-                        @click="setFilter('Branch Loan Requests')"
-                        tabindex="0"
+                        v-for="card in requestCards()"
+                        :key="card.key"
+                        class="lw-status-card"
+                        :class="[card.tone, { selected: activeRequestFilter === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
+                        @click="card.disabled ? null : setRequestFilter(card.key)"
+                        :tabindex="card.disabled ? -1 : 0"
+                        :aria-disabled="card.disabled ? 'true' : 'false'"
                         role="button"
+                        @keydown.enter.prevent="card.disabled ? null : setRequestFilter(card.key)"
+                        @keydown.space.prevent="card.disabled ? null : setRequestFilter(card.key)"
                     >
                         <div class="lw-status-card-head">
-                            <span class="lw-status-label">Loan Requests</span>
-                            <span class="lw-status-count">[[ branchLoanRequestCounts.total ]]</span>
+                            <span class="lw-status-label">[[ card.label ]]</span>
+                            <span class="lw-status-count">[[ card.count ]]</span>
                         </div>
-                        <span class="lw-status-note">Your loan requests</span>
+                        <span class="lw-status-note">[[ card.note ]]</span>
                     </article>
+                </section>
 
-                    <!-- Loan Request Card (Credit Loan User only) -->
-                    <article
-                        v-if="userRoles.includes('Credit Loan User') && loanRequestCounts.pending > 0"
-                        class="lw-status-card lw-status-card-loan-request"
-                        :class="{ selected: activeFilter === 'Loan Requests', 'zero-count': loanRequestCounts.pending === 0 }"
-                        @click="setFilter('Loan Requests')"
-                        tabindex="0"
-                        role="button"
-                    >
-                        <div class="lw-status-card-head">
-                            <span class="lw-status-label">Loan Requests</span>
-                            <span class="lw-status-count">[[ loanRequestCounts.pending ]]</span>
-                        </div>
-                        <span class="lw-status-note">Pending credit review</span>
-                    </article>
-
+                <!-- Filter Grid for Loan Applications -->
+                <section class="lw-filter-grid" v-else>
                     <article
                         v-for="card in statusCards()"
                         :key="card.key"
@@ -162,23 +168,22 @@
                     </article>
                 </section>
 
-                <div v-if="showPendingEmptyMessage()" class="lw-pending-empty" aria-live="polite">
+                <div v-if="workspaceTab === 'applications' && showPendingEmptyMessage()" class="lw-pending-empty" aria-live="polite">
                     There are no pending applications for you.
                 </div>
 
                 <div class="lw-section-separator"></div>
 
                 <div class="lw-card-section-head">
-                    <h3 v-if="activeFilter === 'Branch Loan Requests'">Loan Requests - [[ branchLoanRequests.length ]]</h3>
-                    <h3 v-else-if="activeFilter === 'Loan Requests'">Loan Requests - Pending Review - [[ loanRequests.length ]]</h3>
+                    <h3 v-if="workspaceTab === 'requests'">Loan Requests - [[ activeRequestFilter ]] - [[ loading ? '...' : filteredWorkspaceLoanRequests().length ]]</h3>
                     <h3 v-else>Loan Applications - [[ activeSelectionLabel() ]] - [[ loading ? '...' : filteredApplications().length ]]</h3>
                 </div>
 
                 <section class="lw-card-grid">
-                    <!-- Branch Loan Requests (when filter is Branch Loan Requests) -->
-                    <div v-if="activeFilter === 'Branch Loan Requests'" style="display: contents;">
+                    <!-- Loan Requests Tab Grid -->
+                    <div v-if="workspaceTab === 'requests'" style="display: contents;">
                         <article
-                            v-for="req in branchLoanRequests"
+                            v-for="req in filteredWorkspaceLoanRequests()"
                             :key="req.name"
                             class="lw-card lw-card-loan-request"
                             tabindex="0"
@@ -195,7 +200,7 @@
                                             <span class="lw-card-id">[[ req.name || 'Untitled' ]]</span>
                                             <h4>[[ req.customer || 'Unnamed applicant' ]]</h4>
                                             <span class="lw-card-mobile">[[ req.mobile_number || 'No mobile' ]]</span>
-                                            <p class="lw-card-amount">[[ formatCurrency(req.required_loan_amount) ]]</p>
+                                            <p class="lw-card-amount">[[ formatCurrency(req.approved_loan_amount || req.required_loan_amount) ]]</p>
                                         </div>
                                     </div>
                                 </div>
@@ -203,57 +208,24 @@
                                     <span class="lw-status-pill" :class="loanRequestToneClass(req.status)">
                                         [[ req.status || 'Draft' ]]
                                     </span>
-                                    <p class="lw-card-product">[[ req.loan_type || 'Loan product not set' ]]</p>
-                                    <span class="lw-card-branch-name">[[ req.branch || 'Branch not set' ]]</span>
-                                </div>
-                            </div>
-                        </article>
-                        <article v-if="!loading && branchLoanRequests.length === 0" class="lw-empty">
-                            <strong>No loan requests found</strong>
-                            <span>You haven't created any loan requests yet.</span>
-                        </article>
-                    </div>
-
-                    <!-- Credit Loan Requests (when filter is Loan Requests) -->
-                    <div v-else-if="activeFilter === 'Loan Requests'" style="display: contents;">
-                        <article
-                            v-for="req in loanRequests"
-                            :key="req.name"
-                            class="lw-card lw-card-loan-request"
-                            tabindex="0"
-                            role="link"
-                            @click="openLoanRequest(req)"
-                            @keydown.enter.prevent="openLoanRequest(req)"
-                            @keydown.space.prevent="openLoanRequest(req)"
-                        >
-                            <div class="lw-card-top">
-                                <div class="lw-card-head-copy">
-                                    <div class="lw-card-title-row">
-                                        <img class="lw-card-mini-logo" src="https://cdn-icons-png.flaticon.com/128/10894/10894247.png" alt="" aria-hidden="true">
-                                        <div class="lw-card-title-copy">
-                                            <span class="lw-card-id">[[ req.name || 'Untitled' ]]</span>
-                                            <h4>[[ req.customer || 'Unnamed applicant' ]]</h4>
-                                            <span class="lw-card-mobile">[[ req.mobile_number || 'No mobile' ]]</span>
-                                            <p class="lw-card-amount">[[ formatCurrency(req.required_loan_amount) ]]</p>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="lw-card-status-stack">
-                                    <span class="lw-status-pill tone-pending-credit-review">
-                                        [[ req.status || 'Pending Credit Review' ]]
+                                    <span v-if="req.loan_application" class="lw-status-pill" style="background: #e6fffa; color: #234e52; border: 1px solid #b2f5ea; margin-top: 4px; cursor: pointer;" @click.stop="openApplicationByName(req.loan_application)" title="Open Loan Application">
+                                        App: [[ req.loan_application ]]
+                                    </span>
+                                    <span v-else-if="req.status === 'Approved'" class="lw-status-pill" style="background: #fefce8; color: #a16207; border: 1px solid #fde047; margin-top: 4px;">
+                                        App Pending
                                     </span>
                                     <p class="lw-card-product">[[ req.loan_type || 'Loan product not set' ]]</p>
-                                    <span class="lw-card-branch-name">[[ req.branch || 'Branch not set' ]]</span>
+                                    <span class="lw-card-branch-name">[[ req.branch_name || req.branch || 'Branch not set' ]]</span>
                                 </div>
                             </div>
                         </article>
-                        <article v-if="!loading && loanRequests.length === 0" class="lw-empty">
-                            <strong>No pending loan requests</strong>
-                            <span>There are no loan requests pending credit review.</span>
+                        <article v-if="!loading && filteredWorkspaceLoanRequests().length === 0" class="lw-empty">
+                            <strong>No loan requests found</strong>
+                            <span>No loan requests match the selected filter.</span>
                         </article>
                     </div>
 
-                    <!-- Loan Applications (existing logic) -->
+                    <!-- Loan Applications Tab Grid -->
                     <div v-else style="display: contents;">
                         <article
                             v-for="app in filteredApplications()"
@@ -300,16 +272,16 @@
                     </div>
                 </section>
 
-                <nav class="lw-bottom-filter-nav" aria-label="Loan application filters">
+                <nav class="lw-bottom-filter-nav" :aria-label="workspaceTab === 'requests' ? 'Loan request filters' : 'Loan application filters'">
                     <button
-                        v-for="card in statusCards()"
+                        v-for="card in (workspaceTab === 'requests' ? requestCards() : statusCards())"
                         :key="`bottom-${card.key}`"
                         type="button"
                         class="lw-bottom-filter-item"
-                        :class="[card.tone, { selected: activeFilter === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
+                        :class="[card.tone, { selected: (workspaceTab === 'requests' ? activeRequestFilter : activeFilter) === card.key, 'zero-count': card.zeroCount, disabled: card.disabled }]"
                         :disabled="card.disabled"
                         :title="card.note"
-                        @click="setFilter(card.key)"
+                        @click="workspaceTab === 'requests' ? setRequestFilter(card.key) : setFilter(card.key)"
                     >
                         <span class="lw-bottom-filter-label">[[ card.label ]]</span>
                         <span class="lw-bottom-filter-count">[[ card.count ]]</span>
@@ -319,7 +291,7 @@
                 <div class="lw-mobile-bottom-spacer" aria-hidden="true"></div>
             </section>
 
-            <section v-if="activeView === 'calendar'" class="lw-calendar-view">
+            <section v-if="workspaceTab === 'applications' && activeView === 'calendar'" class="lw-calendar-view">
                 <div class="lw-calendar-shell">
                     <div class="lw-calendar-toolbar">
                         <div class="lw-calendar-copy">
@@ -380,9 +352,6 @@
     <div class="lw-mobile-action-bar">
         <button type="button" class="lw-mobile-action lw-mobile-action-primary" @click="openNewApplication()">
             + New Loan Request
-        </button>
-        <button type="button" class="lw-mobile-action lw-mobile-action-secondary" @click="setView(activeView === 'calendar' ? 'cards' : 'calendar')">
-            [[ activeView === 'calendar' ? 'View Applications' : 'View Calendar' ]]
         </button>
     </div>
 </div>
@@ -620,6 +589,10 @@
         width: auto;
         max-width: min(220px, 50vw);
         object-fit: contain;
+    }
+
+    .lw-mobile-view-toggle {
+        display: none;
     }
 
     .lw-topbar-actions {
@@ -1915,6 +1888,11 @@
         .lw-card-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
         }
+
+        .lw-view-toggle .lw-chip {
+            padding: 0.3rem 0.5rem;
+            font-size: 0.72rem;
+        }
     }
 
     @media (max-width: 860px) {
@@ -1996,6 +1974,33 @@
             justify-content: center;
             min-width: 0;
             padding: 9px 10px;
+        }
+
+        .lw-mobile-view-toggle {
+            display: flex;
+            gap: 4px;
+            margin: 0 16px 10px;
+            padding: 4px;
+            border-radius: 10px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+        }
+
+        .lw-mobile-view-toggle .lw-chip {
+            flex: 1 1 0;
+            justify-content: center;
+            min-width: 0;
+            padding: 9px 6px;
+            font-size: 0.74rem;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .lw-mobile-view-toggle .lw-chip-active {
+            background: #ffffff;
+            color: var(--lw-accent);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .lw-search-header {
@@ -2214,7 +2219,7 @@
             bottom: 0;
             z-index: 48;
             display: grid;
-            grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+            grid-template-columns: 1fr;
             gap: 10px;
             padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(247, 249, 252, 0.96));
@@ -2396,13 +2401,26 @@
         { key: "Credit Decision", label: "Credit Decision", note: "Credit team decision stage", tone: "status-card-tone-credit-decision" },
         { key: "CPC Processing", label: "CPC", note: "Final operations handling", tone: "status-card-tone-cpc" },
         { key: "Approved", label: "Approved", note: "Ready for sanction execution", tone: "status-card-tone-approved" },
-        { key: "Approved Not Disbursed", label: "Approved (Not Disbursed)", note: "Approved loans awaiting disbursement", tone: "status-card-tone-not-disbursed" },
         { key: "Rejected", label: "Rejected", note: "Closed without approval", tone: "status-card-tone-rejected" }
+    ];
+
+    const WORKSPACE_REQUEST_CARDS = [
+        { key: "All", label: "All Requests", note: "Total loan requests", tone: "status-card-tone-all" },
+        { key: "Pending Credit Review", label: "Pending Review", note: "Requests awaiting credit review", tone: "status-card-tone-credit-check" },
+        { key: "Approved", label: "Approved", note: "Total approved requests", tone: "status-card-tone-approved" },
+        { key: "Approved (Not Disbursed)", label: "Approved (Not Disbursed)", note: "Approved requests awaiting application", tone: "status-card-tone-not-disbursed" },
+        { key: "Rejected", label: "Rejected", note: "Rejected loan requests", tone: "status-card-tone-rejected" },
+        { key: "Sent Back", label: "Sent Back", note: "Sent back to branch for revision", tone: "status-card-tone-valuation" }
     ];
 
     function LoanWorkspace() {
         return {
             $delimiters: ["[[", "]]"],
+
+workspaceTab: "requests",
+    activeRequestFilter: "All",
+    requestCounts: { all: 0, pending_review: 0, approved: 0, approved_pending_app: 0, rejected: 0, sent_back: 0, draft: 0 },
+    allLoanRequests: [],
 
             userRoles: [],
             userBranchCode: null,
@@ -2425,6 +2443,10 @@
 
             isValidWorkspaceView(viewName) {
                 return ["cards", "calendar"].includes(viewName);
+            },
+
+            isValidRequestFilter(filterKey) {
+                return WORKSPACE_REQUEST_CARDS.some((card) => card.key === filterKey);
             },
 
             isValidWorkspaceFilter(filterKey) {
@@ -2458,13 +2480,25 @@
 
             applyWorkspaceStateFromUrl() {
                 const params = new URLSearchParams(window.location.search);
+                const tabParam = params.get("tab");
                 const viewParam = params.get("view");
                 const filterParam = params.get("filter");
+                const reqFilterParam = params.get("req_filter");
                 const monthParam = params.get("month");
                 const dateParam = params.get("date");
                 const searchParam = params.get("q");
 
-                if (this.isValidWorkspaceView(viewParam)) {
+                if (tabParam === "requests" || tabParam === "applications") {
+                    this.workspaceTab = tabParam;
+                }
+
+                if (reqFilterParam && this.isValidRequestFilter(reqFilterParam)) {
+                    this.activeRequestFilter = reqFilterParam;
+                }
+
+                if (this.workspaceTab === "requests") {
+                    this.activeView = "cards";
+                } else if (this.isValidWorkspaceView(viewParam)) {
                     this.activeView = viewParam;
                 }
 
@@ -2502,28 +2536,35 @@
                 }
 
                 const params = new URLSearchParams();
-                const viewName = this.isValidWorkspaceView(this.activeView) ? this.activeView : "cards";
-                const filterKey = viewName === "calendar"
-                    ? "All"
-                    : (this.isValidWorkspaceFilter(this.activeFilter)
-                        ? this.activeFilter
-                        : this.defaultFilterForView(viewName));
+                params.set("tab", this.workspaceTab || "requests");
+
+                if (this.workspaceTab === "requests") {
+                    if (this.activeRequestFilter && this.activeRequestFilter !== "All") {
+                        params.set("req_filter", this.activeRequestFilter);
+                    }
+                } else {
+                    const viewName = this.isValidWorkspaceView(this.activeView) ? this.activeView : "cards";
+                    const filterKey = viewName === "calendar"
+                        ? "All"
+                        : (this.isValidWorkspaceFilter(this.activeFilter)
+                            ? this.activeFilter
+                            : this.defaultFilterForView(viewName));
+
+                    params.set("view", viewName);
+                    params.set("filter", filterKey);
+
+                    if (viewName === "calendar" && this.getWorkspaceMonthValue()) {
+                        params.set("month", this.getWorkspaceMonthValue());
+                    }
+
+                    if (this.selectedCalendarDateKey) {
+                        params.set("date", this.selectedCalendarDateKey);
+                    }
+                }
+
                 const searchValue = String(this.searchText || "").trim();
-                const monthValue = this.getWorkspaceMonthValue();
-
-                params.set("view", viewName);
-                params.set("filter", filterKey);
-
                 if (searchValue) {
                     params.set("q", searchValue);
-                }
-
-                if (viewName === "calendar" && monthValue) {
-                    params.set("month", monthValue);
-                }
-
-                if (this.selectedCalendarDateKey) {
-                    params.set("date", this.selectedCalendarDateKey);
                 }
 
                 const nextUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}${window.location.hash || ""}`;
@@ -2532,6 +2573,34 @@
                 if (nextUrl !== currentUrl) {
                     window.history.replaceState({}, "", nextUrl);
                 }
+            },
+
+            showRequestsView() {
+                this.workspaceTab = "requests";
+                this.activeView = "cards";
+                this.closeMobileFilters();
+                this.syncWorkspaceUrl();
+            },
+
+            showApplicationsView() {
+                this.workspaceTab = "applications";
+                this.setView("cards");
+            },
+
+            showCalendarView() {
+                this.workspaceTab = "applications";
+                this.setView("calendar");
+            },
+
+            setRequestFilter(filterKey) {
+                this.activeRequestFilter = filterKey;
+                this.closeMobileFilters();
+                this.syncWorkspaceUrl();
+            },
+
+            openApplicationByName(name) {
+                if (!name) return;
+                this.navigateTo(`/app/loan-application/${encodeURIComponent(name)}`);
             },
 
             onSearchInput(event) {
@@ -2660,7 +2729,8 @@
                 try {
                     const promises = [
                         this.fetchCounts(),
-                        this.fetchApplications()
+                        this.fetchApplications(),
+                        this.fetchWorkspaceLoanRequests()
                     ];
 
                     if (this.userRoles.includes("Credit Loan User")) {
@@ -2699,6 +2769,9 @@
             },
 
             setView(viewName) {
+                if (this.workspaceTab === "requests") {
+                    viewName = "cards";
+                }
                 this.activeView = viewName;
                 if (viewName === "calendar") {
                     this.activeFilter = "All";
@@ -2922,21 +2995,75 @@
                     counts[status] = results[index + 1] || 0;
                 });
 
-                // Calculate Approved Not Disbursed count (using loan_disbursement_date field - no extra permission needed)
-                try {
-                    const approvedNotDisbursedFilters = this.getLoanApplicationFilters("Approved");
-                    approvedNotDisbursedFilters.push(["loan_disbursement_date", "is", "not set"]);
-                    const notDisbursedCount = await this.apiCall("frappe.client.get_count", {
-                        doctype: "Loan Application",
-                        filters: approvedNotDisbursedFilters
-                    });
-                    counts["Approved Not Disbursed"] = notDisbursedCount || 0;
-                } catch (e) {
-                    console.error("Failed to calculate not disbursed count", e);
-                    counts["Approved Not Disbursed"] = 0;
-                }
-
                 return counts;
+            },
+
+            async fetchWorkspaceLoanRequests() {
+                try {
+                    const res = await this.apiCall("sahayog.loan.doctype.loan_request.loan_request.get_workspace_loan_requests", {
+                        search_text: this.searchText || null
+                    });
+                    if (res) {
+                        this.requestCounts = res.counts || {};
+                        this.allLoanRequests = Array.isArray(res.requests) ? res.requests : [];
+                    }
+                    return res;
+                } catch (error) {
+                    console.error("Failed to fetch workspace loan requests", error);
+                    this.requestCounts = {};
+                    this.allLoanRequests = [];
+                    return null;
+                }
+            },
+
+            requestCards() {
+                const map = {
+                    "All": this.requestCounts.all || 0,
+                    "Pending Credit Review": this.requestCounts.pending_review || 0,
+                    "Approved": this.requestCounts.application_created || 0,
+                    "Approved (Not Disbursed)": this.requestCounts.approved_pending_app || 0,
+                    "Rejected": this.requestCounts.rejected || 0,
+                    "Sent Back": this.requestCounts.sent_back || 0,
+                };
+                return WORKSPACE_REQUEST_CARDS.map((card) => {
+                    const cnt = Number(map[card.key] || 0);
+                    return {
+                        ...card,
+                        count: cnt,
+                        zeroCount: cnt === 0,
+                        disabled: cnt === 0
+                    };
+                });
+            },
+
+            filteredWorkspaceLoanRequests() {
+                let list = this.allLoanRequests || [];
+                if (this.activeRequestFilter && this.activeRequestFilter !== "All") {
+                    if (this.activeRequestFilter === "Approved") {
+                        list = list.filter(r => r.status === "Approved" && r.loan_application);
+                    } else if (this.activeRequestFilter === "Approved (Not Disbursed)") {
+                        list = list.filter(r => r.status === "Approved" && !r.loan_application);
+                    } else {
+                        list = list.filter(r => r.status === this.activeRequestFilter);
+                    }
+                }
+                if (this.searchText) {
+                    const query = this.searchText.toLowerCase();
+                    list = list.filter(r => {
+                        const haystack = [
+                            r.name,
+                            r.customer,
+                            r.mobile_number,
+                            r.branch,
+                            r.branch_name,
+                            r.loan_type,
+                            r.status,
+                            r.loan_application
+                        ].join(" ").toLowerCase();
+                        return haystack.includes(query);
+                    });
+                }
+                return list;
             },
 
             fetchApplications() {
@@ -3055,9 +3182,6 @@
             matchesFilter(application) {
                 if (this.activeFilter === "All") return true;
                 if (this.activeFilter === "Role Pending") return this.matchesRolePending(application);
-                if (this.activeFilter === "Approved Not Disbursed") {
-                    return application.status === "Approved" && !application.loan_disbursement_date;
-                }
                 return application.status === this.activeFilter;
             },
 

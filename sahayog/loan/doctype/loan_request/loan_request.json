@@ -29,7 +29,8 @@
   "document_checklist_section",
   "document_checklist",
   "status_section",
-  "status"
+  "status",
+  "loan_application"
  ],
  "fields": [
   {
@@ -166,12 +167,19 @@
    "label": "Status",
    "options": "\nDraft\nPending Credit Review\nApproved\nRejected\nSent Back",
    "read_only": 1
+  },
+  {
+   "fieldname": "loan_application",
+   "fieldtype": "Link",
+   "label": "Loan Application",
+   "options": "Loan Application",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-18 13:31:07.445412",
+ "modified": "2026-10-24 13:06:57.885523",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Request",
