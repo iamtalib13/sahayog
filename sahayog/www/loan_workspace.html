@@ -2438,7 +2438,6 @@
         { key: "Credit Decision", label: "Credit Decision", note: "Credit team decision stage", tone: "status-card-tone-credit-decision" },
         { key: "CPC Processing", label: "CPC", note: "Final operations handling", tone: "status-card-tone-cpc" },
         { key: "Approved", label: "Approved", note: "Ready for sanction execution", tone: "status-card-tone-approved" },
-        { key: "Approved Not Disbursed", label: "Approved (Not Disbursed)", note: "Approved loans awaiting disbursement", tone: "status-card-tone-not-disbursed" },
         { key: "Rejected", label: "Rejected", note: "Closed without approval", tone: "status-card-tone-rejected" }
     ];
 
@@ -3027,19 +3026,6 @@
                     counts[status] = results[index + 1] || 0;
                 });
 
-                // Approved but not disbursed (application level)
-                try {
-                    const approvedNotDisbursedFilters = this.getLoanApplicationFilters("Approved");
-                    approvedNotDisbursedFilters.push(["loan_disbursement_date", "is", "not set"]);
-                    counts["Approved Not Disbursed"] = (await this.apiCall("frappe.client.get_count", {
-                        doctype: "Loan Application",
-                        filters: approvedNotDisbursedFilters
-                    })) || 0;
-                } catch (e) {
-                    console.error("Failed to calculate not disbursed count", e);
-                    counts["Approved Not Disbursed"] = 0;
-                }
-
                 return counts;
             },
 
@@ -3228,9 +3214,6 @@
             matchesFilter(application) {
                 if (this.activeFilter === "All") return true;
                 if (this.activeFilter === "Role Pending") return this.matchesRolePending(application);
-                if (this.activeFilter === "Approved Not Disbursed") {
-                    return application.status === "Approved" && !application.loan_disbursement_date;
-                }
                 return application.status === this.activeFilter;
             },
 
