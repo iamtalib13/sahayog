@@ -1302,6 +1302,109 @@
           return; // Stop navigation
         }
 
+        <!-- Value Dated TTUM -->
+        <a class="icon-item" href="/value_dated_ttum" role="link" tabindex="0">
+          <div class="icon-circle bg-purple-200 text-purple-800">
+            <i class="fas fa-file-export"></i>
+          </div>
+          <span class="icon-label">Value Dated TTUM</span>
+        </a>
+        <!-- EDR Report -->
+        <a class="icon-item" href="/app/query-report/EDR%20Report" role="link" tabindex="0">
+          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+            <i class="fas fa-chart-column"></i>
+          </div>
+          <span class="icon-label">EDR Report</span>
+        </a>
+        <!-- Branch Scorecard -->
+        <a class="icon-item" href="/app/branch-scorecard" role="link" tabindex="0">
+          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+            <i class="fas fa-spinner"></i>
+          </div>
+          <span class="icon-label">Branch Scorecard</span>
+        </a>
+        <!-- Insights -->
+        <a class="icon-item" href="/insights" role="link" tabindex="0">
+          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+            <i class="fas fa-chart-bar"></i>
+          </div>
+          <span class="icon-label">Analytics</span>
+        </a>
+        <!-- CIF Merge -->
+        <a class="icon-item" href="/app/cif-merge" role="link" tabindex="0">
+          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+            <i class="fas fa-compress-arrows-alt"></i>
+          </div>
+          <span class="icon-label">CIF Merge</span>
+        </a>
+        <!-- FIN Verify -->
+        <a class="icon-item" href="/app/aadhar-verification" role="link" tabindex="0">
+          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+            <i class="fa-solid fa-person-circle-check"></i>
+          </div>
+          <span class="icon-label">FIN Verify</span>
+        </a>
+        <!-- COM Visit Tracker -->
+        <a class="icon-item" href="/app/com-visit-tracker" role="link" tabindex="0">
+          <div class="icon-circle bg-[#f0f4ff] text-[#1e40af]">
+            <i class="fa-solid fa-user-pen"></i>
+          </div>
+          <span class="icon-label">COM Visit Tracker</span>
+        </a>
+         </div>
+    </main>
+  </div>
+  <script>
+    // Function to handle Task card click with custom filtering
+    function handleTaskCardClick(event, taskCount) {
+      event.preventDefault();
+
+      if (!taskCount || taskCount === 0) {
+        alert("No tasks assigned to you");
+        return; // Stop navigation
+      }
+
+      const url = "/app/task";
+      if (window.top) {
+        window.top.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    }
+
+    // Function to fetch and display assigned task count
+    async function fetchAssignedTaskCount() {
+      const taskIcon = document.querySelector(".task-icon");
+      if (!taskIcon) return;
+
+      try {
+        const userRes = await fetch(
+          "/api/method/frappe.auth.get_logged_user",
+        );
+        const userData = await userRes.json();
+        const userId = userData.message;
+
+        if (!userId || userId === "Administrator") return;
+
+        // Use API to get assigned task count
+        const countRes = await fetch(
+          `/api/method/sahayog.api.custom_api.get_assigned_task_count?user=${userId}`,
+        );
+        const countData = await countRes.json();
+        const taskCount = countData.message || 0;
+
+        // Badge update
+        const existingBadge = taskIcon.querySelector(".count-badge");
+        if (existingBadge) existingBadge.remove();
+
+        if (taskCount > 0) {
+          const countBadge = document.createElement("div");
+          countBadge.className = "count-badge";
+          countBadge.textContent = taskCount;
+          taskIcon.appendChild(countBadge);
+
+          taskIcon.style.pointerEvents = "auto";
+          taskIcon.style.opacity = "1";
         const url = "/app/task";
         if (window.top) {
           window.top.location.href = url;
