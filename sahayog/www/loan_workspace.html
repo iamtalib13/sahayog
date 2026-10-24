@@ -60,11 +60,14 @@
 
             <div class="lw-topbar-actions">
                 <div class="lw-toolbar-right">
-                    <div class="lw-view-toggle" v-if="workspaceTab === 'applications'">
-                        <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'cards' }" type="button" @click="setView('cards')">
-                            Card
+                    <div class="lw-view-toggle">
+                        <button class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'requests' }" type="button" @click="showRequestsView()">
+                            Loan Requests
                         </button>
-                        <button class="lw-chip" :class="{ 'lw-chip-active': activeView === 'calendar' }" type="button" @click="setView('calendar')">
+                        <button class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'applications' && activeView === 'cards' }" type="button" @click="showApplicationsView()">
+                            Loan Applications
+                        </button>
+                        <button class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'applications' && activeView === 'calendar' }" type="button" @click="showCalendarView()">
                             Calendar
                         </button>
                     </div>
@@ -79,30 +82,17 @@
         </div>
     </header>
 
-    <nav class="lw-subnav" aria-label="Workspace tabs">
-        <div class="lw-subnav-inner">
-            <button
-                type="button"
-                class="lw-subnav-tab"
-                :class="{ active: workspaceTab === 'requests' }"
-                @click="setWorkspaceTab('requests')"
-            >
-                <i class="fa fa-file-text-o" aria-hidden="true"></i>
-                <span>Loan Requests</span>
-                <span class="lw-subnav-badge" v-if="requestCounts && requestCounts.all">[[ requestCounts.all ]]</span>
-            </button>
-            <button
-                type="button"
-                class="lw-subnav-tab"
-                :class="{ active: workspaceTab === 'applications' }"
-                @click="setWorkspaceTab('applications')"
-            >
-                <i class="fa fa-folder-open-o" aria-hidden="true"></i>
-                <span>Loan Applications</span>
-                <span class="lw-subnav-badge" v-if="counts && counts.All">[[ counts.All ]]</span>
-            </button>
-        </div>
-    </nav>
+    <div class="lw-mobile-view-toggle" aria-label="Workspace view">
+        <button type="button" class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'requests' }" @click="showRequestsView()">
+            Loan Requests
+        </button>
+        <button type="button" class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'applications' && activeView === 'cards' }" @click="showApplicationsView()">
+            Loan Applications
+        </button>
+        <button type="button" class="lw-chip" :class="{ 'lw-chip-active': workspaceTab === 'applications' && activeView === 'calendar' }" @click="showCalendarView()">
+            Calendar
+        </button>
+    </div>
 
     <div class="lw-content-shell">
         <main class="lw-shell">
@@ -363,9 +353,6 @@
         <button type="button" class="lw-mobile-action lw-mobile-action-primary" @click="openNewApplication()">
             + New Loan Request
         </button>
-        <button type="button" class="lw-mobile-action lw-mobile-action-secondary" v-if="workspaceTab === 'applications'" @click="setView(activeView === 'calendar' ? 'cards' : 'calendar')">
-            [[ activeView === 'calendar' ? 'View Applications' : 'View Calendar' ]]
-        </button>
     </div>
 </div>
 
@@ -604,64 +591,8 @@
         object-fit: contain;
     }
 
-    .lw-subnav {
-        background: #ffffff;
-        border-bottom: 1px solid var(--lw-border-soft);
-        position: sticky;
-        top: 0;
-        z-index: 20;
-    }
-
-    .lw-subnav-inner {
-        max-width: 1400px;
-        margin: 0 auto;
-        padding: 0 1.25rem;
-        display: flex;
-        gap: 0.5rem;
-    }
-
-    .lw-subnav-tab {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.75rem 1rem;
-        background: transparent;
-        border: none;
-        border-bottom: 2.5px solid transparent;
-        color: var(--lw-muted);
-        font-size: 0.88rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s ease;
-    }
-
-    .lw-subnav-tab:hover {
-        color: var(--lw-ink);
-        border-bottom-color: var(--lw-border);
-    }
-
-    .lw-subnav-tab.active {
-        color: var(--lw-accent);
-        border-bottom-color: var(--lw-accent);
-    }
-
-    .lw-subnav-badge {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 1.25rem;
-        height: 1.25rem;
-        padding: 0 0.4rem;
-        border-radius: 999px;
-        font-size: 0.72rem;
-        font-weight: 700;
-        background: var(--lw-draft-bg);
-        color: var(--lw-draft-text);
-    }
-
-    .lw-subnav-tab.active .lw-subnav-badge {
-        background: var(--lw-accent-soft);
-        color: var(--lw-accent);
+    .lw-mobile-view-toggle {
+        display: none;
     }
 
     .lw-topbar-actions {
@@ -1957,6 +1888,11 @@
         .lw-card-grid {
             grid-template-columns: repeat(3, minmax(0, 1fr));
         }
+
+        .lw-view-toggle .lw-chip {
+            padding: 0.3rem 0.5rem;
+            font-size: 0.72rem;
+        }
     }
 
     @media (max-width: 860px) {
@@ -2038,6 +1974,33 @@
             justify-content: center;
             min-width: 0;
             padding: 9px 10px;
+        }
+
+        .lw-mobile-view-toggle {
+            display: flex;
+            gap: 4px;
+            margin: 0 16px 10px;
+            padding: 4px;
+            border-radius: 10px;
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+        }
+
+        .lw-mobile-view-toggle .lw-chip {
+            flex: 1 1 0;
+            justify-content: center;
+            min-width: 0;
+            padding: 9px 6px;
+            font-size: 0.74rem;
+            border: 0;
+            background: transparent;
+            box-shadow: none;
+        }
+
+        .lw-mobile-view-toggle .lw-chip-active {
+            background: #ffffff;
+            color: var(--lw-accent);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
 
         .lw-search-header {
@@ -2256,7 +2219,7 @@
             bottom: 0;
             z-index: 48;
             display: grid;
-            grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.95fr);
+            grid-template-columns: 1fr;
             gap: 10px;
             padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
             background: linear-gradient(180deg, rgba(255, 255, 255, 0.76), rgba(247, 249, 252, 0.96));
@@ -2613,14 +2576,21 @@
                 }
             },
 
-            setWorkspaceTab(tab) {
-                if (this.workspaceTab === tab) return;
-                this.workspaceTab = tab;
-                if (tab === "requests") {
-                    this.activeView = "cards";
-                }
+            showRequestsView() {
+                this.workspaceTab = "requests";
+                this.activeView = "cards";
                 this.closeMobileFilters();
                 this.syncWorkspaceUrl();
+            },
+
+            showApplicationsView() {
+                this.workspaceTab = "applications";
+                this.setView("cards");
+            },
+
+            showCalendarView() {
+                this.workspaceTab = "applications";
+                this.setView("calendar");
             },
 
             setRequestFilter(filterKey) {
