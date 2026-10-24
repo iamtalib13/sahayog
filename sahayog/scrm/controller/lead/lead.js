@@ -472,11 +472,9 @@ function canAuditLeadProduct() {
   const is_admin = frappe.session.user === "Administrator";
   const is_sys_mgr = user_roles.includes("System Manager");
   const is_ops_mgr = user_roles.includes("Operations Support Manager");
-  const is_emp_1034 =
-    frappe.session.user === "1034@sahayog.com" ||
-    (frappe.boot && frappe.boot.user && (frappe.boot.user.name === "1034" || frappe.boot.user.employee_number === "1034"));
+  const is_lead_report_admin = user_roles.includes("Operation Lead Report Admin");
 
-  return is_admin || is_sys_mgr || is_ops_mgr || is_emp_1034;
+  return is_admin || is_sys_mgr || is_ops_mgr || is_lead_report_admin;
 }
 
 frappe.ui.form.on("Lead Product", {
@@ -496,6 +494,7 @@ frappe.ui.form.on("Lead Product", {
     const is_operations =
       user_roles.includes("Operations Support Manager") ||
       user_roles.includes("Operations Support Executive") ||
+      user_roles.includes("Operation Lead Report Admin") ||
       (frappe.session.user === "Administrator");
 
     const row = locals[cdt][cdn];
@@ -576,6 +575,7 @@ function toggleCallingSource(frm) {
   const is_operations =
     user_roles.includes("Operations Support Manager") ||
     user_roles.includes("Operations Support Executive") ||
+    user_roles.includes("Operation Lead Report Admin") ||
     (frappe.session.user === "Administrator");
 
   frm.toggle_display("custom_calling_source", is_operations);

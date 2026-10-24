@@ -6,7 +6,8 @@ def has_full_report_access():
     roles = frappe.get_roles(frappe.session.user)
     return ("System Manager" in roles or 
             "Administrator" in roles or 
-            "Operations Support Manager" in roles)
+            "Operations Support Manager" in roles or
+            "Operation Lead Report Admin" in roles)
 
 
 @frappe.whitelist()
