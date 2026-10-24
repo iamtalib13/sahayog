@@ -2408,8 +2408,7 @@
         { key: "All", label: "All Requests", note: "Total loan requests", tone: "status-card-tone-all" },
         { key: "Pending Credit Review", label: "Pending Review", note: "Requests awaiting credit review", tone: "status-card-tone-credit-check" },
         { key: "Approved", label: "Approved", note: "Total approved requests", tone: "status-card-tone-approved" },
-        { key: "Approved (App Pending)", label: "Approved (App Pending)", note: "Approved requests awaiting application", tone: "status-card-tone-not-disbursed" },
-        { key: "Application Created", label: "App Created", note: "Loan application created", tone: "status-card-tone-cpc" },
+        { key: "Approved (Not Disbursed)", label: "Approved (Not Disbursed)", note: "Approved requests awaiting application", tone: "status-card-tone-not-disbursed" },
         { key: "Rejected", label: "Rejected", note: "Rejected loan requests", tone: "status-card-tone-rejected" },
         { key: "Sent Back", label: "Sent Back", note: "Sent back to branch for revision", tone: "status-card-tone-valuation" }
     ];
@@ -2418,10 +2417,10 @@
         return {
             $delimiters: ["[[", "]]"],
 
-            workspaceTab: "requests",
-            activeRequestFilter: "All",
-            requestCounts: { all: 0, pending_review: 0, approved: 0, approved_pending_app: 0, application_created: 0, rejected: 0, sent_back: 0, draft: 0 },
-            allLoanRequests: [],
+workspaceTab: "requests",
+    activeRequestFilter: "All",
+    requestCounts: { all: 0, pending_review: 0, approved: 0, approved_pending_app: 0, rejected: 0, sent_back: 0, draft: 0 },
+    allLoanRequests: [],
 
             userRoles: [],
             userBranchCode: null,
