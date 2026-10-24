@@ -18,6 +18,7 @@
   "cif_id",
   "branch_code",
   "application_no",
+  "loan_request",
   "membership_no",
   "annual_income",
   "column_break_luoa",
@@ -195,6 +196,13 @@
    "fieldname": "application_no",
    "fieldtype": "Data",
    "label": "Application No.",
+   "read_only": 1
+  },
+  {
+   "fieldname": "loan_request",
+   "fieldtype": "Link",
+   "label": "Loan Request",
+   "options": "Loan Request",
    "read_only": 1
   },
   {

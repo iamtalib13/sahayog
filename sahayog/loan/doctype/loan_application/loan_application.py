@@ -17,6 +17,14 @@ class LoanApplication(Document):
     def on_update(self):
         self.add_send_back_comment()
 
+    def after_insert(self):
+        if self.loan_request:
+            frappe.db.set_value("Loan Request", self.loan_request, "loan_application", self.name, update_modified=False)
+
+    def on_trash(self):
+        if self.loan_request:
+            frappe.db.set_value("Loan Request", self.loan_request, "loan_application", None, update_modified=False)
+
     def add_send_back_comment(self):
         before = self.get_doc_before_save()
         old_remark = before.get("send_back_remark") if before else None
