@@ -19,7 +19,7 @@ class LoanRequest(Document):
 			if not self.scheme_code:
 				self.scheme_code = ""
 			if not self.approved_loan_amount:
-				self.approved_loan_amount = ""
+				self.approved_loan_amount = 0
 
 	def calculate_vintage(self):
 		"""Auto-calculate vintage/complete days from deposit_date"""
