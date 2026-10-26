@@ -822,6 +822,39 @@ frappe.ui.form.on("Loan Application", {
     const allowed_roles = ["Administrator", "Credit Loan User", "System Manager"];
     if (!frm.is_new() && frappe.user_roles.some(role => allowed_roles.includes(role))) {
 
+      // CANCEL APPLICATION BUTTON (For Credit Check & Credit Decision states)
+      if (["Credit Check", "Credit Decision"].includes(frm.doc.status)) {
+        frm.add_custom_button(__("Cancel Application"), function () {
+          frappe.prompt(
+            {
+              fieldname: "reason",
+              fieldtype: "Small Text",
+              label: __("Cancellation Reason"),
+              reqd: 1
+            },
+            function (values) {
+              frappe.call({
+                method: "sahayog.loan.doctype.loan_application.loan_application.cancel_loan_application",
+                args: {
+                  docname: frm.doc.name,
+                  reason: values.reason
+                },
+                freeze: true,
+                freeze_message: __("Cancelling Loan Application..."),
+                callback: function (r) {
+                  if (!r.exc) {
+                    frappe.show_alert({ message: __("Loan Application Cancelled"), indicator: "orange" });
+                    frm.reload_doc();
+                  }
+                }
+              });
+            },
+            __("Cancel Loan Application"),
+            __("Confirm Cancel")
+          );
+        });
+      }
+
       // 1. UPDATE BRANCH BUTTON
       frm.add_custom_button(__("Update Branch"), function () {
         let d = new frappe.ui.Dialog({
