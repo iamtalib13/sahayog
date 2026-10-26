@@ -2409,7 +2409,6 @@
         { key: "All", label: "All Requests", note: "Total loan requests", tone: "status-card-tone-all" },
         { key: "Pending Credit Review", label: "Pending Review", note: "Requests awaiting credit review", tone: "status-card-tone-credit-check" },
         { key: "Approved", label: "Approved", note: "Total approved requests", tone: "status-card-tone-approved" },
-        { key: "Approved (Not Disbursed)", label: "Approved (Not Disbursed)", note: "Approved requests awaiting application", tone: "status-card-tone-not-disbursed" },
         { key: "Rejected", label: "Rejected", note: "Rejected loan requests", tone: "status-card-tone-rejected" },
         { key: "Sent Back", label: "Sent Back", note: "Sent back to branch for revision", tone: "status-card-tone-valuation" }
     ];
@@ -3022,7 +3021,6 @@ workspaceTab: "requests",
                     "All": this.requestCounts.all || 0,
                     "Pending Credit Review": this.requestCounts.pending_review || 0,
                     "Approved": this.requestCounts.application_created || 0,
-                    "Approved (Not Disbursed)": this.requestCounts.approved_pending_app || 0,
                     "Rejected": this.requestCounts.rejected || 0,
                     "Sent Back": this.requestCounts.sent_back || 0,
                 };
@@ -3040,13 +3038,7 @@ workspaceTab: "requests",
             filteredWorkspaceLoanRequests() {
                 let list = this.allLoanRequests || [];
                 if (this.activeRequestFilter && this.activeRequestFilter !== "All") {
-                    if (this.activeRequestFilter === "Approved") {
-                        list = list.filter(r => r.status === "Approved" && r.loan_application);
-                    } else if (this.activeRequestFilter === "Approved (Not Disbursed)") {
-                        list = list.filter(r => r.status === "Approved" && !r.loan_application);
-                    } else {
-                        list = list.filter(r => r.status === this.activeRequestFilter);
-                    }
+                    list = list.filter(r => r.status === this.activeRequestFilter);
                 }
                 if (this.searchText) {
                     const query = this.searchText.toLowerCase();
