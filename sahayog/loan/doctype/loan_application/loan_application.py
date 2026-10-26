@@ -414,3 +414,23 @@ def update_loan_field_without_validation(docname, fieldname, value=None, new_use
             frappe.share.remove("Loan Application", docname, original_owner_id)
 
     return {"status": "success"}
+
+
+@frappe.whitelist()
+def cancel_loan_application(docname, reason=None):
+    user = frappe.session.user
+    user_roles = set(frappe.get_roles(user))
+    allowed_roles = {"Administrator", "Credit Loan User", "System Manager"}
+    if not allowed_roles.intersection(user_roles):
+        frappe.throw(_("Only Credit Loan User or Administrator can cancel the application."))
+
+    doc = frappe.get_doc("Loan Application", docname)
+    if doc.status not in ["Credit Check", "Credit Decision"]:
+        frappe.throw(_("Loan Application can only be cancelled during Credit Check or Credit Decision state."))
+
+    doc.status = "Cancelled"
+    if reason:
+        doc.add_comment("Comment", _("Application cancelled by {0}. Reason: {1}").format(user, reason))
+    doc.save(ignore_permissions=True)
+    return {"status": "success"}
+
