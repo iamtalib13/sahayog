@@ -2401,6 +2401,7 @@
         { key: "Credit Decision", label: "Credit Decision", note: "Credit team decision stage", tone: "status-card-tone-credit-decision" },
         { key: "CPC Processing", label: "CPC", note: "Final operations handling", tone: "status-card-tone-cpc" },
         { key: "Approved", label: "Approved", note: "Ready for sanction execution", tone: "status-card-tone-approved" },
+        { key: "Approved (Not Disbursed)", label: "Approved (Not Disbursed)", note: "Approved applications awaiting disbursement", tone: "status-card-tone-not-disbursed" },
         { key: "Rejected", label: "Rejected", note: "Closed without approval", tone: "status-card-tone-rejected" }
     ];
 
@@ -2979,7 +2980,7 @@ workspaceTab: "requests",
             },
 
             async fetchCounts() {
-                const statuses = ["Draft", "Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing", "Approved", "Rejected"];
+                const statuses = ["Draft", "Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing", "Approved", "Approved (Not Disbursed)", "Rejected"];
                 const results = await Promise.all(
                     ["All"].concat(statuses).map((status) => {
                         const filters = this.getLoanApplicationFilters(status === "All" ? null : status);
@@ -3168,7 +3169,12 @@ workspaceTab: "requests",
                 const filters = {};
 
                 if (status) {
-                    filters.status = status;
+                    if (status === "Approved (Not Disbursed)") {
+                        filters.status = "Approved";
+                        filters.loan_disbursement_date = ["is", "not set"];
+                    } else {
+                        filters.status = status;
+                    }
                 }
 
                 // If user is Branch Loan User, don't hard-restrict filter in query if they are LC, frappe permissions will handle it
@@ -3182,6 +3188,9 @@ workspaceTab: "requests",
             matchesFilter(application) {
                 if (this.activeFilter === "All") return true;
                 if (this.activeFilter === "Role Pending") return this.matchesRolePending(application);
+                if (this.activeFilter === "Approved (Not Disbursed)") {
+                    return application.status === "Approved" && !application.loan_disbursement_date;
+                }
                 return application.status === this.activeFilter;
             },
 
