@@ -634,7 +634,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nCredit Check\nValuation Pending\nCredit Decision\nCPC Processing\nApproved\nRejected"
+   "options": "Draft\nCredit Check\nValuation Pending\nCredit Decision\nCPC Processing\nApproved\nRejected\nCancelled"
   },
   {
    "depends_on": "eval:doc.status == 'Credit Decision'",
