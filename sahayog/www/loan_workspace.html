@@ -3253,12 +3253,15 @@ workspaceTab: "requests",
 
             statusCards() {
                 const rolePending = this.pendingCount();
-                return WORKSPACE_STATUS_CARDS.map((card) => ({
-                    ...card,
-                    count: card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0),
-                    zeroCount: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0,
-                    disabled: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0
-                }));
+                const isCreditTeam = this.userRoles.some(r => ["Credit Loan User", "Administrator", "System Manager"].includes(r));
+                return WORKSPACE_STATUS_CARDS
+                    .filter((card) => card.key !== "Cancelled" || isCreditTeam)
+                    .map((card) => ({
+                        ...card,
+                        count: card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0),
+                        zeroCount: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0,
+                        disabled: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0
+                    }));
             },
 
             emptyStateText() {
