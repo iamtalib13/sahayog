@@ -6457,7 +6457,7 @@
                       >
                         <option value="">All</option>
                         <option value="Employee">Employees</option>
-                        <option value="Agent">SwayamSevikas</option>
+                        <option value="Agent">SwayamSevika / Vittya Sevak</option>
                       </select>
                       <span class="c none" id="emp-selected-count">0 emp</span>
                       <span class="c none" id="agent-selected-count"
@@ -6967,7 +6967,7 @@
           return t === "Agent" ? "SwayamSevika / Vittya Sevak" : "Employee";
         }
         function ptPlural(t) {
-          return t === "Agent" ? "SwayamSevikas" : "Employees";
+          return t === "Agent" ? "SwayamSevika / Vittya Sevak" : "Employees";
         }
         /* Completion checks need participants; agent trainings additionally
            need every swayamsevika's attendance marked. Returns "" or a reason. */
@@ -9094,7 +9094,7 @@
               "</div>"
             );
           }
-          /* View mode for SwayamSevikas: compact 2-column chips (dot = status). Fits dozens
+          /* View mode for SwayamSevika / Vittya Sevak: compact 2-column chips (dot = status). Fits dozens
              of participants in ~168px with internal scroll. */
           if (!editable) {
             return (
@@ -9125,7 +9125,7 @@
               "</div>"
             );
           }
-          /* Edit mode for SwayamSevikas: full rows with Present/Absent buttons. */
+          /* Edit mode for SwayamSevika / Vittya Sevak: full rows with Present/Absent buttons. */
           return (
             '<div class="att-list">' +
             list
@@ -9551,7 +9551,7 @@
           var pte = document.getElementById("p-type-employee");
           if (pte) pte.textContent = "Employees";
           var pta = document.getElementById("p-type-agent");
-          if (pta) pta.textContent = "SwayamSevikas";
+          if (pta) pta.textContent = "SwayamSevika / Vittya Sevak";
           var agenda = document.getElementById("new-agenda");
           if (agenda) {
             agenda.value = "";
@@ -12207,7 +12207,7 @@
               pBtnEmp.textContent = "Employees" + (ne ? " (" + ne + ")" : "");
             if (pBtnAgent)
               pBtnAgent.textContent =
-                "SwayamSevikas" + (n - ne ? " (" + (n - ne) + ")" : "");
+                "SwayamSevika / Vittya Sevak" + (n - ne ? " (" + (n - ne) + ")" : "");
             if (pCount) {
               pCount.textContent = n ? pLabel() : "Add participants";
               pCount.classList.toggle("has", n > 0);
@@ -12252,7 +12252,7 @@
               return p.reference_doctype !== type;
             });
             if (otherType) {
-              showToast("Cannot mix Employees and SwayamSevikas. Please remove existing " + ptPlural(otherType.reference_doctype) + " first.");
+              showToast("Cannot mix Employees and SwayamSevika / Vittya Sevak. Please remove existing " + ptPlural(otherType.reference_doctype) + " first.");
               return;
             }
             var key = type + ":" + val;
@@ -12512,7 +12512,7 @@
                 return p.reference_doctype !== type;
               });
               if (otherType) {
-                showToast("Cannot mix Employees and SwayamSevikas. Please unselect existing " + ptPlural(otherType.reference_doctype) + " first.");
+                showToast("Cannot mix Employees and SwayamSevika / Vittya Sevak. Please unselect existing " + ptPlural(otherType.reference_doctype) + " first.");
                 return;
               }
               state.selectedParticipants.push({
