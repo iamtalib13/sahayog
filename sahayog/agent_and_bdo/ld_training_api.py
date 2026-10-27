@@ -864,7 +864,7 @@ def create_training(**kwargs):
         "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
         "trainer_remarks", "additional_cc", "training_delivered", "attendance_marked",
         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
-        "number_of_participants", "program_duration_hours",
+        "number_of_participants",
     }
     doc = frappe.new_doc("Training")
     participants = frappe.parse_json(kwargs.get("participants") or "[]")
@@ -2527,7 +2527,7 @@ def _replace_geographies(training_name, geographies):
 
 
 @frappe.whitelist()
-def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None, is_adhoc=None, program_duration_hours=None):
+def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None, is_adhoc=None):
     """
     Reschedule a training — L&D Admin can change anything; a trainer can
     reschedule only their own trainings (created by them or assigned to them).
@@ -2582,14 +2582,6 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
             frappe.throw(_("Number of Participants cannot be negative."))
     if is_adhoc is not None:
         updates["is_adhoc"] = 1 if str(is_adhoc).strip().lower() in ("1", "true", "yes") else 0
-    if program_duration_hours is not None:
-        try:
-            val = float(program_duration_hours)
-        except (TypeError, ValueError):
-            frappe.throw(_("Program Duration must be a number."))
-        if val < 0:
-            frappe.throw(_("Program Duration cannot be negative."))
-        updates["program_duration_hours"] = val
 
     for field, value in updates.items():
         frappe.db.set_value("Training", name, field, value)
