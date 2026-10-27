@@ -13,6 +13,7 @@
   "cb_remark_col_break",
   "cancellation_reason",
   "cancelled_by",
+  "cancelled_from_stage",
   "reopen_remark",
   "reopened_by",
   "product_selection_section",
@@ -161,6 +162,13 @@
    "fieldname": "cancelled_by",
    "fieldtype": "Data",
    "label": "Cancelled By",
+   "read_only": 1,
+   "permlevel": 0
+  },
+  {
+   "fieldname": "cancelled_from_stage",
+   "fieldtype": "Data",
+   "label": "Cancelled From Stage",
    "read_only": 1,
    "permlevel": 0
   },
