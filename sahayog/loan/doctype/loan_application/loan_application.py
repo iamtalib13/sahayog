@@ -400,9 +400,8 @@ def cancel_loan_application(docname, reason=None):
     if doc.status not in ["Credit Check", "Credit Decision"]:
         frappe.throw(_("Loan Application can only be cancelled during Credit Check or Credit Decision state."))
 
-    doc.status = "Cancelled"
+    frappe.db.set_value("Loan Application", docname, "status", "Cancelled")
     if reason:
         doc.add_comment("Comment", _("Application cancelled by {0}. Reason: {1}").format(user, reason))
-    doc.save(ignore_permissions=True)
     return {"status": "success"}
 
