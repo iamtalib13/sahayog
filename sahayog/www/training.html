@@ -5940,6 +5940,9 @@
               <option value="inprogress">In Progress</option>
               <option value="completed">Completed</option>
               <option value="pending">Pending</option>
+              <option value="rescheduled">Rescheduled</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="postponed">Postponed</option>
             </select>
             <select class="field-select" id="team-preset" title="Date range">
               <option value="month">This Month</option>
@@ -6095,6 +6098,16 @@
                 margin-top: 1px;
               "
             ></div>
+            <div
+              id="dlg-status-info"
+              style="
+                display: none;
+                font-size: 11.5px;
+                color: var(--ink-2);
+                margin-top: 3px;
+                max-width: 60vw;
+              "
+            ></div>
           </div>
           <!-- Attendance capsules (edit mode only, centered over column 2) -->
           <div id="att-top" style="display: none">
@@ -6128,6 +6141,20 @@
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="flex-shrink:0"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
               Mail Recipients
+            </button>
+            <button
+              class="btn"
+              id="btn-postpone-training"
+              style="display:none;height:32px;padding:7px 14px;font-size:13px;color:#b45309;border-color:#fde68a;"
+            >
+              Postpone
+            </button>
+            <button
+              class="btn"
+              id="btn-cancel-training"
+              style="display:none;height:32px;padding:7px 14px;font-size:13px;color:#b91c1c;border-color:#fecaca;"
+            >
+              Cancel
             </button>
             <button
               class="btn btn-primary"
@@ -6725,7 +6752,7 @@
         }
 
         /* ---------- Status metadata (single source of truth) ---------- */
-        var STATUS_ORDER = ["upcoming", "inprogress", "completed", "pending"];
+        var STATUS_ORDER = ["upcoming", "inprogress", "completed", "pending", "rescheduled", "cancelled", "postponed"];
         var STATUS_META = {
           draft: { color: "#8a8f98", soft: "#f3f4f6", label: "Draft" },
           upcoming: { color: "#4f6bed", soft: "#eef1fe", label: "Upcoming" },
@@ -6736,6 +6763,9 @@
           },
           completed: { color: "#1f9d61", soft: "#e6f6ee", label: "Completed" },
           pending: { color: "#a0a5b0", soft: "#f0f1f3", label: "Pending" },
+          rescheduled: { color: "#7c3aed", soft: "#f3e8ff", label: "Rescheduled" },
+          cancelled: { color: "#b91c1c", soft: "#fef2f2", label: "Cancelled" },
+          postponed: { color: "#b45309", soft: "#fff7ed", label: "Postponed" },
         };
         var CHECK_FIELDS = [
           { key: "training_delivered", label: "Training Delivered" },
@@ -7088,6 +7118,10 @@
           var s = completionScore(ev);
           if (s === 5) return "completed";
           if (s > 0) return "inprogress";
+          var ms = String(ev.status_override || ev.status || "").toLowerCase();
+          if (ms === "cancelled") return "cancelled";
+          if (ms === "postponed") return "postponed";
+          if (ms === "rescheduled") return "rescheduled";
           var end = evEnd(ev);
           if (!end) return "draft";
           return end >= todayIso() ? "upcoming" : "pending";
@@ -7218,9 +7252,14 @@
             inprogress: 0,
             completed: 0,
             pending: 0,
+            rescheduled: 0,
+            cancelled: 0,
+            postponed: 0,
           };
           events.forEach(function (ev) {
-            c[statusOf(ev)]++;
+            var k = statusOf(ev);
+            if (c[k] === undefined) c[k] = 0;
+            c[k]++;
           });
           return c;
         }
@@ -7231,7 +7270,7 @@
         }
         /* Portal build stamp — bump on every release so testers can confirm
            which version they run (kills cached-JS confusion). */
-        var LD_BUILD = "2026-10-10d";
+        var LD_BUILD = "2026-10-10i";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
@@ -7848,7 +7887,7 @@
         }
         function eventChip(ev) {
           var st = statusOf(ev);
-          var meta = STATUS_META[st];
+          var meta = STATUS_META[st] || STATUS_META.pending;
           var chip = document.createElement("div");
           chip.className = "event-chip";
           chip.style.background = meta.soft;
@@ -7948,7 +7987,7 @@
             })
             .forEach(function (ev) {
               var st = statusOf(ev);
-              var meta = STATUS_META[st];
+              var meta = STATUS_META[st] || STATUS_META.pending;
               var row = document.createElement("button");
               row.className = "more-row";
               /* Status-tinted row like calendar chips: soft bg + color bar */
@@ -8112,7 +8151,7 @@
             } else {
               evs.forEach(function (ev) {
                 var st = statusOf(ev);
-                var meta = STATUS_META[st];
+                var meta = STATUS_META[st] || STATUS_META.pending;
                 var item = document.createElement("div");
                 item.className = "week-event";
                 item.style.background = meta.soft;
@@ -8271,7 +8310,7 @@
           var tsep = document.createElement("span");
           tsep.className = "summary-sep";
           el.appendChild(tsep);
-          var order = ["upcoming", "inprogress", "completed", "pending"];
+          var order = ["upcoming", "inprogress", "completed", "pending", "rescheduled", "cancelled", "postponed"];
           order.forEach(function (k, i) {
             var m = STATUS_META[k];
             var b = document.createElement("button");
@@ -8324,7 +8363,7 @@
           var isDone = completionScore(ev) === 5;
           var canEditDrawer = editable && !isDone;
           var st = statusOf(ev);
-          var meta = STATUS_META[st];
+          var meta = STATUS_META[st] || STATUS_META.pending;
           var score = completionScore(ev);
           var pct = Math.round((score / 5) * 100);
 
@@ -8547,6 +8586,36 @@
               esc(ev.trainer_remarks) +
               "</div></div>";
           }
+
+          /* Lifecycle history panel (postponed/cancelled/rescheduled) */
+          var lcHtml = "";
+          if (ev.original_from_date) {
+            lcHtml +=
+              '<div class="drawer-section"><div class="drawer-section-title">Schedule History</div>' +
+              '<div class="meta-grid">' +
+              metaRow("Original From", ev.original_from_date) +
+              metaRow("Original To", ev.original_to_date || ev.original_from_date) +
+              metaRow("Original Start", ev.original_start_time || "—") +
+              metaRow("Original End", ev.original_end_time || "—") +
+              "</div></div>";
+          }
+          if (ev.postponed_on) {
+            lcHtml +=
+              '<div class="drawer-section"><div class="drawer-section-title">Postponed</div>' +
+              '<div class="meta-grid">' +
+              metaRow("Postponed On", ev.postponed_on) +
+              metaRow("Reason", ev.postponement_reason || "—") +
+              "</div></div>";
+          }
+          if (ev.cancelled_on) {
+            lcHtml +=
+              '<div class="drawer-section"><div class="drawer-section-title">Cancelled</div>' +
+              '<div class="meta-grid">' +
+              metaRow("Cancelled On", ev.cancelled_on) +
+              metaRow("Reason", ev.cancellation_reason || "—") +
+              "</div></div>";
+          }
+          body += lcHtml;
 
           document.getElementById("drawerBody").innerHTML = body;
 
@@ -9507,41 +9576,56 @@
             if (mode === "edit" && ev && ev.name) {
               var st = statusOf(ev);
               var meta = STATUS_META[st] || STATUS_META.draft;
-              var chipCls =
-                st === "completed"
-                  ? "chip-green"
-                  : st === "inprogress"
-                    ? "chip-orange"
-                    : st === "upcoming"
-                      ? "chip-blue"
-                      : "chip-gray";
               docChip.style.display = "";
-              docChip.className = "chip " + chipCls;
+              docChip.style.background = meta.soft;
+              docChip.style.color = meta.color;
+              docChip.className = "chip";
               docChip.textContent = meta.label;
               if (docId) {
                 docId.style.display = "";
                 docId.textContent = ev.name;
               }
+              var infoEl = document.getElementById("dlg-status-info");
+              if (infoEl) {
+                var parts = [];
+                if (ev.postponed_on) parts.push("Postponed on " + fmtDMY(ev.postponed_on) + (ev.postponement_reason ? " — " + ev.postponement_reason : ""));
+                if (ev.cancelled_on) parts.push("Cancelled on " + fmtDMY(ev.cancelled_on) + (ev.cancellation_reason ? " — " + ev.cancellation_reason : ""));
+                if (ev.original_from_date) parts.push("Original schedule: " + fmtDMY(ev.original_from_date) + (ev.original_to_date && ev.original_to_date !== ev.original_from_date ? " to " + fmtDMY(ev.original_to_date) : "") + (ev.original_start_time ? " " + ev.original_start_time : ""));
+                if (parts.length) {
+                  infoEl.style.display = "";
+                  infoEl.style.color = meta.color;
+                  infoEl.textContent = parts.join(" | ");
+                } else {
+                  infoEl.style.display = "none";
+                  infoEl.textContent = "";
+                }
+              }
             } else {
               docChip.style.display = "none";
               if (docId) docId.style.display = "none";
+              var infoEl2 = document.getElementById("dlg-status-info");
+              if (infoEl2) { infoEl2.style.display = "none"; infoEl2.textContent = ""; }
             }
           }
           var saveBtn = document.getElementById("btn-save-training");
-          // Reschedule flow temporarily disabled — Save already handles schedule changes
-          // var reschedBtn = document.getElementById("btn-reschedule-training");
+          var postBtn = document.getElementById("btn-postpone-training");
+          var cancBtn = document.getElementById("btn-cancel-training");
           if (mode === "edit") {
             saveBtn.textContent = "Save";
             saveBtn.onclick = saveTrainingChanges;
-            // if (reschedBtn) {
-            //   reschedBtn.style.display = state.role === "ld_admin" ? "inline-flex" : "none";
-            //   reschedBtn.textContent = "Reschedule";
-            //   reschedBtn.onclick = enterRescheduleMode;
-            // }
+            var st = statusOf(ev);
+            var isCancelled = st === "cancelled";
+            var isCompleted = st === "completed";
+            var isPostponed = st === "postponed";
+            var canLC = role().canEdit && !isCancelled && !isCompleted;
+            if (saveBtn) saveBtn.style.display = (isCancelled || isCompleted) ? "none" : "";
+            if (postBtn) { postBtn.style.display = (canLC && !isPostponed) ? "inline-flex" : "none"; postBtn.onclick = function(){ postponeCurrentTraining(ev); }; }
+            if (cancBtn) { cancBtn.style.display = canLC ? "inline-flex" : "none"; cancBtn.onclick = function(){ cancelCurrentTraining(ev); }; }
           } else {
             saveBtn.textContent = "Save";
             saveBtn.onclick = saveTraining;
-            // if (reschedBtn) reschedBtn.style.display = "none";
+            if (postBtn) postBtn.style.display = "none";
+            if (cancBtn) cancBtn.style.display = "none";
           }
         }
         function openTrainingDialog(ev) {
@@ -10079,10 +10163,36 @@
           var hr = h % 12 || 12;
           return hr + ":" + (mi < 10 ? "0" : "") + mi + " " + ap;
         }
+        function postponeCurrentTraining(ev) {
+          ev = ev || state.currentEvent;
+          if (!ev || !ev.name) return;
+          var reason = prompt("Postpone reason (optional):", "");
+          if (reason === null) return;
+          if (!confirm("Postpone this training? It will be marked Postponed.")) return;
+          api("postpone_training", { name: ev.name, reason: reason })
+            .then(function () { showToast("Training postponed"); closeModal("addModal"); loadData(true); })
+            .catch(function (e) { showToast("Could not postpone: " + (e && e.message ? e.message : e)); });
+        }
+        function cancelCurrentTraining(ev) {
+          ev = ev || state.currentEvent;
+          if (!ev || !ev.name) return;
+          var reason = prompt("Cancellation reason (required):", "");
+          if (reason === null) return;
+          if (!reason.trim()) { showToast("Cancellation reason is required."); return; }
+          if (!confirm("Cancel this training? It will be marked Cancelled.")) return;
+          api("cancel_training", { name: ev.name, reason: reason })
+            .then(function () { showToast("Training cancelled"); closeModal("addModal"); loadData(true); })
+            .catch(function (e) { showToast("Could not cancel: " + (e && e.message ? e.message : e)); });
+        }
         function saveTrainingChanges() {
           var ev = state.currentEvent;
           if (!ev) {
             closeModal("addModal");
+            return;
+          }
+          var st = statusOf(ev);
+          if (st === "cancelled" || st === "completed") {
+            showToast("This training is read-only.");
             return;
           }
           // Completed trainings are read-only — only budget may still be saved.
@@ -14039,6 +14149,24 @@
               label: "Pending",
               statusKey: "pending",
             },
+            {
+              cls: "sc-rescheduled",
+              num: counts.rescheduled,
+              label: "Rescheduled",
+              statusKey: "rescheduled",
+            },
+            {
+              cls: "sc-cancelled",
+              num: counts.cancelled,
+              label: "Cancelled",
+              statusKey: "cancelled",
+            },
+            {
+              cls: "sc-postponed",
+              num: counts.postponed,
+              label: "Postponed",
+              statusKey: "postponed",
+            },
           ];
           el.innerHTML = cards
             .map(function (c) {
@@ -14114,7 +14242,7 @@
           tbody.innerHTML = pageEvs
             .map(function (ev) {
               var st = statusOf(ev);
-              var meta = STATUS_META[st];
+              var meta = STATUS_META[st] || STATUS_META.pending;
               var dateStr =
                 ev.from_date && ev.to_date && ev.from_date !== ev.to_date
                   ? fmtSlash(ev.from_date) +
