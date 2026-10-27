@@ -3481,8 +3481,18 @@
         display: flex;
         flex-direction: column;
         gap: 8px;
-        max-height: clamp(240px, 44vh, 560px);
+        width: 100%;
+        height: auto;
+        min-height: 0;
+        max-height: calc(85vh - 220px);
         overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      #sel-list::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
       }
       /* Inline attendance (edit mode): staged Present/Absent per row, capsules on top */
       .fx-att-seg {
@@ -3529,6 +3539,8 @@
         display: flex;
         align-items: center;
         gap: 10px;
+        width: 100%;
+        box-sizing: border-box;
         background: var(--surface-2);
         border: 1px solid var(--border);
         border-radius: 8px;
@@ -3783,6 +3795,13 @@
       /* Never allow horizontal scrolling — vertical stays safe for small screens */
       #addModal .nt-scroll {
         overflow-x: clip;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      #addModal .nt-scroll::-webkit-scrollbar {
+        display: none;
+        width: 0;
+        height: 0;
       }
       /* Inputs must never force horizontal overflow */
       #addModal input,
@@ -6149,24 +6168,24 @@
               <h3>New Training</h3>
               <span id="dlg-doc-chip" style="display: none"></span>
             </div>
-            <div
-              id="dlg-doc-id"
-              style="
-                display: none;
-                font-size: 11px;
-                color: var(--ink-3);
-                margin-top: 1px;
-              "
-            ></div>
-            <div
-              id="dlg-status-info"
-              style="
-                display: none;
-                font-size: 11.5px;
-                color: var(--ink-2);
-                margin-top: 3px;
-              "
-            ></div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:2px;">
+              <span
+                id="dlg-doc-id"
+                style="
+                  display: none;
+                  font-size: 11px;
+                  color: var(--ink-3);
+                "
+              ></span>
+              <span
+                id="dlg-status-info"
+                style="
+                  display: none;
+                  font-size: 11px;
+                  color: var(--ink-2);
+                "
+              ></span>
+            </div>
           </div>
           <div
             style="
@@ -7343,7 +7362,7 @@
         }
         /* Portal build stamp — bump on every release so testers can confirm
            which version they run (kills cached-JS confusion). */
-        var LD_BUILD = "2026-10-10z";
+        var LD_BUILD = "2026-10-10zd";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
