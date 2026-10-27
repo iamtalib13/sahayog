@@ -35,8 +35,8 @@ def has_lead_permission(doc, ptype, user):
 def has_bm_verification_permission(user=None):
     """Check if the user has permission for BM Lead Verification.
     Authorized if:
-    1. Role: Administrator, System Manager, Branch Manager, Operations Support Manager, Sales Manager.
-    2. Employee Designation: Contains 'Manager' or 'BM' (case-insensitive).
+    1. Role: Administrator, System Manager, Permission Manager.
+    2. Employee Designation: Branch Manager, Assistant Branch Manager (including JLL variants).
     """
     if not user:
         user = frappe.session.user
@@ -45,21 +45,27 @@ def has_bm_verification_permission(user=None):
         return True
 
     roles = frappe.get_roles(user)
-    manager_roles = {
+    allowed_roles = {
         "Administrator",
         "System Manager",
-        "Branch Manager",
-        "Operations Support Manager",
-        "Sales Manager",
+        "Permission Manager",
     }
-    if any(r in roles for r in manager_roles):
+    if any(r in roles for r in allowed_roles):
         return True
 
+    allowed_designations = {
+        "branch manager",
+        "branch manager - jll",
+        "assistant branch manager - jll",
+        "assistant branch manager",
+        "branch manager jll",
+        "asst. branch manager",
+        "asst branch manager"
+    }
+
     designation = frappe.db.get_value("Employee", {"user_id": user}, "designation")
-    if designation:
-        desig_lower = designation.strip().lower()
-        if "manager" in desig_lower or "bm" in desig_lower:
-            return True
+    if designation and designation.strip().lower() in allowed_designations:
+        return True
 
     return False
 
