@@ -787,7 +787,12 @@ frappe.ui.form.on("Loan Application", {
       );
     }
 
-    let can_verify = frappe.user_roles.some(r => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(r));
+    let user_is_admin = frappe.user_roles.some(r => ["Administrator", "System Manager"].includes(r));
+    let user_is_credit = frappe.user_roles.includes("Credit Loan User");
+    let user_is_cpc = frappe.user_roles.includes("CPC Loan User");
+    let can_verify = user_is_admin || user_is_credit || user_is_cpc;
+    let is_credit_or_admin = user_is_admin || user_is_credit;
+
     let kgrid = frm.get_field("kyc_documents");
     if (kgrid && kgrid.grid) {
       ["status", "verified_by", "verification_date"].forEach(function(f) {
@@ -807,8 +812,7 @@ frappe.ui.form.on("Loan Application", {
     if (!frm.is_new() && frm.doc.lead_converter) {
       frappe.db.get_value("Employee", { user_id: frappe.session.user }, "name", (r) => {
         if (r && r.name && frm.doc.lead_converter !== r.name) {
-          const admin_roles = ["Administrator", "Credit Loan User", "CPC Loan User", "System Manager"];
-          if (!frappe.user_roles.some(role => admin_roles.includes(role))) {
+          if (!can_verify) {
             frm.disable_form();
             frm.page.clear_actions();
           }
@@ -819,8 +823,7 @@ frappe.ui.form.on("Loan Application", {
     // ==========================================
     // CUSTOM BUTTONS: UPDATE BRANCH & ASSIGN CASE (For Admin & Credit Loan User)
     // ==========================================
-    const allowed_roles = ["Administrator", "Credit Loan User", "System Manager"];
-    if (!frm.is_new() && frappe.user_roles.some(role => allowed_roles.includes(role))) {
+    if (!frm.is_new() && is_credit_or_admin) {
 
       // CANCEL APPLICATION BUTTON (For Credit Check & Credit Decision states)
       if (["Credit Check", "Credit Decision"].includes(frm.doc.status)) {
