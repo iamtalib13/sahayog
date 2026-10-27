@@ -6125,6 +6125,15 @@
                 margin-top: 1px;
               "
             ></div>
+            <div
+              id="dlg-status-info"
+              style="
+                display: none;
+                font-size: 11.5px;
+                color: var(--ink-2);
+                margin-top: 3px;
+              "
+            ></div>
           </div>
           <!-- Attendance capsules (edit mode only, centered over column 2) -->
           <div id="att-top" style="display: none">
@@ -6567,6 +6576,17 @@
                           autocomplete="off"
                         />
                       </div>
+                    </div>
+                    <div class="fx-field">
+                      <span class="fx-label">Program Duration (Hours)</span>
+                      <input
+                        type="number"
+                        class="fx-input"
+                        id="new-duration"
+                        placeholder="e.g. 2.5"
+                        step="0.5"
+                        min="0"
+                      />
                     </div>
                     <!-- Schedule preview + conflict hint: hidden for now (validation toasts still active)
               <div class="fx-preview" id="new-schedule-preview">Select date and time</div>
@@ -7287,7 +7307,7 @@
         }
         /* Portal build stamp — bump on every release so testers can confirm
            which version they run (kills cached-JS confusion). */
-        var LD_BUILD = "2026-10-10t";
+        var LD_BUILD = "2026-10-10u";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
@@ -9507,6 +9527,8 @@
           document.getElementById("new-to-date").value = fmtDMY(todayIso());
           document.getElementById("new-time").value = "";
           document.getElementById("new-end-time").value = "";
+          var durCreateEl = document.getElementById("new-duration");
+          if (durCreateEl) durCreateEl.value = "";
           var expCreateEl = document.getElementById("new-expected-count");
           if (expCreateEl) expCreateEl.value = "";
           ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
@@ -9519,6 +9541,28 @@
               }
             },
           );
+          var durEl = document.getElementById("new-duration");
+          if (durEl) {
+            durEl.oninput = function () {
+              var h = parseFloat(durEl.value);
+              if (isNaN(h) || h <= 0) return;
+              var startMin = 10 * 60;
+              var endMin = startMin + Math.round(h * 60);
+              var cap = 18 * 60;
+              if (endMin > cap) endMin = cap;
+              var fmt = function (mins) {
+                var hh = Math.floor(mins / 60);
+                var mm = mins % 60;
+                var ap = hh < 12 ? "AM" : "PM";
+                var hr = hh % 12 || 12;
+                return hr + ":" + (mm < 10 ? "0" : "") + mm + " " + ap;
+              };
+              var tEl = document.getElementById("new-time");
+              var eEl = document.getElementById("new-end-time");
+              if (tEl) tEl.value = "10:00 AM";
+              if (eEl) eEl.value = fmt(endMin);
+            };
+          }
           var typeSel = document.getElementById("new-training-type");
           if (typeSel) {
             typeSel.value = "";
@@ -9611,11 +9655,27 @@
                 docId.style.display = "";
                 docId.textContent = ev.name;
               }
+              var infoEl = document.getElementById("dlg-status-info");
+              if (infoEl) {
+                var parts = [];
+                if (ev.postponed_on) parts.push("Postponed on " + fmtDMY(ev.postponed_on) + (ev.postponement_reason ? " — " + ev.postponement_reason : ""));
+                if (ev.cancelled_on) parts.push("Cancelled on " + fmtDMY(ev.cancelled_on) + (ev.cancellation_reason ? " — " + ev.cancellation_reason : ""));
+                if (ev.original_from_date) parts.push("Original schedule: " + fmtDMY(ev.original_from_date) + (ev.original_to_date && ev.original_to_date !== ev.original_from_date ? " to " + fmtDMY(ev.original_to_date) : "") + (ev.original_start_time ? " " + ev.original_start_time : ""));
+                if (parts.length) {
+                  infoEl.style.display = "";
+                  infoEl.style.color = meta.color;
+                  infoEl.textContent = parts.join(" | ");
+                } else {
+                  infoEl.style.display = "none";
+                  infoEl.textContent = "";
+                }
+              }
 
             } else {
               docChip.style.display = "none";
               if (docId) docId.style.display = "none";
-
+              var infoEl2 = document.getElementById("dlg-status-info");
+              if (infoEl2) { infoEl2.style.display = "none"; infoEl2.textContent = ""; }
             }
           }
           var saveBtn = document.getElementById("btn-save-training");
@@ -9774,8 +9834,48 @@
           f("new-program", ev.training_program || ev.topic || "");
           f("new-from-date", fmtDMY(ev.from_date || ""));
           f("new-to-date", fmtDMY(ev.to_date || ev.from_date || ""));
-          f("new-time", fmtTimeInput(ev.start_time));
-          f("new-end-time", fmtTimeInput(ev.end_time));
+          var stVal = fmtTimeInput(ev.start_time);
+          var etVal = fmtTimeInput(ev.end_time);
+          var durVal = ev.program_duration_hours != null ? ev.program_duration_hours : "";
+          if ((!stVal || !etVal) && durVal && parseFloat(durVal) > 0) {
+            var h = parseFloat(durVal);
+            var startMin = 10 * 60;
+            var endMin = Math.min(18 * 60, startMin + Math.round(h * 60));
+            var fmt = function (mins) {
+              var hh = Math.floor(mins / 60);
+              var mm = mins % 60;
+              var ap = hh < 12 ? "AM" : "PM";
+              var hr = hh % 12 || 12;
+              return hr + ":" + (mm < 10 ? "0" : "") + mm + " " + ap;
+            };
+            if (!stVal) stVal = "10:00 AM";
+            if (!etVal) etVal = fmt(endMin);
+          }
+          f("new-time", stVal);
+          f("new-end-time", etVal);
+          f("new-duration", durVal);
+          var durElE = document.getElementById("new-duration");
+          if (durElE) {
+            durElE.oninput = function () {
+              var h = parseFloat(durElE.value);
+              if (isNaN(h) || h <= 0) return;
+              var startMin = 10 * 60;
+              var endMin = startMin + Math.round(h * 60);
+              var cap = 18 * 60;
+              if (endMin > cap) endMin = cap;
+              var fmt = function (mins) {
+                var hh = Math.floor(mins / 60);
+                var mm = mins % 60;
+                var ap = hh < 12 ? "AM" : "PM";
+                var hr = hh % 12 || 12;
+                return hr + ":" + (mm < 10 ? "0" : "") + mm + " " + ap;
+              };
+              var tEl = document.getElementById("new-time");
+              var eEl = document.getElementById("new-end-time");
+              if (tEl) tEl.value = "10:00 AM";
+              if (eEl) eEl.value = fmt(endMin);
+            };
+          }
           f("new-training-type", ev.training_type || "");
           f("new-expected-count", ev.number_of_participants != null ? ev.number_of_participants : "");
           // L&D Admin can reschedule any training.
@@ -9786,7 +9886,7 @@
           var isDone = completionScore(ev) === 5;
           if (isDone) canResched = false;
           var canEditTime = !isDone && (canResched || ownDone);
-          ["new-from-date", "new-to-date", "new-expected-count"].forEach(
+          ["new-from-date", "new-to-date", "new-expected-count", "new-duration"].forEach(
             function (id) {
               var el = document.getElementById(id);
               if (el) {
@@ -10274,6 +10374,15 @@
             return;
           }
           var expChanged = expEl ? expVal !== (ev.number_of_participants || 0) : false;
+          var durEl2 = document.getElementById("new-duration");
+          var durRaw = durEl2 ? durEl2.value.trim() : "";
+          var durVal = durRaw === "" ? null : parseFloat(durRaw);
+          if (durVal !== null && (isNaN(durVal) || durVal < 0)) {
+            showToast("Program Duration must be 0 or more");
+            return;
+          }
+          var durChanged = durEl2 ? durRaw !== String(ev.program_duration_hours == null ? "" : ev.program_duration_hours) : false;
+          if (durChanged && durVal === null) durVal = 0;
           /* Geography (branch rows incl. participant auto-adds) was shown in
              the modal but never saved — detect and persist it here. */
           var beforeGeo = ((ev.geographies || []).map(function (g) { return g.branch || ""; }).filter(Boolean).sort().join("|"));
@@ -10281,7 +10390,7 @@
           var geoChanged = beforeGeo !== afterGeo;
           var adhocVal = document.getElementById("new-adhoc").checked ? 1 : 0;
           var adhocChanged = !isDoneSave && adhocVal !== (ev.is_adhoc ? 1 : 0);
-          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged || adhocChanged)) {
+          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged || adhocChanged || durChanged)) {
             if (!fromDate) {
               showToast("From Date is required");
               return;
@@ -10335,6 +10444,7 @@
                 number_of_participants: expChanged ? expVal : null,
                 geographies: geoChanged ? JSON.stringify(state.selectedGeographies) : null,
                 is_adhoc: adhocChanged ? adhocVal : null,
+                program_duration_hours: durChanged ? durVal : null,
               }).then(function () {
                 ev.from_date = fromDate;
                 ev.to_date = toDate;
@@ -10345,6 +10455,7 @@
                 ev.training_location = trainingLocation;
                 ev.is_adhoc = adhocVal;
                 if (expChanged) ev.number_of_participants = expVal;
+                if (durChanged) ev.program_duration_hours = durVal;
                 /* ev.geographies refreshes from the get_training_details
                    refetch after save — no manual merge needed. */
               });
@@ -10789,6 +10900,8 @@
             trainer_remarks: agenda.trim() || null,
             additional_cc: null, /* managed via Mail Recipients dialog in edit mode */
             is_adhoc: isAdhoc,
+            program_duration_hours:
+              (document.getElementById("new-duration") || {}).value || null,
             participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
           };
@@ -13905,6 +14018,31 @@
           }
         }
 
+        function applyDurationToTimes() {
+          var durEl = document.getElementById("new-duration");
+          if (!durEl) return;
+          var h = parseFloat(durEl.value);
+          if (isNaN(h) || h <= 0) return;
+          var startMin = 10 * 60;
+          var endMin = startMin + Math.round(h * 60);
+          var cap = 18 * 60;
+          if (endMin > cap) endMin = cap;
+          var fmt = function (mins) {
+            var hh = Math.floor(mins / 60);
+            var mm = mins % 60;
+            var ap = hh < 12 ? "AM" : "PM";
+            var hr = hh % 12 || 12;
+            return hr + ":" + (mm < 10 ? "0" : "") + mm + " " + ap;
+          };
+          var tEl = document.getElementById("new-time");
+          var eEl = document.getElementById("new-end-time");
+          if (tEl) tEl.value = "10:00 AM";
+          if (eEl) eEl.value = fmt(endMin);
+          if (typeof updateSchedulePreview === "function") {
+            updateSchedulePreview();
+          }
+        }
+
         ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
           function (id) {
             var el = document.getElementById(id);
@@ -13912,6 +14050,11 @@
             if (el) el.addEventListener("change", updateSchedulePreview);
           },
         );
+        var durInputEl = document.getElementById("new-duration");
+        if (durInputEl) {
+          durInputEl.addEventListener("input", applyDurationToTimes);
+          durInputEl.addEventListener("change", applyDurationToTimes);
+        }
         /* Agenda: compact expandable remarks */
         (function () {
           var agenda = document.getElementById("new-agenda");
