@@ -74,6 +74,17 @@ class LoanApplication(Document):
         if branch_code:
             self.branch_code = branch_code
 
+    def ensure_kyc_documents(self, doc_types):
+        """Append document types to kyc_documents if they are not already present."""
+        existing = {d.document_type for d in self.kyc_documents if d.document_type}
+        for doc_type in doc_types:
+            if doc_type not in existing:
+                self.append("kyc_documents", {
+                    "document_type": doc_type,
+                    "status": "Pending"
+                })
+                existing.add(doc_type)
+
     def validate_workflow_requirements(self):
         # Initial status setup
         if self.is_new() and not self.status:
@@ -81,39 +92,22 @@ class LoanApplication(Document):
         
         # Add default KYC documents if empty
         if self.is_new() and not self.kyc_documents:
-            default_docs = ["Aadhaar Card", "PAN Card"]
-            for doc_type in default_docs:
-                self.append("kyc_documents", {
-                    "document_type": doc_type,
-                    "status": "Pending"
-                })
+            self.ensure_kyc_documents(["Aadhaar Card", "PAN Card"])
 
         # Credit Check Logic: Bureau Report is mandatory from this stage
         if self.status == "Credit Check" and self.security_type == "Gold":
-            existing_docs = [d.document_type for d in self.kyc_documents]
-            if "Bureau Report" not in existing_docs:
-                self.append("kyc_documents", {
-                    "document_type": "Bureau Report",
-                    "status": "Pending"
-                })
+            self.ensure_kyc_documents(["Bureau Report"])
 
         # Valuation Pending Logic
         if self.status == "Valuation Pending" and self.security_type == "Gold":
-            valuation_docs = [
+            self.ensure_kyc_documents([
                 "Valuation Report",
                 "Ornament Image",
                 "Packet Image",
                 "Pledge(Group) Image",
                 "Checklist",
                 "Stamp Paper",
-            ]
-            existing_docs = [d.document_type for d in self.kyc_documents]
-            for doc_type in valuation_docs:
-                if doc_type not in existing_docs:
-                    self.append("kyc_documents", {
-                        "document_type": doc_type,
-                        "status": "Pending"
-                    })
+            ])
 
         # Credit Decision Logic
         if self.status == "Credit Decision" and self.security_type == "Gold":
@@ -131,23 +125,7 @@ class LoanApplication(Document):
             if not self.disclaimer:
                 frappe.throw(_("The Member Declaration (Disclaimer) checkbox is mandatory when status is 'Credit Decision'."))
             
-            # Add Ornament Image to KYC if not present
-            has_ornament_image = any(d.document_type == "Ornament Image" for d in self.kyc_documents)
-            if not has_ornament_image:
-                self.append("kyc_documents", {
-                    "document_type": "Ornament Image",
-                    "status": "Pending"
-                })
-
-            # Credit Decision stage mandatory documents
-            credit_decision_docs = ["Gold Rate", "LTV Table", "Sanction Letter"]
-            existing_cd_docs = [d.document_type for d in self.kyc_documents]
-            for doc_type in credit_decision_docs:
-                if doc_type not in existing_cd_docs:
-                    self.append("kyc_documents", {
-                        "document_type": doc_type,
-                        "status": "Pending"
-                    })
+            self.ensure_kyc_documents(["Ornament Image", "Gold Rate", "LTV Table", "Sanction Letter"])
 
         # Valuer Mandatory Check for Branch Team
         if self.security_type == "Gold" and self.ornaments_list:
@@ -158,14 +136,7 @@ class LoanApplication(Document):
 
         # CPC Processing Logic
         if self.status == "CPC Processing":
-            required_docs = ["Loan Agreement", "Sanction Letter"]
-            existing_docs = [d.document_type for d in self.kyc_documents]
-            for doc_type in required_docs:
-                if doc_type not in existing_docs:
-                    self.append("kyc_documents", {
-                        "document_type": doc_type,
-                        "status": "Pending"
-                    })
+            self.ensure_kyc_documents(["Loan Agreement", "Sanction Letter"])
 
         # Mandatory checks when Approving from CPC Processing
         if self.status == "Approved":
