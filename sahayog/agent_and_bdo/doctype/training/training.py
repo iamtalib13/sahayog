@@ -14,13 +14,16 @@ COMPLETION_FIELDS = [
 ]
 
 
+MANUAL_STATUSES = ("Rescheduled", "Cancelled", "Postponed")
+
 def get_training_status(doc, for_date=None):
     """
     Derive the calendar status of a Training (plain, non-submittable form).
 
-    Draft          -> no schedule yet (dates missing)
     Completed      -> all 5 completion checks ticked
     In Progress    -> 1-4 completion checks ticked
+    Rescheduled/Cancelled/Postponed -> manual lifecycle override (0 checks)
+    Draft          -> no schedule yet (dates missing)
     Upcoming       -> 0 checks, on/after today
     Pending        -> 0 checks, before today
     """
@@ -29,6 +32,10 @@ def get_training_status(doc, for_date=None):
         return "Completed"
     if score > 0:
         return "In Progress"
+
+    override = doc.get("status_override")
+    if override in MANUAL_STATUSES:
+        return override
 
     ref = for_date or frappe.utils.getdate()
     end = doc.get("to_date") or doc.get("from_date")
