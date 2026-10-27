@@ -402,6 +402,7 @@ def cancel_loan_application(docname, reason=None):
 
     updates = {
         "status": "Cancelled",
+        "cancelled_from_stage": doc.status,
         "cancellation_reason": reason or "",
         "cancelled_by": user
     }
@@ -413,7 +414,7 @@ def cancel_loan_application(docname, reason=None):
 
 
 @frappe.whitelist()
-def reopen_loan_application(docname, target_state="Credit Check", remark=None):
+def reopen_loan_application(docname, target_state=None, remark=None):
     user = frappe.session.user
     user_roles = set(frappe.get_roles(user))
     allowed_roles = {"Administrator", "System Manager"}
@@ -424,8 +425,8 @@ def reopen_loan_application(docname, target_state="Credit Check", remark=None):
     if doc.status != "Cancelled":
         frappe.throw(_("Only Cancelled loan applications can be reopened."))
 
-    if target_state not in ["Credit Check", "Credit Decision", "Draft"]:
-        target_state = "Credit Check"
+    if not target_state or target_state not in ["Credit Check", "Credit Decision", "Draft"]:
+        target_state = doc.get("cancelled_from_stage") or "Credit Check"
 
     updates = {
         "status": target_state,
