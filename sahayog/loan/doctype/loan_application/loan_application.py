@@ -400,7 +400,12 @@ def cancel_loan_application(docname, reason=None):
     if doc.status not in ["Credit Check", "Credit Decision"]:
         frappe.throw(_("Loan Application can only be cancelled during Credit Check or Credit Decision state."))
 
-    frappe.db.set_value("Loan Application", docname, "status", "Cancelled")
+    updates = {
+        "status": "Cancelled",
+        "cancellation_reason": reason or "",
+        "cancelled_by": user
+    }
+    frappe.db.set_value("Loan Application", docname, updates)
     if reason:
         doc.add_comment("Comment", _("Application cancelled by {0}. Reason: {1}").format(user, reason))
     return {"status": "success"}
@@ -422,7 +427,12 @@ def reopen_loan_application(docname, target_state="Credit Check", remark=None):
     if target_state not in ["Credit Check", "Credit Decision", "Draft"]:
         target_state = "Credit Check"
 
-    frappe.db.set_value("Loan Application", docname, "status", target_state)
+    updates = {
+        "status": target_state,
+        "reopen_remark": remark or "",
+        "reopened_by": user
+    }
+    frappe.db.set_value("Loan Application", docname, updates)
     comment = _("Application reopened and moved to {0} by {1}.").format(target_state, user)
     if remark:
         comment += _("<br>Remark: {0}").format(remark)
