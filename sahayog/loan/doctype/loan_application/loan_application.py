@@ -190,6 +190,7 @@ class LoanApplication(Document):
 
     def run_rule_engine(self):
         if not self.loan_type: return
+        self.rule_engine_status = None
         policy = frappe.get_doc("Loan Type", self.loan_type)
         age = date_diff(nowdate(), self.date_of_birth) / 365.25
 
@@ -220,7 +221,7 @@ class LoanApplication(Document):
         # Layer 3: Eligibility
         multiplier = flt(policy.dds_multiplier) or 12
 
-        if "Rejected" not in str(self.rule_engine_status):
+        if not self.rule_engine_status:
             self.rule_engine_status = "Passed" if score >= 40 else "Referred for Review"
 
     def calculate_payouts(self):
