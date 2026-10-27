@@ -405,3 +405,26 @@ def cancel_loan_application(docname, reason=None):
         doc.add_comment("Comment", _("Application cancelled by {0}. Reason: {1}").format(user, reason))
     return {"status": "success"}
 
+
+
+@frappe.whitelist()
+def reopen_loan_application(docname, target_state="Credit Check", remark=None):
+    user = frappe.session.user
+    user_roles = set(frappe.get_roles(user))
+    allowed_roles = {"Administrator", "System Manager"}
+    if not allowed_roles.intersection(user_roles):
+        frappe.throw(_("Only Administrator or System Manager can reopen a cancelled loan application."))
+
+    doc = frappe.get_doc("Loan Application", docname)
+    if doc.status != "Cancelled":
+        frappe.throw(_("Only Cancelled loan applications can be reopened."))
+
+    if target_state not in ["Credit Check", "Credit Decision", "Draft"]:
+        target_state = "Credit Check"
+
+    frappe.db.set_value("Loan Application", docname, "status", target_state)
+    comment = _("Application reopened and moved to {0} by {1}.").format(target_state, user)
+    if remark:
+        comment += _("<br>Remark: {0}").format(remark)
+    doc.add_comment("Comment", comment)
+    return {"status": "success"}
