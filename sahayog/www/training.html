@@ -6246,7 +6246,7 @@
                         Employee
                       </button>
                       <button type="button" id="p-type-agent" class="btn">
-                        SwayamSevika
+                        SwayamSevika / Vittya Sevak
                       </button>
                     </div>
                     <div class="nt-pop-wrap fx-search-wrap">
@@ -6964,7 +6964,7 @@
           });
         }
         function ptLabel(t) {
-          return t === "Agent" ? "SwayamSevika" : "Employee";
+          return t === "Agent" ? "SwayamSevika / Vittya Sevak" : "Employee";
         }
         function ptPlural(t) {
           return t === "Agent" ? "SwayamSevikas" : "Employees";
@@ -12186,7 +12186,7 @@
                 return (
                   '<span class="participant-chip">' +
                   (isAgent
-                    ? '<span style="font-size:10px;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 5px;margin-right:3px">SwayamSevika</span>'
+                    ? '<span style="font-size:10px;background:var(--orange-soft);color:var(--orange);border-radius:999px;padding:1px 5px;margin-right:3px">SwayamSevika / Vittya Sevak</span>'
                     : "") +
                   esc(displayName) +
                   idSuffix +
@@ -12568,7 +12568,7 @@
           ) {
             var tag =
               type === "Agent"
-                ? '<span class="role-tag agent">SwayamSevika</span>'
+                ? '<span class="role-tag agent">SwayamSevika / Vittya Sevak</span>'
                 : '<span class="role-tag emp">Employee</span>';
             return (
               '<tr data-type="' +
@@ -13629,7 +13629,7 @@
                     return true;
                   }
 
-                  /* Emp ID and/or SwayamSevika ID — each valid ID becomes a participant */
+                  /* Emp ID and/or SwayamSevika / Vittya Sevak ID — each valid ID becomes a participant */
                   tryAdd("Employee", empId);
                   tryAdd("Agent", agentId);
                 });
