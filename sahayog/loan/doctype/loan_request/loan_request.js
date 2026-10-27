@@ -236,3 +236,17 @@ frappe.ui.form.on("Loan Document", {
 		frappe.model.set_value(cdt, cdn, "document_number", "");
 	}
 });
+
+frappe.ui.form.on("Loan Request", {
+	date_of_birth: function(frm) {
+		if (frm.doc.date_of_birth) {
+			let dob = new Date(frm.doc.date_of_birth);
+			let today = new Date();
+			let age = (today - dob) / (365.25 * 24 * 60 * 60 * 1000);
+			if (age < 18) {
+				frappe.msgprint(__("Customer must be at least 18 years old."));
+				frm.set_value("date_of_birth", "");
+			}
+		}
+	}
+});
