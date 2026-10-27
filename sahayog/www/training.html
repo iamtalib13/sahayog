@@ -7557,10 +7557,13 @@
            zone/region narrow districts, district (+zone/region) narrows
            branches. Selections that fall outside the narrowed options reset. */
         function branchesMatching(zone, region, district) {
+          var zl = zone ? String(zone).trim().toLowerCase() : "";
+          var rl = region ? String(region).trim().toLowerCase() : "";
+          var dl = district ? String(district).trim().toLowerCase() : "";
           return (state.branchPick || []).filter(function (b) {
-            if (zone && b.zone !== zone) return false;
-            if (region && b.region !== region) return false;
-            if (district && b.district !== district) return false;
+            if (zl && String(b.zone || "").trim().toLowerCase() !== zl) return false;
+            if (rl && String(b.region || "").trim().toLowerCase() !== rl) return false;
+            if (dl && String(b.district || "").trim().toLowerCase() !== dl) return false;
             return true;
           });
         }
@@ -7568,8 +7571,8 @@
           var seen = {},
             out = [];
           arr.forEach(function (v) {
-            if (v && !seen[v]) {
-              seen[v] = 1;
+            if (v && !seen[String(v).trim().toLowerCase()]) {
+              seen[String(v).trim().toLowerCase()] = 1;
               out.push(v);
             }
           });
