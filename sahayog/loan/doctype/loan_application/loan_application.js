@@ -836,9 +836,9 @@ frappe.ui.form.on("Loan Application", {
     // ==========================================
     if (!frm.is_new() && is_credit_or_admin) {
 
-      // CANCEL APPLICATION BUTTON (For Credit Check & Credit Decision states)
+      // CANCEL APPLICATION ACTION (Inject directly into main Workflow Actions dropdown)
       if (["Credit Check", "Credit Decision"].includes(frm.doc.status)) {
-        frm.add_custom_button(__("Cancel Application"), function () {
+        const cancel_action = function () {
           frappe.prompt(
             {
               fieldname: "reason",
@@ -866,7 +866,31 @@ frappe.ui.form.on("Loan Application", {
             __("Cancel Loan Application"),
             __("Confirm Cancel")
           );
-        });
+        };
+
+        // Attach inside the primary Workflow Actions dropdown
+        setTimeout(() => {
+          let $wf_btn = frm.page.wrapper.find(".actions-btn-group");
+          if ($wf_btn.length && $wf_btn.find(".dropdown-menu").length) {
+            let $menu = $wf_btn.find(".dropdown-menu");
+            if (!$menu.find(".cancel-app-action").length) {
+              $menu.append(`
+                <li>
+                  <a class="dropdown-item cancel-app-action text-danger" href="javascript:void(0);">
+                    ${__("Cancel Application")}
+                  </a>
+                </li>
+              `);
+              $menu.find(".cancel-app-action").on("click", function(e) {
+                e.preventDefault();
+                cancel_action();
+              });
+            }
+          } else {
+            // Fallback if workflow button is rendered as action item
+            frm.page.add_action_item(__("Cancel Application"), cancel_action);
+          }
+        }, 150);
       }
 
       // 1. UPDATE BRANCH BUTTON
