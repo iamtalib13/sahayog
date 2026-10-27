@@ -267,14 +267,16 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Date of Birth",
-   "reqd": 1
+   "reqd": 1,
+   "fetch_from": "loan_request.date_of_birth"
   },
   {
    "fieldname": "gender",
    "fieldtype": "Select",
    "label": "Gender",
    "options": "\nMale\nFemale\nOther",
-   "reqd": 1
+   "reqd": 1,
+   "fetch_from": "loan_request.gender"
   },
   {
    "fieldname": "marital_status",
