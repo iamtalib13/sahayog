@@ -893,6 +893,50 @@ frappe.ui.form.on("Loan Application", {
         }, 150);
       }
 
+      // REOPEN APPLICATION BUTTON (For Admin only on Cancelled cases)
+      if (frm.doc.status === "Cancelled" && user_is_admin) {
+        frm.add_custom_button(__("Reopen Application"), function () {
+          frappe.prompt(
+            [
+              {
+                fieldname: "target_state",
+                fieldtype: "Select",
+                label: __("Reopen to Stage"),
+                options: ["Credit Check", "Credit Decision", "Draft"],
+                default: "Credit Check",
+                reqd: 1
+              },
+              {
+                fieldname: "remark",
+                fieldtype: "Small Text",
+                label: __("Reopen Remark"),
+                reqd: 1
+              }
+            ],
+            function (values) {
+              frappe.call({
+                method: "sahayog.loan.doctype.loan_application.loan_application.reopen_loan_application",
+                args: {
+                  docname: frm.doc.name,
+                  target_state: values.target_state,
+                  remark: values.remark
+                },
+                freeze: true,
+                freeze_message: __("Reopening Loan Application..."),
+                callback: function (r) {
+                  if (!r.exc) {
+                    frappe.show_alert({ message: __("Loan Application Reopened Successfully"), indicator: "green" });
+                    frm.reload_doc();
+                  }
+                }
+              });
+            },
+            __("Reopen Cancelled Application"),
+            __("Reopen")
+          );
+        }).addClass("btn-primary");
+      }
+
       // 1. UPDATE BRANCH BUTTON
       frm.add_custom_button(__("Update Branch"), function () {
         let d = new frappe.ui.Dialog({
