@@ -339,6 +339,29 @@ def _format_time(t):
         return str(t) if t else ""
 
 
+def _resolve_training_times(start_t, end_t, duration_hours):
+    """Return formatted (start_time, end_time), auto-calculating from 10:00 AM if missing but duration is given."""
+    st_fmt = _format_time(start_t)
+    et_fmt = _format_time(end_t)
+    if (not st_fmt or not et_fmt) and duration_hours:
+        try:
+            h = float(duration_hours)
+            if h > 0:
+                if not st_fmt:
+                    st_fmt = "10:00 AM"
+                if not et_fmt:
+                    start_sec = 10 * 3600
+                    end_sec = min(18 * 3600, start_sec + int(round(h * 3600)))
+                    eh = end_sec // 3600
+                    em = (end_sec % 3600) // 60
+                    ap = "AM" if eh < 12 else "PM"
+                    hr = eh % 12 or 12
+                    et_fmt = f"{hr}:{em:02d} {ap}"
+        except (ValueError, TypeError):
+            pass
+    return st_fmt, et_fmt
+
+
 def _normalize_time(t):
     """Accept '9:30 AM' / '14:00' and return a 24h HH:MM:SS value for the Time field."""
     if not t:
@@ -579,14 +602,15 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
         to_date = str(r.to_date or r.from_date or "")[:10]
         geos = geo_map.get(r.name, [])
         branches = [g["branch"] for g in geos if g["branch"]] if geos else ([r.branch] if r.branch else [])
+        st_disp, et_disp = _resolve_training_times(r.start_time, r.end_time, r.program_duration_hours)
         out.append({
             "name": r.name,
             "date": from_date,
             "from_date": from_date,
             "to_date": to_date,
-            "time": _format_time(r.start_time),
-            "start_time": _format_time(r.start_time),
-            "end_time": _format_time(r.end_time),
+            "time": st_disp,
+            "start_time": st_disp,
+            "end_time": et_disp,
             "training_program": r.training_program or "",
             "trainer": r.trainer,
             "trainer_name": r.trainer or "",
@@ -749,7 +773,10 @@ def get_training_details(name):
     r["date"] = str(doc.from_date or "")[:10]
     r["from_date"] = str(doc.from_date or "")[:10]
     r["to_date"] = str(doc.to_date or doc.from_date or "")[:10]
-    r["time"] = _format_time(doc.start_time)
+    st_disp, et_disp = _resolve_training_times(doc.start_time, doc.end_time, doc.program_duration_hours)
+    r["time"] = st_disp
+    r["start_time"] = st_disp
+    r["end_time"] = et_disp
     geos = []
     for g in (doc.get("geographies") or []):
         geos.append({
