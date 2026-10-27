@@ -26,6 +26,9 @@ CALENDAR_FIELDS = [
     "program_duration_hours",
     "training_delivered", "attendance_marked",
     "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
+    "status_override", "postponed_on", "postponement_reason",
+    "cancelled_on", "cancellation_reason",
+    "original_from_date", "original_to_date", "original_start_time", "original_end_time",
 ]
 # Budget fields are read from the DB but only exposed to L&D Admin / System Manager
 BUDGET_FIELDS = ["budget_amount", "actual_expense"]
@@ -601,6 +604,15 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
             "status": r.status or get_training_status(r),
+            "status_override": r.status_override or "",
+            "postponed_on": str(r.postponed_on or "")[:10],
+            "postponement_reason": r.postponement_reason or "",
+            "cancelled_on": str(r.cancelled_on or "")[:10],
+            "cancellation_reason": r.cancellation_reason or "",
+            "original_from_date": str(r.original_from_date or "")[:10],
+            "original_to_date": str(r.original_to_date or "")[:10],
+            "original_start_time": _format_time(r.original_start_time),
+            "original_end_time": _format_time(r.original_end_time),
             "training_delivered": r.training_delivered or 0,
             "attendance_marked": r.attendance_marked or 0,
             "pre_assessment_taken": r.pre_assessment_taken or 0,
@@ -2519,6 +2531,14 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
     doc = frappe.get_doc("Training", name)
     _ensure_can_update(doc)
 
+    old_from = str(doc.from_date or "")[:10]
+    old_to = str(doc.to_date or doc.from_date or "")[:10]
+    old_start = _normalize_time(doc.start_time) if doc.start_time else None
+    old_end = _normalize_time(doc.end_time) if doc.end_time else None
+    old_loc = doc.training_location or ""
+    old_type = doc.training_type or ""
+    had_schedule = bool(doc.from_date)
+
     if not from_date:
         frappe.throw(_("From Date is required."))
 
@@ -2557,10 +2577,6 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
     if is_adhoc is not None:
         updates["is_adhoc"] = 1 if str(is_adhoc).strip().lower() in ("1", "true", "yes") else 0
 
-    # New date => new invitation cycle: capture the old date BEFORE writing,
-    # so the 10 AM invitation cron picks the rescheduled training up again.
-    old_from = str(frappe.db.get_value("Training", name, "from_date") or "")[:10]
-
     for field, value in updates.items():
         frappe.db.set_value("Training", name, field, value)
 
@@ -2572,9 +2588,57 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
     if geographies is not None:
         _replace_geographies(name, frappe.parse_json(geographies) or [])
 
-    if old_from != str(from_date)[:10]:
+    to_date = to_date or from_date
+    start_norm_cmp = _normalize_time(start_time) if start_time else None
+    end_norm_cmp = _normalize_time(end_time) if end_time else None
+    new_start = start_norm_cmp if start_norm_cmp is not None else old_start
+    new_end = end_norm_cmp if end_norm_cmp is not None else old_end
+    new_loc = training_location if training_location is not None else old_loc
+    new_type = training_type if training_type is not None else old_type
+
+    schedule_changed = (
+        old_from != str(from_date)[:10]
+        or old_to != str(to_date)[:10]
+        or (old_start or "") != (new_start or "")
+        or (old_end or "") != (new_end or "")
+        or old_loc != (new_loc or "")
+        or old_type != (new_type or "")
+    )
+
+    # Preserve original schedule (first-ever schedule) without overwriting.
+    if not doc.original_from_date and (old_from or from_date):
+        frappe.db.set_value("Training", name, "original_from_date", old_from or from_date)
+        frappe.db.set_value("Training", name, "original_to_date", old_to or to_date)
+        if old_start:
+            frappe.db.set_value("Training", name, "original_start_time", old_start)
+        if old_end:
+            frappe.db.set_value("Training", name, "original_end_time", old_end)
+
+    # Append previous schedule to history when an already-scheduled training changes.
+    if had_schedule and schedule_changed:
+        import json as _json
+        hist_raw = frappe.db.get_value("Training", name, "schedule_history") or "[]"
+        try:
+            hist = _json.loads(hist_raw)
+        except Exception:
+            hist = []
+        hist.append({
+            "from_date": old_from,
+            "to_date": old_to,
+            "start_time": old_start,
+            "end_time": old_end,
+            "training_location": old_loc,
+            "training_type": old_type,
+        })
+        frappe.db.set_value("Training", name, "schedule_history", _json.dumps(hist))
+
+    if str(from_date)[:10] != old_from:
         frappe.db.set_value("Training", name, "invitation_7d_sent", 0)
         frappe.db.set_value("Training", name, "invitation_3d_sent", 0)
+
+    # Rescheduled only when an already-scheduled training's schedule actually changed.
+    if had_schedule and schedule_changed:
+        frappe.db.set_value("Training", name, "status_override", "Rescheduled")
 
     frappe.db.commit()
     return {"success": True}
@@ -2589,6 +2653,45 @@ def delete_training(name):
     if doc.docstatus == 1:
         doc.cancel()
     frappe.delete_doc("Training", name)
+    return {"success": True}
+
+
+@frappe.whitelist()
+def cancel_training(name, reason=None):
+    """Mark a training as Cancelled (system-set status)."""
+    doc = frappe.get_doc("Training", name)
+    _ensure_can_update(doc)
+    if any(doc.get(f) for f in COMPLETION_FIELDS):
+        frappe.throw(_("Cannot cancel a training that has started/completed."))
+    if not doc.original_from_date and doc.from_date:
+        doc.original_from_date = doc.from_date
+        doc.original_to_date = doc.to_date or doc.from_date
+        doc.original_start_time = doc.start_time
+        doc.original_end_time = doc.end_time
+    doc.status_override = "Cancelled"
+    doc.cancelled_on = frappe.utils.getdate()
+    doc.cancellation_reason = reason or ""
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {"success": True}
+
+
+@frappe.whitelist()
+def postpone_training(name, reason=None):
+    """Mark a training as Postponed (system-set status)."""
+    doc = frappe.get_doc("Training", name)
+    _ensure_can_update(doc)
+    if any(doc.get(f) for f in COMPLETION_FIELDS):
+        frappe.throw(_("Cannot postpone a training that has started/completed."))
+    if not doc.original_from_date and doc.from_date:
+        doc.original_from_date = doc.from_date
+        doc.original_to_date = doc.to_date or doc.from_date
+        doc.original_start_time = doc.start_time
+        doc.original_end_time = doc.end_time
+    doc.status_override = "Postponed"
+    doc.postponed_on = frappe.utils.getdate()
+    doc.postponement_reason = reason or ""
+    doc.save(ignore_permissions=True)
     return {"success": True}
 
 
