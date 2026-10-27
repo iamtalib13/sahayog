@@ -9,6 +9,10 @@ import re
 
 class LoanRequest(Document):
 	def validate(self):
+		if self.date_of_birth:
+			age = frappe.utils.date_diff(frappe.utils.nowdate(), self.date_of_birth) / 365.25
+			if age < 18:
+				frappe.throw(_("Customer must be at least 18 years old."))
 		self.calculate_vintage()
 		self.set_default_documents()
 		self.validate_kyc_documents()
