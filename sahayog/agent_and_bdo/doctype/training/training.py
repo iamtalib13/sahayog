@@ -57,6 +57,20 @@ class Training(Document):
         self._sync_geographies()
 
     def validate(self):
+        if self.program_duration_hours and (not self.start_time or not self.end_time):
+            try:
+                h = float(self.program_duration_hours)
+                if h > 0:
+                    if not self.start_time:
+                        self.start_time = "10:00:00"
+                    if not self.end_time:
+                        start_sec = 10 * 3600
+                        end_sec = min(18 * 3600, start_sec + int(round(h * 3600)))
+                        eh = end_sec // 3600
+                        em = (end_sec % 3600) // 60
+                        self.end_time = f"{eh:02d}:{em:02d}:00"
+            except (ValueError, TypeError):
+                pass
         if self.from_date and self.to_date:
             if frappe.utils.getdate(self.to_date) < frappe.utils.getdate(self.from_date):
                 frappe.throw(_("To Date cannot be before From Date."))
