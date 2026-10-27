@@ -917,7 +917,7 @@ frappe.ui.form.on("Loan Application", {
                 fieldtype: "Select",
                 label: __("Reopen to Stage"),
                 options: ["Credit Check", "Credit Decision", "Draft"],
-                default: "Credit Check",
+                default: frm.doc.cancelled_from_stage || "Credit Check",
                 reqd: 1
               },
               {
