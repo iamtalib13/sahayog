@@ -35,7 +35,7 @@ def has_lead_permission(doc, ptype, user):
 def has_bm_verification_permission(user=None):
     """Check if the user has permission for BM Lead Verification.
     Authorized if:
-    1. Role: Administrator, System Manager, Permission Manager.
+    1. Role: Administrator, System Manager.
     2. Employee Designation: Branch Manager, Assistant Branch Manager (including JLL variants).
     """
     if not user:
@@ -48,7 +48,6 @@ def has_bm_verification_permission(user=None):
     allowed_roles = {
         "Administrator",
         "System Manager",
-        "Permission Manager",
     }
     if any(r in roles for r in allowed_roles):
         return True
