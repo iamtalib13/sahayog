@@ -61,13 +61,13 @@ def _geography_matches(geos, zone=None, region=None, district=None, branch=None)
         return True
     if geos:
         for g in geos:
-            if zone and g.get("zone") != zone:
+            if zone and (g.get("zone") or "").strip().lower() != zone.strip().lower():
                 continue
-            if region and g.get("region") != region:
+            if region and (g.get("region") or "").strip().lower() != region.strip().lower():
                 continue
-            if district and g.get("district") != district:
+            if district and (g.get("district") or "").strip().lower() != district.strip().lower():
                 continue
-            if branch and g.get("branch") != branch:
+            if branch and (g.get("branch") or "").strip().lower() != branch.strip().lower():
                 continue
             return True
         return False
@@ -552,13 +552,13 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
                 if not _geography_matches(geos, zone, region, district, branch):
                     continue
             else:
-                if zone and r.zone != zone:
+                if zone and (r.zone or "").strip().lower() != zone.strip().lower():
                     continue
                 if region and not _region_match(r.region, region):
                     continue
-                if district and r.district != district:
+                if district and (r.district or "").strip().lower() != district.strip().lower():
                     continue
-                if branch and r.branch != branch:
+                if branch and (r.branch or "").strip().lower() != branch.strip().lower():
                     continue
             filtered.append(r)
         rows = filtered
@@ -1284,11 +1284,17 @@ def get_geo_options():
         """,
         as_dict=True,
     )
-    zones, regions, districts = set(), set(), set()
+    zones, regions, districts = {}, {}, {}
     for r in rows:
-        if r.zone: zones.add(r.zone)
-        if r.region: regions.add(r.region)
-        if r.district: districts.add(r.district)
+        if r.zone:
+            zones.setdefault(r.zone.strip().lower(), r.zone.strip())
+        if r.region:
+            regions.setdefault(r.region.strip().lower(), r.region.strip())
+        if r.district:
+            districts.setdefault(r.district.strip().lower(), r.district.strip())
+    zones = set(zones.values())
+    regions = set(regions.values())
+    districts = set(districts.values())
 
     branches = frappe.db.get_all(
         "Sahayog Branch", filters={"disabled": ["!=", 1]}, pluck="name"
