@@ -6578,7 +6578,10 @@
                       </div>
                     </div>
                     <div class="fx-field">
-                      <span class="fx-label">Program Duration (Hours)</span>
+                      <div style="display:flex;align-items:center;justify-content:space-between;">
+                        <span class="fx-label" style="margin:0;">Program Duration (Hours)</span>
+                        <span id="new-mandays-chip" class="chip chip-blue" style="display:none;font-size:12.5px;padding:3px 10px;font-weight:700;border-radius:12px;letter-spacing:0.2px;"></span>
+                      </div>
                       <input
                         type="number"
                         class="fx-input"
@@ -7307,7 +7310,7 @@
         }
         /* Portal build stamp — bump on every release so testers can confirm
            which version they run (kills cached-JS confusion). */
-        var LD_BUILD = "2026-10-10u";
+        var LD_BUILD = "2026-10-10v";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
@@ -8484,7 +8487,15 @@
               ? metaRow("Expected Participants", ev.number_of_participants)
               : "") +
             ((ev.program_duration_hours || 0)
-              ? metaRow("Duration (Hours)", ev.program_duration_hours)
+              ? metaRow(
+                  "Duration",
+                  ev.program_duration_hours +
+                    " hrs (" +
+                    (Math.round((ev.program_duration_hours / 8) * 100) / 100) +
+                    " Man Day" +
+                    (ev.program_duration_hours / 8 === 1 ? "" : "s") +
+                    ")",
+                )
               : "") +
             "</div></div>";
           // All branches as compact chips (full geo stays one line per branch in title tooltip).
@@ -9529,6 +9540,7 @@
           document.getElementById("new-end-time").value = "";
           var durCreateEl = document.getElementById("new-duration");
           if (durCreateEl) durCreateEl.value = "";
+          if (typeof updateMandaysChip === "function") updateMandaysChip(0);
           var expCreateEl = document.getElementById("new-expected-count");
           if (expCreateEl) expCreateEl.value = "";
           ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
@@ -9854,6 +9866,7 @@
           f("new-time", stVal);
           f("new-end-time", etVal);
           f("new-duration", durVal);
+          if (typeof updateMandaysChip === "function") updateMandaysChip(durVal);
           var durElE = document.getElementById("new-duration");
           if (durElE) {
             durElE.oninput = function () {
@@ -14018,9 +14031,24 @@
           }
         }
 
+        function updateMandaysChip(hours) {
+          var chip = document.getElementById("new-mandays-chip");
+          if (!chip) return;
+          var h = parseFloat(hours);
+          if (isNaN(h) || h <= 0) {
+            chip.style.display = "none";
+            chip.textContent = "";
+            return;
+          }
+          var md = Math.round((h / 8) * 100) / 100;
+          chip.style.display = "inline-flex";
+          chip.textContent = md + " Man Day" + (md === 1 ? "" : "s");
+        }
+
         function applyDurationToTimes() {
           var durEl = document.getElementById("new-duration");
           if (!durEl) return;
+          updateMandaysChip(durEl.value);
           var h = parseFloat(durEl.value);
           if (isNaN(h) || h <= 0) return;
           var startMin = 10 * 60;
