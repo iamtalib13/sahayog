@@ -78,6 +78,8 @@ class LoanRequest(Document):
 			"branch_code": self.branch,
 			"customer_name": self.customer,
 			"mobile_number": self.mobile_number,
+			"gender": self.gender,
+			"date_of_birth": self.date_of_birth,
 			"loan_amount": self.approved_loan_amount or self.required_loan_amount,
 			"purpose_of_loan": self.purpose_of_loan,
 			"kyc_documents": [
