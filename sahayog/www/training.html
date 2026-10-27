@@ -10359,12 +10359,14 @@
           }
           var expChanged = expEl ? expVal !== (ev.number_of_participants || 0) : false;
           var durEl2 = document.getElementById("new-duration");
-          var durVal = durEl2 ? (durEl2.value.trim() === "" ? null : parseFloat(durEl2.value.trim())) : (ev.program_duration_hours || null);
+          var durRaw = durEl2 ? durEl2.value.trim() : "";
+          var durVal = durRaw === "" ? null : parseFloat(durRaw);
           if (durVal !== null && (isNaN(durVal) || durVal < 0)) {
             showToast("Program Duration must be 0 or more");
             return;
           }
-          var durChanged = durEl2 ? String(durVal) !== String(ev.program_duration_hours == null ? "" : ev.program_duration_hours) : false;
+          var durChanged = durEl2 ? durRaw !== String(ev.program_duration_hours == null ? "" : ev.program_duration_hours) : false;
+          if (durChanged && durVal === null) durVal = 0;
           /* Geography (branch rows incl. participant auto-adds) was shown in
              the modal but never saved — detect and persist it here. */
           var beforeGeo = ((ev.geographies || []).map(function (g) { return g.branch || ""; }).filter(Boolean).sort().join("|"));
