@@ -8306,8 +8306,17 @@
           });
         }
 
+        function currentMonthEvents() {
+          var key =
+            state.viewDate.getFullYear() +
+            "-" +
+            String(state.viewDate.getMonth() + 1).padStart(2, "0");
+          return filteredEvents().filter(function (ev) {
+            return evStart(ev).slice(0, 7) === key;
+          });
+        }
         function updateSidebarCounts() {
-          var counts = statusCounts(filteredEvents());
+          var counts = statusCounts(currentMonthEvents());
           STATUS_ORDER.forEach(function (k) {
             var el = document.getElementById("count-" + k);
             if (el) el.textContent = counts[k];
@@ -8323,7 +8332,7 @@
         }
 
         function renderStatusSummary() {
-          var counts = statusCounts(filteredEvents());
+          var counts = statusCounts(currentMonthEvents());
           var el = document.getElementById("statusSummary");
           el.innerHTML = "";
           var t = document.createElement("span");
