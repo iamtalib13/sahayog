@@ -798,6 +798,20 @@ frappe.ui.form.on("Loan Application", {
       );
     }
 
+    if (frm.doc.status === "Cancelled" && frm.doc.cancellation_reason) {
+      frm.dashboard.set_headline(
+        __("Cancelled By {0}: {1}", [frappe.utils.escape_html(frm.doc.cancelled_by || "User"), frappe.utils.escape_html(frm.doc.cancellation_reason)]),
+        "red"
+      );
+    }
+
+    if (frm.doc.reopen_remark) {
+      frm.dashboard.set_headline(
+        __("Reopened By {0}: {1}", [frappe.utils.escape_html(frm.doc.reopened_by || "Admin"), frappe.utils.escape_html(frm.doc.reopen_remark)]),
+        "blue"
+      );
+    }
+
     let user_is_admin = frappe.user_roles.some(r => ["Administrator", "System Manager"].includes(r));
     let user_is_credit = frappe.user_roles.includes("Credit Loan User");
     let user_is_cpc = frappe.user_roles.includes("CPC Loan User");
