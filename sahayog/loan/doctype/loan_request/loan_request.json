@@ -12,6 +12,7 @@
   "customer",
   "gender",
   "mobile_number",
+  "date_of_birth",
   "column_break_branch",
   "loan_type",
   "deposit_date",
@@ -79,8 +80,7 @@
    "fieldname": "date_of_birth",
    "fieldtype": "Date",
    "label": "Date of Birth",
-   "reqd": 1,
-   "in_list_view": 0
+   "reqd": 1
   },
   {
    "fieldname": "deposit_account_no",
@@ -194,7 +194,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-27 11:18:31.935434",
+ "modified": "2026-10-27 11:40:26.615870",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Request",

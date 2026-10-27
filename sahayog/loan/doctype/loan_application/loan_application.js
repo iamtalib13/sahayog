@@ -15,6 +15,17 @@ frappe.ui.form.on("Loan Application", {
   //   });
   // },
   // lead_generator_code handles fetch_from automatically via Employee link
+  loan_request: function(frm) {
+    if (frm.doc.loan_request) {
+      frappe.db.get_value("Loan Request", frm.doc.loan_request, ["gender", "date_of_birth"], (r) => {
+        if (r) {
+          if (r.gender && !frm.doc.gender) frm.set_value("gender", r.gender);
+          if (r.date_of_birth && !frm.doc.date_of_birth) frm.set_value("date_of_birth", r.date_of_birth);
+        }
+      });
+    }
+  },
+
   father_husband_name: function(frm) {
         if (frm.doc.father_husband_name) {
             let formatted = frm.doc.father_husband_name.toLowerCase().split(' ').map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
