@@ -32,6 +32,16 @@
    "section_break_status",
   "column_break_status",
   "status",
+   "status_override",
+   "postponed_on",
+   "postponement_reason",
+   "cancelled_on",
+   "cancellation_reason",
+   "original_from_date",
+   "original_to_date",
+   "original_start_time",
+   "original_end_time",
+   "schedule_history",
    "trainer_remarks",
    "additional_to",
    "additional_cc",
@@ -204,9 +214,20 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
-   "options": "\nDraft\nUpcoming\nIn Progress\nCompleted\nPending",
+   "options": "\nDraft\nUpcoming\nIn Progress\nCompleted\nPending\nRescheduled\nCancelled\nPostponed",
    "read_only": 1
   },
+  {
+    "default": "",
+    "description": "Manual lifecycle override set by system (cancel/postpone/reschedule)",
+    "fieldname": "status_override",
+    "fieldtype": "Select",
+    "hidden": 1,
+    "label": "Status Override",
+    "no_copy": 1,
+    "options": "\nRescheduled\nCancelled\nPostponed",
+    "read_only": 1
+   },
   {
    "default": "0",
    "fieldname": "training_delivered",
@@ -241,6 +262,61 @@
    "fieldtype": "Check",
    "label": "Feedback Taken"
   },
+   {
+    "fieldname": "postponed_on",
+    "fieldtype": "Date",
+    "label": "Postponed On",
+    "read_only": 1
+   },
+   {
+    "fieldname": "postponement_reason",
+    "fieldtype": "Small Text",
+    "label": "Postponement Reason",
+    "read_only": 1
+   },
+   {
+    "fieldname": "cancelled_on",
+    "fieldtype": "Date",
+    "label": "Cancelled On",
+    "read_only": 1
+   },
+   {
+    "fieldname": "cancellation_reason",
+    "fieldtype": "Small Text",
+    "label": "Cancellation Reason",
+    "read_only": 1
+   },
+   {
+    "fieldname": "original_from_date",
+    "fieldtype": "Date",
+    "label": "Original From Date",
+    "read_only": 1
+   },
+   {
+    "fieldname": "original_to_date",
+    "fieldtype": "Date",
+    "label": "Original To Date",
+    "read_only": 1
+   },
+   {
+    "fieldname": "original_start_time",
+    "fieldtype": "Time",
+    "label": "Original Start Time",
+    "read_only": 1
+   },
+   {
+    "fieldname": "original_end_time",
+    "fieldtype": "Time",
+    "label": "Original End Time",
+    "read_only": 1
+   },
+   {
+    "fieldname": "schedule_history",
+    "fieldtype": "Long Text",
+    "hidden": 1,
+    "label": "Schedule History",
+    "read_only": 1
+   },
    {
     "fieldname": "trainer_remarks",
     "fieldtype": "Small Text",
