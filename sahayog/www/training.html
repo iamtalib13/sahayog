@@ -4726,7 +4726,9 @@
       }
       .tr-stat-card:not(.sc-upcoming):not(.sc-inprogress):not(
           .sc-completed
-        ):not(.sc-pending) {
+        ):not(.sc-pending):not(.sc-rescheduled):not(.sc-cancelled):not(
+          .sc-postponed
+        ) {
         background: #f8fafc;
         border-color: var(--border);
       }
@@ -7291,7 +7293,7 @@
         }
         /* Portal build stamp — bump on every release so testers can confirm
            which version they run (kills cached-JS confusion). */
-        var LD_BUILD = "2026-10-10i";
+        var LD_BUILD = "2026-10-10j";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
