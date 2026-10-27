@@ -6573,10 +6573,22 @@
                           type="text"
                           class="nt-sched-time"
                           id="new-end-time"
-                          placeholder="12:30 PM"
+                          placeholder="6:00 PM"
                           autocomplete="off"
                         />
                       </div>
+                    </div>
+                    <div class="fx-field">
+                      <span class="fx-label">Program Duration (Hours)</span>
+                      <input
+                        type="number"
+                        class="fx-input"
+                        id="new-duration"
+                        placeholder="e.g. 2.5"
+                        step="0.5"
+                        min="0"
+                      />
+                    </div>
                     </div>
                     <!-- Schedule preview + conflict hint: hidden for now (validation toasts still active)
               <div class="fx-preview" id="new-schedule-preview">Select date and time</div>
@@ -9517,6 +9529,8 @@
           document.getElementById("new-to-date").value = fmtDMY(todayIso());
           document.getElementById("new-time").value = "";
           document.getElementById("new-end-time").value = "";
+          var durCreateEl = document.getElementById("new-duration");
+          if (durCreateEl) durCreateEl.value = "";
           var expCreateEl = document.getElementById("new-expected-count");
           if (expCreateEl) expCreateEl.value = "";
           ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
@@ -9529,6 +9543,28 @@
               }
             },
           );
+          var durEl = document.getElementById("new-duration");
+          if (durEl) {
+            durEl.oninput = function () {
+              var h = parseFloat(durEl.value);
+              if (isNaN(h) || h <= 0) return;
+              var startMin = 10 * 60;
+              var endMin = startMin + Math.round(h * 60);
+              var cap = 18 * 60;
+              if (endMin > cap) endMin = cap;
+              var fmt = function (mins) {
+                var hh = Math.floor(mins / 60);
+                var mm = mins % 60;
+                var ap = hh < 12 ? "AM" : "PM";
+                var hr = hh % 12 || 12;
+                return hr + ":" + (mm < 10 ? "0" : "") + mm + " " + ap;
+              };
+              var tEl = document.getElementById("new-time");
+              var eEl = document.getElementById("new-end-time");
+              if (tEl) tEl.value = "10:00 AM";
+              if (eEl) eEl.value = fmt(endMin);
+            };
+          }
           var typeSel = document.getElementById("new-training-type");
           if (typeSel) {
             typeSel.value = "";
@@ -9801,6 +9837,29 @@
           f("new-to-date", fmtDMY(ev.to_date || ev.from_date || ""));
           f("new-time", fmtTimeInput(ev.start_time));
           f("new-end-time", fmtTimeInput(ev.end_time));
+          f("new-duration", ev.program_duration_hours != null ? ev.program_duration_hours : "");
+          var durElE = document.getElementById("new-duration");
+          if (durElE) {
+            durElE.oninput = function () {
+              var h = parseFloat(durElE.value);
+              if (isNaN(h) || h <= 0) return;
+              var startMin = 10 * 60;
+              var endMin = startMin + Math.round(h * 60);
+              var cap = 18 * 60;
+              if (endMin > cap) endMin = cap;
+              var fmt = function (mins) {
+                var hh = Math.floor(mins / 60);
+                var mm = mins % 60;
+                var ap = hh < 12 ? "AM" : "PM";
+                var hr = hh % 12 || 12;
+                return hr + ":" + (mm < 10 ? "0" : "") + mm + " " + ap;
+              };
+              var tEl = document.getElementById("new-time");
+              var eEl = document.getElementById("new-end-time");
+              if (tEl) tEl.value = "10:00 AM";
+              if (eEl) eEl.value = fmt(endMin);
+            };
+          }
           f("new-training-type", ev.training_type || "");
           f("new-expected-count", ev.number_of_participants != null ? ev.number_of_participants : "");
           // L&D Admin can reschedule any training.
@@ -10299,6 +10358,13 @@
             return;
           }
           var expChanged = expEl ? expVal !== (ev.number_of_participants || 0) : false;
+          var durEl2 = document.getElementById("new-duration");
+          var durVal = durEl2 ? (durEl2.value.trim() === "" ? null : parseFloat(durEl2.value.trim())) : (ev.program_duration_hours || null);
+          if (durVal !== null && (isNaN(durVal) || durVal < 0)) {
+            showToast("Program Duration must be 0 or more");
+            return;
+          }
+          var durChanged = durEl2 ? String(durVal) !== String(ev.program_duration_hours == null ? "" : ev.program_duration_hours) : false;
           /* Geography (branch rows incl. participant auto-adds) was shown in
              the modal but never saved — detect and persist it here. */
           var beforeGeo = ((ev.geographies || []).map(function (g) { return g.branch || ""; }).filter(Boolean).sort().join("|"));
@@ -10306,7 +10372,7 @@
           var geoChanged = beforeGeo !== afterGeo;
           var adhocVal = document.getElementById("new-adhoc").checked ? 1 : 0;
           var adhocChanged = !isDoneSave && adhocVal !== (ev.is_adhoc ? 1 : 0);
-          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged || adhocChanged)) {
+          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged || adhocChanged || durChanged)) {
             if (!fromDate) {
               showToast("From Date is required");
               return;
@@ -10360,6 +10426,7 @@
                 number_of_participants: expChanged ? expVal : null,
                 geographies: geoChanged ? JSON.stringify(state.selectedGeographies) : null,
                 is_adhoc: adhocChanged ? adhocVal : null,
+                program_duration_hours: durChanged ? durVal : null,
               }).then(function () {
                 ev.from_date = fromDate;
                 ev.to_date = toDate;
@@ -10370,6 +10437,7 @@
                 ev.training_location = trainingLocation;
                 ev.is_adhoc = adhocVal;
                 if (expChanged) ev.number_of_participants = expVal;
+                if (durChanged) ev.program_duration_hours = durVal;
                 /* ev.geographies refreshes from the get_training_details
                    refetch after save — no manual merge needed. */
               });
@@ -10814,6 +10882,8 @@
             trainer_remarks: agenda.trim() || null,
             additional_cc: null, /* managed via Mail Recipients dialog in edit mode */
             is_adhoc: isAdhoc,
+            program_duration_hours:
+              (document.getElementById("new-duration") || {}).value || null,
             participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
           };
