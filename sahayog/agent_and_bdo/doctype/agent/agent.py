@@ -1,6 +1,11 @@
 # Copyright (c) 2025, Developer Team and contributors
 # For license information, please see license.txt
 
+from frappe.utils.xlsxutils import (
+    read_xlsx_file_from_attached_file,
+)
+from openpyxl import load_workbook
+import io
 import re
 from typing import Any, Dict, List, Optional, Union
 
@@ -542,3 +547,233 @@ def bulk_update_agent_commissions() -> Dict[str, Any]:
         "inactive_count": inactive_count,
         "message": msg,
     }
+
+
+@frappe.whitelist()
+def bulk_update_pan_and_employee_status(file_url: str) -> Dict[str, Any]:
+    """
+    Bulk update PAN, PAN Status and Employee Status in Agent records from an Excel file.
+
+    Expected Excel headers:
+    - Agent Code / agent_code
+    - PAN / pan_card
+    - PAN Status / pan_status
+    - Employee Status / employee_status
+
+    Employee Status must be Yes or No.
+    """
+    if not file_url:
+        frappe.throw(_("File URL is required."))
+
+    file_name = frappe.db.get_value("File", {"file_url": file_url}, "name")
+
+    if not file_name:
+        frappe.throw(_("Uploaded file not found."))
+
+    file_doc = frappe.get_doc("File", file_name)
+    file_content = file_doc.get_content()
+
+    if not file_content:
+        frappe.throw(_("Uploaded file is empty."))
+
+    try:
+        all_rows = read_xlsx_file_from_attached_file(fcontent=file_content)
+    except Exception:
+        frappe.throw(
+            _("Invalid Excel file. Please upload a valid .xlsx file."))
+
+    if not all_rows:
+        frappe.throw(_("Excel file is empty."))
+
+    headers = all_rows[0]
+    rows = all_rows[1:]
+
+    header_map = get_excel_header_map(headers)
+
+    required_fields = ["agent_code", "pan_card",
+                       "pan_status", "employee_status"]
+    missing_fields = [
+        field for field in required_fields if field not in header_map]
+
+    if missing_fields:
+        frappe.throw(
+            _("Missing required Excel column(s): {0}").format(
+                ", ".join(missing_fields)
+            )
+        )
+
+    valid_updates = []
+    errors = []
+    row_number = 1
+
+    for row in rows:
+        row_number += 1
+
+        if not row or all(value in (None, "") for value in row):
+            continue
+
+        agent_code = clean_excel_value(row[header_map["agent_code"]])
+        pan_card = clean_excel_value(row[header_map["pan_card"]])
+        pan_status = clean_excel_value(row[header_map["pan_status"]])
+        employee_status = clean_excel_value(row[header_map["employee_status"]])
+
+        if not agent_code:
+            errors.append(
+                _("Row {0}: Agent Code is required.").format(row_number))
+            continue
+
+        if not pan_card:
+            errors.append(
+                _("Row {0}: PAN is required for Agent {1}.").format(
+                    row_number, agent_code)
+            )
+            continue
+
+        if not pan_status:
+            errors.append(
+                _("Row {0}: PAN Status is required for Agent {1}.").format(
+                    row_number, agent_code
+                )
+            )
+            continue
+
+        if employee_status not in ("Yes", "No"):
+            errors.append(
+                _("Row {0}: Employee Status must be Yes or No for Agent {1}.").format(
+                    row_number, agent_code
+                )
+            )
+            continue
+
+        valid_updates.append(
+            {
+                "agent_code": agent_code,
+                "pan_card": pan_card,
+                "pan_status": pan_status,
+                "employee_status": employee_status,
+            }
+        )
+
+    if not valid_updates:
+        return {
+            "status": "failed",
+            "message": _("No valid rows found in the Excel file."),
+            "errors": errors,
+        }
+
+    agent_codes = [row["agent_code"] for row in valid_updates]
+
+    existing_agents = frappe.db.get_all(
+        "Agent",
+        filters={"agent_code": ["in", agent_codes]},
+        fields=["name", "agent_code"],
+        as_list=True,
+    )
+
+    existing_agent_map = {
+        agent_code: agent_name for agent_name, agent_code in existing_agents
+    }
+
+    updated_count = 0
+    not_found_count = 0
+    now_time = now_datetime()
+
+    for row in valid_updates:
+        agent_code = row["agent_code"]
+        agent_name = existing_agent_map.get(agent_code)
+
+        if not agent_name:
+            not_found_count += 1
+            errors.append(
+                _("Agent Code {0} not found in Agent records.").format(
+                    agent_code)
+            )
+            continue
+
+        frappe.db.sql(
+            """
+            UPDATE `tabAgent`
+            SET
+                pan_card = %s,
+                pan_status = %s,
+                employee_status = %s,
+                modified = %s
+            WHERE name = %s
+            """,
+            (
+                row["pan_card"],
+                row["pan_status"],
+                row["employee_status"],
+                now_time,
+                agent_name,
+            ),
+        )
+
+        updated_count += 1
+
+    frappe.db.commit()
+
+    message = _(
+        "Updated {0} Agent record(s). Not found: {1}. Invalid/missing rows: {2}."
+    ).format(updated_count, not_found_count, len(errors))
+
+    frappe.logger("agent_pan_update").info(message)
+
+    return {
+        "status": "success",
+        "updated": updated_count,
+        "not_found": not_found_count,
+        "invalid_rows": len(errors),
+        "errors": errors,
+        "message": message,
+    }
+
+
+def get_excel_header_map(headers) -> Dict[str, int]:
+    """
+    Create normalized Excel header-to-column-index mapping.
+
+    Supports both display headers and fieldname headers:
+    Agent Code / agent_code
+    PAN / pan_card
+    PAN Status / pan_status
+    Employee Status / employee_status
+    """
+    header_aliases = {
+        "agent code": "agent_code",
+        "agent_code": "agent_code",
+        "pan": "pan_card",
+        "pan card": "pan_card",
+        "pan_card": "pan_card",
+        "pan status": "pan_status",
+        "pan_status": "pan_status",
+        "employee status": "employee_status",
+        "employee_status": "employee_status",
+    }
+
+    header_map = {}
+
+    for index, header in enumerate(headers):
+        if header is None:
+            continue
+
+        normalized_header = str(header).strip().lower()
+
+        if normalized_header in header_aliases:
+            fieldname = header_aliases[normalized_header]
+
+            if fieldname not in header_map:
+                header_map[fieldname] = index
+
+    return header_map
+
+
+def clean_excel_value(value) -> str:
+    """Normalize Excel cell value into a clean string."""
+    if value is None:
+        return ""
+
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+
+    return str(value).strip()
