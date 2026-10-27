@@ -2037,6 +2037,42 @@
         background: #dbeafe;
         box-shadow: 0 1px 4px rgba(37,99,235,0.18);
       }
+      .btn-postpone-header {
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 14px;
+        font-size: 12.5px;
+        font-weight: 600;
+        border-radius: 8px;
+        color: #92400e;
+        border: 1px solid #fde68a;
+        background: #fef3c7;
+        white-space: nowrap;
+        transition: background 0.15s, box-shadow 0.15s;
+      }
+      .btn-postpone-header:hover {
+        background: #fde68a;
+        box-shadow: 0 1px 4px rgba(180,83,9,0.18);
+      }
+      .btn-cancel-header {
+        align-items: center;
+        gap: 6px;
+        height: 32px;
+        padding: 0 14px;
+        font-size: 12.5px;
+        font-weight: 600;
+        border-radius: 8px;
+        color: #991b1b;
+        border: 1px solid #fecaca;
+        background: #fee2e2;
+        white-space: nowrap;
+        transition: background 0.15s, box-shadow 0.15s;
+      }
+      .btn-cancel-header:hover {
+        background: #fecaca;
+        box-shadow: 0 1px 4px rgba(185,28,28,0.18);
+      }
 
       /* ── Mail Recipients Modal ── */
       .mail-modal-dialog {
@@ -3796,30 +3832,27 @@
       }
       /* Attendance capsules centered in header (edit mode) */
       /* Attendance capsules: always one compact row inside column 2 */
-      #addModal #att-top { display:flex; gap:8px; width:auto; margin-left:10px; }
-      #addModal .nt-head #att-top { flex:1 1 auto; max-width:620px; margin:0 auto; padding:0; display:flex; gap:8px; }
+      #addModal #att-top { display:inline-flex; gap:6px; margin:0 auto; justify-content:center; }
       .att-cap {
-        flex: 1;
-        min-width: 0;
-        display: flex;
+        display: inline-flex;
         align-items: center;
         justify-content: center;
-        gap: 6px;
-        border-radius: 10px;
-        padding: 6px;
-        font-size: 12.5px;
+        gap: 4px;
+        border-radius: 6px;
+        padding: 3px 8px;
+        font-size: 11.5px;
         font-weight: 600;
         white-space: nowrap;
         overflow: hidden;
       }
       .att-cap b {
-        font-size: 14px;
+        font-size: 12.5px;
       }
       .att-cap i {
         font-style: normal;
         font-weight: 500;
         opacity: 0.75;
-        font-size: 11.5px;
+        font-size: 10.5px;
       }
       .att-cap.p {
         background: var(--green-soft);
@@ -6135,18 +6168,6 @@
               "
             ></div>
           </div>
-          <!-- Attendance capsules (edit mode only, centered over column 2) -->
-          <div id="att-top" style="display: none">
-            <span class="att-cap p"
-              >Present <b id="att-cap-p">0</b> <i id="att-cap-pp"></i
-            ></span>
-            <span class="att-cap a"
-              >Absent <b id="att-cap-a">0</b> <i id="att-cap-ap"></i
-            ></span>
-            <span class="att-cap n"
-              >Pending <b id="att-cap-n">0</b> <i id="att-cap-np"></i
-            ></span>
-          </div>
           <div
             style="
               display: flex;
@@ -6169,16 +6190,16 @@
               Mail Recipients
             </button>
             <button
-              class="btn"
+              class="btn btn-postpone-header"
               id="btn-postpone-training"
-              style="display:none;height:32px;padding:7px 14px;font-size:13px;color:#b45309;border-color:#fde68a;"
+              style="display:none;"
             >
               Postpone
             </button>
             <button
-              class="btn"
+              class="btn btn-cancel-header"
               id="btn-cancel-training"
-              style="display:none;height:32px;padding:7px 14px;font-size:13px;color:#b91c1c;border-color:#fecaca;"
+              style="display:none;"
             >
               Cancel
             </button>
@@ -6214,7 +6235,19 @@
                 <!-- Search (legacy IDs — selection logic fully preserved) -->
                 <div class="fx-field">
                   <div class="fx-label-row">
-                    <span class="fx-label">Add Employee / Code <b>*</b></span>
+                    <span class="fx-label" style="margin:0;white-space:nowrap;">Add Employee / Code <b>*</b></span>
+                    <!-- Attendance capsules: centered between label and CSV buttons -->
+                    <div id="att-top" style="display: none">
+                      <span class="att-cap p"
+                        >Present <b id="att-cap-p">0</b> <i id="att-cap-pp"></i
+                      ></span>
+                      <span class="att-cap a"
+                        >Absent <b id="att-cap-a">0</b> <i id="att-cap-ap"></i
+                      ></span>
+                      <span class="att-cap n"
+                        >Pending <b id="att-cap-n">0</b> <i id="att-cap-np"></i
+                      ></span>
+                    </div>
                     <span class="fx-csv-mini">
                       <button
                         type="button"
@@ -7310,7 +7343,7 @@
         }
         /* Portal build stamp — bump on every release so testers can confirm
            which version they run (kills cached-JS confusion). */
-        var LD_BUILD = "2026-10-10v";
+        var LD_BUILD = "2026-10-10z";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
