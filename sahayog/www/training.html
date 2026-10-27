@@ -6125,16 +6125,6 @@
                 margin-top: 1px;
               "
             ></div>
-            <div
-              id="dlg-status-info"
-              style="
-                display: none;
-                font-size: 11.5px;
-                color: var(--ink-2);
-                margin-top: 3px;
-                max-width: 60vw;
-              "
-            ></div>
           </div>
           <!-- Attendance capsules (edit mode only, centered over column 2) -->
           <div id="att-top" style="display: none">
@@ -9622,26 +9612,11 @@
                 docId.style.display = "";
                 docId.textContent = ev.name;
               }
-              var infoEl = document.getElementById("dlg-status-info");
-              if (infoEl) {
-                var parts = [];
-                if (ev.postponed_on) parts.push("Postponed on " + fmtDMY(ev.postponed_on) + (ev.postponement_reason ? " — " + ev.postponement_reason : ""));
-                if (ev.cancelled_on) parts.push("Cancelled on " + fmtDMY(ev.cancelled_on) + (ev.cancellation_reason ? " — " + ev.cancellation_reason : ""));
-                if (ev.original_from_date) parts.push("Original schedule: " + fmtDMY(ev.original_from_date) + (ev.original_to_date && ev.original_to_date !== ev.original_from_date ? " to " + fmtDMY(ev.original_to_date) : "") + (ev.original_start_time ? " " + ev.original_start_time : ""));
-                if (parts.length) {
-                  infoEl.style.display = "";
-                  infoEl.style.color = meta.color;
-                  infoEl.textContent = parts.join(" | ");
-                } else {
-                  infoEl.style.display = "none";
-                  infoEl.textContent = "";
-                }
-              }
+
             } else {
               docChip.style.display = "none";
               if (docId) docId.style.display = "none";
-              var infoEl2 = document.getElementById("dlg-status-info");
-              if (infoEl2) { infoEl2.style.display = "none"; infoEl2.textContent = ""; }
+
             }
           }
           var saveBtn = document.getElementById("btn-save-training");
