@@ -11,6 +11,7 @@ frappe.listview_settings["Agent"] = {
     setupBranchFilter(listview);
     setupRoleBasedActions(listview);
     setupDownloadReportButton(listview);
+    setupPanEmployeeStatusUpdateButton(listview);
   },
 };
 
@@ -157,73 +158,73 @@ function setupBulkUnallocateButton(listview) {
   listview.page.add_inner_button(
     __("Bulk Unallocate by Employee"),
     () => {
-    const d = new frappe.ui.Dialog({
-      title: __("Select Employee to Unallocate Agents"),
-      size: "large",
-      fields: [
-        {
-          label: __("Employee"),
-          fieldname: "employee",
-          fieldtype: "Link",
-          options: "Employee",
-          reqd: 1,
-          change() {
-            const employee = d.get_value("employee");
-            fetchAndRenderAllocatedAgents(d, employee);
+      const d = new frappe.ui.Dialog({
+        title: __("Select Employee to Unallocate Agents"),
+        size: "large",
+        fields: [
+          {
+            label: __("Employee"),
+            fieldname: "employee",
+            fieldtype: "Link",
+            options: "Employee",
+            reqd: 1,
+            change() {
+              const employee = d.get_value("employee");
+              fetchAndRenderAllocatedAgents(d, employee);
+            },
           },
-        },
-        {
-          fieldtype: "HTML",
-          fieldname: "agent_list_html",
-          label: __("Agents"),
-        },
-      ],
-      primary_action_label: __("Unallocate Selected"),
-      primary_action() {
-        const selected = getSelectedAgentNames(d);
+          {
+            fieldtype: "HTML",
+            fieldname: "agent_list_html",
+            label: __("Agents"),
+          },
+        ],
+        primary_action_label: __("Unallocate Selected"),
+        primary_action() {
+          const selected = getSelectedAgentNames(d);
 
-        if (!selected.length) {
-          frappe.msgprint(
-            __("Please select at least one agent to unallocate.")
-          );
-          return;
-        }
-
-        frappe.confirm(
-          __("Are you sure you want to unallocate {0} agent(s)?", [
-            selected.length,
-          ]),
-          () => {
-            frappe.call({
-              method:
-                "sahayog.agent_and_bdo.doctype.agent.agent.bulk_unallocate",
-              args: { agent_names: JSON.stringify(selected) },
-              freeze: true,
-              freeze_message: __("Unallocating Agents..."),
-              callback(r) {
-                if (r.message?.success) {
-                  frappe.show_alert({
-                    message: r.message.message,
-                    indicator: "red",
-                  });
-                  d.hide();
-                  listview.refresh();
-                } else {
-                  frappe.msgprint(
-                    r.message?.message || __("Failed to unallocate agents.")
-                  );
-                }
-              },
-            });
+          if (!selected.length) {
+            frappe.msgprint(
+              __("Please select at least one agent to unallocate.")
+            );
+            return;
           }
-        );
-      },
-    });
 
-    bindAgentSelectionEvents(d);
-    d.show();
-  },
-  __("Actions")
+          frappe.confirm(
+            __("Are you sure you want to unallocate {0} agent(s)?", [
+              selected.length,
+            ]),
+            () => {
+              frappe.call({
+                method:
+                  "sahayog.agent_and_bdo.doctype.agent.agent.bulk_unallocate",
+                args: { agent_names: JSON.stringify(selected) },
+                freeze: true,
+                freeze_message: __("Unallocating Agents..."),
+                callback(r) {
+                  if (r.message?.success) {
+                    frappe.show_alert({
+                      message: r.message.message,
+                      indicator: "red",
+                    });
+                    d.hide();
+                    listview.refresh();
+                  } else {
+                    frappe.msgprint(
+                      r.message?.message || __("Failed to unallocate agents.")
+                    );
+                  }
+                },
+              });
+            }
+          );
+        },
+      });
+
+      bindAgentSelectionEvents(d);
+      d.show();
+    },
+    __("Actions")
   );
 }
 
@@ -234,88 +235,88 @@ function setupBulkTransferButton(listview) {
   listview.page.add_inner_button(
     __("Bulk Transfer by Employee"),
     () => {
-    const d = new frappe.ui.Dialog({
-      title: __("Bulk Transfer Agents"),
-      size: "large",
-      fields: [
-        {
-          label: __("From Employee"),
-          fieldname: "from_employee",
-          fieldtype: "Link",
-          options: "Employee",
-          reqd: 1,
-          change() {
-            const fromEmp = d.get_value("from_employee");
-            fetchAndRenderAllocatedAgents(d, fromEmp);
+      const d = new frappe.ui.Dialog({
+        title: __("Bulk Transfer Agents"),
+        size: "large",
+        fields: [
+          {
+            label: __("From Employee"),
+            fieldname: "from_employee",
+            fieldtype: "Link",
+            options: "Employee",
+            reqd: 1,
+            change() {
+              const fromEmp = d.get_value("from_employee");
+              fetchAndRenderAllocatedAgents(d, fromEmp);
+            },
           },
-        },
-        {
-          label: __("To Employee"),
-          fieldname: "to_employee",
-          fieldtype: "Link",
-          options: "Employee",
-          reqd: 1,
-        },
-        {
-          fieldtype: "HTML",
-          fieldname: "agent_list_html",
-          label: __("Agents"),
-        },
-      ],
-      primary_action_label: __("Transfer Selected"),
-      primary_action(values) {
-        const selected = getSelectedAgentNames(d);
+          {
+            label: __("To Employee"),
+            fieldname: "to_employee",
+            fieldtype: "Link",
+            options: "Employee",
+            reqd: 1,
+          },
+          {
+            fieldtype: "HTML",
+            fieldname: "agent_list_html",
+            label: __("Agents"),
+          },
+        ],
+        primary_action_label: __("Transfer Selected"),
+        primary_action(values) {
+          const selected = getSelectedAgentNames(d);
 
-        if (!selected.length) {
-          frappe.msgprint(
-            __("Please select at least one agent to transfer.")
-          );
-          return;
-        }
-        if (!values.to_employee) {
-          frappe.msgprint(__("Please select the target employee."));
-          return;
-        }
-
-        frappe.confirm(
-          __("Are you sure you want to transfer {0} agent(s) to {1}?", [
-            selected.length,
-            values.to_employee,
-          ]),
-          () => {
-            frappe.call({
-              method:
-                "sahayog.agent_and_bdo.doctype.agent.agent.bulk_transfer",
-              args: {
-                agent_names: JSON.stringify(selected),
-                to_employee: values.to_employee,
-              },
-              freeze: true,
-              freeze_message: __("Transferring Agents..."),
-              callback(r) {
-                if (r.message?.success) {
-                  frappe.show_alert({
-                    message: r.message.message,
-                    indicator: "green",
-                  });
-                  d.hide();
-                  listview.refresh();
-                } else {
-                  frappe.msgprint(
-                    r.message?.message || __("Failed to transfer agents.")
-                  );
-                }
-              },
-            });
+          if (!selected.length) {
+            frappe.msgprint(
+              __("Please select at least one agent to transfer.")
+            );
+            return;
           }
-        );
-      },
-    });
+          if (!values.to_employee) {
+            frappe.msgprint(__("Please select the target employee."));
+            return;
+          }
 
-    bindAgentSelectionEvents(d);
-    d.show();
-  },
-  __("Actions")
+          frappe.confirm(
+            __("Are you sure you want to transfer {0} agent(s) to {1}?", [
+              selected.length,
+              values.to_employee,
+            ]),
+            () => {
+              frappe.call({
+                method:
+                  "sahayog.agent_and_bdo.doctype.agent.agent.bulk_transfer",
+                args: {
+                  agent_names: JSON.stringify(selected),
+                  to_employee: values.to_employee,
+                },
+                freeze: true,
+                freeze_message: __("Transferring Agents..."),
+                callback(r) {
+                  if (r.message?.success) {
+                    frappe.show_alert({
+                      message: r.message.message,
+                      indicator: "green",
+                    });
+                    d.hide();
+                    listview.refresh();
+                  } else {
+                    frappe.msgprint(
+                      r.message?.message || __("Failed to transfer agents.")
+                    );
+                  }
+                },
+              });
+            }
+          );
+        },
+      });
+
+      bindAgentSelectionEvents(d);
+      d.show();
+    },
+    __("Actions")
   );
 }
 
@@ -349,28 +350,27 @@ function fetchAndRenderAllocatedAgents(
         html = `
           <div style="margin-bottom: 10px;">
             <button class="btn btn-xs btn-default select-all-agents-btn" type="button">${__(
-              "Select All"
-            )}</button>
+          "Select All"
+        )}</button>
             <button class="btn btn-xs btn-default unselect-all-agents-btn" type="button">${__(
-              "Unselect All"
-            )}</button>
+          "Unselect All"
+        )}</button>
           </div>
           <div style="max-height: 250px; overflow-y: auto; border: 1px solid #d1d8dd; padding: 8px; border-radius: 4px;">
             ${agents
-              .map(
-                (row) => `
+            .map(
+              (row) => `
               <div>
                 <label>
-                  <input type="checkbox" class="agent-checkbox" value="${
-                    row.name
-                  }" checked>
+                  <input type="checkbox" class="agent-checkbox" value="${row.name
+                }" checked>
                   <b>${frappe.utils.escape_html(
-                    row.agent_name || ""
-                  )}</b> (${frappe.utils.escape_html(row.name)})
+                  row.agent_name || ""
+                )}</b> (${frappe.utils.escape_html(row.name)})
                 </label>
               </div>`
-              )
-              .join("")}
+            )
+            .join("")}
           </div>
         `;
       } else {
@@ -413,39 +413,39 @@ function setupDownloadReportButton(listview) {
   listview.page.add_inner_button(
     __("Download Report"),
     () => {
-    frappe.call({
-      method: "sahayog.custom_api.get_agent_report_data",
-      freeze: true,
-      freeze_message: __("Generating report..."),
-      callback(r) {
-        if (r.message && r.message.status === "success") {
-          const data = r.message.data;
+      frappe.call({
+        method: "sahayog.custom_api.get_agent_report_data",
+        freeze: true,
+        freeze_message: __("Generating report..."),
+        callback(r) {
+          if (r.message && r.message.status === "success") {
+            const data = r.message.data;
 
-          if (data && data.length > 0) {
-            generateAndDownloadCSV(data);
+            if (data && data.length > 0) {
+              generateAndDownloadCSV(data);
 
-            frappe.show_alert({
-              message: __(
-                "Report downloaded successfully with {0} records",
-                [data.length]
-              ),
-              indicator: "green",
-            });
+              frappe.show_alert({
+                message: __(
+                  "Report downloaded successfully with {0} records",
+                  [data.length]
+                ),
+                indicator: "green",
+              });
+            } else {
+              frappe.msgprint(__("No data found to export"));
+            }
           } else {
-            frappe.msgprint(__("No data found to export"));
+            frappe.msgprint(
+              __("Failed to generate report. Please try again.")
+            );
           }
-        } else {
-          frappe.msgprint(
-            __("Failed to generate report. Please try again.")
-          );
-        }
-      },
-      error() {
-        frappe.msgprint(__("Error occurred while generating report"));
-      },
-    });
-  },
-  __("Actions")
+        },
+        error() {
+          frappe.msgprint(__("Error occurred while generating report"));
+        },
+      });
+    },
+    __("Actions")
   );
 }
 
@@ -588,8 +588,8 @@ function openBranchFilterDialog(listview, filterBtn) {
           <div style="padding: 4px 0;">
             <div style="margin-bottom: 14px;">
               <div style="font-size: 11px; color: #8d99a6; font-weight: 500; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em;">${__(
-                "Zone"
-              )}</div>
+          "Zone"
+        )}</div>
               <select class="fb-zone-select" style="width:100%; height:34px; border:1px solid #d1d8dd; border-radius:5px; padding:0 10px; font-size:13px; color:#333;">
                 <option value="">— ${__("Select Zone")} —</option>
                 ${zoneOptions}
@@ -598,8 +598,8 @@ function openBranchFilterDialog(listview, filterBtn) {
 
             <div style="margin-bottom: 14px;">
               <div style="font-size: 11px; color: #8d99a6; font-weight: 500; margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em;">${__(
-                "Region"
-              )}</div>
+          "Region"
+        )}</div>
               <select class="fb-region-select" disabled style="width:100%; height:34px; border:1px solid #d1d8dd; border-radius:5px; padding:0 10px; font-size:13px; color:#333;">
                 <option value="">— ${__("Select Zone first")} —</option>
               </select>
@@ -608,15 +608,15 @@ function openBranchFilterDialog(listview, filterBtn) {
             <div class="fb-branch-section" style="display:none; margin-bottom: 14px;">
               <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:5px;">
                 <div style="font-size: 11px; color: #8d99a6; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em;">${__(
-                  "Branches"
-                )}</div>
+          "Branches"
+        )}</div>
                 <div style="display:flex; gap:6px;">
                   <span class="fb-sel-all" style="font-size:11px; color:#5e64ff; cursor:pointer; text-decoration:underline;">${__(
-                    "Select all"
-                  )}</span>
+          "Select all"
+        )}</span>
                   <span class="fb-clr-all" style="font-size:11px; color:#8d99a6; cursor:pointer; text-decoration:underline;">${__(
-                    "Clear all"
-                  )}</span>
+          "Clear all"
+        )}</span>
                 </div>
               </div>
               <div class="fb-chips" style="display:flex; flex-wrap:wrap; gap:6px; padding:10px; background:#f8f9fa; border:1px solid #e2e6ea; border-radius:6px; min-height:48px;"></div>
@@ -624,8 +624,8 @@ function openBranchFilterDialog(listview, filterBtn) {
 
             <div class="fb-summary" style="padding: 8px 12px; background:#f0f4ff; border:1px solid #c5cfff; border-radius:6px; min-height:36px; display:none;">
               <div style="font-size:11px; color:#5e64ff; font-weight:500; margin-bottom:5px;">${__(
-                "Selected branches"
-              )}</div>
+          "Selected branches"
+        )}</div>
               <div class="fb-tags" style="display:flex; flex-wrap:wrap; gap:5px;"></div>
             </div>
           </div>`,
@@ -695,8 +695,8 @@ function openBranchFilterDialog(listview, filterBtn) {
         <span style="display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:12px;background:#dce4ff;color:#2b37c7;border:1px solid #aab5ff;">
           ${frappe.utils.escape_html(label)}
           <span class="fb-remove-tag" data-code="${frappe.utils.escape_html(
-            code
-          )}" style="cursor:pointer;font-size:14px;color:#5e64ff;line-height:1;margin-left:2px;">&times;</span>
+        code
+      )}" style="cursor:pointer;font-size:14px;color:#5e64ff;line-height:1;margin-left:2px;">&times;</span>
         </span>
       `);
       tagsEl.append($tag);
@@ -751,11 +751,11 @@ function openBranchFilterDialog(listview, filterBtn) {
     currentBranches.forEach((b) => {
       const $chip = $(`
         <div data-code="${frappe.utils.escape_html(
-          b.code
-        )}" style="${updateChipBaseStyle(false)}">
+        b.code
+      )}" style="${updateChipBaseStyle(false)}">
           ${frappe.utils.escape_html(
-            b.label
-          )} <span style="font-size:11px;opacity:0.55;">${frappe.utils.escape_html(
+        b.label
+      )} <span style="font-size:11px;opacity:0.55;">${frappe.utils.escape_html(
         b.code
       )}</span>
         </div>
@@ -798,3 +798,123 @@ function openBranchFilterDialog(listview, filterBtn) {
   dialog.get_primary_btn().prop("disabled", true);
 }
 
+
+
+/**
+ * Add "Update PAN & Employee Status" button.
+ * Opens Excel upload dialog and bulk-updates Agent records.
+ */
+function setupPanEmployeeStatusUpdateButton(listview) {
+  listview.page.add_inner_button(
+    __("Update PAN & Employee Status"),
+    () => openPanEmployeeStatusDialog(listview),
+    __("Actions")
+  );
+}
+
+
+/**
+ * Open dialog to upload PAN / PAN Status / Employee Status Excel file.
+ */
+function openPanEmployeeStatusDialog(listview) {
+  let uploadedFileUrl = null;
+  let uploadedFileName = null;
+
+  const dialog = new frappe.ui.Dialog({
+    title: __("Update PAN & Employee Status"),
+    size: "medium",
+    fields: [
+      {
+        label: __("Excel File"),
+        fieldname: "excel_file",
+        fieldtype: "Attach",
+        reqd: 1,
+        change() {
+          const fileUrl = dialog.get_value("excel_file");
+
+          if (!fileUrl) {
+            uploadedFileUrl = null;
+            uploadedFileName = null;
+
+            dialog.set_df_property("file_preview", "options", "");
+            return;
+          }
+
+          uploadedFileUrl = fileUrl;
+          uploadedFileName = fileUrl.split("/").pop();
+
+          dialog.set_df_property(
+            "file_preview",
+            "options",
+            `<div class="text-muted" style="margin-top:8px;">
+          <i class="fa fa-file-excel-o"></i>
+          ${frappe.utils.escape_html(uploadedFileName || "")}
+        </div>`
+          );
+        },
+      },
+      {
+        fieldtype: "HTML",
+        fieldname: "file_preview",
+      },
+      {
+        fieldtype: "HTML",
+        fieldname: "format_help",
+        options: `
+      <div class="text-muted" style="margin-top:12px; font-size:12px;">
+        Required Excel headers:
+        <b>Agent Code</b>, <b>PAN</b>, <b>PAN Status</b>, <b>Employee Status</b>
+        <br>
+        Employee Status must be <b>Yes</b> or <b>No</b>.
+      </div>
+    `,
+      },
+    ],
+    primary_action_label: __("Update"),
+    primary_action() {
+      if (!uploadedFileUrl) {
+        frappe.msgprint(__("Please upload an Excel file first."));
+        return;
+      }
+
+      frappe.confirm(
+        __(
+          "Are you sure you want to update PAN, PAN Status and Employee Status from this file?"
+        ),
+        () => {
+          frappe.call({
+            method:
+              "sahayog.agent_and_bdo.doctype.agent.agent.bulk_update_pan_and_employee_status",
+            args: {
+              file_url: uploadedFileUrl,
+            },
+            freeze: true,
+            freeze_message: __("Updating PAN and Employee Status..."),
+            callback(r) {
+              if (r.message && r.message.status === "success") {
+                frappe.msgprint({
+                  title: __("Update Completed"),
+                  message: __(r.message.message),
+                  indicator: "green",
+                });
+
+                dialog.hide();
+                listview.refresh();
+              } else {
+                frappe.msgprint({
+                  title: __("Update Failed"),
+                  message: __(
+                    r.message ? r.message.message : "Failed to update agents."
+                  ),
+                  indicator: "red",
+                });
+              }
+            },
+          });
+        }
+      );
+    },
+  });
+
+  dialog.show();
+}

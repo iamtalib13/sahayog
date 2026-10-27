@@ -28,6 +28,7 @@
   "pan_card",
   "pan_status",
   "agent_security_account",
+  "employee_status",
   "bdo_details_section",
   "requested_by",
   "requested_on",
@@ -245,12 +246,19 @@
   {
    "fieldname": "column_break_kacp",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "employee_status",
+   "fieldtype": "Select",
+   "label": "Employee Status",
+   "options": "\nYes\nNo",
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-09-19 13:08:57.208707",
+ "modified": "2026-10-27 13:54:34.490884",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Agent",
