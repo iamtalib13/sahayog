@@ -14281,22 +14281,8 @@
                     " – " +
                     fmtSlash(ev.to_date)
                   : fmtSlash(ev.from_date || ev.date);
-              var pillBg =
-                st === "completed"
-                  ? "var(--green-soft)"
-                  : st === "inprogress"
-                    ? "var(--orange-soft)"
-                    : st === "upcoming"
-                      ? "var(--accent-soft)"
-                      : "var(--gray-soft)";
-              var pillClr =
-                st === "completed"
-                  ? "#15803d"
-                  : st === "inprogress"
-                    ? "#b45309"
-                    : st === "upcoming"
-                      ? "var(--accent-ink)"
-                      : "var(--ink-3)";
+              var pillBg = meta.soft;
+              var pillClr = meta.color;
               var canDelete = state.role === "ld_admin";
               var editBtn = canEdit
                 ? '<button class="tr-icon-btn" data-menu-edit="' +
@@ -15146,11 +15132,14 @@
           teamDistinctTrainings(state.teamRows).forEach(function (r) {
             var name = r.trainer_name || "—";
             if (!agg[name])
-              agg[name] = { upcoming: 0, inprogress: 0, completed: 0 };
+              agg[name] = { upcoming: 0, inprogress: 0, completed: 0, rescheduled: 0, cancelled: 0, postponed: 0 };
             var s = statusOf(r);
             if (s === "upcoming") agg[name].upcoming++;
             else if (s === "inprogress") agg[name].inprogress++;
             else if (s === "completed") agg[name].completed++;
+            else if (s === "rescheduled") agg[name].rescheduled++;
+            else if (s === "cancelled") agg[name].cancelled++;
+            else if (s === "postponed") agg[name].postponed++;
           });
           var list = Object.keys(agg).map(function (name) {
             return {
@@ -15158,6 +15147,9 @@
               upcoming: agg[name].upcoming,
               inprogress: agg[name].inprogress,
               completed: agg[name].completed,
+              rescheduled: agg[name].rescheduled,
+              cancelled: agg[name].cancelled,
+              postponed: agg[name].postponed,
             };
           });
           list.sort(function (a, b) {
@@ -15172,7 +15164,7 @@
             return;
           }
           var html =
-            '<table class="report-table"><thead><tr><th>Trainer</th><th>Upcoming</th><th>In Progress</th><th>Completed</th></tr></thead><tbody>';
+            '<table class="report-table"><thead><tr><th>Trainer</th><th>Upcoming</th><th>In Progress</th><th>Completed</th><th>Rescheduled</th><th>Cancelled</th><th>Postponed</th></tr></thead><tbody>';
           html += list
             .map(function (t) {
               return (
@@ -15187,6 +15179,15 @@
                 "</td>" +
                 "<td>" +
                 t.completed +
+                "</td>" +
+                "<td>" +
+                t.rescheduled +
+                "</td>" +
+                "<td>" +
+                t.cancelled +
+                "</td>" +
+                "<td>" +
+                t.postponed +
                 "</td></tr>"
               );
             })
@@ -15229,22 +15230,8 @@
 
         function teamStatusPill(st) {
           var meta = STATUS_META[st] || STATUS_META.pending;
-          var bg =
-            st === "completed"
-              ? "var(--green-soft)"
-              : st === "inprogress"
-                ? "var(--orange-soft)"
-                : st === "upcoming"
-                  ? "var(--accent-soft)"
-                  : "var(--gray-soft)";
-          var clr =
-            st === "completed"
-              ? "#15803d"
-              : st === "inprogress"
-                ? "#b45309"
-                : st === "upcoming"
-                  ? "var(--accent-ink)"
-                  : "var(--ink-3)";
+          var bg = meta.soft;
+          var clr = meta.color;
           return (
             '<span class="tr-status-pill" style="background:' +
             bg +
