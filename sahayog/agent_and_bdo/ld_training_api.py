@@ -3392,24 +3392,33 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
     )[:8]
 
     # ---------- Zone-wise table ----------
-    # Get distinct zones from training geographies + branch master
-    all_zones_set = set()
+    # Normalize zone names (case-insensitive) to avoid duplicate rows (e.g. ZONE-3 vs Zone-3)
+    # Always normalize to standard uppercase "ZONE-X" format for consistency
+    zone_canonical = {}  # lower_key -> display_name
     for r in rows:
         geos = geo_map.get(r.name, [])
         if geos:
             for g in geos:
-                if g.get("zone"): all_zones_set.add(g["zone"])
+                zn = (g.get("zone") or "").strip()
+                if zn:
+                    key = zn.lower()
+                    if key not in zone_canonical:
+                        zone_canonical[key] = zn.upper() if zn.lower().startswith("zone") else zn
         elif r.zone:
-            all_zones_set.add(r.zone)
+            zn = r.zone.strip()
+            key = zn.lower()
+            if key not in zone_canonical:
+                zone_canonical[key] = zn.upper() if zn.lower().startswith("zone") else zn
 
     zone_table = []
-    for z in sorted(all_zones_set):
+    for zkey in sorted(zone_canonical):
+        z = zone_canonical[zkey]
         z_rows = []
         for r in rows:
             geos = geo_map.get(r.name, [])
             if geos:
-                if any(g.get("zone") == z for g in geos): z_rows.append(r)
-            elif r.zone == z:
+                if any((g.get("zone") or "").strip().lower() == zkey for g in geos): z_rows.append(r)
+            elif (r.zone or "").strip().lower() == zkey:
                 z_rows.append(r)
         zp = len(z_rows)
         zc = sum(1 for r in z_rows if _st(r) == "completed")
@@ -3433,16 +3442,24 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
 
     # ---------- Upcoming trainings ----------
     upcoming_list = []
+    overdue_count = 0
     for r in rows:
-        if _st(r) in ("upcoming", "inprogress"):
+        st = _st(r)
+        if st == "pending":
+            overdue_count += 1
+        # Only show genuinely upcoming trainings (or if month is ongoing, trainings strictly whose end date >= today)
+        if st == "upcoming":
+            # Prefer geo_map zone for multi-geo trainings
+            geos = geo_map.get(r.name, [])
+            zones_str = ", ".join(sorted({(g.get("zone") or "").strip().upper() if (g.get("zone") or "").strip().lower().startswith("zone") else (g.get("zone") or "").strip() for g in geos if g.get("zone")})) if geos else (r.zone.upper() if (r.zone or "").lower().startswith("zone") else (r.zone or "—"))
             upcoming_list.append({
                 "name": r.name,
                 "program": r.training_program or "—",
                 "from_date": str(r.from_date or "")[:10],
                 "to_date": str(r.to_date or r.from_date or "")[:10],
-                "zone": r.zone or "—",
+                "zone": zones_str or "—",
                 "trainer": r.trainer or "—",
-                "status": _st(r),
+                "status": st,
             })
     upcoming_list = sorted(upcoming_list, key=lambda x: x["from_date"])[:10]
 
@@ -3494,9 +3511,28 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
             "color": "blue",
         })
 
+    # Overdue alert: pending trainings whose end date has passed
+    if overdue_count > 0:
+        insights.append({
+            "type": "warning",
+            "title": "Overdue / Past-Due",
+            "desc": f"{overdue_count} training(s) past their end date with no completion recorded",
+            "color": "red",
+        })
+
     # Trainer options for filter
     trainer_opts = sorted({r.trainer for r in all_rows if r.trainer})
     program_opts = sorted({r.training_program for r in all_rows if r.training_program})
+
+    # Status distribution for donut/bar widget
+    rescheduled = sum(1 for r in rows if _st(r) == "rescheduled")
+    cancelled_c = sum(1 for r in rows if _st(r) == "cancelled")
+    postponed   = sum(1 for r in rows if _st(r) == "postponed")
+    status_dist = {
+        "completed": comp, "inprogress": inp, "upcoming": upc,
+        "pending": pend, "overdue": overdue_count,
+        "rescheduled": rescheduled, "cancelled": cancelled_c, "postponed": postponed,
+    }
 
     return {
         "kpis": kpis,
@@ -3506,6 +3542,7 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
         "zone_table": zone_table,
         "upcoming_trainings": upcoming_list,
         "insights": insights,
+        "status_dist": status_dist,
         "meta": {
             "month": month, "year": year,
             "month_label": ["January","February","March","April","May","June","July","August","September","October","November","December"][month-1],
