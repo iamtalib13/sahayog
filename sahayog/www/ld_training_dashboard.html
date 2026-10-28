@@ -907,6 +907,21 @@
   };
 
   // ── Init ──────────────────────────────────────────────
+  // Embedded mode: hide sidebar + topbar when loaded inside training.html iframe
+  (function () {
+    var isEmbedded = window.self !== window.top ||
+      window.location.search.indexOf("embedded=1") !== -1;
+    if (isEmbedded) {
+      var style = document.createElement("style");
+      style.textContent =
+        ".sidebar{display:none!important}" +
+        ".topbar{display:none!important}" +
+        ".app{grid-template-columns:1fr!important;grid-template-areas:'main'!important;}" +
+        ".main{padding:16px 20px 24px!important;}";
+      document.head.appendChild(style);
+    }
+  })();
+
   loadUserInfo();
   loadGeo();
   loadDashboard();

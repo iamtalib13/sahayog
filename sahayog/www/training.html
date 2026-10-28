@@ -5366,6 +5366,22 @@
 
         <div class="sidebar-scroll">
           <div class="sidebar-section">
+            <button class="nav-item" id="nav-dashboard" title="Dashboard" style="display:none">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <rect x="3" y="3" width="7" height="7" />
+                <rect x="14" y="3" width="7" height="7" />
+                <rect x="14" y="14" width="7" height="7" />
+                <rect x="3" y="14" width="7" height="7" />
+              </svg>
+              <span class="item-label">Dashboard</span>
+            </button>
             <button class="nav-item active" id="nav-calendar" title="Calendar">
               <svg
                 viewBox="0 0 24 24"
@@ -5744,6 +5760,9 @@
             </div>
           </div>
         </div>
+
+        <!-- ===== Dashboard view (L&D Admin only) ===== -->
+        <div id="dashboardView" style="display:none;flex:1;flex-direction:column;overflow:hidden;min-height:0;height:100%;"></div>
 
         <!-- ===== Reports view ===== -->
         <div class="trainings-view" id="reportsView" style="display: none">
@@ -7384,10 +7403,11 @@
           if (bulkBtnEl)
             bulkBtnEl.style.display = r.showMis ? "inline-flex" : "none";
           var navRep = document.getElementById("nav-reports");
-          /* Reports visible to all roles; data is scoped server-side
-             (trainers see only own trainings). Pure team-verifiers
-             still see only the Team tab (handled below). */
+          /* Reports visible to all roles; data is scoped server-side */
           if (navRep) navRep.style.display = "";
+          /* Dashboard tab: only L&D Admin */
+          var navDash = document.getElementById("nav-dashboard");
+          if (navDash) navDash.style.display = state.role === "ld_admin" ? "" : "none";
           /* Team Training tab: reportees + L&D role (L&D Viewer for leaders).
              Pure verifiers (viewer/general + team) see ONLY this tab. */
           var navTeam = document.getElementById("nav-team");
@@ -14235,20 +14255,23 @@
           var trView = document.getElementById("trainingsView");
           var repView = document.getElementById("reportsView");
           var teamView = document.getElementById("teamView");
+          var dashView = document.getElementById("dashboardView");
           var navCal = document.getElementById("nav-calendar");
           var navTr = document.getElementById("nav-trainings");
           var navRep = document.getElementById("nav-reports");
           var navTeam = document.getElementById("nav-team");
+          var navDash = document.getElementById("nav-dashboard");
 
           calView.style.display = tab === "calendar" ? "flex" : "none";
           trView.style.display = tab === "trainings" ? "flex" : "none";
           repView.style.display = tab === "reports" ? "flex" : "none";
-          if (teamView)
-            teamView.style.display = tab === "team" ? "flex" : "none";
+          if (teamView) teamView.style.display = tab === "team" ? "flex" : "none";
+          if (dashView) dashView.style.display = tab === "dashboard" ? "flex" : "none";
           if (navCal) navCal.classList.toggle("active", tab === "calendar");
           if (navTr) navTr.classList.toggle("active", tab === "trainings");
           if (navRep) navRep.classList.toggle("active", tab === "reports");
           if (navTeam) navTeam.classList.toggle("active", tab === "team");
+          if (navDash) navDash.classList.toggle("active", tab === "dashboard");
 
           if (tab === "trainings") {
             loadTrainingsList();
@@ -14256,6 +14279,9 @@
           if (tab === "reports") showReportsHome();
           if (tab === "team") {
             loadTeamData();
+          }
+          if (tab === "dashboard") {
+            loadDashboardView();
           }
         }
 
@@ -14274,6 +14300,24 @@
           .addEventListener("click", function () {
             switchTab("team");
           });
+        document
+          .getElementById("nav-dashboard")
+          .addEventListener("click", function () {
+            switchTab("dashboard");
+          });
+
+        /* --- Dashboard (iframe embed) --- */
+        var dashLoaded = false;
+        function loadDashboardView() {
+          var wrap = document.getElementById("dashboardView");
+          if (!wrap) return;
+          if (dashLoaded) return;
+          dashLoaded = true;
+          wrap.innerHTML =
+            '<iframe src="/ld_training_dashboard" ' +
+            'style="width:100%;height:100%;border:none;display:block;" ' +
+            'title="L&D Training Dashboard"></iframe>';
+        }
 
         /* --- helpers --- */
 
