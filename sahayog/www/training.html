@@ -14411,20 +14411,6 @@
           var cy = today.getFullYear(), cm = today.getMonth() + 1;
           var mv = cy + "-" + String(cm).padStart(2, "0");
           return [
-            /* Filters */
-            '<div class="db-filters">',
-              '<div class="db-fil-g"><label>Zone</label><select id="db-zone"><option value="">All Zones</option></select></div>',
-              '<div class="db-fil-g"><label>Region</label><select id="db-region"><option value="">All Regions</option></select></div>',
-              '<div class="db-fil-g"><label>District</label><select id="db-district"><option value="">All Districts</option></select></div>',
-              '<div class="db-fil-g"><label>Branch</label><select id="db-branch"><option value="">All Branches</option></select></div>',
-              '<div class="db-fil-g"><label>Program</label><select id="db-program"><option value="">All Programs</option></select></div>',
-              '<div class="db-fil-g"><label>Trainer</label><select id="db-trainer"><option value="">All Trainers</option></select></div>',
-              '<div class="db-fil-g" style="max-width:130px"><label>Month</label><input type="month" id="db-month" value="' + mv + '"/></div>',
-              '<div style="display:flex;gap:7px;align-items:flex-end">',
-                '<button class="btn btn-primary" id="db-apply" style="height:26px;font-size:11.5px;padding:0 10px;">Apply</button>',
-                '<button class="btn" id="db-reset" style="height:26px;font-size:11.5px;padding:0 10px;">Reset</button>',
-              '</div>',
-            '</div>',
             /* KPI grid */
             '<div class="db-kpi-grid" id="db-kpi-grid"><div class="db-loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div></div>',
             /* Row 3: coverage + trend + program */
@@ -14483,34 +14469,7 @@
         var DB_COLORS = ["#0d9488","#2563eb","#7c3aed","#ea580c","#16a34a","#d97706","#db2777","#0284c7"];
 
         function bindDashboardEvents() {
-          document.getElementById("db-apply").onclick = refreshDashboard;
-          document.getElementById("db-reset").onclick = function () {
-            ["db-zone","db-region","db-district","db-branch","db-program","db-trainer"].forEach(function(id){
-              var el=document.getElementById(id); if(el) el.value="";
-            });
-            var today2 = new Date();
-            document.getElementById("db-month").value = today2.getFullYear() + "-" + String(today2.getMonth()+1).padStart(2,"0");
-            refreshDashboard();
-          };
-          /* Fill geo filters — reuse state.geoMasters if available */
-          if (state.geoMasters) {
-            dbFillSelect("db-zone",     state.geoMasters.zones     || [], "All Zones");
-            dbFillSelect("db-region",   state.geoMasters.regions   || [], "All Regions");
-            dbFillSelect("db-district", state.geoMasters.districts || [], "All Districts");
-          } else {
-            api("get_geo_options").then(function(opts){
-              dbFillSelect("db-zone",     opts.zones     || [], "All Zones");
-              dbFillSelect("db-region",   opts.regions   || [], "All Regions");
-              dbFillSelect("db-district", opts.districts || [], "All Districts");
-            }).catch(function(){});
-          }
-          if (state.branchPick && state.branchPick.length) {
-            dbFillSelect("db-branch", state.branchPick.map(function(b){return b.name;}), "All Branches");
-          } else {
-            api("get_branch_options").then(function(b){
-              dbFillSelect("db-branch", (b||[]).map(function(x){return x.name;}), "All Branches");
-            }).catch(function(){});
-          }
+          /* No filters — dashboard always shows current month, all zones */
         }
 
         function dbFillSelect(id, items, placeholder) {
@@ -14522,19 +14481,9 @@
         }
 
         function refreshDashboard() {
-          var mv = (document.getElementById("db-month")||{}).value || "";
-          var parts = mv.split("-");
-          var y = parseInt(parts[0],10)||new Date().getFullYear();
-          var m = parseInt(parts[1],10)||(new Date().getMonth()+1);
-          var args = {
-            year: y, month: m,
-            zone:     (document.getElementById("db-zone")||{}).value    || null,
-            region:   (document.getElementById("db-region")||{}).value  || null,
-            district: (document.getElementById("db-district")||{}).value|| null,
-            branch:   (document.getElementById("db-branch")||{}).value  || null,
-            program:  (document.getElementById("db-program")||{}).value || null,
-            trainer:  (document.getElementById("db-trainer")||{}).value || null,
-          };
+          var now = new Date();
+          var y = now.getFullYear(), m = now.getMonth() + 1;
+          var args = { year: y, month: m };
           var kg = document.getElementById("db-kpi-grid");
           if(kg) kg.innerHTML='<div class="db-loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>';
 
@@ -14546,14 +14495,6 @@
             dbRenderZoneTable(d.zone_table||[]);
             dbRenderUpcoming(d.upcoming_trainings||[]);
             dbRenderInsights(d.insights||[]);
-            /* fill program/trainer filters */
-            var meta = d.meta||{};
-            var curP=(document.getElementById("db-program")||{}).value;
-            var curT=(document.getElementById("db-trainer")||{}).value;
-            dbFillSelect("db-program", meta.program_opts||[], "All Programs");
-            dbFillSelect("db-trainer", meta.trainer_opts||[], "All Trainers");
-            if(document.getElementById("db-program")) document.getElementById("db-program").value=curP||"";
-            if(document.getElementById("db-trainer")) document.getElementById("db-trainer").value=curT||"";
           }).catch(function(e){
             var kg2=document.getElementById("db-kpi-grid");
             if(kg2) kg2.innerHTML='<div style="grid-column:1/-1;padding:16px;color:#dc2626;font-size:12px;">Error: '+(e.message||e)+'</div>';
