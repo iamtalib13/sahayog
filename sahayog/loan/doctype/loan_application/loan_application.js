@@ -15,6 +15,17 @@ frappe.ui.form.on("Loan Application", {
   //   });
   // },
   // lead_generator_code handles fetch_from automatically via Employee link
+  loan_request: function(frm) {
+    if (frm.doc.loan_request) {
+      frappe.db.get_value("Loan Request", frm.doc.loan_request, ["gender", "date_of_birth"], (r) => {
+        if (r) {
+          if (r.gender && !frm.doc.gender) frm.set_value("gender", r.gender);
+          if (r.date_of_birth && !frm.doc.date_of_birth) frm.set_value("date_of_birth", r.date_of_birth);
+        }
+      });
+    }
+  },
+
   father_husband_name: function(frm) {
         if (frm.doc.father_husband_name) {
             let formatted = frm.doc.father_husband_name.toLowerCase().split(' ').map(s => s.charAt(0).toUpperCase() + s.substring(1)).join(' ');
@@ -787,7 +798,26 @@ frappe.ui.form.on("Loan Application", {
       );
     }
 
-    let can_verify = frappe.user_roles.some(r => ["Credit Loan User", "CPC Loan User", "Administrator", "System Manager"].includes(r));
+    if (frm.doc.status === "Cancelled" && frm.doc.cancellation_reason) {
+      frm.dashboard.set_headline(
+        __("Cancelled By {0}: {1}", [frappe.utils.escape_html(frm.doc.cancelled_by || "User"), frappe.utils.escape_html(frm.doc.cancellation_reason)]),
+        "red"
+      );
+    }
+
+    if (frm.doc.reopen_remark) {
+      frm.dashboard.set_headline(
+        __("Reopened By {0}: {1}", [frappe.utils.escape_html(frm.doc.reopened_by || "Admin"), frappe.utils.escape_html(frm.doc.reopen_remark)]),
+        "blue"
+      );
+    }
+
+    let user_is_admin = frappe.user_roles.some(r => ["Administrator", "System Manager"].includes(r));
+    let user_is_credit = frappe.user_roles.includes("Credit Loan User");
+    let user_is_cpc = frappe.user_roles.includes("CPC Loan User");
+    let can_verify = user_is_admin || user_is_credit || user_is_cpc;
+    let is_credit_or_admin = user_is_admin || user_is_credit;
+
     let kgrid = frm.get_field("kyc_documents");
     if (kgrid && kgrid.grid) {
       ["status", "verified_by", "verification_date"].forEach(function(f) {
@@ -807,8 +837,7 @@ frappe.ui.form.on("Loan Application", {
     if (!frm.is_new() && frm.doc.lead_converter) {
       frappe.db.get_value("Employee", { user_id: frappe.session.user }, "name", (r) => {
         if (r && r.name && frm.doc.lead_converter !== r.name) {
-          const admin_roles = ["Administrator", "Credit Loan User", "CPC Loan User", "System Manager"];
-          if (!frappe.user_roles.some(role => admin_roles.includes(role))) {
+          if (!can_verify) {
             frm.disable_form();
             frm.page.clear_actions();
           }
@@ -819,8 +848,108 @@ frappe.ui.form.on("Loan Application", {
     // ==========================================
     // CUSTOM BUTTONS: UPDATE BRANCH & ASSIGN CASE (For Admin & Credit Loan User)
     // ==========================================
-    const allowed_roles = ["Administrator", "Credit Loan User", "System Manager"];
-    if (!frm.is_new() && frappe.user_roles.some(role => allowed_roles.includes(role))) {
+    if (!frm.is_new() && is_credit_or_admin) {
+
+      // CANCEL APPLICATION ACTION (Inject directly into main Workflow Actions dropdown)
+      if (["Credit Check", "Credit Decision"].includes(frm.doc.status)) {
+        const cancel_action = function () {
+          frappe.prompt(
+            {
+              fieldname: "reason",
+              fieldtype: "Small Text",
+              label: __("Cancellation Reason"),
+              reqd: 1
+            },
+            function (values) {
+              frappe.call({
+                method: "sahayog.loan.doctype.loan_application.loan_application.cancel_loan_application",
+                args: {
+                  docname: frm.doc.name,
+                  reason: values.reason
+                },
+                freeze: true,
+                freeze_message: __("Cancelling Loan Application..."),
+                callback: function (r) {
+                  if (!r.exc) {
+                    frappe.show_alert({ message: __("Loan Application Cancelled"), indicator: "orange" });
+                    frm.reload_doc();
+                  }
+                }
+              });
+            },
+            __("Cancel Loan Application"),
+            __("Confirm Cancel")
+          );
+        };
+
+        // Attach inside the primary Workflow Actions dropdown
+        setTimeout(() => {
+          let $wf_btn = frm.page.wrapper.find(".actions-btn-group");
+          if ($wf_btn.length && $wf_btn.find(".dropdown-menu").length) {
+            let $menu = $wf_btn.find(".dropdown-menu");
+            if (!$menu.find(".cancel-app-action").length) {
+              $menu.append(`
+                <li>
+                  <a class="dropdown-item cancel-app-action text-danger" href="javascript:void(0);">
+                    ${__("Cancel Application")}
+                  </a>
+                </li>
+              `);
+              $menu.find(".cancel-app-action").on("click", function(e) {
+                e.preventDefault();
+                cancel_action();
+              });
+            }
+          } else {
+            // Fallback if workflow button is rendered as action item
+            frm.page.add_action_item(__("Cancel Application"), cancel_action);
+          }
+        }, 150);
+      }
+
+      // REOPEN APPLICATION BUTTON (For Admin only on Cancelled cases)
+      if (frm.doc.status === "Cancelled" && user_is_admin) {
+        frm.add_custom_button(__("Reopen Application"), function () {
+          frappe.prompt(
+            [
+              {
+                fieldname: "target_state",
+                fieldtype: "Select",
+                label: __("Reopen to Stage"),
+                options: ["Credit Check", "Credit Decision", "Draft"],
+                default: frm.doc.cancelled_from_stage || "Credit Check",
+                reqd: 1
+              },
+              {
+                fieldname: "remark",
+                fieldtype: "Small Text",
+                label: __("Reopen Remark"),
+                reqd: 1
+              }
+            ],
+            function (values) {
+              frappe.call({
+                method: "sahayog.loan.doctype.loan_application.loan_application.reopen_loan_application",
+                args: {
+                  docname: frm.doc.name,
+                  target_state: values.target_state,
+                  remark: values.remark
+                },
+                freeze: true,
+                freeze_message: __("Reopening Loan Application..."),
+                callback: function (r) {
+                  if (!r.exc) {
+                    frappe.show_alert({ message: __("Loan Application Reopened Successfully"), indicator: "green" });
+                    frm.reload_doc();
+                  }
+                }
+              });
+            },
+            __("Reopen Cancelled Application"),
+            __("Reopen")
+          );
+        }).addClass("btn-primary");
+      }
 
       // 1. UPDATE BRANCH BUTTON
       frm.add_custom_button(__("Update Branch"), function () {

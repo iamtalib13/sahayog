@@ -9,18 +9,20 @@
  "field_order": [
   "branch_details_section",
   "branch",
-  "purpose_of_loan",
   "customer",
+  "gender",
   "mobile_number",
-  "deposit_account_no",
+  "date_of_birth",
   "column_break_branch",
   "loan_type",
-  "loan_agreement",
   "deposit_date",
   "deposit_amount",
+  "deposit_account_no",
+  "loan_agreement",
   "column_break_deposit",
   "vintage_complete_days",
   "required_loan_amount",
+  "purpose_of_loan",
   "head_office_approval_section",
   "scheme_code",
   "approved_loan_amount",
@@ -65,6 +67,19 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Mobile Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Select",
+   "label": "Gender",
+   "options": "\nMale\nFemale\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "date_of_birth",
+   "fieldtype": "Date",
+   "label": "Date of Birth",
    "reqd": 1
   },
   {
@@ -179,7 +194,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-24 13:06:57.885523",
+ "modified": "2026-10-27 11:40:26.615870",
  "modified_by": "Administrator",
  "module": "Loan",
  "name": "Loan Request",

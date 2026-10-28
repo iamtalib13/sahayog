@@ -308,8 +308,14 @@ class MasterResolver:
         key = clean.lower()
         if key in self.branches:
             return self.branches[key]
-        doc = frappe.get_doc({"doctype": "Branch", "branch": clean}).insert(ignore_permissions=True)
+        sol_id = self.sahayog_branches_by_label.get(key)
+        branch_doc = {"doctype": "Branch", "branch": clean}
+        if sol_id:
+            branch_doc["sol_id"] = sol_id
+        doc = frappe.get_doc(branch_doc).insert(ignore_permissions=True)
         self.branches[key] = doc.name
+        if sol_id:
+            self.branch_sol_ids[key] = sol_id
         return doc.name
 
     def resolve_division(self, val: Optional[str]) -> Optional[str]:
@@ -355,11 +361,6 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
     raw_branch_code = attrs.get("BranchCode") or attrs.get("Branch Code")
     raw_branch_name = attrs.get("Branch")
     branch = resolver.resolve_branch(raw_branch_name)
-    sahayog_branch = resolver.resolve_sahayog_branch(
-        branch_code=raw_branch_code,
-        branch_name=raw_branch_name,
-        resolved_branch=branch,
-    )
 
     def _is_integer_value(val: Any) -> bool:
         if val is None:
@@ -367,26 +368,31 @@ def parse_employee_payload(emp_raw: Dict[str, Any], resolver: MasterResolver) ->
         s = str(val).strip()
         return bool(s and s.isdigit())
 
-    # sahayog_branch set krte time check: integer value he chahiye.
-    # String / non-integer rhi to fallback me chale jana chahiye with Branch fallback.
+    # 1. First priority: if branch is set, use branch's sol_id
+    sol_id = None
+    if branch:
+        b_key = branch.strip().lower()
+        sol_id = resolver.branch_sol_ids.get(b_key)
+        if not sol_id:
+            clean_b = b_key.replace(" branch", "").replace(" ho", "").replace(" ro", "").strip()
+            sol_id = resolver.branch_sol_ids.get(clean_b)
+
+    # 2. If sol_id not found via branch, resolve via sahayog_branch
+    sahayog_branch = None
+    if sol_id and _is_integer_value(sol_id):
+        sahayog_branch = resolver.sahayog_branches.get(str(sol_id).strip().lower(), str(sol_id).strip())
+    else:
+        sahayog_branch = resolver.resolve_sahayog_branch(
+            branch_code=raw_branch_code,
+            branch_name=raw_branch_name,
+            resolved_branch=branch,
+        )
+
     if not _is_integer_value(sahayog_branch):
         sahayog_branch = None
-        target_branch = branch or raw_branch_name
-        if target_branch:
-            tb_key = str(target_branch).strip().lower()
-            sol = resolver.branch_sol_ids.get(tb_key)
-            if not sol:
-                clean_tb = tb_key.replace(" branch", "").replace(" ho", "").replace(" ro", "").strip()
-                sol = resolver.branch_sol_ids.get(clean_tb)
-            if sol and _is_integer_value(sol):
-                sol_str = str(sol).strip()
-                sahayog_branch = resolver.sahayog_branches.get(sol_str.lower(), sol_str)
 
-    # Ensure sahayog_branch is strictly integer digits, else None
-    if sahayog_branch and not _is_integer_value(sahayog_branch):
-        sahayog_branch = None
-
-    sol_id = sahayog_branch
+    if not sol_id and sahayog_branch:
+        sol_id = sahayog_branch
 
     leaving_date = _date(emp_raw.get("dateOfLeaving") or emp_raw.get("exitDate"))
     today_date = getdate(today())

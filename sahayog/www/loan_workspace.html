@@ -2397,6 +2397,7 @@
         { key: "Role Pending", label: "Pending", note: "Applications in your live queue", tone: "status-card-tone-pending" },
         { key: "Draft", label: "Draft", note: "New applications created by branch", tone: "status-card-tone-draft" },
         { key: "Credit Check", label: "Credit Check", note: "Risk validation underway", tone: "status-card-tone-credit-check" },
+        { key: "Cancelled", label: "Cancelled", note: "Cancelled at Credit stage", tone: "status-card-tone-rejected" },
         { key: "Valuation Pending", label: "Valuation Pending", note: "Collateral review pending", tone: "status-card-tone-valuation" },
         { key: "Credit Decision", label: "Credit Decision", note: "Credit team decision stage", tone: "status-card-tone-credit-decision" },
         { key: "CPC Processing", label: "CPC", note: "Final operations handling", tone: "status-card-tone-cpc" },
@@ -2408,7 +2409,6 @@
         { key: "All", label: "All Requests", note: "Total loan requests", tone: "status-card-tone-all" },
         { key: "Pending Credit Review", label: "Pending Review", note: "Requests awaiting credit review", tone: "status-card-tone-credit-check" },
         { key: "Approved", label: "Approved", note: "Total approved requests", tone: "status-card-tone-approved" },
-        { key: "Approved (Not Disbursed)", label: "Approved (Not Disbursed)", note: "Approved requests awaiting application", tone: "status-card-tone-not-disbursed" },
         { key: "Rejected", label: "Rejected", note: "Rejected loan requests", tone: "status-card-tone-rejected" },
         { key: "Sent Back", label: "Sent Back", note: "Sent back to branch for revision", tone: "status-card-tone-valuation" }
     ];
@@ -2979,7 +2979,7 @@ workspaceTab: "requests",
             },
 
             async fetchCounts() {
-                const statuses = ["Draft", "Credit Check", "Valuation Pending", "Credit Decision", "CPC Processing", "Approved", "Rejected"];
+                const statuses = ["Draft", "Credit Check", "Cancelled", "Valuation Pending", "Credit Decision", "CPC Processing", "Approved", "Rejected"];
                 const results = await Promise.all(
                     ["All"].concat(statuses).map((status) => {
                         const filters = this.getLoanApplicationFilters(status === "All" ? null : status);
@@ -3021,7 +3021,6 @@ workspaceTab: "requests",
                     "All": this.requestCounts.all || 0,
                     "Pending Credit Review": this.requestCounts.pending_review || 0,
                     "Approved": this.requestCounts.application_created || 0,
-                    "Approved (Not Disbursed)": this.requestCounts.approved_pending_app || 0,
                     "Rejected": this.requestCounts.rejected || 0,
                     "Sent Back": this.requestCounts.sent_back || 0,
                 };
@@ -3039,13 +3038,7 @@ workspaceTab: "requests",
             filteredWorkspaceLoanRequests() {
                 let list = this.allLoanRequests || [];
                 if (this.activeRequestFilter && this.activeRequestFilter !== "All") {
-                    if (this.activeRequestFilter === "Approved") {
-                        list = list.filter(r => r.status === "Approved" && r.loan_application);
-                    } else if (this.activeRequestFilter === "Approved (Not Disbursed)") {
-                        list = list.filter(r => r.status === "Approved" && !r.loan_application);
-                    } else {
-                        list = list.filter(r => r.status === this.activeRequestFilter);
-                    }
+                    list = list.filter(r => r.status === this.activeRequestFilter);
                 }
                 if (this.searchText) {
                     const query = this.searchText.toLowerCase();
@@ -3252,12 +3245,18 @@ workspaceTab: "requests",
 
             statusCards() {
                 const rolePending = this.pendingCount();
-                return WORKSPACE_STATUS_CARDS.map((card) => ({
-                    ...card,
-                    count: card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0),
-                    zeroCount: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0,
-                    disabled: card.key === "Role Pending" ? rolePending === 0 : Number(this.counts[card.key] || 0) === 0
-                }));
+                const isCreditTeam = this.userRoles.some(r => ["Credit Loan User", "Administrator", "System Manager"].includes(r));
+                return WORKSPACE_STATUS_CARDS
+                    .filter((card) => card.key !== "Cancelled" || isCreditTeam)
+                    .map((card) => {
+                        const cnt = card.key === "Role Pending" ? rolePending : Number(this.counts[card.key] || 0);
+                        return {
+                            ...card,
+                            count: cnt,
+                            zeroCount: cnt === 0,
+                            disabled: cnt === 0
+                        };
+                    });
             },
 
             emptyStateText() {

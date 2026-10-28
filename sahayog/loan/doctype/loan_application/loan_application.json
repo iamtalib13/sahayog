@@ -10,6 +10,12 @@
   "applicant_details_tab",
   "send_back_section",
   "send_back_remark",
+  "cb_remark_col_break",
+  "cancellation_reason",
+  "cancelled_by",
+  "cancelled_from_stage",
+  "reopen_remark",
+  "reopened_by",
   "product_selection_section",
   "loan_type",
   "column_break_ps",
@@ -129,10 +135,10 @@
    "label": "Applicant Info"
   },
   {
-   "depends_on": "eval:doc.send_back_remark",
    "fieldname": "send_back_section",
    "fieldtype": "Section Break",
-   "label": "Send Back Remark"
+   "label": "Case Remarks & History",
+   "permlevel": 0
   },
   {
    "depends_on": "eval:doc.send_back_remark",
@@ -140,6 +146,45 @@
    "fieldtype": "Small Text",
    "label": "Remark",
    "read_only": 1
+  },
+  {
+   "fieldname": "cb_remark_col_break",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "cancellation_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancellation Reason",
+   "read_only": 1,
+   "permlevel": 0
+  },
+  {
+   "fieldname": "cancelled_by",
+   "fieldtype": "Data",
+   "label": "Cancelled By",
+   "read_only": 1,
+   "permlevel": 0
+  },
+  {
+   "fieldname": "cancelled_from_stage",
+   "fieldtype": "Data",
+   "label": "Cancelled From Stage",
+   "read_only": 1,
+   "permlevel": 0
+  },
+  {
+   "fieldname": "reopen_remark",
+   "fieldtype": "Small Text",
+   "label": "Reopen Remark",
+   "read_only": 1,
+   "permlevel": 0
+  },
+  {
+   "fieldname": "reopened_by",
+   "fieldtype": "Data",
+   "label": "Reopened By",
+   "read_only": 1,
+   "permlevel": 0
   },
   {
    "fieldname": "product_selection_section",
@@ -267,14 +312,16 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Date of Birth",
-   "reqd": 1
+   "reqd": 1,
+   "read_only": 0
   },
   {
    "fieldname": "gender",
    "fieldtype": "Select",
    "label": "Gender",
    "options": "\nMale\nFemale\nOther",
-   "reqd": 1
+   "reqd": 1,
+   "read_only": 0
   },
   {
    "fieldname": "marital_status",
@@ -634,7 +681,7 @@
    "fieldname": "status",
    "fieldtype": "Select",
    "label": "Status",
-   "options": "Draft\nCredit Check\nValuation Pending\nCredit Decision\nCPC Processing\nApproved\nRejected"
+   "options": "Draft\nCredit Check\nValuation Pending\nCredit Decision\nCPC Processing\nApproved\nRejected\nCancelled"
   },
   {
    "depends_on": "eval:doc.status == 'Credit Decision'",
