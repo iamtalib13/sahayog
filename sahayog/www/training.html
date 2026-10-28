@@ -14246,8 +14246,7 @@
         /* --- nav switch: Calendar ↔ Trainings ↔ Reports ↔ Team --- */
         var activeTab = "calendar"; // "calendar" | "trainings" | "reports" | "team"
 
-        /* Expose switchTab to window for inline onclick handlers */
-        window.switchTab = switchTab;
+        function switchTab(tab) {
           activeTab = tab;
           try {
             localStorage.setItem("ld_training_tab", tab);
@@ -14285,6 +14284,7 @@
             loadDashboardView();
           }
         }
+        window.switchTab = switchTab;
 
         document
           .getElementById("nav-calendar")
@@ -14521,7 +14521,7 @@
                 '<div class="db-card">',
                   '<div class="db-sec-head">',
                     '<div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Upcoming Trainings</div>',
-                    '<button class="db-view-link" onclick="switchTab(\'calendar\')">View All →</button>',
+                    '<button class="db-view-link" id="db-view-all-upcoming" type="button" onclick="viewAllUpcomingTrainings()">View All →</button>',
                   '</div>',
                   '<div class="db-tbl-scroll"><table class="db-utbl"><thead><tr><th>Program</th><th>Date</th><th>Zone</th><th>Trainer</th><th>Status</th></tr></thead><tbody id="db-upcoming-body"><tr><td colspan="5" class="db-empty"><div class="spinner" style="margin:auto;"></div></td></tr></tbody></table></div>',
                 '</div>',
@@ -14595,7 +14595,33 @@
               refreshDashboard();
             });
           }
+
+          var viewAllBtn = document.getElementById("db-view-all-upcoming");
+          if (viewAllBtn) {
+            viewAllBtn.addEventListener("click", function (e) {
+              e.preventDefault();
+              viewAllUpcomingTrainings();
+            });
+          }
         }
+
+        function viewAllUpcomingTrainings() {
+          switchTab("trainings");
+          trFilters.range = "upcoming";
+          trFilters.status = "upcoming";
+          trFilters.month = "";
+          var rngEl = document.getElementById("tr-range");
+          if (rngEl) rngEl.value = "upcoming";
+          var monEl = document.getElementById("tr-month");
+          if (monEl) monEl.value = "";
+          var trStatusSel = document.getElementById("tr-status");
+          if (trStatusSel) trStatusSel.value = "upcoming";
+          trPage.current = 1;
+          if (state.trainingsLoaded) {
+            renderTrainings();
+          }
+        }
+        window.viewAllUpcomingTrainings = viewAllUpcomingTrainings;
 
         function syncDbMonthPicker() {
           var picker = document.getElementById("db-month-picker");
@@ -14808,7 +14834,7 @@
           var SP={upcoming:{cls:"db-sp-upcoming",lbl:"Upcoming",dot:"#2563eb"},inprogress:{cls:"db-sp-inprogress",lbl:"In Progress",dot:"#ea580c"},completed:{cls:"db-sp-completed",lbl:"Completed",dot:"#16a34a"},pending:{cls:"db-sp-pending",lbl:"Pending",dot:"#d97706"}};
           el.innerHTML=list.map(function(t){
             var sp=SP[t.status]||SP.pending;
-            return '<tr>'+
+            return '<tr style="cursor:pointer;" data-name="'+dbEsc(t.name)+'">'+
               '<td class="u-prog" style="font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+dbEsc(t.program)+'</td>'+
               '<td class="u-date" style="white-space:nowrap;">'+dbFmtD(t.from_date)+'</td>'+
               '<td class="u-zone" style="white-space:nowrap;">'+dbEsc(t.zone)+'</td>'+
@@ -14816,6 +14842,17 @@
               '<td><span class="db-sp '+sp.cls+'"><span class="db-sp-dot" style="background:'+sp.dot+'"></span>'+sp.lbl+'</span></td>'+
               '</tr>';
           }).join("");
+          el.querySelectorAll("tr[data-name]").forEach(function(r){
+            r.addEventListener("click", function(){
+              var name = r.dataset.name;
+              var ev = findTrainingByName(name);
+              if (ev) {
+                openDrawer(ev, "view");
+              } else {
+                viewAllUpcomingTrainings();
+              }
+            });
+          });
         }
 
         var DB_INS_ICONS={
@@ -14866,7 +14903,7 @@
               state.trainingsLoaded = true;
               // Default month filter to current month if not set, for month-wise view
               var monEl = document.getElementById("tr-month");
-              if (monEl && !monEl.value && !trFilters.month) {
+              if (monEl && !monEl.value && !trFilters.month && trFilters.range !== "upcoming") {
                 var nowMon = new Date().toISOString().slice(0, 7);
                 monEl.value = nowMon;
                 trFilters.month = nowMon;
@@ -16424,6 +16461,7 @@
               savedTab = localStorage.getItem("ld_training_tab");
             } catch (e) {}
             if (state.teamOnly) switchTab("team");
+            else if (savedTab === "dashboard" && state.role === "ld_admin") switchTab("dashboard");
             else if (savedTab === "trainings") switchTab("trainings");
             else if (savedTab === "reports") switchTab("reports");
             else if (savedTab === "team" && state.canSeeTeam) switchTab("team");
