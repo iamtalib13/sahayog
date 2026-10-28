@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
+  <title>L&amp;D Training Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --teal:      #0d9488;
+      --teal-d:    #0f766e;
+      --teal-s:    #ccfbf1;
+      --blue:      #2563eb;
+      --blue-s:    #dbeafe;
+      --orange:    #ea580c;
+      --orange-s:  #ffedd5;
+      --green:     #16a34a;
+      --green-s:   #dcfce7;
+      --red:       #dc2626;
+      --red-s:     #fee2e2;
+      --purple:    #7c3aed;
+      --purple-s:  #ede9fe;
+      --amber:     #d97706;
+      --amber-s:   #fef3c7;
+      --ink:       #111827;
+      --ink-2:     #374151;
+      --ink-3:     #6b7280;
+      --ink-4:     #9ca3af;
+      --border:    #e5e7eb;
+      --bg:        #f1f5f9;
+      --card:      #ffffff;
+      --sidebar-w: 220px;
+      --header-h:  56px;
+      --r:         10px;
+      --r-sm:      6px;
+      --shadow:    0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--ink); font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif; font-size: 13.5px; -webkit-font-smoothing: antialiased; }
+    button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+    input, select { font-family: inherit; }
+    a { text-decoration: none; color: inherit; }
+
+    /* ── Layout ─────────────────────────────────────────── */
+    .app { display: grid; height: 100vh; grid-template-columns: var(--sidebar-w) 1fr; grid-template-rows: var(--header-h) 1fr; grid-template-areas: "sidebar topbar" "sidebar main"; }
+
+    /* ── Sidebar ─────────────────────────────────────────── */
+    .sidebar { grid-area: sidebar; background: #0f172a; display: flex; flex-direction: column; overflow: hidden; }
+    .sb-brand { display: flex; align-items: center; gap: 10px; padding: 0 18px; height: var(--header-h); border-bottom: 1px solid rgba(255,255,255,.08); flex-shrink: 0; }
+    .sb-brand-mark { width: 30px; height: 30px; background: var(--teal); border-radius: 8px; display: grid; place-items: center; font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0; }
+    .sb-brand-name { font-size: 14px; font-weight: 700; color: #f1f5f9; letter-spacing: -.01em; }
+    .sb-brand-sub  { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+    .sb-scroll { flex: 1; overflow-y: auto; padding: 14px 10px; scrollbar-width: none; }
+    .sb-scroll::-webkit-scrollbar { display: none; }
+    .sb-section { margin-bottom: 6px; }
+    .sb-section-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #64748b; padding: 6px 10px 4px; }
+    .sb-item { display: flex; align-items: center; gap: 9px; height: 36px; padding: 0 10px; border-radius: var(--r-sm); color: #94a3b8; font-size: 13px; font-weight: 500; width: 100%; margin-bottom: 1px; transition: background .12s, color .12s; }
+    .sb-item:hover { background: rgba(255,255,255,.06); color: #e2e8f0; }
+    .sb-item.active { background: var(--teal); color: #fff; }
+    .sb-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+    .sb-footer { padding: 12px 18px; font-size: 11px; color: #475569; border-top: 1px solid rgba(255,255,255,.06); flex-shrink: 0; }
+
+    /* ── Topbar ─────────────────────────────────────────── */
+    .topbar { grid-area: topbar; background: var(--card); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 12px; padding: 0 24px; box-shadow: var(--shadow); }
+    .topbar-title { font-size: 17px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
+    .topbar-sub { font-size: 11.5px; color: var(--ink-3); margin-top: 1px; }
+    .topbar-spacer { flex: 1; }
+    .topbar-date-chip { display: flex; align-items: center; gap: 8px; background: var(--teal-s); color: var(--teal-d); border-radius: var(--r-sm); padding: 6px 12px; font-size: 12px; font-weight: 600; }
+    .topbar-date-chip svg { width: 14px; height: 14px; }
+    .topbar-user { display: flex; align-items: center; gap: 8px; }
+    .user-av { width: 32px; height: 32px; border-radius: 50%; background: var(--teal); color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+    .user-name { font-size: 12.5px; font-weight: 600; color: var(--ink); }
+    .user-role { font-size: 11px; color: var(--ink-3); }
+
+    /* ── Main ─────────────────────────────────────────── */
+    .main { grid-area: main; overflow-y: auto; padding: 20px 24px 32px; display: flex; flex-direction: column; gap: 18px; }
+
+    /* ── Filters bar ────────────────────────────────────── */
+    .filters-bar { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 14px 18px; display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; box-shadow: var(--shadow); }
+    .fil-group { display: flex; flex-direction: column; gap: 4px; min-width: 120px; flex: 1; }
+    .fil-label { font-size: 11px; font-weight: 600; color: var(--ink-3); text-transform: uppercase; letter-spacing: .04em; }
+    .fil-select { height: 32px; border: 1px solid var(--border); border-radius: var(--r-sm); background: #f8fafc; padding: 0 10px; font-size: 12.5px; color: var(--ink); outline: none; cursor: pointer; }
+    .fil-select:focus { border-color: var(--teal); }
+    .fil-month { height: 32px; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 0 8px; font-size: 12.5px; color: var(--ink); background: #f8fafc; outline: none; }
+    .fil-month:focus { border-color: var(--teal); }
+    .fil-actions { display: flex; gap: 8px; align-items: flex-end; }
+    .btn { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 14px; border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--card); font-size: 12.5px; font-weight: 500; cursor: pointer; color: var(--ink); transition: background .12s; }
+    .btn:hover { background: #f8fafc; }
+    .btn-primary { background: var(--teal); border-color: var(--teal); color: #fff; font-weight: 600; }
+    .btn-primary:hover { background: var(--teal-d); }
+    .btn svg { width: 13px; height: 13px; }
+
+    /* ── KPI Cards ─────────────────────────────────────── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; }
+    .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 16px 18px; box-shadow: var(--shadow); transition: box-shadow .15s; position: relative; overflow: hidden; }
+    .kpi-card:hover { box-shadow: var(--shadow-md); }
+    .kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; border-radius: var(--r) var(--r) 0 0; }
+    .kpi-planned::before  { background: var(--teal); }
+    .kpi-conducted::before{ background: var(--green); }
+    .kpi-upcoming::before { background: var(--blue); }
+    .kpi-inprog::before   { background: var(--orange); }
+    .kpi-pending::before  { background: var(--amber); }
+    .kpi-rate::before     { background: var(--purple); }
+    .kpi-icon { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; margin-bottom: 10px; }
+    .kpi-icon svg { width: 18px; height: 18px; }
+    .kpi-planned  .kpi-icon { background: var(--teal-s);   color: var(--teal); }
+    .kpi-conducted .kpi-icon{ background: var(--green-s);  color: var(--green); }
+    .kpi-upcoming .kpi-icon { background: var(--blue-s);   color: var(--blue); }
+    .kpi-inprog   .kpi-icon { background: var(--orange-s); color: var(--orange); }
+    .kpi-pending  .kpi-icon { background: var(--amber-s);  color: var(--amber); }
+    .kpi-rate     .kpi-icon { background: var(--purple-s); color: var(--purple); }
+    .kpi-label { font-size: 11.5px; font-weight: 600; color: var(--ink-3); margin-bottom: 4px; }
+    .kpi-value { font-size: 28px; font-weight: 800; letter-spacing: -.03em; line-height: 1; margin-bottom: 8px; }
+    .kpi-planned  .kpi-value { color: var(--teal); }
+    .kpi-conducted .kpi-value{ color: var(--green); }
+    .kpi-upcoming .kpi-value { color: var(--blue); }
+    .kpi-inprog   .kpi-value { color: var(--orange); }
+    .kpi-pending  .kpi-value { color: var(--amber); }
+    .kpi-rate     .kpi-value { color: var(--purple); }
+    .kpi-footer { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 11px; color: var(--ink-4); }
+    .kpi-change { display: inline-flex; align-items: center; gap: 3px; font-size: 11.5px; font-weight: 700; }
+    .kpi-change.up   { color: var(--green); }
+    .kpi-change.down { color: var(--red); }
+    .kpi-change.flat { color: var(--ink-4); }
+    .kpi-change svg  { width: 11px; height: 11px; }
+
+    /* ── Section header ─────────────────────────────────── */
+    .sec-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+    .sec-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 700; color: var(--ink); }
+    .sec-title svg { width: 16px; height: 16px; color: var(--teal); }
+    .sec-sub { font-size: 11px; color: var(--ink-3); font-weight: 500; }
+    .sec-link { font-size: 12px; font-weight: 600; color: var(--teal); cursor: pointer; }
+    .sec-link:hover { text-decoration: underline; }
+
+    /* ── Cards row ──────────────────────────────────────── */
+    .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .row-3 { display: grid; grid-template-columns: 1.1fr 1.4fr 1fr; gap: 16px; }
+    .row-2-3 { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--r); padding: 18px; box-shadow: var(--shadow); }
+
+    /* ── Coverage block ─────────────────────────────────── */
+    .coverage-tabs { display: flex; gap: 4px; margin-bottom: 14px; background: #f1f5f9; border-radius: var(--r-sm); padding: 3px; }
+    .cov-tab { flex: 1; text-align: center; padding: 5px 0; font-size: 12px; font-weight: 600; border-radius: 5px; cursor: pointer; color: var(--ink-3); transition: background .12s, color .12s; }
+    .cov-tab.active { background: var(--card); color: var(--teal); box-shadow: var(--shadow); }
+    .cov-panel { display: none; }
+    .cov-panel.active { display: block; }
+    .cov-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .cov-item .ci-label { font-size: 11px; color: var(--ink-3); margin-bottom: 2px; }
+    .cov-item .ci-value { font-size: 22px; font-weight: 800; color: var(--ink); }
+    .cov-item.planned  .ci-value { color: var(--teal); }
+    .cov-item.conducted .ci-value { color: var(--green); }
+    .cov-item.pending  .ci-value { color: var(--amber); }
+    .donut-wrap { display: flex; align-items: center; gap: 16px; margin-top: 10px; }
+    .donut-chart-box { width: 90px; height: 90px; flex-shrink: 0; position: relative; }
+    .donut-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+    .donut-center .dc-pct { font-size: 17px; font-weight: 800; color: var(--ink); }
+    .donut-center .dc-lbl { font-size: 9px; color: var(--ink-3); font-weight: 600; }
+    .donut-legend { font-size: 11.5px; color: var(--ink-2); }
+    .donut-legend b { font-size: 14px; font-weight: 700; color: var(--ink); }
+    .donut-legend .dl-label { color: var(--ink-3); margin-top: 2px; font-size: 11px; }
+
+    /* ── Zone table ─────────────────────────────────────── */
+    .ztable { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .ztable thead tr { background: #f8fafc; border-bottom: 2px solid var(--border); }
+    .ztable thead th { padding: 9px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); white-space: nowrap; }
+    .ztable thead th:not(:first-child) { text-align: center; }
+    .ztable tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    .ztable tbody tr:hover { background: #f8fafc; }
+    .ztable tbody tr.total-row { background: #f0fdf4; font-weight: 700; border-top: 2px solid var(--green); }
+    .ztable tbody tr.panindia-row { background: var(--teal-s); font-weight: 700; border-top: 2px solid var(--teal); }
+    .ztable tbody td { padding: 9px 12px; white-space: nowrap; }
+    .ztable tbody td:not(:first-child) { text-align: center; }
+    .ztable .td-zone { font-weight: 600; color: var(--ink); }
+    .ztable .td-num { font-weight: 700; color: var(--ink); }
+    .ztable .td-pct { color: var(--ink-3); font-size: 11px; margin-left: 4px; }
+    .comp-pill { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 10px; font-size: 11.5px; font-weight: 700; }
+    .comp-high  { background: var(--green-s);  color: var(--green); }
+    .comp-mid   { background: var(--amber-s);  color: var(--amber); }
+    .comp-low   { background: var(--red-s);    color: var(--red); }
+    .comp-na    { background: #f1f5f9;          color: var(--ink-3); }
+
+    /* ── Upcoming table ─────────────────────────────────── */
+    .utbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .utbl thead tr { background: #f8fafc; border-bottom: 2px solid var(--border); }
+    .utbl thead th { padding: 8px 12px; text-align: left; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); white-space: nowrap; }
+    .utbl tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+    .utbl tbody tr:hover { background: #f8fafc; }
+    .utbl tbody td { padding: 9px 12px; }
+    .status-pill { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 3px 10px; font-size: 11.5px; font-weight: 600; }
+    .status-pill .sp-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+    .sp-upcoming   { background: var(--blue-s);   color: var(--blue); }
+    .sp-inprogress { background: var(--orange-s); color: var(--orange); }
+    .sp-completed  { background: var(--green-s);  color: var(--green); }
+    .sp-pending    { background: var(--amber-s);  color: var(--amber); }
+
+    /* ── Insights ───────────────────────────────────────── */
+    .insight-list { display: flex; flex-direction: column; gap: 8px; }
+    .insight-item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 14px; border-radius: var(--r-sm); border: 1px solid var(--border); cursor: pointer; transition: box-shadow .12s; }
+    .insight-item:hover { box-shadow: var(--shadow-md); }
+    .ins-icon { width: 34px; height: 34px; border-radius: 8px; display: grid; place-items: center; flex-shrink: 0; }
+    .ins-icon svg { width: 16px; height: 16px; }
+    .ins-orange .ins-icon { background: var(--orange-s); color: var(--orange); }
+    .ins-red    .ins-icon { background: var(--red-s);    color: var(--red); }
+    .ins-green  .ins-icon { background: var(--green-s);  color: var(--green); }
+    .ins-blue   .ins-icon { background: var(--blue-s);   color: var(--blue); }
+    .ins-body { flex: 1; min-width: 0; }
+    .ins-title { font-size: 12.5px; font-weight: 700; color: var(--ink); margin-bottom: 2px; }
+    .ins-desc  { font-size: 11.5px; color: var(--ink-3); line-height: 1.4; }
+    .ins-arrow { color: var(--ink-4); align-self: center; }
+    .ins-arrow svg { width: 14px; height: 14px; }
+
+    /* ── Loading / empty ────────────────────────────────── */
+    .loading-wrap { display: flex; align-items: center; justify-content: center; height: 120px; color: var(--ink-3); font-size: 13px; gap: 8px; }
+    .spinner { width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--teal); border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty-msg { text-align: center; padding: 32px; color: var(--ink-3); font-size: 12.5px; }
+
+    /* ── Progress bar ───────────────────────────────────── */
+    .prog-bar { height: 6px; background: #e5e7eb; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .prog-fill { height: 100%; border-radius: 3px; transition: width .4s ease; }
+
+    /* ── Scrollable table wrapper ───────────────────────── */
+    .tbl-scroll { overflow-x: auto; border-radius: var(--r-sm); }
+
+    /* ── Responsive ─────────────────────────────────────── */
+    @media (max-width: 1280px) {
+      .kpi-grid { grid-template-columns: repeat(3, 1fr); }
+      .row-3    { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 900px) {
+      .app { grid-template-columns: 1fr; grid-template-rows: var(--header-h) auto 1fr; grid-template-areas: "topbar" "sidebar" "main"; }
+      .sidebar { display: none; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .row-2, .row-3, .row-2-3 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <!-- ── Sidebar ─────────────────────────────────────────── -->
+  <aside class="sidebar">
+    <div class="sb-brand">
+      <div class="sb-brand-mark">LD</div>
+      <div>
+        <div class="sb-brand-name">L&amp;D Training</div>
+        <div class="sb-brand-sub">Admin Dashboard</div>
+      </div>
+    </div>
+    <div class="sb-scroll">
+      <div class="sb-section">
+        <div class="sb-section-label">Navigation</div>
+        <a class="sb-item active" href="/ld_training_dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          Dashboard
+        </a>
+        <a class="sb-item" href="/training">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+          Calendar
+        </a>
+        <a class="sb-item" href="/training#trainings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="10" width="3" height="7"/><rect x="12" y="6" width="3" height="11"/><rect x="17" y="13" width="3" height="4"/></svg>
+          Trainings
+        </a>
+        <a class="sb-item" href="/training#reports">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+          Reports
+        </a>
+      </div>
+    </div>
+    <div class="sb-footer">L&amp;D · Admin View</div>
+  </aside>
+
+  <!-- ── Topbar ─────────────────────────────────────────── -->
+  <header class="topbar">
+    <div>
+      <div class="topbar-title">L&amp;D Training Dashboard</div>
+      <div class="topbar-sub">My Sahayog Portal &nbsp;|&nbsp; Admin View</div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="topbar-date-chip" id="topbarDateChip">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <span id="topbarDateText">Loading…</span>
+    </div>
+    <div class="topbar-user" id="topbarUser">
+      <div class="user-av" id="userAv">?</div>
+      <div>
+        <div class="user-name" id="userName">—</div>
+        <div class="user-role">L&amp;D Admin</div>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Main ─────────────────────────────────────────────── -->
+  <main class="main" id="mainContent">
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="fil-group">
+        <span class="fil-label">Zone</span>
+        <select class="fil-select" id="fil-zone"><option value="">All Zones</option></select>
+      </div>
+      <div class="fil-group">
+        <span class="fil-label">Region</span>
+        <select class="fil-select" id="fil-region"><option value="">All Regions</option></select>
+      </div>
+      <div class="fil-group">
+        <span class="fil-label">District</span>
+        <select class="fil-select" id="fil-district"><option value="">All Districts</option></select>
+      </div>
+      <div class="fil-group">
+        <span class="fil-label">Branch</span>
+        <select class="fil-select" id="fil-branch"><option value="">All Branches</option></select>
+      </div>
+      <div class="fil-group">
+        <span class="fil-label">Program</span>
+        <select class="fil-select" id="fil-program"><option value="">All Programs</option></select>
+      </div>
+      <div class="fil-group">
+        <span class="fil-label">Trainer</span>
+        <select class="fil-select" id="fil-trainer"><option value="">All Trainers</option></select>
+      </div>
+      <div class="fil-group" style="max-width:140px;">
+        <span class="fil-label">Month</span>
+        <input type="month" class="fil-month" id="fil-month" />
+      </div>
+      <div class="fil-actions">
+        <button class="btn btn-primary" id="btnApply">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          Apply
+        </button>
+        <button class="btn" id="btnReset">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid" id="kpiGrid">
+      <div class="loading-wrap" style="grid-column:1/-1"><div class="spinner"></div> Loading dashboard…</div>
+    </div>
+
+    <!-- Row: Coverage + Monthly Trend + Program Coverage -->
+    <div class="row-3">
+      <div class="card" id="coverageCard">
+        <div class="sec-head">
+          <div class="sec-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+            Daily / Weekly / Monthly Coverage
+          </div>
+        </div>
+        <div class="coverage-tabs">
+          <div class="cov-tab active" data-cov="daily">Daily</div>
+          <div class="cov-tab" data-cov="weekly">Weekly</div>
+          <div class="cov-tab" data-cov="monthly">Monthly</div>
+        </div>
+        <div id="covPanels"></div>
+      </div>
+
+      <div class="card" id="trendCard">
+        <div class="sec-head">
+          <div>
+            <div class="sec-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>
+              Monthly Training Trend
+            </div>
+            <div class="sec-sub" id="trendSub" style="margin-top:4px;"></div>
+          </div>
+        </div>
+        <div style="position:relative;height:180px;"><canvas id="trendChart"></canvas></div>
+        <div style="display:flex;gap:16px;margin-top:10px;font-size:11.5px;color:var(--ink-3);">
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:var(--teal);display:inline-block;"></span>Trained</span>
+          <span style="display:flex;align-items:center;gap:5px;"><span style="width:10px;height:10px;border-radius:2px;background:#e5e7eb;display:inline-block;"></span>Planned</span>
+        </div>
+        <div style="display:flex;gap:24px;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
+          <div>
+            <div style="font-size:11px;color:var(--ink-3);">Trained Till Date</div>
+            <div style="font-size:20px;font-weight:800;color:var(--teal);" id="trendTrained">—</div>
+          </div>
+          <div>
+            <div style="font-size:11px;color:var(--ink-3);">Planned for Month</div>
+            <div style="font-size:20px;font-weight:800;color:var(--ink-3);" id="trendPlanned">—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="progCard">
+        <div class="sec-head">
+          <div class="sec-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>
+            Program-wise Coverage
+          </div>
+          <div class="sec-sub">Vertical Wise</div>
+        </div>
+        <div style="position:relative;height:160px;margin-bottom:10px;"><canvas id="progChart"></canvas></div>
+        <div id="progLegend" style="display:flex;flex-direction:column;gap:6px;font-size:12px;"></div>
+      </div>
+    </div>
+
+    <!-- Row: Zone Table + Upcoming + Insights -->
+    <div class="row-2-3">
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <!-- Zone table -->
+        <div class="card">
+          <div class="sec-head">
+            <div class="sec-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              Zone-wise Performance
+            </div>
+            <div class="sec-sub" id="zoneSub">Current Month Till Date</div>
+          </div>
+          <div class="tbl-scroll">
+            <table class="ztable" id="zoneTable">
+              <thead>
+                <tr>
+                  <th>Zone</th>
+                  <th colspan="2">Planned</th>
+                  <th colspan="2">Conducted</th>
+                  <th colspan="2">Pending</th>
+                  <th>Completion %</th>
+                </tr>
+              </thead>
+              <tbody id="zoneBody">
+                <tr><td colspan="8" class="empty-msg"><div class="spinner" style="margin:auto;"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Upcoming trainings -->
+        <div class="card">
+          <div class="sec-head">
+            <div class="sec-title">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+              Upcoming Trainings
+            </div>
+            <a class="sec-link" href="/training">View All →</a>
+          </div>
+          <div class="tbl-scroll">
+            <table class="utbl" id="upcomingTable">
+              <thead>
+                <tr>
+                  <th>Program</th>
+                  <th>Date</th>
+                  <th>Zone</th>
+                  <th>Trainer</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="upcomingBody">
+                <tr><td colspan="5" class="empty-msg"><div class="spinner" style="margin:auto;"></div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Insights -->
+      <div class="card">
+        <div class="sec-head">
+          <div class="sec-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            Insights &amp; Alerts
+          </div>
+        </div>
+        <div class="insight-list" id="insightList">
+          <div class="loading-wrap"><div class="spinner"></div></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || "";
+
+  function api(method, args) {
+    return fetch("/api/method/sahayog.agent_and_bdo.ld_training_api." + method, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Frappe-CSRF-Token": csrf },
+      body: JSON.stringify(args || {}),
+    }).then(function (r) { return r.json(); }).then(function (d) {
+      if (d.exc_type) throw new Error(d.exception || d.exc_type);
+      return d.message;
+    });
+  }
+
+  // ── Chart.js instances ─────────────────────────────────
+  var trendChartInst = null;
+  var progChartInst  = null;
+  var covCharts      = {};
+
+  // ── State ──────────────────────────────────────────────
+  var state = { data: null, filters: {} };
+
+  // ── CHART COLORS ──────────────────────────────────────
+  var PROG_COLORS = ["#0d9488","#2563eb","#7c3aed","#ea580c","#16a34a","#d97706","#db2777","#0284c7"];
+
+  // ── Date init ─────────────────────────────────────────
+  var today = new Date();
+  var curY  = today.getFullYear();
+  var curM  = today.getMonth() + 1;
+  document.getElementById("fil-month").value = curY + "-" + String(curM).padStart(2, "0");
+
+  // ── Load geo options ───────────────────────────────────
+  function loadGeo() {
+    api("get_geo_options").then(function (opts) {
+      fillSelect("fil-zone",     opts.zones     || [], "All Zones");
+      fillSelect("fil-region",   opts.regions   || [], "All Regions");
+      fillSelect("fil-district", opts.districts || [], "All Districts");
+    }).catch(function () {});
+    api("get_branch_options").then(function (branches) {
+      var codes = (branches || []).map(function (b) { return b.name; });
+      fillSelect("fil-branch", codes, "All Branches");
+    }).catch(function () {});
+  }
+
+  function fillSelect(id, items, placeholder) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    var cur = el.value;
+    el.innerHTML = "";
+    var o = document.createElement("option"); o.value = ""; o.textContent = placeholder; el.appendChild(o);
+    items.forEach(function (v) {
+      var op = document.createElement("option"); op.value = v; op.textContent = v; el.appendChild(op);
+    });
+    el.value = cur || "";
+  }
+
+  // ── Load dashboard data ────────────────────────────────
+  function loadDashboard() {
+    var mv = document.getElementById("fil-month").value || (curY + "-" + String(curM).padStart(2,"0"));
+    var parts = mv.split("-");
+    var y = parseInt(parts[0], 10);
+    var m = parseInt(parts[1], 10);
+
+    state.filters = {
+      year:     y,
+      month:    m,
+      zone:     document.getElementById("fil-zone").value     || null,
+      region:   document.getElementById("fil-region").value   || null,
+      district: document.getElementById("fil-district").value || null,
+      branch:   document.getElementById("fil-branch").value   || null,
+      program:  document.getElementById("fil-program").value  || null,
+      trainer:  document.getElementById("fil-trainer").value  || null,
+    };
+
+    showLoading();
+    api("get_dashboard_data", state.filters).then(function (d) {
+      state.data = d;
+      renderAll(d);
+    }).catch(function (e) {
+      document.getElementById("kpiGrid").innerHTML =
+        '<div style="grid-column:1/-1;padding:24px;color:#dc2626;font-size:13px;">Error loading dashboard: ' + (e.message || e) + '</div>';
+    });
+  }
+
+  function showLoading() {
+    document.getElementById("kpiGrid").innerHTML =
+      '<div class="loading-wrap" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>';
+    document.getElementById("zoneBody").innerHTML     = '<tr><td colspan="8" class="empty-msg"><div class="spinner" style="margin:auto;"></div></td></tr>';
+    document.getElementById("upcomingBody").innerHTML = '<tr><td colspan="5" class="empty-msg"><div class="spinner" style="margin:auto;"></div></td></tr>';
+    document.getElementById("insightList").innerHTML  = '<div class="loading-wrap"><div class="spinner"></div></div>';
+  }
+
+  // ── Render ALL ─────────────────────────────────────────
+  function renderAll(d) {
+    var meta = d.meta || {};
+    // Topbar date
+    document.getElementById("topbarDateText").textContent =
+      "Till Date : " + meta.today + "  (" + (meta.month_label || "") + " " + (meta.year || "") + ")";
+
+    // Fill program/trainer filters
+    var progs = meta.program_opts || [];
+    var trainers = meta.trainer_opts || [];
+    var curProg    = document.getElementById("fil-program").value;
+    var curTrainer = document.getElementById("fil-trainer").value;
+    fillSelect("fil-program", progs, "All Programs");
+    fillSelect("fil-trainer", trainers, "All Trainers");
+    document.getElementById("fil-program").value = curProg || "";
+    document.getElementById("fil-trainer").value = curTrainer || "";
+
+    renderKPIs(d.kpis || {});
+    renderCoverage(d.coverage || {});
+    renderTrend(d.monthly_trend || [], d.kpis || {}, meta);
+    renderProgChart(d.program_coverage || []);
+    renderZoneTable(d.zone_table || []);
+    renderUpcoming(d.upcoming_trainings || []);
+    renderInsights(d.insights || []);
+  }
+
+  // ── KPI Cards ──────────────────────────────────────────
+  var KPI_CFG = [
+    { key: "total_planned",   cls: "kpi-planned",   label: "Total Training Planned",  unit: "",  icon: "calendar" },
+    { key: "conducted",       cls: "kpi-conducted", label: "Training Conducted",       unit: "",  icon: "check" },
+    { key: "upcoming",        cls: "kpi-upcoming",  label: "Upcoming Trainings",       unit: "",  icon: "upcoming" },
+    { key: "inprogress",      cls: "kpi-inprog",    label: "In Progress",              unit: "",  icon: "play" },
+    { key: "pending",         cls: "kpi-pending",   label: "Pending",                 unit: "",  icon: "clock" },
+    { key: "completion_rate", cls: "kpi-rate",      label: "Completion Rate",          unit: "%", icon: "rate" },
+  ];
+
+  var ICONS = {
+    calendar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+    check:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    upcoming: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+    play:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>',
+    clock:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    rate:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>',
+    up:       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>',
+    down:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>',
+  };
+
+  function renderKPIs(kpis) {
+    var html = "";
+    KPI_CFG.forEach(function (cfg) {
+      var d = kpis[cfg.key] || {};
+      var val = d.value != null ? d.value : "—";
+      var chg = d.change;
+      var chgHtml = "";
+      if (chg != null) {
+        var cls = chg > 0 ? "up" : chg < 0 ? "down" : "flat";
+        var ico = chg > 0 ? ICONS.up : chg < 0 ? ICONS.down : "";
+        var sign = chg > 0 ? "+" : "";
+        chgHtml = '<span class="kpi-change ' + cls + '">' + ico + sign + chg + '%</span>';
+      }
+      html += '<div class="kpi-card ' + cfg.cls + '">' +
+        '<div class="kpi-icon">' + ICONS[cfg.icon] + '</div>' +
+        '<div class="kpi-label">' + cfg.label + '</div>' +
+        '<div class="kpi-value">' + val + cfg.unit + '</div>' +
+        '<div class="kpi-footer">' + chgHtml +
+          '<span>vs. last month</span>' +
+        '</div>' +
+        '</div>';
+    });
+    document.getElementById("kpiGrid").innerHTML = html;
+  }
+
+  // ── Coverage ────────────────────────────────────────────
+  function renderCoverage(cov) {
+    var panels = document.getElementById("covPanels");
+    var html = "";
+    var keys = ["daily", "weekly", "monthly"];
+    var labels = {
+      daily: function(c) { return c.label || ""; },
+      weekly: function(c) { var p = (c.label||"").split(" to "); return p.length===2 ? "(" + fmtD(p[0]) + " – " + fmtD(p[1]) + ")" : ""; },
+      monthly: function(c) { var p = (c.label||"").split(" to "); return p.length===2 ? "Till " + fmtD(p[1]) : ""; },
+    };
+    keys.forEach(function (k) {
+      var c = cov[k] || {};
+      var pct = c.pct || 0;
+      html += '<div class="cov-panel' + (k==="daily"?" active":"") + '" data-cov="' + k + '">' +
+        '<div style="font-size:11px;color:var(--ink-3);margin-bottom:10px;">' + labels[k](c) + '</div>' +
+        '<div class="cov-grid">' +
+          '<div class="cov-item planned"><div class="ci-label">Planned</div><div class="ci-value">' + (c.planned||0) + '</div></div>' +
+          '<div class="cov-item conducted"><div class="ci-label">Conducted</div><div class="ci-value">' + (c.conducted||0) + '</div></div>' +
+          '<div class="cov-item pending"><div class="ci-label">Pending</div><div class="ci-value">' + (c.pending||0) + '</div></div>' +
+        '</div>' +
+        '<div class="donut-wrap">' +
+          '<div class="donut-chart-box"><canvas id="covChart_' + k + '"></canvas>' +
+            '<div class="donut-center"><span class="dc-pct">' + pct + '%</span><span class="dc-lbl">' + k.charAt(0).toUpperCase()+k.slice(1) + '</span></div>' +
+          '</div>' +
+          '<div class="donut-legend"><b>' + pct + '%</b><div class="dl-label">' + k.charAt(0).toUpperCase()+k.slice(1) + ' Completion</div></div>' +
+        '</div>' +
+        '</div>';
+    });
+    panels.innerHTML = html;
+
+    // Draw donut charts
+    keys.forEach(function (k) {
+      var c = cov[k] || {};
+      var pct = c.pct || 0;
+      var canvas = document.getElementById("covChart_" + k);
+      if (!canvas) return;
+      if (covCharts[k]) { covCharts[k].destroy(); }
+      var color = k==="daily" ? "#0d9488" : k==="weekly" ? "#2563eb" : "#7c3aed";
+      covCharts[k] = new Chart(canvas.getContext("2d"), {
+        type: "doughnut",
+        data: {
+          datasets: [{ data: [pct, 100-pct], backgroundColor: [color, "#f1f5f9"], borderWidth: 0, cutout: "72%" }]
+        },
+        options: { plugins: { legend: { display: false }, tooltip: { enabled: false } }, animation: { duration: 600 } }
+      });
+    });
+
+    // Tab switching
+    document.querySelectorAll(".cov-tab").forEach(function (tab) {
+      tab.onclick = function () {
+        document.querySelectorAll(".cov-tab").forEach(function (t) { t.classList.remove("active"); });
+        document.querySelectorAll(".cov-panel").forEach(function (p) { p.classList.remove("active"); });
+        tab.classList.add("active");
+        var key = tab.dataset.cov;
+        var panel = panels.querySelector('[data-cov="' + key + '"]');
+        if (panel) panel.classList.add("active");
+      };
+    });
+  }
+
+  // ── Monthly Trend Chart ────────────────────────────────
+  function renderTrend(trend, kpis, meta) {
+    document.getElementById("trendSub").textContent =
+      "Trained Till Date · " + (meta.month_label||"") + " " + (meta.year||"");
+    document.getElementById("trendTrained").textContent = (kpis.conducted||{}).value || 0;
+    document.getElementById("trendPlanned").textContent = (kpis.total_planned||{}).value || 0;
+
+    var labels   = trend.map(function (t) { return t.label; });
+    var trained  = trend.map(function (t) { return t.trained; });
+    var planned  = trend.map(function (t) { return t.planned; });
+    var canvas   = document.getElementById("trendChart");
+    if (!canvas) return;
+    if (trendChartInst) trendChartInst.destroy();
+    trendChartInst = new Chart(canvas.getContext("2d"), {
+      type: "bar",
+      data: {
+        labels: labels,
+        datasets: [
+          { label: "Trained",  data: trained,  backgroundColor: "#0d9488", borderRadius: 4, borderSkipped: false, order: 1 },
+          { label: "Planned",  data: planned,  backgroundColor: "#e2e8f0", borderRadius: 4, borderSkipped: false, order: 2 },
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx) { return ctx.dataset.label + ": " + ctx.raw; } } } },
+        scales: {
+          x: { grid: { display: false }, ticks: { font: { size: 10 }, color: "#9ca3af" } },
+          y: { grid: { color: "#f1f5f9" }, ticks: { font: { size: 10 }, color: "#9ca3af" }, beginAtZero: true },
+        }
+      }
+    });
+  }
+
+  // ── Program Coverage Donut ─────────────────────────────
+  function renderProgChart(progs) {
+    var canvas = document.getElementById("progChart");
+    if (!canvas) return;
+    if (progChartInst) progChartInst.destroy();
+    if (!progs.length) {
+      document.getElementById("progLegend").innerHTML = '<div style="color:var(--ink-3);font-size:12px;text-align:center;">No data</div>';
+      return;
+    }
+    var labels   = progs.map(function (p) { return p.program; });
+    var values   = progs.map(function (p) { return p.conducted || p.planned; });
+    var colors   = progs.map(function (_, i) { return PROG_COLORS[i % PROG_COLORS.length]; });
+    var total    = values.reduce(function (a, b) { return a + b; }, 0);
+
+    progChartInst = new Chart(canvas.getContext("2d"), {
+      type: "doughnut",
+      data: {
+        labels: labels,
+        datasets: [{ data: values, backgroundColor: colors, borderWidth: 2, borderColor: "#fff", cutout: "65%" }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: function(ctx) { var pct = total ? Math.round(ctx.raw/total*100) : 0; return ctx.label + ": " + ctx.raw + " (" + pct + "%)"; } } }
+        },
+        animation: { duration: 600 }
+      }
+    });
+
+    // Legend
+    var legHtml = progs.slice(0, 5).map(function (p, i) {
+      var pct = total ? Math.round((p.conducted||p.planned) / total * 100) : 0;
+      return '<div style="display:flex;align-items:center;gap:8px;">' +
+        '<span style="width:10px;height:10px;border-radius:50%;background:' + colors[i] + ';flex-shrink:0;display:inline-block;"></span>' +
+        '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">' + esc(p.program) + '</span>' +
+        '<span style="font-weight:700;color:var(--ink);">' + (p.conducted||p.planned) + '</span>' +
+        '<span style="color:var(--ink-3);min-width:36px;text-align:right;">(' + pct + '%)</span>' +
+        '</div>';
+    }).join("");
+    document.getElementById("progLegend").innerHTML = legHtml;
+  }
+
+  // ── Zone Table ─────────────────────────────────────────
+  function renderZoneTable(zones) {
+    if (!zones.length) {
+      document.getElementById("zoneBody").innerHTML = '<tr><td colspan="8" class="empty-msg">No data for selected filters.</td></tr>';
+      return;
+    }
+    var html = "";
+    zones.forEach(function (z) {
+      var isPanIndia = z.zone === "PAN India";
+      var isTotal    = z.zone === "Total";
+      var rowCls     = isPanIndia ? " class=\"panindia-row\"" : isTotal ? " class=\"total-row\"" : "";
+      var cpPill     = compPill(z.completion_pct);
+      html += '<tr' + rowCls + '>' +
+        '<td class="td-zone">' + esc(z.zone) + '</td>' +
+        '<td class="td-num">' + z.planned + '</td>' +
+        '<td><span class="td-pct">' + z.planned_pct + '%</span></td>' +
+        '<td class="td-num">' + z.conducted + '</td>' +
+        '<td><span class="td-pct">' + z.conducted_pct + '%</span></td>' +
+        '<td class="td-num">' + z.pending + '</td>' +
+        '<td><span class="td-pct">' + z.pending_pct + '%</span></td>' +
+        '<td>' + cpPill + '</td>' +
+        '</tr>';
+    });
+    document.getElementById("zoneBody").innerHTML = html;
+  }
+
+  function compPill(pct) {
+    var cls = pct >= 70 ? "comp-high" : pct >= 40 ? "comp-mid" : pct > 0 ? "comp-low" : "comp-na";
+    return '<span class="comp-pill ' + cls + '">' + pct + '%</span>';
+  }
+
+  // ── Upcoming Trainings ─────────────────────────────────
+  function renderUpcoming(list) {
+    if (!list.length) {
+      document.getElementById("upcomingBody").innerHTML = '<tr><td colspan="5" class="empty-msg">No upcoming trainings.</td></tr>';
+      return;
+    }
+    var MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+    var html = list.map(function (t) {
+      var dp = fmtD(t.from_date);
+      var pill = statusPill(t.status);
+      return '<tr>' +
+        '<td style="font-weight:600;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.program) + '</td>' +
+        '<td style="white-space:nowrap;">' + dp + '</td>' +
+        '<td>' + esc(t.zone) + '</td>' +
+        '<td style="color:var(--ink-2);">' + esc(t.trainer) + '</td>' +
+        '<td>' + pill + '</td>' +
+        '</tr>';
+    }).join("");
+    document.getElementById("upcomingBody").innerHTML = html;
+  }
+
+  function statusPill(st) {
+    var cfg = {
+      "upcoming":   { cls: "sp-upcoming",   label: "Upcoming",     dot: "#2563eb" },
+      "inprogress": { cls: "sp-inprogress", label: "In Progress",  dot: "#ea580c" },
+      "completed":  { cls: "sp-completed",  label: "Completed",    dot: "#16a34a" },
+      "pending":    { cls: "sp-pending",    label: "Pending",      dot: "#d97706" },
+    };
+    var c = cfg[st] || cfg["pending"];
+    return '<span class="status-pill ' + c.cls + '">' +
+      '<span class="sp-dot" style="background:' + c.dot + '"></span>' + c.label +
+      '</span>';
+  }
+
+  // ── Insights ───────────────────────────────────────────
+  var INS_ICONS = {
+    orange: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    red:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    green:  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    blue:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+  };
+  var ARROW_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>';
+
+  function renderInsights(insights) {
+    if (!insights.length) {
+      document.getElementById("insightList").innerHTML = '<div class="empty-msg">No alerts at this time.</div>';
+      return;
+    }
+    var html = insights.map(function (ins) {
+      var color = ins.color || "blue";
+      var iconSvg = INS_ICONS[color] || INS_ICONS.blue;
+      return '<div class="insight-item ins-' + color + '">' +
+        '<div class="ins-icon">' + iconSvg + '</div>' +
+        '<div class="ins-body">' +
+          '<div class="ins-title">' + esc(ins.title) + '</div>' +
+          '<div class="ins-desc">' + esc(ins.desc) + '</div>' +
+        '</div>' +
+        '<div class="ins-arrow">' + ARROW_SVG + '</div>' +
+        '</div>';
+    }).join("");
+    document.getElementById("insightList").innerHTML = html;
+  }
+
+  // ── User info ──────────────────────────────────────────
+  function loadUserInfo() {
+    api("get_user_role_info").then(function (info) {
+      var emp = info.employee || {};
+      var name = (emp.employee_name || info.user || "Admin");
+      var initials = name.split(" ").slice(0,2).map(function(s){return s[0]||"";}).join("").toUpperCase();
+      document.getElementById("userAv").textContent = initials || "AD";
+      document.getElementById("userName").textContent = name;
+    }).catch(function(){});
+  }
+
+  // ── Helpers ────────────────────────────────────────────
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function fmtD(iso) {
+    if (!iso) return "—";
+    var p = String(iso).slice(0,10).split("-");
+    if (p.length !== 3) return iso;
+    return p[2] + "/" + p[1] + "/" + p[0];
+  }
+
+  // ── Event bindings ─────────────────────────────────────
+  document.getElementById("btnApply").onclick = loadDashboard;
+  document.getElementById("btnReset").onclick = function () {
+    ["fil-zone","fil-region","fil-district","fil-branch","fil-program","fil-trainer"].forEach(function(id){
+      var el = document.getElementById(id); if(el) el.value = "";
+    });
+    document.getElementById("fil-month").value = curY + "-" + String(curM).padStart(2,"0");
+    loadDashboard();
+  };
+
+  // ── Init ──────────────────────────────────────────────
+  loadUserInfo();
+  loadGeo();
+  loadDashboard();
+
+})();
+</script>
+</body>
+</html>

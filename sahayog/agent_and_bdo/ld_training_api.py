@@ -981,6 +981,14 @@ def update_training_status(training_name, field, value):
     _ensure_can_update(doc)
 
     if field in COMPLETION_FIELDS and int(bool(value)):
+        if not _is_admin():
+            end_date = str(doc.to_date or doc.from_date or "")[:10]
+            if end_date and frappe.utils.getdate() < frappe.utils.getdate(end_date):
+                frappe.throw(
+                    _("Training status can be marked only on or after the Training End Date ({0}).").format(
+                        frappe.utils.format_date(end_date)
+                    )
+                )
         # Completion needs participants; agent trainings additionally need
         # every agent's attendance marked (employees have no attendance step).
         parts = frappe.db.get_all(
@@ -3196,3 +3204,313 @@ def get_branch_geo(branch):
         "Sahayog Branch", branch, ["zone", "region", "district"], as_dict=True
     )
     return geo or {}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# L&D Training Dashboard — consolidated data API
+# ─────────────────────────────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_dashboard_data(year=None, month=None, zone=None, region=None, district=None, branch=None, trainer=None, program=None):
+    """
+    Single API call for the L&D Training Dashboard.
+    Returns: kpis, zone_table, monthly_trend, program_coverage,
+             upcoming_trainings, insights.
+    Only accessible to L&D Admin / System Manager.
+    """
+    if not _is_admin():
+        frappe.throw(_("L&D Dashboard is accessible to L&D Admin only."))
+
+    import calendar as cal_mod
+
+    today = frappe.utils.getdate()
+    year = int(year) if year else today.year
+    month = int(month) if month else today.month
+    year, month = _safe_year_month(year, month)
+
+    last_day = cal_mod.monthrange(year, month)[1]
+    month_start = f"{year}-{month:02d}-01"
+    month_end   = f"{year}-{month:02d}-{last_day}"
+    today_str   = str(today)
+
+    # ---------- Fetch all Training rows for the month ----------
+    filters = {
+        "docstatus": ["<", 2],
+        "from_date": ["<=", month_end],
+    }
+    all_rows = frappe.db.get_all(
+        "Training", filters=filters,
+        fields=[
+            "name", "from_date", "to_date", "start_time", "status",
+            "training_program", "trainer", "zone", "region", "district", "branch",
+            "training_type", "is_adhoc", "number_of_participants",
+            *COMPLETION_FIELDS, "budget_amount", "actual_expense", "status_override",
+        ],
+        order_by="from_date asc",
+        limit_page_length=5000,
+    )
+    # keep only rows whose end (to_date or from_date) falls within the month
+    all_rows = [r for r in all_rows if str(r.to_date or r.from_date or "")[:10] >= month_start]
+
+    # geo filter
+    geo_names = [r.name for r in all_rows]
+    geo_map = _get_geographies_map(geo_names) if geo_names else {}
+
+    def geo_ok(r):
+        geos = geo_map.get(r.name, [])
+        if geos:
+            return _geography_matches(geos, zone, region, district, branch)
+        if zone     and r.zone     != zone:     return False
+        if region   and not _region_match(r.region, region): return False
+        if district and r.district != district: return False
+        if branch   and r.branch   != branch:   return False
+        return True
+
+    def prog_ok(r):
+        if not program: return True
+        return (r.training_program or "") == program
+
+    def trainer_ok(r):
+        if not trainer: return True
+        return (r.trainer or "") == trainer
+
+    rows = [r for r in all_rows if geo_ok(r) and prog_ok(r) and trainer_ok(r)]
+
+    # ---------- Prev month for % change ----------
+    pm = month - 1 if month > 1 else 12
+    py = year if month > 1 else year - 1
+    pm_last = cal_mod.monthrange(py, pm)[1]
+    pm_start = f"{py}-{pm:02d}-01"
+    pm_end   = f"{py}-{pm:02d}-{pm_last}"
+    prev_rows_raw = frappe.db.get_all(
+        "Training", filters={"docstatus": ["<", 2], "from_date": ["<=", pm_end]},
+        fields=["name", "from_date", "to_date", "status", "status_override", *COMPLETION_FIELDS],
+        limit_page_length=5000,
+    )
+    prev_rows = [r for r in prev_rows_raw if str(r.to_date or r.from_date or "")[:10] >= pm_start]
+
+    def _st(r):
+        sc = sum(1 for f in COMPLETION_FIELDS if r.get(f))
+        if sc == 5: return "completed"
+        if sc > 0:  return "inprogress"
+        so = str(r.get("status_override") or r.get("status") or "").lower()
+        if so in ("cancelled", "postponed", "rescheduled"): return so
+        end = str(r.to_date or r.from_date or "")[:10]
+        if not end: return "draft"
+        return "upcoming" if end >= today_str else "pending"
+
+    # ---------- KPIs ----------
+    total   = len(rows)
+    comp    = sum(1 for r in rows if _st(r) == "completed")
+    inp     = sum(1 for r in rows if _st(r) == "inprogress")
+    upc     = sum(1 for r in rows if _st(r) == "upcoming")
+    pend    = sum(1 for r in rows if _st(r) == "pending")
+    canc    = sum(1 for r in rows if _st(r) == "cancelled")
+    comp_rate = round(comp / total * 100) if total else 0
+
+    pt = len(prev_rows)
+    pc = sum(1 for r in prev_rows if _st(r) == "completed")
+    pu = sum(1 for r in prev_rows if _st(r) == "upcoming")
+    pp = sum(1 for r in prev_rows if _st(r) == "pending")
+    pi = sum(1 for r in prev_rows if _st(r) == "inprogress")
+    pr = round(pc / pt * 100) if pt else 0
+
+    def _chg(cur, prev):
+        if not prev: return None
+        return round((cur - prev) / prev * 100)
+
+    kpis = {
+        "total_planned":   {"value": total,     "prev": pt,  "change": _chg(total, pt)},
+        "conducted":       {"value": comp,       "prev": pc,  "change": _chg(comp, pc)},
+        "upcoming":        {"value": upc,        "prev": pu,  "change": _chg(upc, pu)},
+        "inprogress":      {"value": inp,        "prev": pi,  "change": _chg(inp, pi)},
+        "pending":         {"value": pend,       "prev": pp,  "change": _chg(pend, pp)},
+        "completion_rate": {"value": comp_rate,  "prev": pr,  "change": _chg(comp_rate, pr)},
+    }
+
+    # ---------- Daily / Weekly / Monthly coverage ----------
+    import datetime
+    today_dt = today
+    # Daily: today's trainings
+    day_rows = [r for r in rows if str(r.from_date or "")[:10] <= today_str <= str(r.to_date or r.from_date or "")[:10]]
+    d_planned = len(day_rows)
+    d_conducted = sum(1 for r in day_rows if _st(r) == "completed")
+    d_pending = d_planned - d_conducted
+
+    # Weekly: Mon-Sun containing today
+    dow = today_dt.weekday()
+    wk_start = today_dt - datetime.timedelta(days=dow)
+    wk_end   = wk_start + datetime.timedelta(days=6)
+    wk_s, wk_e = str(wk_start)[:10], str(wk_end)[:10]
+    wk_rows = [r for r in rows if str(r.from_date or "")[:10] <= wk_e and str(r.to_date or r.from_date or "")[:10] >= wk_s]
+    w_planned = len(wk_rows)
+    w_conducted = sum(1 for r in wk_rows if _st(r) == "completed")
+    w_pending = w_planned - w_conducted
+
+    m_conducted = comp
+    m_pending = pend + inp
+
+    coverage = {
+        "daily":   {"label": today_str, "planned": d_planned, "conducted": d_conducted, "pending": d_pending, "pct": round(d_conducted/d_planned*100) if d_planned else 0},
+        "weekly":  {"label": f"{wk_s} to {wk_e}", "planned": w_planned, "conducted": w_conducted, "pending": w_pending, "pct": round(w_conducted/w_planned*100) if w_planned else 0},
+        "monthly": {"label": f"{month_start} to {today_str}", "planned": total, "conducted": m_conducted, "pending": m_pending, "pct": comp_rate},
+    }
+
+    # ---------- Monthly trend (weekly buckets in current month) ----------
+    trend = []
+    wk = 1
+    d = frappe.utils.getdate(month_start)
+    last_d = frappe.utils.getdate(month_end)
+    while d <= last_d:
+        w_end = min(d + datetime.timedelta(days=6), last_d)
+        ws, we = str(d)[:10], str(w_end)[:10]
+        wrows = [r for r in rows if str(r.from_date or "")[:10] <= we and str(r.to_date or r.from_date or "")[:10] >= ws]
+        trained = sum(1 for r in wrows if _st(r) == "completed")
+        planned_w = len(wrows)
+        trend.append({
+            "label": f"{d.day}–{w_end.day} {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month-1]}",
+            "trained": trained, "planned": planned_w,
+        })
+        d = w_end + datetime.timedelta(days=1)
+        wk += 1
+
+    # ---------- Program-wise coverage ----------
+    prog_map = {}
+    for r in rows:
+        p = r.training_program or "Other"
+        if p not in prog_map:
+            prog_map[p] = {"planned": 0, "conducted": 0}
+        prog_map[p]["planned"] += 1
+        if _st(r) == "completed":
+            prog_map[p]["conducted"] += 1
+
+    prog_coverage = sorted(
+        [{"program": p, "planned": v["planned"], "conducted": v["conducted"],
+          "pct": round(v["conducted"]/v["planned"]*100) if v["planned"] else 0}
+         for p, v in prog_map.items()],
+        key=lambda x: -x["planned"]
+    )[:8]
+
+    # ---------- Zone-wise table ----------
+    # Get distinct zones from training geographies + branch master
+    all_zones_set = set()
+    for r in rows:
+        geos = geo_map.get(r.name, [])
+        if geos:
+            for g in geos:
+                if g.get("zone"): all_zones_set.add(g["zone"])
+        elif r.zone:
+            all_zones_set.add(r.zone)
+
+    zone_table = []
+    for z in sorted(all_zones_set):
+        z_rows = []
+        for r in rows:
+            geos = geo_map.get(r.name, [])
+            if geos:
+                if any(g.get("zone") == z for g in geos): z_rows.append(r)
+            elif r.zone == z:
+                z_rows.append(r)
+        zp = len(z_rows)
+        zc = sum(1 for r in z_rows if _st(r) == "completed")
+        zi = sum(1 for r in z_rows if _st(r) == "inprogress")
+        zpend = sum(1 for r in z_rows if _st(r) in ("pending", "upcoming"))
+        zone_table.append({
+            "zone": z,
+            "planned": zp, "planned_pct": round(zp/total*100) if total else 0,
+            "conducted": zc, "conducted_pct": round(zc/zp*100) if zp else 0,
+            "pending": zpend, "pending_pct": round(zpend/zp*100) if zp else 0,
+            "completion_pct": round(zc/zp*100) if zp else 0,
+        })
+    # Add Pan India total row
+    zone_table.append({
+        "zone": "PAN India",
+        "planned": total, "planned_pct": 100,
+        "conducted": comp, "conducted_pct": comp_rate,
+        "pending": pend, "pending_pct": round(pend/total*100) if total else 0,
+        "completion_pct": comp_rate,
+    })
+
+    # ---------- Upcoming trainings ----------
+    upcoming_list = []
+    for r in rows:
+        if _st(r) in ("upcoming", "inprogress"):
+            upcoming_list.append({
+                "name": r.name,
+                "program": r.training_program or "—",
+                "from_date": str(r.from_date or "")[:10],
+                "to_date": str(r.to_date or r.from_date or "")[:10],
+                "zone": r.zone or "—",
+                "trainer": r.trainer or "—",
+                "status": _st(r),
+            })
+    upcoming_list = sorted(upcoming_list, key=lambda x: x["from_date"])[:10]
+
+    # ---------- Insights & Alerts ----------
+    insights = []
+
+    # Pending alert: zone with most pending
+    if zone_table:
+        max_pend = max((z for z in zone_table if z["zone"] != "PAN India"), key=lambda z: z["pending"], default=None)
+        if max_pend and max_pend["pending"] > 0:
+            insights.append({
+                "type": "warning",
+                "title": "Pending Trainings",
+                "desc": f"{max_pend['zone']} — {max_pend['pending']} trainings pending (highest among zones)",
+                "color": "orange",
+            })
+
+    # Low completion: zone below average
+    avg_comp = comp_rate
+    low_zones = [z for z in zone_table if z["zone"] != "PAN India" and z["completion_pct"] < avg_comp and z["planned"] >= 3]
+    if low_zones:
+        lz = min(low_zones, key=lambda z: z["completion_pct"])
+        insights.append({
+            "type": "alert",
+            "title": "Low Completion Rate",
+            "desc": f"{lz['zone']} — {lz['completion_pct']}% completion rate (vs. {avg_comp}% overall)",
+            "color": "red",
+        })
+
+    # Best performer
+    good_zones = [z for z in zone_table if z["zone"] != "PAN India" and z["planned"] >= 3]
+    if good_zones:
+        best = max(good_zones, key=lambda z: z["completion_pct"])
+        insights.append({
+            "type": "success",
+            "title": "Highest Performance",
+            "desc": f"{best['zone']} — {best['completion_pct']}% completion rate (highest among zones)",
+            "color": "green",
+        })
+
+    # Upcoming in next 7 days
+    next7 = str(today + datetime.timedelta(days=7))[:10]
+    soon = [r for r in rows if today_str <= str(r.from_date or "")[:10] <= next7]
+    if soon:
+        insights.append({
+            "type": "info",
+            "title": "Trainings This Week",
+            "desc": f"{len(soon)} training(s) scheduled in next 7 days",
+            "color": "blue",
+        })
+
+    # Trainer options for filter
+    trainer_opts = sorted({r.trainer for r in all_rows if r.trainer})
+    program_opts = sorted({r.training_program for r in all_rows if r.training_program})
+
+    return {
+        "kpis": kpis,
+        "coverage": coverage,
+        "monthly_trend": trend,
+        "program_coverage": prog_coverage,
+        "zone_table": zone_table,
+        "upcoming_trainings": upcoming_list,
+        "insights": insights,
+        "meta": {
+            "month": month, "year": year,
+            "month_label": ["January","February","March","April","May","June","July","August","September","October","November","December"][month-1],
+            "today": today_str,
+            "trainer_opts": trainer_opts,
+            "program_opts": program_opts,
+        }
+    }
