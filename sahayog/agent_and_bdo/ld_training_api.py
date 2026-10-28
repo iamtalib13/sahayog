@@ -3330,18 +3330,41 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
 
     # ---------- Daily / Weekly / Monthly coverage ----------
     import datetime
-    today_dt = today
-    # Daily: today's trainings
-    day_rows = [r for r in rows if str(r.from_date or "")[:10] <= today_str <= str(r.to_date or r.from_date or "")[:10]]
+    is_curr_m = (year == today.year and month == today.month)
+    if is_curr_m:
+        ref_day = today
+        ref_day_str = today_str
+        ref_dow = ref_day.weekday()
+        wk_start = ref_day - datetime.timedelta(days=ref_dow)
+        wk_end   = wk_start + datetime.timedelta(days=6)
+        wk_s, wk_e = str(wk_start)[:10], str(wk_end)[:10]
+        monthly_end = today_str
+    elif (year, month) < (today.year, today.month):
+        # Past month: show month-end as reference
+        ref_day = frappe.utils.getdate(month_end)
+        ref_day_str = month_end
+        ref_dow = ref_day.weekday()
+        wk_start = ref_day - datetime.timedelta(days=ref_dow)
+        wk_end   = ref_day
+        wk_s, wk_e = str(wk_start)[:10], str(wk_end)[:10]
+        monthly_end = month_end
+    else:
+        # Future month: show month-start as reference
+        ref_day = frappe.utils.getdate(month_start)
+        ref_day_str = month_start
+        ref_dow = ref_day.weekday()
+        wk_start = ref_day
+        wk_end   = min(frappe.utils.getdate(month_end), ref_day + datetime.timedelta(days=6))
+        wk_s, wk_e = str(wk_start)[:10], str(wk_end)[:10]
+        monthly_end = month_end
+
+    # Daily: reference day's trainings
+    day_rows = [r for r in rows if str(r.from_date or "")[:10] <= ref_day_str <= str(r.to_date or r.from_date or "")[:10]]
     d_planned = len(day_rows)
     d_conducted = sum(1 for r in day_rows if _st(r) == "completed")
     d_pending = d_planned - d_conducted
 
-    # Weekly: Mon-Sun containing today
-    dow = today_dt.weekday()
-    wk_start = today_dt - datetime.timedelta(days=dow)
-    wk_end   = wk_start + datetime.timedelta(days=6)
-    wk_s, wk_e = str(wk_start)[:10], str(wk_end)[:10]
+    # Weekly: reference week
     wk_rows = [r for r in rows if str(r.from_date or "")[:10] <= wk_e and str(r.to_date or r.from_date or "")[:10] >= wk_s]
     w_planned = len(wk_rows)
     w_conducted = sum(1 for r in wk_rows if _st(r) == "completed")
@@ -3351,9 +3374,9 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
     m_pending = pend + inp
 
     coverage = {
-        "daily":   {"label": today_str, "planned": d_planned, "conducted": d_conducted, "pending": d_pending, "pct": round(d_conducted/d_planned*100) if d_planned else 0},
+        "daily":   {"label": ref_day_str, "planned": d_planned, "conducted": d_conducted, "pending": d_pending, "pct": round(d_conducted/d_planned*100) if d_planned else 0},
         "weekly":  {"label": f"{wk_s} to {wk_e}", "planned": w_planned, "conducted": w_conducted, "pending": w_pending, "pct": round(w_conducted/w_planned*100) if w_planned else 0},
-        "monthly": {"label": f"{month_start} to {today_str}", "planned": total, "conducted": m_conducted, "pending": m_pending, "pct": comp_rate},
+        "monthly": {"label": f"{month_start} to {monthly_end}", "planned": total, "conducted": m_conducted, "pending": m_pending, "pct": comp_rate},
     }
 
     # ---------- Monthly trend (weekly buckets in current month) ----------
