@@ -7041,6 +7041,14 @@
         /* Completion checks need participants; agent trainings additionally
            need every swayamsevika's attendance marked. Returns "" or a reason. */
         function checksLockedReason(ev) {
+          var endD = ev.to_date || ev.from_date;
+          if (state.role !== "ld_admin" && endD && todayIso() < endD) {
+            return (
+              "Training status can be marked only on or after Training End Date (" +
+              fmtDMY(endD) +
+              ")."
+            );
+          }
           var list = ev.participant_list || [];
           if (!list.length)
             return "Add participants before marking completion.";
@@ -7362,7 +7370,7 @@
         }
         /* Portal build stamp — bump on every release so testers can confirm
            which version they run (kills cached-JS confusion). */
-        var LD_BUILD = "2026-10-10zd";
+        var LD_BUILD = "2026-10-10ze";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
@@ -9419,6 +9427,22 @@
           }
 
           if (!isDoneSave) {
+            /* Trainer date guard: cannot save completion checks before end date */
+            if (state.role !== "ld_admin") {
+              var hasNewChecksD = CHECK_FIELDS.some(function (f) {
+                return (ev[f.key] || 0) && !(base.checks[f.key] || 0);
+              });
+              if (hasNewChecksD) {
+                var endD3 = ev.to_date || ev.from_date;
+                if (endD3 && todayIso() < endD3) {
+                  showToast(
+                    "Training status can be marked only on or after Training End Date (" +
+                      fmtDMY(endD3) + ")."
+                  );
+                  return;
+                }
+              }
+            }
             CHECK_FIELDS.forEach(function (f) {
               var cur = ev[f.key] || 0;
               if (cur !== (base.checks[f.key] || 0)) {
@@ -10366,17 +10390,39 @@
             closeModal("addModal");
             return;
           }
-          var st = statusOf(ev);
-          if (st === "cancelled" || st === "completed") {
-            showToast("This training is read-only.");
-            return;
-          }
-          // Completed trainings are read-only — only budget may still be saved.
-          // NOTE: staged (unsaved) checks must not count — base decides.
+          // Use SAVED (base) state — never staged ev — to decide read-only.
+          // Staged checks on ev can make statusOf() return "completed" prematurely.
           var wasScore = CHECK_FIELDS.filter(function (f) {
             return (state.editBase && state.editBase.checks[f.key]) || 0;
           }).length;
           var isDoneSave = wasScore === 5;
+          // Read-only guard: use saved base — cancelled/completed trainings block saves.
+          var baseSt = (function () {
+            var so = String(ev.status_override || ev.status || "").toLowerCase();
+            if (so === "cancelled") return "cancelled";
+            if (isDoneSave) return "completed";
+            return "other";
+          })();
+          if (baseSt === "cancelled" || baseSt === "completed") {
+            showToast("This training is read-only.");
+            return;
+          }
+          // Trainer date guard: completion checks cannot be staged/saved before end date.
+          if (state.role !== "ld_admin") {
+            var hasNewChecks = CHECK_FIELDS.some(function (f) {
+              return (ev[f.key] || 0) && !(state.editBase && state.editBase.checks[f.key]);
+            });
+            if (hasNewChecks) {
+              var endD2 = ev.to_date || ev.from_date;
+              if (endD2 && todayIso() < endD2) {
+                showToast(
+                  "Training status can be marked only on or after Training End Date (" +
+                    fmtDMY(endD2) + ")."
+                );
+                return;
+              }
+            }
+          }
           // In-flight guard: double-clicks would race parallel writers on the same doc
           if (state.savingTraining) return;
 
