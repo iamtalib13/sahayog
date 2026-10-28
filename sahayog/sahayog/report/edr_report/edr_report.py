@@ -41,6 +41,9 @@ def get_columns():
 		{"label": "Region", "fieldname": "custom_region", "fieldtype": "Data", "width": 100},
 		{"label": "District", "fieldname": "custom_district", "fieldtype": "Data", "width": 120},
 		{"label": "Division", "fieldname": "custom_division", "fieldtype": "Data", "width": 130},
+		{"label": "Resignation Letter Date", "fieldname": "resignation_letter_date", "fieldtype": "Date", "width": 130},
+		{"label": "Relieving Date", "fieldname": "relieving_date", "fieldtype": "Date", "width": 130},
+		{"label": "Status", "fieldname": "status", "fieldtype": "Data", "width": 130},
 	]
 
 
@@ -69,7 +72,7 @@ def get_data(filters):
 			e.employee_number, e.employee_name, e.reports_to, e.gender, e.date_of_birth,
 			e.date_of_joining, e.cell_number, e.designation, e.branch,
 			e.sol_id, e.custom_zone, e.custom_region, e.custom_district,
-			e.custom_division
+			e.custom_division, e.resignation_letter_date, e.relieving_date, e.status
 		FROM `tabEmployee` e
 		{where_clause}
 		ORDER BY e.date_of_joining DESC, e.employee_name ASC
