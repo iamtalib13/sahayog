@@ -14246,7 +14246,8 @@
         /* --- nav switch: Calendar ↔ Trainings ↔ Reports ↔ Team --- */
         var activeTab = "calendar"; // "calendar" | "trainings" | "reports" | "team"
 
-        function switchTab(tab) {
+        /* Expose switchTab to window for inline onclick handlers */
+        window.switchTab = switchTab;
           activeTab = tab;
           try {
             localStorage.setItem("ld_training_tab", tab);
@@ -14323,85 +14324,121 @@
         (function injectDashCSS() {
           var style = document.createElement("style");
           style.textContent = [
-            "#dashboardView{overflow-y:auto;overflow-x:hidden;padding:10px 14px 14px;display:flex;flex-direction:column;gap:7px;background:var(--bg);}",
-            ".db-filters{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:7px 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end;box-shadow:var(--shadow-1);}",
-            ".db-fil-g{display:flex;flex-direction:column;gap:3px;min-width:110px;flex:1;}",
-            ".db-fil-g label{font-size:10.5px;font-weight:600;color:var(--ink-3);text-transform:uppercase;letter-spacing:.04em;}",
-            ".db-fil-g select,.db-fil-g input[type=month]{height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:#f8fafc;padding:0 6px;font-size:11.5px;color:var(--ink-1);outline:none;}",
-            ".db-fil-g select:focus,.db-fil-g input[type=month]:focus{border-color:var(--accent);}",
-            ".db-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:7px;}",
+            /* ── Shell ── */
+            "#dashboardView{overflow-y:auto;overflow-x:hidden;padding:8px 14px 10px;display:flex;flex-direction:column;gap:6px;background:var(--bg);}",
+
+            /* ── KPI row ── */
+            ".db-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}",
             "@media(max-width:1200px){.db-kpi-grid{grid-template-columns:repeat(3,1fr);}}",
             "@media(max-width:800px){.db-kpi-grid{grid-template-columns:repeat(2,1fr);}}",
-            ".db-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:9px 12px;position:relative;overflow:hidden;box-shadow:var(--shadow-1);}",
+            ".db-kpi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 11px;position:relative;overflow:hidden;box-shadow:var(--shadow-1);}",
             ".db-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius-md) var(--radius-md) 0 0;}",
             ".db-kpi-planned::before{background:#0d9488}.db-kpi-conducted::before{background:#16a34a}.db-kpi-upcoming::before{background:#2563eb}.db-kpi-inprog::before{background:#ea580c}.db-kpi-pending::before{background:#d97706}.db-kpi-rate::before{background:#7c3aed}",
-            ".db-kpi-icon{width:26px;height:26px;border-radius:6px;display:grid;place-items:center;margin-bottom:5px;}",
-            ".db-kpi-icon svg{width:13px;height:13px;}",
+            ".db-kpi-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}",
+            ".db-kpi-icon{width:24px;height:24px;border-radius:6px;display:grid;place-items:center;flex-shrink:0;}",
+            ".db-kpi-icon svg{width:12px;height:12px;}",
             ".db-kpi-planned .db-kpi-icon{background:#ccfbf1;color:#0d9488}.db-kpi-conducted .db-kpi-icon{background:#dcfce7;color:#16a34a}",
             ".db-kpi-upcoming .db-kpi-icon{background:#dbeafe;color:#2563eb}.db-kpi-inprog .db-kpi-icon{background:#ffedd5;color:#ea580c}",
             ".db-kpi-pending .db-kpi-icon{background:#fef3c7;color:#d97706}.db-kpi-rate .db-kpi-icon{background:#ede9fe;color:#7c3aed}",
-            ".db-kpi-lbl{font-size:10px;font-weight:600;color:var(--ink-3);margin-bottom:2px;}",
-            ".db-kpi-val{font-size:20px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-bottom:4px;}",
+            ".db-kpi-lbl{font-size:10px;font-weight:600;color:var(--ink-3);line-height:1.2;flex:1;min-width:0;}",
+            ".db-kpi-val{font-size:22px;font-weight:800;letter-spacing:-.03em;line-height:1;margin-bottom:3px;}",
             ".db-kpi-planned .db-kpi-val{color:#0d9488}.db-kpi-conducted .db-kpi-val{color:#16a34a}.db-kpi-upcoming .db-kpi-val{color:#2563eb}",
             ".db-kpi-inprog .db-kpi-val{color:#ea580c}.db-kpi-pending .db-kpi-val{color:#d97706}.db-kpi-rate .db-kpi-val{color:#7c3aed}",
-            ".db-kpi-foot{display:flex;align-items:center;gap:6px;font-size:10.5px;color:var(--ink-3);}",
-            ".db-chg-up{color:#16a34a;font-weight:700;font-size:11px;}.db-chg-down{color:#dc2626;font-weight:700;font-size:11px;}.db-chg-flat{color:var(--ink-3);font-size:11px;}",
-            ".db-row3{display:grid;grid-template-columns:1.1fr 1.4fr 1fr;gap:8px;}",
-            ".db-row23{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;}",
-            "@media(max-width:1100px){.db-row3{grid-template-columns:1fr 1fr;}.db-row23{grid-template-columns:1fr;}}",
-            "@media(max-width:800px){.db-row3,.db-row23{grid-template-columns:1fr;}}",
-            ".db-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:9px 12px;box-shadow:var(--shadow-1);}",
-            ".db-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}",
-            ".db-sec-title{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink-1);}",
-            ".db-sec-title svg{width:13px;height:13px;color:#0d9488;}",
-            ".db-sec-sub{font-size:11px;color:var(--ink-3);}",
-            ".db-cov-tabs{display:flex;gap:2px;background:#f1f5f9;border-radius:var(--radius-sm);padding:2px;margin-bottom:8px;}",
+            ".db-kpi-foot{display:flex;align-items:center;gap:5px;font-size:10px;color:var(--ink-3);}",
+            ".db-chg-up{color:#16a34a;font-weight:700;font-size:10.5px;}.db-chg-down{color:#dc2626;font-weight:700;font-size:10.5px;}.db-chg-flat{color:var(--ink-3);font-size:10.5px;}",
+
+            /* ── Middle row: 3 cards ── */
+            ".db-row3{display:grid;grid-template-columns:1fr 1.3fr 1.2fr;gap:6px;align-items:stretch;}",
+            "@media(max-width:1100px){.db-row3{grid-template-columns:1fr 1fr;align-items:start;}}",
+            "@media(max-width:800px){.db-row3{grid-template-columns:1fr;}}",
+
+            /* ── Bottom row: 60/40 ── */
+            ".db-row23{display:grid;grid-template-columns:3fr 2fr;gap:6px;align-items:stretch;}",
+            "@media(max-width:1100px){.db-row23{grid-template-columns:1fr;align-items:start;}}",
+
+            /* ── Card base ── */
+            ".db-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 11px;box-shadow:var(--shadow-1);display:flex;flex-direction:column;}",
+            ".db-sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;}",
+            ".db-sec-title{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:var(--ink-1);}",
+            ".db-sec-title svg{width:13px;height:13px;color:#0d9488;flex-shrink:0;}",
+            ".db-sec-sub{font-size:10.5px;color:var(--ink-3);}",
+            ".db-view-link{font-size:11px;color:var(--accent-ink);font-weight:600;cursor:pointer;background:none;border:none;padding:0;text-decoration:none;}",
+            ".db-view-link:hover{text-decoration:underline;}",
+
+            /* ── Coverage tabs ── */
+            ".db-cov-tabs{display:flex;gap:2px;background:#f1f5f9;border-radius:var(--radius-sm);padding:2px;margin-bottom:6px;}",
             ".db-cov-tab{flex:1;text-align:center;padding:3px 0;font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;color:var(--ink-3);}",
             ".db-cov-tab.active{background:var(--surface);color:#0d9488;box-shadow:var(--shadow-1);}",
             ".db-cov-panel{display:none;}.db-cov-panel.active{display:block;}",
-            ".db-cov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:7px;}",
-            ".db-ci-lbl{font-size:10px;color:var(--ink-3);margin-bottom:0;}.db-ci-val{font-size:16px;font-weight:800;}",
+            ".db-cov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:6px;}",
+            ".db-ci-lbl{font-size:9.5px;color:var(--ink-3);margin-bottom:1px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}",
+            ".db-ci-val{font-size:18px;font-weight:800;line-height:1;}",
             ".db-ci-planned .db-ci-val{color:#0d9488}.db-ci-conducted .db-ci-val{color:#16a34a}.db-ci-pending .db-ci-val{color:#d97706}",
-            ".db-donut-wrap{display:flex;align-items:center;gap:10px;margin-top:6px;}",
-            ".db-donut-box{width:60px;height:60px;flex-shrink:0;position:relative;}",
+            ".db-donut-wrap{display:flex;align-items:center;gap:12px;margin-top:6px;}",
+            ".db-donut-box{width:70px;height:70px;flex-shrink:0;position:relative;}",
             ".db-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}",
-            ".db-donut-pct{font-size:12px;font-weight:800;color:var(--ink-1);}.db-donut-lbl{font-size:8px;color:var(--ink-3);font-weight:600;}",
-            ".db-donut-leg{font-size:11.5px;color:var(--ink-2);}.db-donut-leg b{font-size:13px;font-weight:700;color:var(--ink-1);}",
-            ".db-ztbl{width:100%;border-collapse:collapse;font-size:11.5px;}",
+            ".db-donut-pct{font-size:14px;font-weight:800;color:var(--ink-1);}.db-donut-lbl{font-size:9px;color:var(--ink-3);font-weight:600;}",
+            ".db-donut-leg{font-size:12px;color:var(--ink-2);line-height:1.5;}.db-donut-leg b{font-size:15px;font-weight:700;color:var(--ink-1);}",
+            ".db-cov-sublbl{font-size:10px;color:var(--ink-3);margin-bottom:5px;}",
+
+            /* ── Status distribution bar ── */
+            ".db-dist-bar{display:flex;height:8px;border-radius:4px;overflow:hidden;gap:1px;margin:6px 0 5px;}",
+            ".db-dist-seg{height:100%;transition:width .3s ease;}",
+            ".db-dist-legend{display:flex;flex-wrap:wrap;gap:6px 10px;}",
+            ".db-dist-leg-item{display:flex;align-items:center;gap:4px;font-size:10.5px;color:var(--ink-2);}",
+            ".db-dist-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}",
+
+            /* ── Trend chart ── */
+            ".db-trend-foot{display:flex;gap:14px;margin-top:4px;padding-top:4px;border-top:1px solid var(--border);}",
+            ".db-trend-stat .tl{font-size:9.5px;color:var(--ink-3);}.db-trend-stat .tv{font-size:14px;font-weight:800;}",
+
+            /* ── Zone table ── */
+            ".db-ztbl{width:100%;border-collapse:collapse;font-size:12.5px;}",
             ".db-ztbl thead tr{background:#f8fafc;border-bottom:2px solid var(--border);}",
-            ".db-ztbl thead th{padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);white-space:nowrap;}",
+            ".db-ztbl thead th{padding:8px 10px;text-align:left;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);white-space:nowrap;}",
             ".db-ztbl thead th:not(:first-child){text-align:center;}",
             ".db-ztbl tbody tr{border-bottom:1px solid var(--border);}",
             ".db-ztbl tbody tr:hover{background:#f8fafc;}",
             ".db-ztbl tbody tr.db-panindia{background:#ccfbf1;font-weight:700;border-top:2px solid #0d9488;}",
-            ".db-ztbl tbody td{padding:4px 8px;white-space:nowrap;}",
+            ".db-ztbl tbody td{padding:7px 10px;white-space:nowrap;}",
             ".db-ztbl tbody td:not(:first-child){text-align:center;}",
-            ".db-zone-name{font-weight:600;color:var(--ink-1);}.db-td-num{font-weight:700;}.db-td-pct{color:var(--ink-3);font-size:11px;margin-left:3px;}",
-            ".db-cpill{display:inline-flex;align-items:center;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:700;}",
+            ".db-zone-name{font-weight:600;color:var(--ink-1);white-space:nowrap;font-size:13px;}.db-td-num{font-weight:700;font-size:13px;}.db-td-pct{color:var(--ink-3);font-size:11px;margin-left:3px;}",
+            ".db-cpill{display:inline-flex;align-items:center;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700;}",
             ".db-cp-high{background:#dcfce7;color:#16a34a}.db-cp-mid{background:#fef3c7;color:#d97706}.db-cp-low{background:#fee2e2;color:#dc2626}.db-cp-na{background:#f1f5f9;color:var(--ink-3)}",
-            ".db-utbl{width:100%;border-collapse:collapse;font-size:12px;}",
+            ".db-tbl-scroll{overflow-x:auto;flex:1;}",
+
+            /* ── Upcoming table ── */
+            ".db-utbl{width:100%;border-collapse:collapse;font-size:11.5px;}",
             ".db-utbl thead tr{background:#f8fafc;border-bottom:2px solid var(--border);}",
-            ".db-utbl thead th{padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);white-space:nowrap;}",
+            ".db-utbl thead th{padding:4px 7px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-3);white-space:nowrap;}",
             ".db-utbl tbody tr{border-bottom:1px solid var(--border);}.db-utbl tbody tr:hover{background:#f8fafc;}",
-            ".db-utbl tbody td{padding:4px 8px;}",
-            ".db-sp{display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:11px;font-weight:600;}",
-            ".db-sp-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}",
+            ".db-utbl tbody td{padding:4px 7px;}",
+            ".db-utbl td.u-prog{font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
+            ".db-utbl td.u-date,.db-utbl td.u-zone,.db-utbl td.u-trainer{white-space:nowrap;}",
+            ".db-utbl td.u-trainer{max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);}",
+            ".db-sp{display:inline-flex;align-items:center;gap:3px;border-radius:999px;padding:1px 7px;font-size:10.5px;font-weight:600;}",
+            ".db-sp-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}",
             ".db-sp-upcoming{background:#dbeafe;color:#2563eb}.db-sp-inprogress{background:#ffedd5;color:#ea580c}",
             ".db-sp-completed{background:#dcfce7;color:#16a34a}.db-sp-pending{background:#fef3c7;color:#d97706}",
-            ".db-ins-list{display:flex;flex-direction:column;gap:5px;}",
-            ".db-ins{display:flex;align-items:flex-start;gap:8px;padding:6px 10px;border-radius:var(--radius-sm);border:1px solid var(--border);}",
-            ".db-ins-icon{width:26px;height:26px;border-radius:6px;display:grid;place-items:center;flex-shrink:0;}",
-            ".db-ins-icon svg{width:12px;height:12px;}",
-            ".db-ins-orange .db-ins-icon{background:#ffedd5;color:#ea580c}.db-ins-red .db-ins-icon{background:#fee2e2;color:#dc2626}",
-            ".db-ins-green .db-ins-icon{background:#dcfce7;color:#16a34a}.db-ins-blue .db-ins-icon{background:#dbeafe;color:#2563eb}",
+
+            /* ── Insights panel ── */
+            ".db-ins-list{display:flex;flex-direction:column;gap:4px;}",
+            ".db-ins{display:flex;align-items:flex-start;gap:7px;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);}",
+            ".db-ins-icon{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;flex-shrink:0;margin-top:1px;}",
+            ".db-ins-icon svg{width:11px;height:11px;}",
+            ".db-ins-orange{border-color:#fed7aa;background:#fff7ed;}.db-ins-orange .db-ins-icon{background:#ffedd5;color:#ea580c}",
+            ".db-ins-red{border-color:#fecaca;background:#fef2f2;}.db-ins-red .db-ins-icon{background:#fee2e2;color:#dc2626}",
+            ".db-ins-green{border-color:#bbf7d0;background:#f0fdf4;}.db-ins-green .db-ins-icon{background:#dcfce7;color:#16a34a}",
+            ".db-ins-blue{border-color:#bfdbfe;background:#eff6ff;}.db-ins-blue .db-ins-icon{background:#dbeafe;color:#2563eb}",
             ".db-ins-title{font-size:11px;font-weight:700;color:var(--ink-1);margin-bottom:1px;}",
-            ".db-ins-desc{font-size:10.5px;color:var(--ink-3);line-height:1.3;}",
+            ".db-ins-desc{font-size:10.5px;color:var(--ink-2);line-height:1.3;}",
+
+            /* ── Program legend ── */
+            ".db-prog-leg{display:flex;flex-direction:column;gap:2px;font-size:11px;margin-top:4px;}",
+
+            /* ── Misc ── */
             ".db-loading{display:flex;align-items:center;justify-content:center;height:50px;color:var(--ink-3);font-size:12px;gap:8px;}",
-            ".db-empty{text-align:center;padding:12px;color:var(--ink-3);font-size:11.5px;}",
-            ".db-tbl-scroll{overflow-x:auto;}",
-            ".db-prog-leg{display:flex;flex-direction:column;gap:3px;font-size:11px;}",
-            ".db-trend-foot{display:flex;gap:14px;margin-top:5px;padding-top:5px;border-top:1px solid var(--border);}",
-            ".db-trend-stat .tl{font-size:10px;color:var(--ink-3);}.db-trend-stat .tv{font-size:15px;font-weight:800;}",
+            ".db-empty{text-align:center;padding:10px;color:var(--ink-3);font-size:11.5px;}",
           ].join("");
           document.head.appendChild(style);
         })();
@@ -14411,65 +14448,160 @@
           var cy = today.getFullYear(), cm = today.getMonth() + 1;
           var mv = cy + "-" + String(cm).padStart(2, "0");
           return [
-            /* KPI grid */
-            '<div class="db-kpi-grid" id="db-kpi-grid"><div class="db-loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div></div>',
-            /* Row 3: coverage + trend + program */
-            '<div class="db-row3">',
-              /* Coverage */
-              '<div class="db-card">',
-                '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Daily / Weekly / Monthly Coverage</div></div>',
-                '<div class="db-cov-tabs"><div class="db-cov-tab active" data-dbcov="daily">Daily</div><div class="db-cov-tab" data-dbcov="weekly">Weekly</div><div class="db-cov-tab" data-dbcov="monthly">Monthly</div></div>',
-                '<div id="db-cov-panels"></div>',
+            /* ── Dashboard Filter Bar: Month Switcher ── */
+            '<div style="display:flex;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:6px 12px;box-shadow:var(--shadow-1);">',
+              '<div style="display:flex;align-items:center;gap:8px;">',
+                '<span style="font-size:12px;font-weight:700;color:var(--ink-1);display:flex;align-items:center;gap:6px;">',
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:var(--accent);"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
+                  'Training Period:',
+                '</span>',
+                '<button id="db-prev-month" class="icon-btn" style="width:26px;height:26px;" title="Previous Month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="15 18 9 12 15 6"/></svg></button>',
+                '<input type="month" id="db-month-picker" value="'+mv+'" style="height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:0 8px;font-size:12px;font-weight:600;color:var(--ink-1);outline:none;cursor:pointer;">',
+                '<button id="db-next-month" class="icon-btn" style="width:26px;height:26px;" title="Next Month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="9 18 15 12 9 6"/></svg></button>',
               '</div>',
-              /* Monthly Trend */
-              '<div class="db-card">',
-                '<div class="db-sec-head"><div><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Monthly Training Trend</div><div class="db-sec-sub" id="db-trend-sub" style="margin-top:3px;"></div></div></div>',
-                '<div style="position:relative;height:120px;"><canvas id="db-trend-chart"></canvas></div>',
-                '<div style="display:flex;gap:12px;margin-top:6px;font-size:11px;color:var(--ink-3);">',
-                  '<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#0d9488;border-radius:2px;display:inline-block;"></span>Trained</span>',
-                  '<span style="display:flex;align-items:center;gap:4px;"><span style="width:10px;height:10px;background:#e5e7eb;border-radius:2px;display:inline-block;"></span>Planned</span>',
-                '</div>',
-                '<div class="db-trend-foot">',
-                  '<div class="db-trend-stat"><div class="tl">Trained Till Date</div><div class="tv" id="db-trend-trained" style="color:#0d9488;">—</div></div>',
-                  '<div class="db-trend-stat"><div class="tl">Planned for Month</div><div class="tv" id="db-trend-planned" style="color:var(--ink-3);">—</div></div>',
-                '</div>',
-              '</div>',
-              /* Program coverage */
-              '<div class="db-card">',
-                '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Program-wise Coverage</div><div class="db-sec-sub">Vertical Wise</div></div>',
-                '<div style="position:relative;height:110px;margin-bottom:6px;"><canvas id="db-prog-chart"></canvas></div>',
-                '<div id="db-prog-legend" class="db-prog-leg"></div>',
-              '</div>',
+              '<div id="db-period-label" style="font-size:12px;font-weight:600;color:var(--ink-2);"></div>',
             '</div>',
-            /* Row: zone + upcoming | insights */
-            '<div class="db-row23">',
-              '<div style="display:flex;flex-direction:column;gap:7px;">',
-                /* Zone table */
-                '<div class="db-card">',
-                  '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Zone-wise Performance</div><div class="db-sec-sub" id="db-zone-sub">Current Month Till Date</div></div>',
-                  '<div class="db-tbl-scroll"><table class="db-ztbl"><thead><tr><th>Zone</th><th>#</th><th>Planned%</th><th>#</th><th>Conducted%</th><th>#</th><th>Pending%</th><th>Completion%</th></tr></thead><tbody id="db-zone-body"><tr><td colspan="8" class="db-empty"><div class="spinner" style="margin:auto;"></div></td></tr></tbody></table></div>',
+
+            /* ── Row 1: KPI grid ── */
+            '<div class="db-kpi-grid" id="db-kpi-grid"><div class="db-loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div></div>',
+
+            /* ── Row 2: Coverage | Trend | Status Distribution ── */
+            '<div class="db-row3">',
+
+              /* Coverage */
+              '<div class="db-card" style="justify-content:space-between;">',
+                '<div>',
+                  '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Coverage Summary</div></div>',
+                  '<div class="db-cov-tabs"><div class="db-cov-tab active" data-dbcov="daily">Daily</div><div class="db-cov-tab" data-dbcov="weekly">Weekly</div><div class="db-cov-tab" data-dbcov="monthly">Monthly</div></div>',
+                  '<div id="db-cov-panels"></div>',
                 '</div>',
-                /* Upcoming */
+              '</div>',
+
+              /* Monthly Trend */
+              '<div class="db-card" style="justify-content:space-between;">',
+                '<div>',
+                  '<div class="db-sec-head"><div><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Monthly Training Trend</div><div class="db-sec-sub" id="db-trend-sub" style="margin-top:2px;"></div></div></div>',
+                  '<div style="position:relative;height:120px;"><canvas id="db-trend-chart"></canvas></div>',
+                  '<div style="display:flex;gap:10px;margin-top:4px;font-size:10.5px;color:var(--ink-3);">',
+                    '<span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;background:#0d9488;border-radius:2px;display:inline-block;"></span>Conducted</span>',
+                    '<span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;background:#e5e7eb;border-radius:2px;display:inline-block;"></span>Planned</span>',
+                  '</div>',
+                '</div>',
+                '<div class="db-trend-foot" style="margin-top:auto;">',
+                  '<div class="db-trend-stat"><div class="tl">Conducted</div><div class="tv" id="db-trend-trained" style="color:#0d9488;">—</div></div>',
+                  '<div class="db-trend-stat"><div class="tl">Planned</div><div class="tv" id="db-trend-planned" style="color:var(--ink-3);">—</div></div>',
+                  '<div class="db-trend-stat"><div class="tl">Rate</div><div class="tv" id="db-trend-rate" style="color:#7c3aed;">—</div></div>',
+                '</div>',
+              '</div>',
+
+              /* Program Distribution */
+              '<div class="db-card" style="justify-content:flex-start;">',
+                '<div>',
+                  '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Program Distribution</div><div class="db-sec-sub">Vertical-wise</div></div>',
+                  '<div style="position:relative;height:110px;margin-bottom:6px;"><canvas id="db-prog-chart"></canvas></div>',
+                  '<div id="db-prog-legend" class="db-prog-leg"></div>',
+                '</div>',
+              '</div>',
+
+            '</div>',
+
+            /* ── Row 3: Zone table (60%) | Right column (40%) ── */
+            '<div class="db-row23">',
+
+              /* Zone-wise Performance */
+              '<div class="db-card">',
+                '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Zone-wise Performance</div><div class="db-sec-sub" id="db-zone-sub">Current Month</div></div>',
+                '<div class="db-tbl-scroll"><table class="db-ztbl"><thead><tr><th style="min-width:80px;">Zone</th><th>Planned</th><th>Plan%</th><th>Conducted</th><th>Done%</th><th>Pending</th><th>Pend%</th><th>Completion</th></tr></thead><tbody id="db-zone-body"><tr><td colspan="8" class="db-empty"><div class="spinner" style="margin:auto;"></div></td></tr></tbody></table></div>',
+              '</div>',
+
+              /* Right column: Upcoming + Insights stacked */
+              '<div style="display:flex;flex-direction:column;gap:6px;">',
+
+                /* Upcoming Trainings */
                 '<div class="db-card">',
-                  '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Upcoming Trainings</div><a class="nav-placeholder" href="/training" style="font-size:12px;font-weight:600;color:var(--accent);pointer-events:auto;cursor:pointer;" onclick="switchTab(\'calendar\');return false;">View All →</a></div>',
+                  '<div class="db-sec-head">',
+                    '<div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Upcoming Trainings</div>',
+                    '<button class="db-view-link" onclick="switchTab(\'calendar\')">View All →</button>',
+                  '</div>',
                   '<div class="db-tbl-scroll"><table class="db-utbl"><thead><tr><th>Program</th><th>Date</th><th>Zone</th><th>Trainer</th><th>Status</th></tr></thead><tbody id="db-upcoming-body"><tr><td colspan="5" class="db-empty"><div class="spinner" style="margin:auto;"></div></td></tr></tbody></table></div>',
                 '</div>',
+
+                /* Insights & Alerts */
+                '<div class="db-card" id="db-ins-card">',
+                  '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Insights & Alerts</div></div>',
+                  '<div class="db-ins-list" id="db-insights"><div class="db-loading"><div class="spinner"></div></div></div>',
+                '</div>',
+
               '</div>',
-              /* Insights */
-              '<div class="db-card">',
-                '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Insights &amp; Alerts</div></div>',
-                '<div class="db-ins-list" id="db-insights"><div class="db-loading"><div class="spinner"></div></div></div>',
-              '</div>',
+
             '</div>',
           ].join("");
         }
 
-        /* ── Dashboard Charts ── */
+        /* ── Dashboard State & Charts ── */
         var dbTrendChart = null, dbProgChart = null, dbCovCharts = {};
         var DB_COLORS = ["#0d9488","#2563eb","#7c3aed","#ea580c","#16a34a","#d97706","#db2777","#0284c7"];
+        var dbSelectedYear = new Date().getFullYear();
+        var dbSelectedMonth = new Date().getMonth() + 1;
 
         function bindDashboardEvents() {
-          /* No filters — dashboard always shows current month, all zones */
+          var picker = document.getElementById("db-month-picker");
+          var prevBtn = document.getElementById("db-prev-month");
+          var nextBtn = document.getElementById("db-next-month");
+          var currBtn = document.getElementById("db-current-month");
+
+          if (picker) {
+            picker.addEventListener("change", function () {
+              if (!this.value) return;
+              var parts = this.value.split("-");
+              dbSelectedYear = parseInt(parts[0], 10);
+              dbSelectedMonth = parseInt(parts[1], 10);
+              refreshDashboard();
+            });
+          }
+
+          if (prevBtn) {
+            prevBtn.addEventListener("click", function () {
+              if (dbSelectedMonth === 1) {
+                dbSelectedMonth = 12;
+                dbSelectedYear -= 1;
+              } else {
+                dbSelectedMonth -= 1;
+              }
+              syncDbMonthPicker();
+              refreshDashboard();
+            });
+          }
+
+          if (nextBtn) {
+            nextBtn.addEventListener("click", function () {
+              if (dbSelectedMonth === 12) {
+                dbSelectedMonth = 1;
+                dbSelectedYear += 1;
+              } else {
+                dbSelectedMonth += 1;
+              }
+              syncDbMonthPicker();
+              refreshDashboard();
+            });
+          }
+
+          if (currBtn) {
+            currBtn.addEventListener("click", function () {
+              var now = new Date();
+              dbSelectedYear = now.getFullYear();
+              dbSelectedMonth = now.getMonth() + 1;
+              syncDbMonthPicker();
+              refreshDashboard();
+            });
+          }
+        }
+
+        function syncDbMonthPicker() {
+          var picker = document.getElementById("db-month-picker");
+          if (picker) {
+            picker.value = dbSelectedYear + "-" + String(dbSelectedMonth).padStart(2, "0");
+          }
         }
 
         function dbFillSelect(id, items, placeholder) {
@@ -14481,16 +14613,20 @@
         }
 
         function refreshDashboard() {
-          var now = new Date();
-          var y = now.getFullYear(), m = now.getMonth() + 1;
-          var args = { year: y, month: m };
+          var args = { year: dbSelectedYear, month: dbSelectedMonth };
           var kg = document.getElementById("db-kpi-grid");
           if(kg) kg.innerHTML='<div class="db-loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>';
 
           api("get_dashboard_data", args).then(function(d){
+            var meta = d.meta || {};
+            var pl = document.getElementById("db-period-label");
+            if (pl) pl.textContent = (meta.month_label || "") + " " + (meta.year || "");
+            var zs = document.getElementById("db-zone-sub");
+            if (zs) zs.textContent = (meta.month_label || "") + " " + (meta.year || "");
+
             dbRenderKPIs(d.kpis||{});
             dbRenderCoverage(d.coverage||{});
-            dbRenderTrend(d.monthly_trend||[], d.kpis||{}, d.meta||{});
+            dbRenderTrend(d.monthly_trend||[], d.kpis||{}, meta);
             dbRenderProgChart(d.program_coverage||[]);
             dbRenderZoneTable(d.zone_table||[]);
             dbRenderUpcoming(d.upcoming_trainings||[]);
@@ -14584,21 +14720,50 @@
 
         function dbRenderTrend(trend, kpis, meta) {
           var sub=document.getElementById("db-trend-sub");
-          if(sub) sub.textContent="Trained Till Date · "+(meta.month_label||"")+" "+(meta.year||"");
+          if(sub) sub.textContent="Conducted Till Date · "+(meta.month_label||"")+" "+(meta.year||"");
           var tt=document.getElementById("db-trend-trained"); if(tt) tt.textContent=(kpis.conducted||{}).value||0;
           var tp=document.getElementById("db-trend-planned"); if(tp) tp.textContent=(kpis.total_planned||{}).value||0;
+          var tr=document.getElementById("db-trend-rate"); if(tr) tr.textContent=((kpis.completion_rate||{}).value||0)+"%";
           var canvas=document.getElementById("db-trend-chart"); if(!canvas||typeof Chart==="undefined") return;
           if(dbTrendChart){try{dbTrendChart.destroy();}catch(e){}}
           dbTrendChart=new Chart(canvas.getContext("2d"),{
             type:"bar",
             data:{labels:trend.map(function(t){return t.label;}),datasets:[
-              {label:"Trained",data:trend.map(function(t){return t.trained;}),backgroundColor:"#0d9488",borderRadius:4,borderSkipped:false,order:1},
+              {label:"Conducted",data:trend.map(function(t){return t.trained;}),backgroundColor:"#0d9488",borderRadius:4,borderSkipped:false,order:1},
               {label:"Planned",data:trend.map(function(t){return t.planned;}),backgroundColor:"#e2e8f0",borderRadius:4,borderSkipped:false,order:2},
             ]},
             options:{responsive:true,maintainAspectRatio:false,
               plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){return ctx.dataset.label+": "+ctx.raw;}}}},
               scales:{x:{grid:{display:false},ticks:{font:{size:9},color:"#9ca3af"}},y:{grid:{color:"#f8fafc"},ticks:{font:{size:9},color:"#9ca3af"},beginAtZero:true}}}
           });
+        }
+
+        function dbRenderStatusDist(dist) {
+          var bar = document.getElementById("db-dist-bar");
+          var leg = document.getElementById("db-dist-legend");
+          if (!bar || !leg) return;
+          var items = [
+            { key: "completed", label: "Completed", val: dist.completed || 0, color: "#16a34a" },
+            { key: "inprogress", label: "In Progress", val: dist.inprogress || 0, color: "#ea580c" },
+            { key: "upcoming", label: "Upcoming", val: dist.upcoming || 0, color: "#2563eb" },
+            { key: "pending", label: "Pending", val: dist.pending || 0, color: "#d97706" }
+          ];
+          var total = items.reduce(function(a, b){ return a + b.val; }, 0);
+          if (!total) {
+            bar.innerHTML = '<div style="width:100%;background:#e5e7eb;height:100%;"></div>';
+            leg.innerHTML = '<span style="font-size:10px;color:var(--ink-3);">No active trainings this month</span>';
+            return;
+          }
+          bar.innerHTML = items.map(function(it){
+            var pct = total ? (it.val / total * 100) : 0;
+            return pct > 0 ? '<div class="db-dist-seg" style="width:'+pct+'%;background:'+it.color+';" title="'+it.label+': '+it.val+' ('+Math.round(pct)+'%)"></div>' : '';
+          }).join("");
+          leg.innerHTML = items.map(function(it){
+            return '<div class="db-dist-leg-item">'+
+              '<span class="db-dist-dot" style="background:'+it.color+';"></span>'+
+              '<span>'+it.label+': <b>'+it.val+'</b></span>'+
+              '</div>';
+          }).join("");
         }
 
         function dbRenderProgChart(progs) {
@@ -14644,10 +14809,10 @@
           el.innerHTML=list.map(function(t){
             var sp=SP[t.status]||SP.pending;
             return '<tr>'+
-              '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+dbEsc(t.program)+'</td>'+
-              '<td style="white-space:nowrap;">'+dbFmtD(t.from_date)+'</td>'+
-              '<td>'+dbEsc(t.zone)+'</td>'+
-              '<td style="color:var(--ink-2);">'+dbEsc(t.trainer)+'</td>'+
+              '<td class="u-prog" style="font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+dbEsc(t.program)+'</td>'+
+              '<td class="u-date" style="white-space:nowrap;">'+dbFmtD(t.from_date)+'</td>'+
+              '<td class="u-zone" style="white-space:nowrap;">'+dbEsc(t.zone)+'</td>'+
+              '<td class="u-trainer" style="white-space:nowrap;">'+dbEsc(t.trainer)+'</td>'+
               '<td><span class="db-sp '+sp.cls+'"><span class="db-sp-dot" style="background:'+sp.dot+'"></span>'+sp.lbl+'</span></td>'+
               '</tr>';
           }).join("");
