@@ -6933,7 +6933,7 @@
           ld_admin: {
             label: "L&D Admin",
             badge: "badge-admin",
-            sub: "Admin View - All zones, full access",
+            sub: "",
             canAdd: true,
             canEdit: true,
             showBudget: true,
@@ -6942,7 +6942,7 @@
           trainer: {
             label: "Trainer",
             badge: "badge-trainer",
-            sub: "Trainer Dashboard - update training status after completion",
+            sub: "",
             canAdd: true,
             canEdit: true,
             showBudget: true,
@@ -6951,7 +6951,7 @@
           viewer: {
             label: "Leadership",
             badge: "badge-viewer",
-            sub: "Leadership View - read-only training calendar",
+            sub: "",
             canAdd: false,
             canEdit: false,
             showBudget: true,
@@ -6960,7 +6960,7 @@
           general: {
             label: "General",
             badge: "badge-general",
-            sub: "General View",
+            sub: "",
             canAdd: false,
             canEdit: false,
             showBudget: true,
@@ -7470,7 +7470,7 @@
             var hdrSearch = document.querySelector(".header .search");
             if (hdrSearch) hdrSearch.style.display = "none";
             document.getElementById("headerSub").textContent =
-              "Team Training · View your team's training schedule";
+              "";
           }
         }
 
@@ -14452,10 +14452,10 @@
             ".db-ci-val{font-size:18px;font-weight:800;line-height:1;}",
             ".db-ci-planned .db-ci-val{color:#0d9488}.db-ci-conducted .db-ci-val{color:#16a34a}.db-ci-pending .db-ci-val{color:#d97706}",
             ".db-donut-wrap{display:flex;align-items:center;gap:12px;margin-top:6px;}",
-            ".db-donut-box{width:70px;height:70px;flex-shrink:0;position:relative;}",
+            ".db-donut-box{width:90px;height:90px;flex-shrink:0;position:relative;}",
             ".db-donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}",
-            ".db-donut-pct{font-size:14px;font-weight:800;color:var(--ink-1);}.db-donut-lbl{font-size:9px;color:var(--ink-3);font-weight:600;}",
-            ".db-donut-leg{font-size:12px;color:var(--ink-2);line-height:1.5;}.db-donut-leg b{font-size:15px;font-weight:700;color:var(--ink-1);}",
+            ".db-donut-pct{font-size:18px;font-weight:800;color:var(--ink-1);}.db-donut-lbl{font-size:9px;color:var(--ink-3);font-weight:600;}",
+            ".db-donut-leg{font-size:13px;color:var(--ink-2);line-height:1.5;}.db-donut-leg b{font-size:16px;font-weight:700;color:var(--ink-1);}",
             ".db-cov-sublbl{font-size:10px;color:var(--ink-3);margin-bottom:5px;}",
 
             /* ── Status distribution bar ── */
@@ -14557,17 +14557,29 @@
               /* Monthly Trend */
               '<div class="db-card" style="justify-content:space-between;">',
                 '<div>',
-                  '<div class="db-sec-head"><div><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Monthly Training Trend</div><div class="db-sec-sub" id="db-trend-sub" style="margin-top:2px;"></div></div></div>',
-                  '<div style="position:relative;height:120px;"><canvas id="db-trend-chart"></canvas></div>',
+                  '<div class="db-sec-head">',
+                    '<div>',
+                      '<div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg>Monthly Training Trend</div>',
+                      '<div class="db-sec-sub" id="db-trend-sub" style="margin-top:2px;"></div>',
+                    '</div>',
+                    '<div style="display:flex;align-items:center;gap:12px;flex-shrink:0;">',
+                      '<div style="text-align:center;"><div style="font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.03em;">Conducted</div><div id="db-trend-trained" style="font-size:14px;font-weight:800;color:#0d9488;line-height:1.2;">—</div></div>',
+                      '<div style="width:1px;height:24px;background:var(--border);"></div>',
+                      '<div style="text-align:center;"><div style="font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.03em;">Planned</div><div id="db-trend-planned" style="font-size:14px;font-weight:800;color:var(--ink-2);line-height:1.2;">—</div></div>',
+                      '<div style="width:1px;height:24px;background:var(--border);"></div>',
+                      '<div style="text-align:center;"><div style="font-size:9px;color:var(--ink-3);text-transform:uppercase;letter-spacing:.03em;">Rate</div><div id="db-trend-rate" style="font-size:14px;font-weight:800;color:#7c3aed;line-height:1.2;">—</div></div>',
+                    '</div>',
+                  '</div>',
+                  '<div style="position:relative;height:160px;"><canvas id="db-trend-chart"></canvas></div>',
                   '<div style="display:flex;gap:10px;margin-top:4px;font-size:10.5px;color:var(--ink-3);">',
                     '<span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;background:#0d9488;border-radius:2px;display:inline-block;"></span>Conducted</span>',
                     '<span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;background:#e5e7eb;border-radius:2px;display:inline-block;"></span>Planned</span>',
                   '</div>',
                 '</div>',
-                '<div class="db-trend-foot" style="margin-top:auto;">',
-                  '<div class="db-trend-stat"><div class="tl">Conducted</div><div class="tv" id="db-trend-trained" style="color:#0d9488;">—</div></div>',
-                  '<div class="db-trend-stat"><div class="tl">Planned</div><div class="tv" id="db-trend-planned" style="color:var(--ink-3);">—</div></div>',
-                  '<div class="db-trend-stat"><div class="tl">Rate</div><div class="tv" id="db-trend-rate" style="color:#7c3aed;">—</div></div>',
+                '<div class="db-trend-foot" style="display:none;">',
+                  '<div class="db-trend-stat"><div class="tl">Conducted</div><div class="tv" style="color:#0d9488;">—</div></div>',
+                  '<div class="db-trend-stat"><div class="tl">Planned</div><div class="tv" style="color:var(--ink-3);">—</div></div>',
+                  '<div class="db-trend-stat"><div class="tl">Rate</div><div class="tv" style="color:#7c3aed;">—</div></div>',
                 '</div>',
               '</div>',
 
@@ -14780,7 +14792,7 @@
           var html="";
           ["daily","weekly","monthly"].forEach(function(k){
             var c=cov[k]||{}; var pct=c.pct||0;
-            var subLbl=k==="daily"?(c.label||""):k==="weekly"?"("+dbFmtD((c.label||"").split(" to ")[0])+" – "+dbFmtD((c.label||"").split(" to ")[1])+")" : "Till "+dbFmtD((c.label||"").split(" to ")[1]);
+            var subLbl=k==="daily"?dbFmtD(c.label||""):k==="weekly"?"("+dbFmtD((c.label||"").split(" to ")[0])+" – "+dbFmtD((c.label||"").split(" to ")[1])+")" : "Till "+dbFmtD((c.label||"").split(" to ")[1]);
             html+='<div class="db-cov-panel'+(k==="daily"?" active":"") +'" data-dbcov="'+k+'">' +
               '<div style="font-size:10.5px;color:var(--ink-3);margin-bottom:8px;">'+subLbl+'</div>'+
               '<div class="db-cov-grid">'+
@@ -14790,9 +14802,9 @@
               '</div>'+
               '<div class="db-donut-wrap">'+
                 '<div class="db-donut-box"><canvas id="db-cov-chart-'+k+'"></canvas>'+
-                  '<div class="db-donut-center"><span class="db-donut-pct">'+pct+'%</span><span class="db-donut-lbl">'+k.charAt(0).toUpperCase()+k.slice(1)+'</span></div>'+
+                  '<div class="db-donut-center"><span class="db-donut-pct">'+pct+'%</span></div>'+
                 '</div>'+
-                '<div class="db-donut-leg"><b>'+pct+'%</b><div style="font-size:10.5px;color:var(--ink-3);">'+k.charAt(0).toUpperCase()+k.slice(1)+' Completion</div></div>'+
+                '<div class="db-donut-leg"><div style="font-size:12px;font-weight:600;color:var(--ink-1);">'+k.charAt(0).toUpperCase()+k.slice(1)+' Completion</div></div>'+
               '</div>'+
               '</div>';
           });
