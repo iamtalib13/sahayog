@@ -5494,6 +5494,26 @@
               </svg>
               <span class="item-label">Team Training</span>
             </button>
+            <button
+              class="nav-item"
+              id="nav-trainers"
+              title="Trainers"
+              style="display: none"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <circle cx="12" cy="8" r="4" />
+                <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" />
+                <path d="M15 5l1.5 1.5L19 4" />
+              </svg>
+              <span class="item-label">Trainers</span>
+            </button>
           </div>
 
           <!-- Today's Trainings Panel -->
@@ -6187,6 +6207,18 @@
           </div>
         </div>
       </main>
+    </div>
+
+    <!-- ===== Trainers view ===== -->
+    <div class="trainings-view" id="trainersView" style="display: none">
+      <div class="tr-head-row">
+        <div>
+          <h2>Trainers</h2>
+        </div>
+      </div>
+      <div style="padding: 40px 0; text-align: center; color: var(--ink-3); font-size: 13px;">
+        Coming soon — Trainer management will be implemented here.
+      </div>
     </div>
 
     <!-- Drawer: training details -->
@@ -7451,6 +7483,9 @@
           /* Dashboard tab: only L&D Admin */
           var navDash = document.getElementById("nav-dashboard");
           if (navDash) navDash.style.display = state.role === "ld_admin" ? "" : "none";
+          /* Trainers tab: only L&D Admin */
+          var navTrainers = document.getElementById("nav-trainers");
+          if (navTrainers) navTrainers.style.display = state.role === "ld_admin" ? "" : "none";
           /* Team Training tab: reportees + L&D role (L&D Viewer for leaders).
              Pure verifiers (viewer/general + team) see ONLY this tab. */
           var navTeam = document.getElementById("nav-team");
@@ -14295,22 +14330,26 @@
           var repView = document.getElementById("reportsView");
           var teamView = document.getElementById("teamView");
           var dashView = document.getElementById("dashboardView");
+          var trainersView = document.getElementById("trainersView");
           var navCal = document.getElementById("nav-calendar");
           var navTr = document.getElementById("nav-trainings");
           var navRep = document.getElementById("nav-reports");
           var navTeam = document.getElementById("nav-team");
           var navDash = document.getElementById("nav-dashboard");
+          var navTrainers = document.getElementById("nav-trainers");
 
           calView.style.display = tab === "calendar" ? "flex" : "none";
           trView.style.display = tab === "trainings" ? "flex" : "none";
           repView.style.display = tab === "reports" ? "flex" : "none";
           if (teamView) teamView.style.display = tab === "team" ? "flex" : "none";
           if (dashView) dashView.style.display = tab === "dashboard" ? "flex" : "none";
+          if (trainersView) trainersView.style.display = tab === "trainers" ? "flex" : "none";
           if (navCal) navCal.classList.toggle("active", tab === "calendar");
           if (navTr) navTr.classList.toggle("active", tab === "trainings");
           if (navRep) navRep.classList.toggle("active", tab === "reports");
           if (navTeam) navTeam.classList.toggle("active", tab === "team");
           if (navDash) navDash.classList.toggle("active", tab === "dashboard");
+          if (navTrainers) navTrainers.classList.toggle("active", tab === "trainers");
 
           if (tab === "trainings") {
             loadTrainingsList();
@@ -14344,6 +14383,11 @@
           .getElementById("nav-dashboard")
           .addEventListener("click", function () {
             switchTab("dashboard");
+          });
+        document
+          .getElementById("nav-trainers")
+          .addEventListener("click", function () {
+            switchTab("trainers");
           });
 
         /* ===== Dashboard (inline, L&D Admin only) ===== */
