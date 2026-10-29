@@ -3206,8 +3206,9 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
              upcoming_trainings, insights.
     Only accessible to L&D Admin / System Manager.
     """
-    if not _is_admin():
-        frappe.throw(_("L&D Dashboard is accessible to L&D Admin only."))
+    # Accessible to all users. Admins see everything; non-admins are scoped
+    # to their Report Preference (geo) when one is configured.
+    _scope = None if _is_admin() else _pref_geo_scope()
 
     import calendar as cal_mod
 
@@ -3243,6 +3244,9 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
     # geo filter
     geo_names = [r.name for r in all_rows]
     geo_map = _get_geographies_map(geo_names) if geo_names else {}
+
+    if _scope:
+        all_rows = [r for r in all_rows if _in_pref_geo(geo_map.get(r.name, []), r, _scope)]
 
     def geo_ok(r):
         geos = geo_map.get(r.name, [])
