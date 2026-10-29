@@ -3717,12 +3717,33 @@ def get_trainer_profile(employee_id):
     """
     emp = frappe.db.get_value(
         "Employee", employee_id,
-        ["name", "employee_name", "designation", "department",
-         "company_email", "cell_number", "image", "branch", "date_of_joining"],
+        [
+            "name", "employee_name", "employee_number", "designation",
+            "department", "sub_department", "custom_division",
+            "custom_zone", "custom_region", "custom_district", "custom_cluter",
+            "branch", "sahayog_branch", "sol_id",
+            "company_email", "personal_email", "cell_number", "image",
+            "company", "employment_type", "grade", "date_of_joining",
+            "reports_to", "gender", "date_of_birth", "status", "blood_group",
+            "custom_uhid_number",
+        ],
         as_dict=True,
     )
     if not emp:
         frappe.throw(f"Employee {employee_id} not found.")
+
+    # Branch code: prefer the Employee's sol_id, then sahayog_branch, then
+    # the Branch master's own sol_id.
+    branch_code = emp.get("sol_id") or emp.get("sahayog_branch") or ""
+    if not branch_code and emp.get("branch"):
+        branch_code = frappe.db.get_value("Branch", emp["branch"], "sol_id") or ""
+
+    # Reporting manager name (field stores Employee ID).
+    reports_to_name = ""
+    if emp.get("reports_to"):
+        reports_to_name = frappe.db.get_value(
+            "Employee", emp["reports_to"], "employee_name"
+        ) or emp["reports_to"]
 
     # Training.trainer stores employee_name (portal + desk); older rows may
     # hold the Employee ID. Match either so profile stats are complete.
@@ -3784,19 +3805,43 @@ def get_trainer_profile(employee_id):
         "training_delivered": 1, "attendance_marked": 1,
         "pre_assessment_taken": 1, "post_assessment_taken": 1, "feedback_taken": 1,
     })
+    upcoming_count = frappe.db.count("Training", {
+        "trainer": ["in", trainer_keys], "docstatus": ["<", 2],
+        "from_date": [">=", today_str],
+    })
 
     return {
         "employee_id":  emp["name"],
+        "employee_number": emp.get("employee_number") or emp["name"],
         "name":         emp["employee_name"] or emp["name"],
         "designation":  emp["designation"] or "",
         "department":   emp["department"] or "",
+        "sub_department": emp.get("sub_department") or "",
+        "division":     emp.get("custom_division") or "",
+        "zone":         emp.get("custom_zone") or "",
+        "region":       emp.get("custom_region") or "",
+        "district":     emp.get("custom_district") or "",
+        "cluster":      emp.get("custom_cluter") or "",
+        "branch":       emp["branch"] or "",
+        "branch_code":  branch_code,
         "email":        emp["company_email"] or "",
+        "personal_email": emp.get("personal_email") or "",
         "phone":        emp["cell_number"] or "",
         "image":        emp["image"] or "",
-        "branch":       emp["branch"] or "",
+        "company":      emp.get("company") or "",
+        "employment_type": emp.get("employment_type") or "",
+        "grade":        emp.get("grade") or "",
+        "date_of_joining": str(emp.get("date_of_joining") or ""),
+        "reports_to":   emp.get("reports_to") or "",
+        "reports_to_name": reports_to_name,
+        "gender":       emp.get("gender") or "",
+        "date_of_birth": str(emp.get("date_of_birth") or ""),
+        "status":       emp.get("status") or "",
+        "blood_group":  emp.get("blood_group") or "",
+        "uhid":         emp.get("custom_uhid_number") or "",
         "total":        total,
         "completed":    completed,
-        "upcoming_count": len(upcoming_raw),
+        "upcoming_count": upcoming_count,
         "upcoming":     [fmt_session(t) for t in upcoming_raw],
         "recent":       [fmt_session(t) for t in recent_raw],
     }
