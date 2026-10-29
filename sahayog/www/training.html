@@ -17057,6 +17057,7 @@
             else if (savedTab === "trainings") switchTab("trainings");
             else if (savedTab === "reports") switchTab("reports");
             else if (savedTab === "team" && state.canSeeTeam) switchTab("team");
+            else if (savedTab === "trainers" && state.role === "ld_admin") switchTab("trainers");
             return loadGeo();
           })
           .then(function () {
