@@ -6322,7 +6322,6 @@
         <div style="text-align:center;padding:40px 0;color:#94a3b8;font-size:13px;">Select a trainer to view profile.</div>
       </div>
 
-      </div>
     </div>
 
     <!-- Drawer: training details -->
@@ -7057,6 +7056,25 @@
           cancelled: { color: "#b91c1c", soft: "#fef2f2", label: "Cancelled" },
           postponed: { color: "#b45309", soft: "#fff7ed", label: "Postponed" },
         };
+        var PROGRAM_COLORS = [
+          { soft: "#e0f2fe", color: "#0284c7" },
+          { soft: "#dcfce7", color: "#16a34a" },
+          { soft: "#fce7f3", color: "#db2777" },
+          { soft: "#ede9fe", color: "#7c3aed" },
+          { soft: "#ffedd5", color: "#ea580c" },
+          { soft: "#ccfbf1", color: "#0d9488" },
+          { soft: "#fee2e2", color: "#dc2626" },
+          { soft: "#e0e7ff", color: "#4f46e5" },
+          { soft: "#f3f4f6", color: "#4b5563" },
+        ];
+        function programColor(name) {
+          var h = 0;
+          var s = String(name || "");
+          for (var i = 0; i < s.length; i++)
+            h = (h * 31 + s.charCodeAt(i)) >>> 0;
+          return PROGRAM_COLORS[h % PROGRAM_COLORS.length];
+        }
+        var FIXED_SINGLE_COLOR = { soft: "#f1f5f9", color: "#64748b" };
         var CHECK_FIELDS = [
           { key: "training_delivered", label: "Training Delivered" },
           { key: "attendance_marked", label: "Attendance Marked" },
@@ -7247,25 +7265,6 @@
               ")."
             );
           }
-          var list = ev.participant_list || [];
-          if (!list.length)
-            return "Add participants before marking completion.";
-          var agents = list.filter(function (p) {
-            return (p.reference_doctype || "Employee") === "Agent";
-          });
-          if (agents.length) {
-            var pending = agents.filter(function (p) {
-              return p.attendance_status !== "Present" && p.attendance_status !== "Absent";
-            });
-            if (pending.length)
-              return (
-                "Mark attendance for all swayamsevikas before marking completion (" +
-                (agents.length - pending.length) +
-                "/" +
-                agents.length +
-                " marked)."
-              );
-          }
           return "";
         }
         /* Re-evaluate check locks after participant_list arrives late.
@@ -7379,16 +7378,7 @@
          * Returns null if OK, or an error message string if blocked.
          */
         function validateBeforeComplete(ev, budgetInputId, expenseInputId) {
-          /* 1. Participants required — check all available sources */
-          var parts = (state.selectedParticipants && state.selectedParticipants.length)
-            ? state.selectedParticipants
-            : (ev.participant_list || []);
-          /* Also accept a non-zero participants count on ev as proof */
-          var hasParticipants = parts.length > 0 || (ev.participants && ev.participants > 0);
-          if (!hasParticipants) {
-            return "Add participants before marking this training as complete.";
-          }
-          /* 2. Budget + expense required (for roles that can edit budget) */
+          /* Budget + expense required (for roles that can edit budget) */
           var canBudget = state.role === "ld_admin" || isOwnTraining(ev);
           if (canBudget) {
             var bEl = budgetInputId ? document.getElementById(budgetInputId) : null;
@@ -7409,8 +7399,28 @@
         function evStart(ev) {
           return ev.from_date || ev.date || "";
         }
+        function fmtDMY(d) {
+          if (!d) return "";
+          var p = String(d).slice(0, 10).split("-");
+          if (p.length !== 3) return String(d);
+          return p[2] + "/" + p[1] + "/" + p[0];
+        }
         function evEnd(ev) {
           return ev.to_date || ev.from_date || ev.date || "";
+        }
+        function daysBetween(a, b) {
+          if (!a || !b) return 0;
+          var da = new Date(
+            parseInt(a.slice(0, 4), 10),
+            parseInt(a.slice(5, 7), 10) - 1,
+            parseInt(a.slice(8, 10), 10),
+          );
+          var db = new Date(
+            parseInt(b.slice(0, 4), 10),
+            parseInt(b.slice(5, 7), 10) - 1,
+            parseInt(b.slice(8, 10), 10),
+          );
+          return Math.round((db - da) / 86400000);
         }
         function statusOf(ev) {
           var s = completionScore(ev);
@@ -8149,7 +8159,7 @@
             }
 
             evs.slice(0, 2).forEach(function (ev) {
-              cell.appendChild(eventChip(ev));
+              cell.appendChild(eventChip(ev, dateIso));
             });
             if (evs.length > 2) {
               var more = document.createElement("div");
@@ -8189,29 +8199,68 @@
           if (ev.participants || !ev.number_of_participants) return "";
           return "~" + ev.number_of_participants;
         }
-        function eventChip(ev) {
+        function eventChip(ev, dateIso) {
           var st = statusOf(ev);
           var meta = STATUS_META[st] || STATUS_META.pending;
+          var _spanDays = daysBetween(evStart(ev), evEnd(ev)) + 1;
+          var _multi = _spanDays >= 2;
+          var pc = _multi ? programColor(ev.training_program || ev.topic || "") : FIXED_SINGLE_COLOR;
           var chip = document.createElement("div");
           chip.className = "event-chip";
-          chip.style.background = meta.soft;
-          chip.style.borderLeftColor = meta.color;
+          chip.style.background = pc.soft;
+          chip.style.borderLeftColor = pc.color;
           chip.style.position = "relative";
           var delX = "";
+
+          // Multi-day handling: show Day X/Y + location so identical titles
+          // (e.g. "BBMC" repeated) stay distinguishable on the calendar.
+          var start = evStart(ev);
+          var end = evEnd(ev);
+          var multi = !!(start && end && start !== end);
+          var dayIdx = 1, totalDays = 1;
+          if (multi && dateIso) {
+            dayIdx = daysBetween(start, dateIso) + 1;
+            totalDays = daysBetween(start, end) + 1;
+            if (dayIdx < 1) dayIdx = 1;
+            if (dayIdx > totalDays) dayIdx = totalDays;
+          }
+          var loc = ev.training_location || ev.location || "";
+          var titleText = ev.training_program || ev.topic || "Training";
+          if (multi) {
+            titleText = titleText + " · Day " + dayIdx + "/" + totalDays;
+            if (loc) titleText = titleText + " · " + loc;
+            // continuation days: dashed border + slightly muted to signal "ongoing"
+            if (dateIso && dateIso !== start) {
+              chip.style.borderLeftStyle = "dashed";
+              chip.style.opacity = "0.85";
+            }
+          } else if (loc) {
+            titleText = titleText + " · " + loc;
+          }
+
+          // Hover tooltip with full context
+          var tip = "Program: " + (ev.training_program || ev.topic || "Training") +
+            "\nStatus: " + (STATUS_META[st] ? STATUS_META[st].label : st) +
+            (ev.trainer_name ? "\nTrainer: " + ev.trainer_name : "") +
+            (loc ? "\nLocation: " + loc : "") +
+            "\nDates: " + fmtDMY(start) + (end && end !== start ? " → " + fmtDMY(end) : "") +
+            (ev.time ? "\nTime: " + ev.time : "") +
+            (ev.program_duration_hours ? "\nDuration: " + ev.program_duration_hours + " hrs" : "") +
+            (typeof ev.participants !== "undefined" ? "\nParticipants: " + ev.participants : "");
+          chip.title = tip;
           chip.innerHTML =
             '<span class="event-chip-top">' +
             '<span class="status-dot" style="background:' +
             meta.color +
             '"></span>' +
             '<span class="event-chip-title">' +
-            esc(ev.training_program || ev.topic || "Training") +
+            esc(titleText) +
             "</span>" +
             "</span>" +
             '<span class="event-chip-time">' +
             (function () {
-              var t = esc(ev.time || "");
               var e = calExp(ev);
-              return t + (t && e ? " · " : "") + e;
+              return e ? e : "";
             })() +
             "</span>" +
             delX;
@@ -8249,21 +8298,9 @@
             e.stopPropagation();
             openTrainingDialog(ev);
           });
-          /* Hover tooltip carries the extras that don't fit on the chip. */
-          chip.title =
-            (ev.training_program || ev.topic || "Training") +
-            " · " +
-            (evStart(ev) === evEnd(ev)
-              ? fmtSlash(evStart(ev))
-              : fmtSlash(evStart(ev)) + " – " + fmtSlash(evEnd(ev))) +
-            ((ev.program_duration_hours || 0)
-              ? " · " + ev.program_duration_hours + " hrs"
-              : "") +
-            ((ev.number_of_participants || 0) && !(ev.participants || 0)
-              ? " · ~" + ev.number_of_participants + " expected"
-              : "");
           return chip;
         }
+
 
         function openMoreModal(dateIso, evs) {
           var titleEl = document.getElementById("moreTitle");
@@ -8289,15 +8326,20 @@
             .forEach(function (ev) {
               var st = statusOf(ev);
               var meta = STATUS_META[st] || STATUS_META.pending;
+              var _spanDays = daysBetween(evStart(ev), evEnd(ev)) + 1;
+              var _multi = _spanDays >= 2;
+              var pc = _multi ? programColor(ev.training_program || ev.topic || "") : FIXED_SINGLE_COLOR;
               var row = document.createElement("button");
               row.className = "more-row";
               /* Status-tinted row like calendar chips: soft bg + color bar */
-              row.style.background = meta.soft;
-              row.style.borderLeft = "3px solid " + meta.color;
+              row.style.background = pc.soft;
+              row.style.borderLeft = "3px solid " + pc.color;
               /* Sub-line tells repeat program names apart: trainer · branches */
               var subBits = [];
               var trName = ev.trainer || ev.trainer_name || "";
               if (trName) subBits.push(trName);
+              var loc = ev.training_location || ev.location || "";
+              if (loc) subBits.push(loc);
               var brs = (ev.branches && ev.branches.length ? ev.branches : ev.branch ? [ev.branch] : []);
               var brLabels = brs.slice(0, 2).map(function (b) {
                 return typeof branchLabel === "function" ? branchLabel(b) : b;
@@ -8305,6 +8347,14 @@
               if (brs.length > 2) brLabels.push("+" + (brs.length - 2));
               if (brLabels.length) subBits.push(brLabels.join(", "));
               var progName = ev.training_program || ev.topic || "Training";
+              var s = evStart(ev), e = evEnd(ev);
+              if (s && e && s !== e) {
+                var di = daysBetween(s, dateIso) + 1;
+                var tot = daysBetween(s, e) + 1;
+                if (di < 1) di = 1;
+                if (di > tot) di = tot;
+                progName = progName + " · Day " + di + "/" + tot;
+              }
               row.innerHTML =
                 '<span class="status-dot" style="background:' +
                 meta.color +
@@ -8325,7 +8375,7 @@
                 '">' +
                 meta.label +
                 "</span>";
-              row.title = progName + (subBits.length ? " — " + subBits.join(" · ") : "");
+              row.title = progName + " · " + (fmtDMY(evStart(ev)) + (evEnd(ev) && evEnd(ev) !== evStart(ev) ? " → " + fmtDMY(evEnd(ev)) : "")) + (subBits.length ? " — " + subBits.join(" · ") : "");
               row.addEventListener("click", function () {
                 closeModal("moreModal");
                 openTrainingDialog(ev);
@@ -8453,9 +8503,12 @@
               evs.forEach(function (ev) {
                 var st = statusOf(ev);
                 var meta = STATUS_META[st] || STATUS_META.pending;
+                var _spanDays = daysBetween(evStart(ev), evEnd(ev)) + 1;
+                var _multi = _spanDays >= 2;
+                var pc = _multi ? programColor(ev.training_program || ev.topic || "") : FIXED_SINGLE_COLOR;
                 var item = document.createElement("div");
                 item.className = "week-event";
-                item.style.background = meta.soft;
+                item.style.background = pc.soft;
                 item.style.borderLeft = "2px solid " + meta.color;
                 item.innerHTML =
                   '<span class="status-dot" style="background:' +
@@ -8463,12 +8516,22 @@
                   '"></span>' +
                   '<span><span class="week-event-title">' +
                   esc(ev.training_program || ev.topic || "Training") +
+                  (function () {
+                    var s = evStart(ev), e = evEnd(ev);
+                    if (s && e && s !== e) {
+                      var di = daysBetween(s, dateIso) + 1;
+                      var tot = daysBetween(s, e) + 1;
+                      if (di < 1) di = 1;
+                      if (di > tot) di = tot;
+                      return " · Day " + di + "/" + tot;
+                    }
+                    return "";
+                  })() +
                   "</span>" +
                   '<br><span class="week-event-time">' +
                   (function () {
-                    var t = esc(ev.time || "");
                     var e = calExp(ev);
-                    return t + (t && e ? " · " : "") + e;
+                    return e ? e : "";
                   })() +
                   (ev.training_location
                     ? " • " + esc(ev.training_location)
@@ -8481,6 +8544,7 @@
                   e.stopPropagation();
                   openTrainingDialog(ev);
                 });
+                item.title = (ev.training_program || ev.topic || "Training") + (ev.training_location ? " · " + ev.training_location : "") + " · " + evStart(ev) + (evEnd(ev) && evEnd(ev) !== evStart(ev) ? " → " + evEnd(ev) : "");
                 col.appendChild(item);
               });
             }
@@ -8553,6 +8617,17 @@
                 "<div>" +
                 '<div class="day-view-title">' +
                 esc(ev.training_program || ev.topic || "Training") +
+                (function () {
+                  var s = evStart(ev), e = evEnd(ev);
+                  if (s && e && s !== e && isoOf(d) >= s && isoOf(d) <= e) {
+                    var di = daysBetween(s, isoOf(d)) + 1;
+                    var tot = daysBetween(s, e) + 1;
+                    if (di < 1) di = 1;
+                    if (di > tot) di = tot;
+                    return " · Day " + di + "/" + tot;
+                  }
+                  return "";
+                })() +
                 "</div>" +
                 '<div class="day-view-meta">' +
                 esc(STATUS_META[st].label) +
@@ -8572,6 +8647,7 @@
                 e.stopPropagation();
                 openTrainingDialog(ev);
               });
+              item.title = (ev.training_program || ev.topic || "Training") + (ev.training_location ? " · " + ev.training_location : "") + " · " + evStart(ev) + (evEnd(ev) && evEnd(ev) !== evStart(ev) ? " → " + evEnd(ev) : "");
               wrap.appendChild(item);
             });
           }
