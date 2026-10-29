@@ -3624,12 +3624,17 @@ def get_trainers_list(search=None, department=None, branch=None, sort=None, page
     # Fetch matching Employee records (all rows: sorting by stats happens
     # after counts, then the requested page is sliced).
     filters = [["name", "in", trainer_ids], ["status", "=", "Active"]]
-    if search:
-        filters.append(["employee_name", "like", f"%{search}%"])
     if department:
         filters.append(["department", "=", department])
     if branch:
         filters.append(["branch", "=", branch])
+
+    or_filters = None
+    if search:
+        or_filters = [
+            ["employee_name", "like", f"%{search}%"],
+            ["name", "like", f"%{search}%"],
+        ]
 
     fields = [
         "name", "employee_name", "designation", "department",
@@ -3639,6 +3644,7 @@ def get_trainers_list(search=None, department=None, branch=None, sort=None, page
     employees = frappe.db.get_all(
         "Employee",
         filters=filters,
+        or_filters=or_filters,
         fields=fields,
         order_by="employee_name asc",
         limit_page_length=0,
