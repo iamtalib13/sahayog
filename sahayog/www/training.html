@@ -7595,7 +7595,7 @@
           if (navRep) navRep.style.display = "";
           /* Dashboard tab: only L&D Admin */
           var navDash = document.getElementById("nav-dashboard");
-          if (navDash) navDash.style.display = state.role === "ld_admin" ? "" : "none";
+          if (navDash) navDash.style.display = "";
           /* Trainers tab: only L&D Admin */
           var navTrainers = document.getElementById("nav-trainers");
           if (navTrainers) navTrainers.style.display = state.role === "ld_admin" ? "" : "none";
@@ -17127,7 +17127,7 @@
               savedTab = localStorage.getItem("ld_training_tab");
             } catch (e) {}
             if (state.teamOnly) switchTab("team");
-            else if (savedTab === "dashboard" && state.role === "ld_admin") switchTab("dashboard");
+            else if (savedTab === "dashboard") switchTab("dashboard");
             else if (savedTab === "trainings") switchTab("trainings");
             else if (savedTab === "reports") switchTab("reports");
             else if (savedTab === "team" && state.canSeeTeam) switchTab("team");
