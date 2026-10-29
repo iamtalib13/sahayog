@@ -5378,11 +5378,11 @@
         }
       }
 
-      /* Trainers directory: no visible scrollbars — pagination keeps the page short.
-         Content can still scroll on short screens, but the bar is hidden. */
+      /* Trainers directory: 3x3 grid fits the viewport — no scrolling needed.
+         Cards shrink to share the available height; pagination stays visible. */
       #trainersView {
-        overflow-y: auto;
-        overflow-x: hidden;
+        overflow: hidden;
+        min-height: 0;
         scrollbar-width: none;
         -ms-overflow-style: none;
       }
@@ -5392,12 +5392,28 @@
         display: none;
       }
       #trainersView #trnGrid {
-        overflow: visible;
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow: hidden;
+        grid-template-rows: repeat(3, minmax(0, 1fr));
+      }
+      #trainersView .trn-card {
+        min-height: 0;
+        overflow: hidden;
+      }
+      #trainersView .trn-card > div:first-child {
+        min-height: 0;
+      }
+      #trainersView .trn-pagination {
         flex: 0 0 auto;
       }
       @media (max-width: 1180px) {
+        #trainersView {
+          overflow-y: auto;
+        }
         #trainersView #trnGrid {
           grid-template-columns: repeat(2, 1fr) !important;
+          grid-template-rows: none !important;
         }
       }
       @media (max-width: 760px) {
@@ -6238,10 +6254,10 @@
           </div>
         </div>
         <!-- ===== Trainers view ===== -->
-        <div class="trainings-view" id="trainersView" style="display:none;padding:28px 28px 16px;">
+        <div class="trainings-view" id="trainersView" style="display:none;padding:20px 24px 12px;">
 
           <!-- Header row: title + count on the left, controls on the right -->
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:0;flex-wrap:wrap;">
             <div style="min-width:0;">
               <div style="display:flex;align-items:center;gap:10px;">
                 <h2 style="margin:0;font-size:22px;font-weight:700;color:#21383d;letter-spacing:-.01em;">Trainers</h2>
@@ -6269,12 +6285,12 @@
           </div>
 
           <!-- Grid -->
-          <div id="trnGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-content:start;">
+          <div id="trnGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
             <div style="grid-column:1/-1;padding:48px 0;text-align:center;color:#94a3b8;font-size:13px;">Loading trainers…</div>
           </div>
 
           <!-- Pagination footer -->
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+          <div class="trn-pagination" style="display:flex;align-items:center;justify-content:space-between;margin-top:0;padding-top:8px;border-top:1px solid var(--border);">
             <span id="trn-range" style="font-size:11px;color:#607277;"></span>
             <div style="display:flex;align-items:center;gap:10px;">
               <button id="trn-prev" class="pg-btn" title="Previous page">
@@ -14548,26 +14564,26 @@
           grid.innerHTML = trainers.map(function(t) {
             var initials = (t.name || "?").split(" ").map(function(w){ return w[0]; }).slice(0,2).join("").toUpperCase();
             var avatar = t.image
-              ? '<img src="' + esc(t.image) + '" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
-              : '<div style="width:64px;height:64px;border-radius:50%;background:#dcefed;color:#00565b;display:grid;place-items:center;font-size:18px;font-weight:700;flex-shrink:0;">' + esc(initials) + '</div>';
-            return '<div class="trn-card" data-empid="' + esc(t.employee_id) + '" style="background:#fff;border:1px solid #dfe7e9;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:border-color .12s,box-shadow .12s;">' +
-              '<div style="display:flex;align-items:center;gap:12px;">' +
+              ? '<img src="' + esc(t.image) + '" alt="" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+              : '<div style="width:42px;height:42px;border-radius:50%;background:#dcefed;color:#00565b;display:grid;place-items:center;font-size:14px;font-weight:700;flex-shrink:0;">' + esc(initials) + '</div>';
+            return '<div class="trn-card" data-empid="' + esc(t.employee_id) + '" style="background:#fff;border:1px solid #dfe7e9;border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:8px;cursor:pointer;transition:border-color .12s,box-shadow .12s;">' +
+              '<div style="display:flex;align-items:center;gap:10px;min-width:0;">' +
                 avatar +
-                '<div style="min-width:0;">' +
-                  '<div style="font-size:15px;font-weight:600;color:#21383d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.name) + '</div>' +
-                  (t.designation ? '<div style="font-size:12px;font-weight:500;color:#21383d;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.designation) + '</div>' : '') +
-                  (t.department ? '<div style="font-size:11px;color:#607277;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.department) + '</div>' : '') +
+                '<div style="min-width:0;flex:1;">' +
+                  '<div style="font-size:13.5px;font-weight:600;color:#21383d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.name) + '</div>' +
+                  (t.designation ? '<div style="font-size:11.5px;font-weight:500;color:#21383d;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.designation) + '</div>' : '') +
+                  (t.department ? '<div style="font-size:10.5px;color:#607277;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.department) + '</div>' : '') +
                 '</div>' +
               '</div>' +
-              '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
-                '<span style="background:#eaf5f3;color:#007c77;font-size:11px;font-weight:600;border-radius:4px;padding:3px 8px;">' + t.total + ' Total</span>' +
-                '<span style="background:#dcfce7;color:#15803d;font-size:11px;font-weight:600;border-radius:4px;padding:3px 8px;">' + t.completed + ' Completed</span>' +
-                (t.upcoming ? '<span style="background:#dbeafe;color:#2563eb;font-size:11px;font-weight:600;border-radius:4px;padding:3px 8px;">' + t.upcoming + ' Upcoming</span>' : '') +
+              '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0;">' +
+                '<span style="background:#eaf5f3;color:#007c77;font-size:10.5px;font-weight:600;border-radius:4px;padding:2px 7px;white-space:nowrap;">' + t.total + ' Total</span>' +
+                '<span style="background:#dcfce7;color:#15803d;font-size:10.5px;font-weight:600;border-radius:4px;padding:2px 7px;white-space:nowrap;">' + t.completed + ' Completed</span>' +
+                (t.upcoming ? '<span style="background:#dbeafe;color:#2563eb;font-size:10.5px;font-weight:600;border-radius:4px;padding:2px 7px;white-space:nowrap;">' + t.upcoming + ' Upcoming</span>' : '') +
+                (t.branch ? '<span style="margin-left:auto;font-size:10.5px;color:#607277;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:45%;">📍 ' + esc(t.branch) + '</span>' : '') +
               '</div>' +
-              (t.branch ? '<div style="font-size:11px;color:#607277;border-top:1px solid #dfe7e9;padding-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ' + esc(t.branch) + '</div>' : '') +
-              '<div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #dfe7e9;padding-top:10px;margin-top:auto;">' +
-                '<span style="font-size:12px;font-weight:600;color:#007c77;">View profile</span>' +
-                '<svg viewBox="0 0 24 24" fill="none" stroke="#008b86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #dfe7e9;padding-top:8px;margin-top:auto;">' +
+                '<span style="font-size:11.5px;font-weight:600;color:#007c77;">View profile</span>' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="#008b86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>' +
               '</div>' +
             '</div>';
           }).join("");
