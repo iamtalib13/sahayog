@@ -81,7 +81,6 @@ class Training(Document):
         self._validate_no_holiday_sunday()
         self._validate_participant_types()
         self._validate_completed_budget()
-        self._validate_checks_require_participants()
         self._validate_budget_cap()
 
     def _sync_geographies(self):
