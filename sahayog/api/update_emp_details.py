@@ -93,3 +93,28 @@ def update_employee_details(employee, data):
     except Exception:
         frappe.log_error(frappe.get_traceback(), "Employee Details Update Failed")
         return {"status": "error", "message": _("Could not update employee details.")}
+
+
+@frappe.whitelist()
+def update_employee_photo(image=None):
+    try:
+        user = frappe.session.user
+        if user == "Administrator":
+            return {"status": "error", "message": _("Administrator cannot update photo.")}
+
+        if not image:
+            return {"status": "error", "message": _("No image provided.")}
+
+        employee = frappe.db.get_value("Employee", {"user_id": user}, "name")
+        if not employee:
+            return {"status": "error", "message": _("Employee record not found.")}
+
+        emp = frappe.get_doc("Employee", employee)
+        emp.image = image
+        emp.save(ignore_permissions=True)
+        frappe.db.commit()
+
+        return {"status": "success", "message": _("Profile photo updated successfully.")}
+    except Exception:
+        frappe.log_error(frappe.get_traceback(), "Employee Photo Update Failed")
+        return {"status": "error", "message": _("Could not update profile photo.")}
