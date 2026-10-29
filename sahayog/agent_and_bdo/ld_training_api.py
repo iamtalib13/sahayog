@@ -26,6 +26,9 @@ CALENDAR_FIELDS = [
     "program_duration_hours",
     "training_delivered", "attendance_marked",
     "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
+    "status_override", "postponed_on", "postponement_reason",
+    "cancelled_on", "cancellation_reason",
+    "original_from_date", "original_to_date", "original_start_time", "original_end_time",
 ]
 # Budget fields are read from the DB but only exposed to L&D Admin / System Manager
 BUDGET_FIELDS = ["budget_amount", "actual_expense"]
@@ -58,13 +61,13 @@ def _geography_matches(geos, zone=None, region=None, district=None, branch=None)
         return True
     if geos:
         for g in geos:
-            if zone and g.get("zone") != zone:
+            if zone and (g.get("zone") or "").strip().lower() != zone.strip().lower():
                 continue
-            if region and g.get("region") != region:
+            if region and (g.get("region") or "").strip().lower() != region.strip().lower():
                 continue
-            if district and g.get("district") != district:
+            if district and (g.get("district") or "").strip().lower() != district.strip().lower():
                 continue
-            if branch and g.get("branch") != branch:
+            if branch and (g.get("branch") or "").strip().lower() != branch.strip().lower():
                 continue
             return True
         return False
@@ -336,6 +339,29 @@ def _format_time(t):
         return str(t) if t else ""
 
 
+def _resolve_training_times(start_t, end_t, duration_hours):
+    """Return formatted (start_time, end_time), auto-calculating from 10:00 AM if missing but duration is given."""
+    st_fmt = _format_time(start_t)
+    et_fmt = _format_time(end_t)
+    if (not st_fmt or not et_fmt) and duration_hours:
+        try:
+            h = float(duration_hours)
+            if h > 0:
+                if not st_fmt:
+                    st_fmt = "10:00 AM"
+                if not et_fmt:
+                    start_sec = 10 * 3600
+                    end_sec = min(18 * 3600, start_sec + int(round(h * 3600)))
+                    eh = end_sec // 3600
+                    em = (end_sec % 3600) // 60
+                    ap = "AM" if eh < 12 else "PM"
+                    hr = eh % 12 or 12
+                    et_fmt = f"{hr}:{em:02d} {ap}"
+        except (ValueError, TypeError):
+            pass
+    return st_fmt, et_fmt
+
+
 def _normalize_time(t):
     """Accept '9:30 AM' / '14:00' and return a 24h HH:MM:SS value for the Time field."""
     if not t:
@@ -549,13 +575,13 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
                 if not _geography_matches(geos, zone, region, district, branch):
                     continue
             else:
-                if zone and r.zone != zone:
+                if zone and (r.zone or "").strip().lower() != zone.strip().lower():
                     continue
                 if region and not _region_match(r.region, region):
                     continue
-                if district and r.district != district:
+                if district and (r.district or "").strip().lower() != district.strip().lower():
                     continue
-                if branch and r.branch != branch:
+                if branch and (r.branch or "").strip().lower() != branch.strip().lower():
                     continue
             filtered.append(r)
         rows = filtered
@@ -576,14 +602,15 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
         to_date = str(r.to_date or r.from_date or "")[:10]
         geos = geo_map.get(r.name, [])
         branches = [g["branch"] for g in geos if g["branch"]] if geos else ([r.branch] if r.branch else [])
+        st_disp, et_disp = _resolve_training_times(r.start_time, r.end_time, r.program_duration_hours)
         out.append({
             "name": r.name,
             "date": from_date,
             "from_date": from_date,
             "to_date": to_date,
-            "time": _format_time(r.start_time),
-            "start_time": _format_time(r.start_time),
-            "end_time": _format_time(r.end_time),
+            "time": st_disp,
+            "start_time": st_disp,
+            "end_time": et_disp,
             "training_program": r.training_program or "",
             "trainer": r.trainer,
             "trainer_name": r.trainer or "",
@@ -601,6 +628,15 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
             "status": r.status or get_training_status(r),
+            "status_override": r.status_override or "",
+            "postponed_on": str(r.postponed_on or "")[:10],
+            "postponement_reason": r.postponement_reason or "",
+            "cancelled_on": str(r.cancelled_on or "")[:10],
+            "cancellation_reason": r.cancellation_reason or "",
+            "original_from_date": str(r.original_from_date or "")[:10],
+            "original_to_date": str(r.original_to_date or "")[:10],
+            "original_start_time": _format_time(r.original_start_time),
+            "original_end_time": _format_time(r.original_end_time),
             "training_delivered": r.training_delivered or 0,
             "attendance_marked": r.attendance_marked or 0,
             "pre_assessment_taken": r.pre_assessment_taken or 0,
@@ -737,7 +773,10 @@ def get_training_details(name):
     r["date"] = str(doc.from_date or "")[:10]
     r["from_date"] = str(doc.from_date or "")[:10]
     r["to_date"] = str(doc.to_date or doc.from_date or "")[:10]
-    r["time"] = _format_time(doc.start_time)
+    st_disp, et_disp = _resolve_training_times(doc.start_time, doc.end_time, doc.program_duration_hours)
+    r["time"] = st_disp
+    r["start_time"] = st_disp
+    r["end_time"] = et_disp
     geos = []
     for g in (doc.get("geographies") or []):
         geos.append({
@@ -852,7 +891,7 @@ def create_training(**kwargs):
         "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
         "trainer_remarks", "additional_cc", "training_delivered", "attendance_marked",
         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
-        "number_of_participants",
+        "number_of_participants", "program_duration_hours",
     }
     doc = frappe.new_doc("Training")
     participants = frappe.parse_json(kwargs.get("participants") or "[]")
@@ -942,18 +981,14 @@ def update_training_status(training_name, field, value):
     _ensure_can_update(doc)
 
     if field in COMPLETION_FIELDS and int(bool(value)):
-        # Completion needs participants; agent trainings additionally need
-        # every agent's attendance marked (employees have no attendance step).
-        parts = frappe.db.get_all(
-            "Training Participant",
-            filters={"parent": training_name},
-            fields=["reference_doctype", "attendance_status"],
-        )
-        if not parts:
-            frappe.throw(_("Add participants before marking completion."))
-        agents = [p for p in parts if (p.reference_doctype or "Employee") == "Agent"]
-        if agents and any((p.attendance_status or "") not in ("Present", "Absent") for p in agents):
-            frappe.throw(_("Mark attendance for all swayamsevikas before marking completion."))
+        if not _is_admin():
+            end_date = str(doc.to_date or doc.from_date or "")[:10]
+            if end_date and frappe.utils.getdate() < frappe.utils.getdate(end_date):
+                frappe.throw(
+                    _("Training status can be marked only on or after the Training End Date ({0}).").format(
+                        frappe.utils.format_date(end_date)
+                    )
+                )
         # Completing (this tick makes 5/5) needs budget filled first (min ₹1
         # each) — no completion without budget.
         eff = {f: doc.get(f) for f in COMPLETION_FIELDS}
@@ -1272,11 +1307,17 @@ def get_geo_options():
         """,
         as_dict=True,
     )
-    zones, regions, districts = set(), set(), set()
+    zones, regions, districts = {}, {}, {}
     for r in rows:
-        if r.zone: zones.add(r.zone)
-        if r.region: regions.add(r.region)
-        if r.district: districts.add(r.district)
+        if r.zone:
+            zones.setdefault(r.zone.strip().lower(), r.zone.strip())
+        if r.region:
+            regions.setdefault(r.region.strip().lower(), r.region.strip())
+        if r.district:
+            districts.setdefault(r.district.strip().lower(), r.district.strip())
+    zones = set(zones.values())
+    regions = set(regions.values())
+    districts = set(districts.values())
 
     branches = frappe.db.get_all(
         "Sahayog Branch", filters={"disabled": ["!=", 1]}, pluck="name"
@@ -2509,7 +2550,7 @@ def _replace_geographies(training_name, geographies):
 
 
 @frappe.whitelist()
-def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None, is_adhoc=None):
+def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None, is_adhoc=None, program_duration_hours=None):
     """
     Reschedule a training — L&D Admin can change anything; a trainer can
     reschedule only their own trainings (created by them or assigned to them).
@@ -2518,6 +2559,14 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
     """
     doc = frappe.get_doc("Training", name)
     _ensure_can_update(doc)
+
+    old_from = str(doc.from_date or "")[:10]
+    old_to = str(doc.to_date or doc.from_date or "")[:10]
+    old_start = _normalize_time(doc.start_time) if doc.start_time else None
+    old_end = _normalize_time(doc.end_time) if doc.end_time else None
+    old_loc = doc.training_location or ""
+    old_type = doc.training_type or ""
+    had_schedule = bool(doc.from_date)
 
     if not from_date:
         frappe.throw(_("From Date is required."))
@@ -2556,10 +2605,14 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
             frappe.throw(_("Number of Participants cannot be negative."))
     if is_adhoc is not None:
         updates["is_adhoc"] = 1 if str(is_adhoc).strip().lower() in ("1", "true", "yes") else 0
-
-    # New date => new invitation cycle: capture the old date BEFORE writing,
-    # so the 10 AM invitation cron picks the rescheduled training up again.
-    old_from = str(frappe.db.get_value("Training", name, "from_date") or "")[:10]
+    if program_duration_hours is not None:
+        try:
+            val = float(program_duration_hours)
+        except (TypeError, ValueError):
+            frappe.throw(_("Program Duration must be a number."))
+        if val < 0:
+            frappe.throw(_("Program Duration cannot be negative."))
+        updates["program_duration_hours"] = val
 
     for field, value in updates.items():
         frappe.db.set_value("Training", name, field, value)
@@ -2572,9 +2625,57 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
     if geographies is not None:
         _replace_geographies(name, frappe.parse_json(geographies) or [])
 
-    if old_from != str(from_date)[:10]:
+    to_date = to_date or from_date
+    start_norm_cmp = _normalize_time(start_time) if start_time else None
+    end_norm_cmp = _normalize_time(end_time) if end_time else None
+    new_start = start_norm_cmp if start_norm_cmp is not None else old_start
+    new_end = end_norm_cmp if end_norm_cmp is not None else old_end
+    new_loc = training_location if training_location is not None else old_loc
+    new_type = training_type if training_type is not None else old_type
+
+    schedule_changed = (
+        old_from != str(from_date)[:10]
+        or old_to != str(to_date)[:10]
+        or (old_start or "") != (new_start or "")
+        or (old_end or "") != (new_end or "")
+        or old_loc != (new_loc or "")
+        or old_type != (new_type or "")
+    )
+
+    # Preserve original schedule (first-ever schedule) without overwriting.
+    if not doc.original_from_date and (old_from or from_date):
+        frappe.db.set_value("Training", name, "original_from_date", old_from or from_date)
+        frappe.db.set_value("Training", name, "original_to_date", old_to or to_date)
+        if old_start:
+            frappe.db.set_value("Training", name, "original_start_time", old_start)
+        if old_end:
+            frappe.db.set_value("Training", name, "original_end_time", old_end)
+
+    # Append previous schedule to history when an already-scheduled training changes.
+    if had_schedule and schedule_changed:
+        import json as _json
+        hist_raw = frappe.db.get_value("Training", name, "schedule_history") or "[]"
+        try:
+            hist = _json.loads(hist_raw)
+        except Exception:
+            hist = []
+        hist.append({
+            "from_date": old_from,
+            "to_date": old_to,
+            "start_time": old_start,
+            "end_time": old_end,
+            "training_location": old_loc,
+            "training_type": old_type,
+        })
+        frappe.db.set_value("Training", name, "schedule_history", _json.dumps(hist))
+
+    if str(from_date)[:10] != old_from:
         frappe.db.set_value("Training", name, "invitation_7d_sent", 0)
         frappe.db.set_value("Training", name, "invitation_3d_sent", 0)
+
+    # Rescheduled only when an already-scheduled training's schedule actually changed.
+    if had_schedule and schedule_changed:
+        frappe.db.set_value("Training", name, "status_override", "Rescheduled")
 
     frappe.db.commit()
     return {"success": True}
@@ -2589,6 +2690,45 @@ def delete_training(name):
     if doc.docstatus == 1:
         doc.cancel()
     frappe.delete_doc("Training", name)
+    return {"success": True}
+
+
+@frappe.whitelist()
+def cancel_training(name, reason=None):
+    """Mark a training as Cancelled (system-set status)."""
+    doc = frappe.get_doc("Training", name)
+    _ensure_can_update(doc)
+    if any(doc.get(f) for f in COMPLETION_FIELDS):
+        frappe.throw(_("Cannot cancel a training that has started/completed."))
+    if not doc.original_from_date and doc.from_date:
+        doc.original_from_date = doc.from_date
+        doc.original_to_date = doc.to_date or doc.from_date
+        doc.original_start_time = doc.start_time
+        doc.original_end_time = doc.end_time
+    doc.status_override = "Cancelled"
+    doc.cancelled_on = frappe.utils.getdate()
+    doc.cancellation_reason = reason or ""
+    doc.save(ignore_permissions=True)
+    frappe.db.commit()
+    return {"success": True}
+
+
+@frappe.whitelist()
+def postpone_training(name, reason=None):
+    """Mark a training as Postponed (system-set status)."""
+    doc = frappe.get_doc("Training", name)
+    _ensure_can_update(doc)
+    if any(doc.get(f) for f in COMPLETION_FIELDS):
+        frappe.throw(_("Cannot postpone a training that has started/completed."))
+    if not doc.original_from_date and doc.from_date:
+        doc.original_from_date = doc.from_date
+        doc.original_to_date = doc.to_date or doc.from_date
+        doc.original_start_time = doc.start_time
+        doc.original_end_time = doc.end_time
+    doc.status_override = "Postponed"
+    doc.postponed_on = frappe.utils.getdate()
+    doc.postponement_reason = reason or ""
+    doc.save(ignore_permissions=True)
     return {"success": True}
 
 
@@ -3052,3 +3192,685 @@ def get_branch_geo(branch):
         "Sahayog Branch", branch, ["zone", "region", "district"], as_dict=True
     )
     return geo or {}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# L&D Training Dashboard — consolidated data API
+# ─────────────────────────────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_dashboard_data(year=None, month=None, zone=None, region=None, district=None, branch=None, trainer=None, program=None):
+    """
+    Single API call for the L&D Training Dashboard.
+    Returns: kpis, zone_table, monthly_trend, program_coverage,
+             upcoming_trainings, insights.
+    Only accessible to L&D Admin / System Manager.
+    """
+    # Accessible to all users. Admins see everything; non-admins are scoped
+    # to their Report Preference (geo) when one is configured.
+    _scope = None if _is_admin() else _pref_geo_scope()
+
+    import calendar as cal_mod
+
+    today = frappe.utils.getdate()
+    year = int(year) if year else today.year
+    month = int(month) if month else today.month
+    year, month = _safe_year_month(year, month)
+
+    last_day = cal_mod.monthrange(year, month)[1]
+    month_start = f"{year}-{month:02d}-01"
+    month_end   = f"{year}-{month:02d}-{last_day}"
+    today_str   = str(today)
+
+    # ---------- Fetch all Training rows for the month ----------
+    filters = {
+        "docstatus": ["<", 2],
+        "from_date": ["<=", month_end],
+    }
+    all_rows = frappe.db.get_all(
+        "Training", filters=filters,
+        fields=[
+            "name", "from_date", "to_date", "start_time", "status",
+            "training_program", "trainer", "zone", "region", "district", "branch",
+            "training_type", "is_adhoc", "number_of_participants",
+            *COMPLETION_FIELDS, "budget_amount", "actual_expense", "status_override",
+        ],
+        order_by="from_date asc",
+        limit_page_length=5000,
+    )
+    # keep only rows whose end (to_date or from_date) falls within the month
+    all_rows = [r for r in all_rows if str(r.to_date or r.from_date or "")[:10] >= month_start]
+
+    # geo filter
+    geo_names = [r.name for r in all_rows]
+    geo_map = _get_geographies_map(geo_names) if geo_names else {}
+
+    if _scope:
+        all_rows = [r for r in all_rows if _in_pref_geo(geo_map.get(r.name, []), r, _scope)]
+
+    def geo_ok(r):
+        geos = geo_map.get(r.name, [])
+        if geos:
+            return _geography_matches(geos, zone, region, district, branch)
+        if zone     and r.zone     != zone:     return False
+        if region   and not _region_match(r.region, region): return False
+        if district and r.district != district: return False
+        if branch   and r.branch   != branch:   return False
+        return True
+
+    def prog_ok(r):
+        if not program: return True
+        return (r.training_program or "") == program
+
+    def trainer_ok(r):
+        if not trainer: return True
+        return (r.trainer or "") == trainer
+
+    rows = [r for r in all_rows if geo_ok(r) and prog_ok(r) and trainer_ok(r)]
+
+    # ---------- Prev month for % change ----------
+    pm = month - 1 if month > 1 else 12
+    py = year if month > 1 else year - 1
+    pm_last = cal_mod.monthrange(py, pm)[1]
+    pm_start = f"{py}-{pm:02d}-01"
+    pm_end   = f"{py}-{pm:02d}-{pm_last}"
+    prev_rows_raw = frappe.db.get_all(
+        "Training", filters={"docstatus": ["<", 2], "from_date": ["<=", pm_end]},
+        fields=["name", "from_date", "to_date", "status", "status_override", *COMPLETION_FIELDS],
+        limit_page_length=5000,
+    )
+    prev_rows = [r for r in prev_rows_raw if str(r.to_date or r.from_date or "")[:10] >= pm_start]
+
+    def _st(r):
+        sc = sum(1 for f in COMPLETION_FIELDS if r.get(f))
+        if sc == 5: return "completed"
+        if sc > 0:  return "inprogress"
+        so = str(r.get("status_override") or r.get("status") or "").lower()
+        if so in ("cancelled", "postponed", "rescheduled"): return so
+        end = str(r.to_date or r.from_date or "")[:10]
+        if not end: return "draft"
+        return "upcoming" if end >= today_str else "pending"
+
+    # ---------- KPIs ----------
+    total   = len(rows)
+    comp    = sum(1 for r in rows if _st(r) == "completed")
+    inp     = sum(1 for r in rows if _st(r) == "inprogress")
+    upc     = sum(1 for r in rows if _st(r) == "upcoming")
+    pend    = sum(1 for r in rows if _st(r) == "pending")
+    canc    = sum(1 for r in rows if _st(r) == "cancelled")
+    comp_rate = round(comp / total * 100) if total else 0
+
+    pt = len(prev_rows)
+    pc = sum(1 for r in prev_rows if _st(r) == "completed")
+    pu = sum(1 for r in prev_rows if _st(r) == "upcoming")
+    pp = sum(1 for r in prev_rows if _st(r) == "pending")
+    pi = sum(1 for r in prev_rows if _st(r) == "inprogress")
+    pr = round(pc / pt * 100) if pt else 0
+
+    def _chg(cur, prev):
+        if not prev: return None
+        return round((cur - prev) / prev * 100)
+
+    kpis = {
+        "total_planned":   {"value": total,     "prev": pt,  "change": _chg(total, pt)},
+        "conducted":       {"value": comp,       "prev": pc,  "change": _chg(comp, pc)},
+        "upcoming":        {"value": upc,        "prev": pu,  "change": _chg(upc, pu)},
+        "inprogress":      {"value": inp,        "prev": pi,  "change": _chg(inp, pi)},
+        "pending":         {"value": pend,       "prev": pp,  "change": _chg(pend, pp)},
+        "completion_rate": {"value": comp_rate,  "prev": pr,  "change": _chg(comp_rate, pr)},
+    }
+
+    # ---------- Daily / Weekly / Monthly coverage ----------
+    import datetime
+    is_curr_m = (year == today.year and month == today.month)
+    if is_curr_m:
+        ref_day = today
+        ref_day_str = today_str
+        ref_dow = ref_day.weekday()
+        wk_start = ref_day - datetime.timedelta(days=ref_dow)
+        wk_end   = wk_start + datetime.timedelta(days=6)
+        wk_s, wk_e = str(wk_start)[:10], str(wk_end)[:10]
+        monthly_end = today_str
+    elif (year, month) < (today.year, today.month):
+        # Past month: show month-end as reference
+        ref_day = frappe.utils.getdate(month_end)
+        ref_day_str = month_end
+        ref_dow = ref_day.weekday()
+        wk_start = ref_day - datetime.timedelta(days=ref_dow)
+        wk_end   = ref_day
+        wk_s, wk_e = str(wk_start)[:10], str(wk_end)[:10]
+        monthly_end = month_end
+    else:
+        # Future month: show month-start as reference
+        ref_day = frappe.utils.getdate(month_start)
+        ref_day_str = month_start
+        ref_dow = ref_day.weekday()
+        wk_start = ref_day
+        wk_end   = min(frappe.utils.getdate(month_end), ref_day + datetime.timedelta(days=6))
+        wk_s, wk_e = str(wk_start)[:10], str(wk_end)[:10]
+        monthly_end = month_end
+
+    # Daily: reference day's trainings
+    day_rows = [r for r in rows if str(r.from_date or "")[:10] <= ref_day_str <= str(r.to_date or r.from_date or "")[:10]]
+    d_planned = len(day_rows)
+    d_conducted = sum(1 for r in day_rows if _st(r) == "completed")
+    d_pending = d_planned - d_conducted
+
+    # Weekly: reference week
+    wk_rows = [r for r in rows if str(r.from_date or "")[:10] <= wk_e and str(r.to_date or r.from_date or "")[:10] >= wk_s]
+    w_planned = len(wk_rows)
+    w_conducted = sum(1 for r in wk_rows if _st(r) == "completed")
+    w_pending = w_planned - w_conducted
+
+    m_conducted = comp
+    m_pending = pend + inp
+
+    coverage = {
+        "daily":   {"label": ref_day_str, "planned": d_planned, "conducted": d_conducted, "pending": d_pending, "pct": round(d_conducted/d_planned*100) if d_planned else 0},
+        "weekly":  {"label": f"{wk_s} to {wk_e}", "planned": w_planned, "conducted": w_conducted, "pending": w_pending, "pct": round(w_conducted/w_planned*100) if w_planned else 0},
+        "monthly": {"label": f"{month_start} to {monthly_end}", "planned": total, "conducted": m_conducted, "pending": m_pending, "pct": comp_rate},
+    }
+
+    # ---------- Monthly trend (weekly buckets in current month) ----------
+    trend = []
+    wk = 1
+    d = frappe.utils.getdate(month_start)
+    last_d = frappe.utils.getdate(month_end)
+    while d <= last_d:
+        w_end = min(d + datetime.timedelta(days=6), last_d)
+        ws, we = str(d)[:10], str(w_end)[:10]
+        wrows = [r for r in rows if str(r.from_date or "")[:10] <= we and str(r.to_date or r.from_date or "")[:10] >= ws]
+        trained = sum(1 for r in wrows if _st(r) == "completed")
+        planned_w = len(wrows)
+        trend.append({
+            "label": f"{d.day}–{w_end.day} {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][month-1]}",
+            "trained": trained, "planned": planned_w,
+        })
+        d = w_end + datetime.timedelta(days=1)
+        wk += 1
+
+    # ---------- Program-wise coverage ----------
+    prog_map = {}
+    for r in rows:
+        p = r.training_program or "Other"
+        if p not in prog_map:
+            prog_map[p] = {"planned": 0, "conducted": 0}
+        prog_map[p]["planned"] += 1
+        if _st(r) == "completed":
+            prog_map[p]["conducted"] += 1
+
+    prog_coverage = sorted(
+        [{"program": p, "planned": v["planned"], "conducted": v["conducted"],
+          "pct": round(v["conducted"]/v["planned"]*100) if v["planned"] else 0}
+         for p, v in prog_map.items()],
+        key=lambda x: -x["planned"]
+    )[:8]
+
+    # ---------- Zone-wise table ----------
+    # Normalize zone names (case-insensitive) to avoid duplicate rows (e.g. ZONE-3 vs Zone-3)
+    # Always normalize to standard uppercase "ZONE-X" format for consistency
+    zone_canonical = {}  # lower_key -> display_name
+    for r in rows:
+        geos = geo_map.get(r.name, [])
+        if geos:
+            for g in geos:
+                zn = (g.get("zone") or "").strip()
+                if zn:
+                    key = zn.lower()
+                    if key not in zone_canonical:
+                        zone_canonical[key] = zn.upper() if zn.lower().startswith("zone") else zn
+        elif r.zone:
+            zn = r.zone.strip()
+            key = zn.lower()
+            if key not in zone_canonical:
+                zone_canonical[key] = zn.upper() if zn.lower().startswith("zone") else zn
+
+    zone_table = []
+    for zkey in sorted(zone_canonical):
+        z = zone_canonical[zkey]
+        z_rows = []
+        for r in rows:
+            geos = geo_map.get(r.name, [])
+            if geos:
+                if any((g.get("zone") or "").strip().lower() == zkey for g in geos): z_rows.append(r)
+            elif (r.zone or "").strip().lower() == zkey:
+                z_rows.append(r)
+        zp = len(z_rows)
+        zc = sum(1 for r in z_rows if _st(r) == "completed")
+        zi = sum(1 for r in z_rows if _st(r) == "inprogress")
+        zpend = sum(1 for r in z_rows if _st(r) in ("pending", "upcoming"))
+        zone_table.append({
+            "zone": z,
+            "planned": zp, "planned_pct": round(zp/total*100) if total else 0,
+            "conducted": zc, "conducted_pct": round(zc/zp*100) if zp else 0,
+            "pending": zpend, "pending_pct": round(zpend/zp*100) if zp else 0,
+            "completion_pct": round(zc/zp*100) if zp else 0,
+        })
+    # Add Pan India total row
+    zone_table.append({
+        "zone": "PAN India",
+        "planned": total, "planned_pct": 100,
+        "conducted": comp, "conducted_pct": comp_rate,
+        "pending": pend, "pending_pct": round(pend/total*100) if total else 0,
+        "completion_pct": comp_rate,
+    })
+
+    # ---------- Upcoming trainings ----------
+    upcoming_list = []
+    overdue_count = 0
+    for r in rows:
+        st = _st(r)
+        if st == "pending":
+            overdue_count += 1
+        # Only show genuinely upcoming trainings (or if month is ongoing, trainings strictly whose end date >= today)
+        if st == "upcoming":
+            # Prefer geo_map zone for multi-geo trainings
+            geos = geo_map.get(r.name, [])
+            zones_str = ", ".join(sorted({(g.get("zone") or "").strip().upper() if (g.get("zone") or "").strip().lower().startswith("zone") else (g.get("zone") or "").strip() for g in geos if g.get("zone")})) if geos else (r.zone.upper() if (r.zone or "").lower().startswith("zone") else (r.zone or "—"))
+            upcoming_list.append({
+                "name": r.name,
+                "program": r.training_program or "—",
+                "from_date": str(r.from_date or "")[:10],
+                "to_date": str(r.to_date or r.from_date or "")[:10],
+                "zone": zones_str or "—",
+                "trainer": r.trainer or "—",
+                "status": st,
+            })
+    upcoming_list = sorted(upcoming_list, key=lambda x: x["from_date"])[:10]
+
+    # ---------- Insights & Alerts ----------
+    insights = []
+
+    # Pending alert: zone with most pending
+    if zone_table:
+        max_pend = max((z for z in zone_table if z["zone"] != "PAN India"), key=lambda z: z["pending"], default=None)
+        if max_pend and max_pend["pending"] > 0:
+            insights.append({
+                "type": "warning",
+                "title": "Pending Trainings",
+                "desc": f"{max_pend['zone']} — {max_pend['pending']} trainings pending (highest among zones)",
+                "color": "orange",
+            })
+
+    # Low completion: zone below average
+    avg_comp = comp_rate
+    low_zones = [z for z in zone_table if z["zone"] != "PAN India" and z["completion_pct"] < avg_comp and z["planned"] >= 3]
+    if low_zones:
+        lz = min(low_zones, key=lambda z: z["completion_pct"])
+        insights.append({
+            "type": "alert",
+            "title": "Low Completion Rate",
+            "desc": f"{lz['zone']} — {lz['completion_pct']}% completion rate (vs. {avg_comp}% overall)",
+            "color": "red",
+        })
+
+    # Best performer
+    good_zones = [z for z in zone_table if z["zone"] != "PAN India" and z["planned"] >= 3]
+    if good_zones:
+        best = max(good_zones, key=lambda z: z["completion_pct"])
+        insights.append({
+            "type": "success",
+            "title": "Highest Performance",
+            "desc": f"{best['zone']} — {best['completion_pct']}% completion rate (highest among zones)",
+            "color": "green",
+        })
+
+    # Upcoming in next 7 days
+    next7 = str(today + datetime.timedelta(days=7))[:10]
+    soon = [r for r in rows if today_str <= str(r.from_date or "")[:10] <= next7]
+    if soon:
+        insights.append({
+            "type": "info",
+            "title": "Trainings This Week",
+            "desc": f"{len(soon)} training(s) scheduled in next 7 days",
+            "color": "blue",
+        })
+
+    # Overdue alert: pending trainings whose end date has passed
+    if overdue_count > 0:
+        insights.append({
+            "type": "warning",
+            "title": "Overdue / Past-Due",
+            "desc": f"{overdue_count} training(s) past their end date with no completion recorded",
+            "color": "red",
+        })
+
+    # Trainer options for filter
+    trainer_opts = sorted({r.trainer for r in all_rows if r.trainer})
+    program_opts = sorted({r.training_program for r in all_rows if r.training_program})
+
+    # Status distribution for donut/bar widget
+    rescheduled = sum(1 for r in rows if _st(r) == "rescheduled")
+    cancelled_c = sum(1 for r in rows if _st(r) == "cancelled")
+    postponed   = sum(1 for r in rows if _st(r) == "postponed")
+    status_dist = {
+        "completed": comp, "inprogress": inp, "upcoming": upc,
+        "pending": pend, "overdue": overdue_count,
+        "rescheduled": rescheduled, "cancelled": cancelled_c, "postponed": postponed,
+    }
+
+    return {
+        "kpis": kpis,
+        "coverage": coverage,
+        "monthly_trend": trend,
+        "program_coverage": prog_coverage,
+        "zone_table": zone_table,
+        "upcoming_trainings": upcoming_list,
+        "insights": insights,
+        "status_dist": status_dist,
+        "meta": {
+            "month": month, "year": year,
+            "month_label": ["January","February","March","April","May","June","July","August","September","October","November","December"][month-1],
+            "today": today_str,
+            "trainer_opts": trainer_opts,
+            "program_opts": program_opts,
+        }
+    }
+
+
+# ─────────────────────────────────────────────────────────────
+# Trainers Directory
+# ─────────────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_trainers_list(search=None, department=None, branch=None, sort=None, page=1, page_size=12):
+    """
+    Returns paginated list of employees who have conducted at least one training
+    (appear as trainer in Training doctype), enriched with Employee master fields.
+
+    Filters: search (name), department, branch.
+    Sort: name (default), total (most trainings), completed (most completed).
+    """
+    page      = int(page or 1)
+    page_size = int(page_size or 12)
+
+    # All distinct trainer values from Training doctype. The field stores
+    # employee_name (portal + desk), but older rows may hold the Employee ID,
+    # so resolve both to Employee records.
+    trainer_rows = frappe.db.get_all(
+        "Training",
+        fields=["trainer"],
+        filters={"docstatus": ["<", 2]},
+        group_by="trainer",
+    )
+    trainer_values = list({r.trainer for r in trainer_rows if r.trainer})
+
+    if not trainer_values:
+        return {"trainers": [], "total": 0, "page": page, "page_size": page_size}
+
+    resolved = frappe.db.get_all(
+        "Employee",
+        filters={"status": "Active"},
+        or_filters=[
+            ["name", "in", trainer_values],
+            ["employee_name", "in", trainer_values],
+        ],
+        fields=["name", "employee_name"],
+        limit_page_length=0,
+    )
+    trainer_ids = [e.name for e in resolved]
+    key_by_id = {e.name: (e.employee_name or e.name) for e in resolved}
+    if not trainer_ids:
+        return {"trainers": [], "total": 0, "page": page, "page_size": page_size}
+
+    # Fetch matching Employee records (all rows: sorting by stats happens
+    # after counts, then the requested page is sliced).
+    filters = [["name", "in", trainer_ids], ["status", "=", "Active"]]
+    if department:
+        filters.append(["department", "=", department])
+    if branch:
+        filters.append(["branch", "=", branch])
+
+    or_filters = None
+    if search:
+        or_filters = [
+            ["employee_name", "like", f"%{search}%"],
+            ["name", "like", f"%{search}%"],
+        ]
+
+    fields = [
+        "name", "employee_name", "designation", "department",
+        "company_email", "cell_number", "image",
+        "date_of_joining", "branch",
+    ]
+    employees = frappe.db.get_all(
+        "Employee",
+        filters=filters,
+        or_filters=or_filters,
+        fields=fields,
+        order_by="employee_name asc",
+        limit_page_length=0,
+    )
+    total = len(employees)
+    if not employees:
+        return {"trainers": [], "total": 0, "page": page, "page_size": page_size}
+
+    # Bulk training counts (one query per metric instead of N per trainer).
+    all_keys = set()
+    for emp in employees:
+        all_keys.add(emp["name"])
+        all_keys.add(key_by_id[emp["name"]])
+    keys = tuple(sorted(all_keys))
+
+    def _count_map(extra_where="", params=None):
+        query_params = {"keys": keys, **(params or {})}
+        rows = frappe.db.sql(
+            f"SELECT trainer, COUNT(*) AS c FROM `tabTraining` "
+            f"WHERE docstatus < 2 AND trainer IN %(keys)s {extra_where} "
+            f"GROUP BY trainer",
+            query_params,
+            as_dict=True,
+        )
+        return {r.trainer: r.c for r in rows}
+
+    total_map = _count_map()
+    completed_map = _count_map(
+        "AND training_delivered = 1 AND attendance_marked = 1 "
+        "AND pre_assessment_taken = 1 AND post_assessment_taken = 1 "
+        "AND feedback_taken = 1"
+    )
+    upcoming_map = _count_map(
+        "AND from_date >= %(today)s", {"today": str(frappe.utils.getdate())}
+    )
+
+    result = []
+    for emp in employees:
+        emp_id = emp["name"]
+        emp_keys = (emp_id, key_by_id[emp_id])
+        result.append({
+            "employee_id":   emp_id,
+            "name":          emp["employee_name"] or emp_id,
+            "designation":   emp["designation"] or "",
+            "department":    emp["department"] or "",
+            "email":         emp["company_email"] or "",
+            "phone":         emp["cell_number"] or "",
+            "image":         emp["image"] or "",
+            "branch":        emp["branch"] or "",
+            "total":         sum(total_map.get(k, 0) for k in emp_keys),
+            "completed":     sum(completed_map.get(k, 0) for k in emp_keys),
+            "upcoming":      sum(upcoming_map.get(k, 0) for k in emp_keys),
+        })
+
+    sort_key = (sort or "name").strip().lower()
+    if sort_key in ("total", "most_trainings"):
+        result.sort(key=lambda r: (-r["total"], r["name"]))
+    elif sort_key in ("completed", "most_completed"):
+        result.sort(key=lambda r: (-r["completed"], r["name"]))
+    else:
+        result.sort(key=lambda r: (r["name"] or "").lower())
+
+    start = (page - 1) * page_size
+    return {
+        "trainers": result[start:start + page_size],
+        "total":    total,
+        "page":     page,
+        "page_size": page_size,
+    }
+
+
+@frappe.whitelist()
+def get_trainer_profile(employee_id):
+    """
+    Returns full trainer profile: employee info + upcoming & recent trainings.
+    """
+    emp = frappe.db.get_value(
+        "Employee", employee_id,
+        [
+            "name", "employee_name", "employee_number", "designation",
+            "department", "sub_department", "custom_division",
+            "custom_zone", "custom_region", "custom_district", "custom_cluter",
+            "branch", "sahayog_branch", "sol_id",
+            "company_email", "personal_email", "cell_number", "image",
+            "company", "employment_type", "grade", "date_of_joining",
+            "reports_to", "gender", "date_of_birth", "status", "blood_group",
+            "custom_uhid_number",
+        ],
+        as_dict=True,
+    )
+    if not emp:
+        frappe.throw(f"Employee {employee_id} not found.")
+
+    # Branch code: prefer the Employee's sol_id, then sahayog_branch, then
+    # the Branch master's own sol_id.
+    branch_code = emp.get("sol_id") or emp.get("sahayog_branch") or ""
+    if not branch_code and emp.get("branch"):
+        branch_code = frappe.db.get_value("Branch", emp["branch"], "sol_id") or ""
+
+    # Reporting manager name (field stores Employee ID).
+    reports_to_name = ""
+    if emp.get("reports_to"):
+        reports_to_name = frappe.db.get_value(
+            "Employee", emp["reports_to"], "employee_name"
+        ) or emp["reports_to"]
+
+    # Training.trainer stores employee_name (portal + desk); older rows may
+    # hold the Employee ID. Match either so profile stats are complete.
+    trainer_keys = list({k for k in (employee_id, emp["employee_name"]) if k})
+
+    today_str = str(frappe.utils.getdate())
+    MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+    def fmt_session(t):
+        d = str(t.from_date or "")[:10]
+        p = d.split("-")
+        return {
+            "name":          t.name,
+            "program":       t.training_program or "Training",
+            "from_date":     d,
+            "to_date":       str(t.to_date or d)[:10],
+            "day":           p[2].lstrip("0") if len(p) == 3 else "",
+            "month":         MONTHS_SHORT[int(p[1]) - 1] if len(p) == 3 else "",
+            "training_type": t.training_type or "",
+            "location":      t.training_location or "",
+            "status":        get_training_status(t),
+            "participants":  frappe.db.count("Training Participant", {"parent": t.name}),
+        }
+
+    # Upcoming sessions (next 60 days)
+    upcoming_raw = frappe.db.get_all(
+        "Training",
+        filters={
+            "trainer": ["in", trainer_keys],
+            "from_date": [">=", today_str],
+            "docstatus": ["<", 2],
+        },
+        fields=["name", "training_program", "from_date", "to_date",
+                "training_type", "training_location",
+                *COMPLETION_FIELDS],
+        order_by="from_date asc",
+        limit=5,
+    )
+
+    # Recent completed sessions (last 90 days)
+    ninety_ago = str(frappe.utils.add_days(frappe.utils.getdate(), -90))
+    recent_raw = frappe.db.get_all(
+        "Training",
+        filters={
+            "trainer": ["in", trainer_keys],
+            "from_date": ["between", [ninety_ago, today_str]],
+            "docstatus": ["<", 2],
+        },
+        fields=["name", "training_program", "from_date", "to_date",
+                "training_type", "training_location",
+                *COMPLETION_FIELDS],
+        order_by="from_date desc",
+        limit=5,
+    )
+
+    total   = frappe.db.count("Training", {"trainer": ["in", trainer_keys], "docstatus": ["<", 2]})
+    completed = frappe.db.count("Training", {
+        "trainer": ["in", trainer_keys], "docstatus": ["<", 2],
+        "training_delivered": 1, "attendance_marked": 1,
+        "pre_assessment_taken": 1, "post_assessment_taken": 1, "feedback_taken": 1,
+    })
+    upcoming_count = frappe.db.count("Training", {
+        "trainer": ["in", trainer_keys], "docstatus": ["<", 2],
+        "from_date": [">=", today_str],
+    })
+
+    return {
+        "employee_id":  emp["name"],
+        "employee_number": emp.get("employee_number") or emp["name"],
+        "name":         emp["employee_name"] or emp["name"],
+        "designation":  emp["designation"] or "",
+        "department":   emp["department"] or "",
+        "sub_department": emp.get("sub_department") or "",
+        "division":     emp.get("custom_division") or "",
+        "zone":         emp.get("custom_zone") or "",
+        "region":       emp.get("custom_region") or "",
+        "district":     emp.get("custom_district") or "",
+        "cluster":      emp.get("custom_cluter") or "",
+        "branch":       emp["branch"] or "",
+        "branch_code":  branch_code,
+        "email":        emp["company_email"] or "",
+        "personal_email": emp.get("personal_email") or "",
+        "phone":        emp["cell_number"] or "",
+        "image":        emp["image"] or "",
+        "company":      emp.get("company") or "",
+        "employment_type": emp.get("employment_type") or "",
+        "grade":        emp.get("grade") or "",
+        "date_of_joining": str(emp.get("date_of_joining") or ""),
+        "reports_to":   emp.get("reports_to") or "",
+        "reports_to_name": reports_to_name,
+        "gender":       emp.get("gender") or "",
+        "date_of_birth": str(emp.get("date_of_birth") or ""),
+        "status":       emp.get("status") or "",
+        "blood_group":  emp.get("blood_group") or "",
+        "uhid":         emp.get("custom_uhid_number") or "",
+        "total":        total,
+        "completed":    completed,
+        "upcoming_count": upcoming_count,
+        "upcoming":     [fmt_session(t) for t in upcoming_raw],
+        "recent":       [fmt_session(t) for t in recent_raw],
+    }
+
+
+@frappe.whitelist()
+def get_trainer_departments():
+    """All departments that have at least one trainer."""
+    trainer_rows = frappe.db.get_all("Training", fields=["trainer"],
+                                      filters={"docstatus": ["<", 2]}, group_by="trainer")
+    values = [r.trainer for r in trainer_rows if r.trainer]
+    if not values:
+        return []
+    # trainer stores employee_name; match Employee ID too for older rows.
+    depts = frappe.db.get_all("Employee",
+                               filters={"status": "Active"},
+                               or_filters=[["name", "in", values], ["employee_name", "in", values]],
+                               fields=["department"], group_by="department")
+    return sorted([d.department for d in depts if d.department])
+
+
+@frappe.whitelist()
+def get_trainer_branches():
+    """All Employee branches that have at least one trainer."""
+    trainer_rows = frappe.db.get_all("Training", fields=["trainer"],
+                                      filters={"docstatus": ["<", 2]}, group_by="trainer")
+    values = [r.trainer for r in trainer_rows if r.trainer]
+    if not values:
+        return []
+    rows = frappe.db.get_all("Employee",
+                              filters={"status": "Active"},
+                              or_filters=[["name", "in", values], ["employee_name", "in", values]],
+                              fields=["branch"], group_by="branch")
+    return sorted([r.branch for r in rows if r.branch])

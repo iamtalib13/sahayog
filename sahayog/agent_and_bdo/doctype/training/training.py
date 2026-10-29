@@ -14,13 +14,16 @@ COMPLETION_FIELDS = [
 ]
 
 
+MANUAL_STATUSES = ("Rescheduled", "Cancelled", "Postponed")
+
 def get_training_status(doc, for_date=None):
     """
     Derive the calendar status of a Training (plain, non-submittable form).
 
-    Draft          -> no schedule yet (dates missing)
     Completed      -> all 5 completion checks ticked
     In Progress    -> 1-4 completion checks ticked
+    Rescheduled/Cancelled/Postponed -> manual lifecycle override (0 checks)
+    Draft          -> no schedule yet (dates missing)
     Upcoming       -> 0 checks, on/after today
     Pending        -> 0 checks, before today
     """
@@ -29,6 +32,10 @@ def get_training_status(doc, for_date=None):
         return "Completed"
     if score > 0:
         return "In Progress"
+
+    override = doc.get("status_override")
+    if override in MANUAL_STATUSES:
+        return override
 
     ref = for_date or frappe.utils.getdate()
     end = doc.get("to_date") or doc.get("from_date")
@@ -50,6 +57,20 @@ class Training(Document):
         self._sync_geographies()
 
     def validate(self):
+        if self.program_duration_hours and (not self.start_time or not self.end_time):
+            try:
+                h = float(self.program_duration_hours)
+                if h > 0:
+                    if not self.start_time:
+                        self.start_time = "10:00:00"
+                    if not self.end_time:
+                        start_sec = 10 * 3600
+                        end_sec = min(18 * 3600, start_sec + int(round(h * 3600)))
+                        eh = end_sec // 3600
+                        em = (end_sec % 3600) // 60
+                        self.end_time = f"{eh:02d}:{em:02d}:00"
+            except (ValueError, TypeError):
+                pass
         if self.from_date and self.to_date:
             if frappe.utils.getdate(self.to_date) < frappe.utils.getdate(self.from_date):
                 frappe.throw(_("To Date cannot be before From Date."))
@@ -60,7 +81,6 @@ class Training(Document):
         self._validate_no_holiday_sunday()
         self._validate_participant_types()
         self._validate_completed_budget()
-        self._validate_checks_require_participants()
         self._validate_budget_cap()
 
     def _sync_geographies(self):

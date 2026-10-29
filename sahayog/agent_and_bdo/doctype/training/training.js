@@ -2,8 +2,19 @@
 // For license information, please see license.txt
 
 frappe.ui.form.on("Training", {
+	program_duration_hours(frm) {
+		if (!frm.doc.program_duration_hours) return;
+		var h = parseFloat(frm.doc.program_duration_hours);
+		if (isNaN(h) || h <= 0) return;
+		frm.set_value("start_time", "10:00:00");
+		var totalMin = 10 * 60 + Math.round(h * 60);
+		var cap = 18 * 60;
+		if (totalMin > cap) totalMin = cap;
+		var hh = Math.floor(totalMin / 60);
+		var mm = totalMin % 60;
+		frm.set_value("end_time", (hh < 10 ? "0" : "") + hh + ":" + (mm < 10 ? "0" : "") + mm + ":00");
+	},
 	branch(frm) {
-		if (!frm.doc.branch) return;
 		frappe.call({
 			method: "sahayog.agent_and_bdo.doctype.training.training.get_branch_geo",
 			args: { branch: frm.doc.branch },
