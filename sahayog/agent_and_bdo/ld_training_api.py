@@ -3581,10 +3581,13 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
 # ─────────────────────────────────────────────────────────────
 
 @frappe.whitelist()
-def get_trainers_list(search=None, department=None, page=1, page_size=12):
+def get_trainers_list(search=None, department=None, branch=None, sort=None, page=1, page_size=12):
     """
     Returns paginated list of employees who have conducted at least one training
     (appear as trainer in Training doctype), enriched with Employee master fields.
+
+    Filters: search (name), department, branch.
+    Sort: name (default), total (most trainings), completed (most completed).
     """
     page      = int(page or 1)
     page_size = int(page_size or 12)
@@ -3614,57 +3617,68 @@ def get_trainers_list(search=None, department=None, page=1, page_size=12):
         limit_page_length=0,
     )
     trainer_ids = [e.name for e in resolved]
-    trainer_key_by_id = {e.name: (e.employee_name or e.name) for e in resolved}
+    key_by_id = {e.name: (e.employee_name or e.name) for e in resolved}
     if not trainer_ids:
         return {"trainers": [], "total": 0, "page": page, "page_size": page_size}
 
-    # Fetch Employee records for those IDs
+    # Fetch matching Employee records (all rows: sorting by stats happens
+    # after counts, then the requested page is sliced).
     filters = [["name", "in", trainer_ids], ["status", "=", "Active"]]
     if search:
         filters.append(["employee_name", "like", f"%{search}%"])
     if department:
         filters.append(["department", "=", department])
+    if branch:
+        filters.append(["branch", "=", branch])
 
     fields = [
         "name", "employee_name", "designation", "department",
         "company_email", "cell_number", "image",
         "date_of_joining", "branch",
     ]
-    total = frappe.db.count("Employee", filters=filters)
     employees = frappe.db.get_all(
         "Employee",
         filters=filters,
         fields=fields,
         order_by="employee_name asc",
-        limit_start=(page - 1) * page_size,
-        limit_page_length=page_size,
+        limit_page_length=0,
+    )
+    total = len(employees)
+    if not employees:
+        return {"trainers": [], "total": 0, "page": page, "page_size": page_size}
+
+    # Bulk training counts (one query per metric instead of N per trainer).
+    all_keys = set()
+    for emp in employees:
+        all_keys.add(emp["name"])
+        all_keys.add(key_by_id[emp["name"]])
+    keys = tuple(sorted(all_keys))
+
+    def _count_map(extra_where="", params=None):
+        query_params = {"keys": keys, **(params or {})}
+        rows = frappe.db.sql(
+            f"SELECT trainer, COUNT(*) AS c FROM `tabTraining` "
+            f"WHERE docstatus < 2 AND trainer IN %(keys)s {extra_where} "
+            f"GROUP BY trainer",
+            query_params,
+            as_dict=True,
+        )
+        return {r.trainer: r.c for r in rows}
+
+    total_map = _count_map()
+    completed_map = _count_map(
+        "AND training_delivered = 1 AND attendance_marked = 1 "
+        "AND pre_assessment_taken = 1 AND post_assessment_taken = 1 "
+        "AND feedback_taken = 1"
+    )
+    upcoming_map = _count_map(
+        "AND from_date >= %(today)s", {"today": str(frappe.utils.getdate())}
     )
 
-    today_str = str(frappe.utils.getdate())
-
-    # Enrich with training stats
     result = []
     for emp in employees:
         emp_id = emp["name"]
-        trainer_keys = list({k for k in (emp_id, trainer_key_by_id.get(emp_id)) if k})
-        # Total trainings as trainer
-        all_t = frappe.db.count("Training", {"trainer": ["in", trainer_keys], "docstatus": ["<", 2]})
-        # Completed trainings
-        completed_t = frappe.db.count("Training", {
-            "trainer": ["in", trainer_keys],
-            "docstatus": ["<", 2],
-            "training_delivered": 1,
-            "attendance_marked": 1,
-            "pre_assessment_taken": 1,
-            "post_assessment_taken": 1,
-            "feedback_taken": 1,
-        })
-        # Upcoming (from_date >= today)
-        upcoming_t = frappe.db.count("Training", {
-            "trainer": ["in", trainer_keys],
-            "docstatus": ["<", 2],
-            "from_date": [">=", today_str],
-        })
+        emp_keys = (emp_id, key_by_id[emp_id])
         result.append({
             "employee_id":   emp_id,
             "name":          emp["employee_name"] or emp_id,
@@ -3674,13 +3688,22 @@ def get_trainers_list(search=None, department=None, page=1, page_size=12):
             "phone":         emp["cell_number"] or "",
             "image":         emp["image"] or "",
             "branch":        emp["branch"] or "",
-            "total":         all_t,
-            "completed":     completed_t,
-            "upcoming":      upcoming_t,
+            "total":         sum(total_map.get(k, 0) for k in emp_keys),
+            "completed":     sum(completed_map.get(k, 0) for k in emp_keys),
+            "upcoming":      sum(upcoming_map.get(k, 0) for k in emp_keys),
         })
 
+    sort_key = (sort or "name").strip().lower()
+    if sort_key in ("total", "most_trainings"):
+        result.sort(key=lambda r: (-r["total"], r["name"]))
+    elif sort_key in ("completed", "most_completed"):
+        result.sort(key=lambda r: (-r["completed"], r["name"]))
+    else:
+        result.sort(key=lambda r: (r["name"] or "").lower())
+
+    start = (page - 1) * page_size
     return {
-        "trainers": result,
+        "trainers": result[start:start + page_size],
         "total":    total,
         "page":     page,
         "page_size": page_size,
@@ -3793,3 +3816,18 @@ def get_trainer_departments():
                                or_filters=[["name", "in", values], ["employee_name", "in", values]],
                                fields=["department"], group_by="department")
     return sorted([d.department for d in depts if d.department])
+
+
+@frappe.whitelist()
+def get_trainer_branches():
+    """All Employee branches that have at least one trainer."""
+    trainer_rows = frappe.db.get_all("Training", fields=["trainer"],
+                                      filters={"docstatus": ["<", 2]}, group_by="trainer")
+    values = [r.trainer for r in trainer_rows if r.trainer]
+    if not values:
+        return []
+    rows = frappe.db.get_all("Employee",
+                              filters={"status": "Active"},
+                              or_filters=[["name", "in", values], ["employee_name", "in", values]],
+                              fields=["branch"], group_by="branch")
+    return sorted([r.branch for r in rows if r.branch])

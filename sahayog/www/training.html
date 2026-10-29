@@ -5377,6 +5377,37 @@
           grid-template-columns: 1fr 1fr;
         }
       }
+
+      /* Trainers directory: no visible scrollbars — pagination keeps the page short.
+         Content can still scroll on short screens, but the bar is hidden. */
+      #trainersView {
+        overflow-y: auto;
+        overflow-x: hidden;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+      }
+      #trainersView::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+      }
+      #trainersView #trnGrid {
+        overflow: visible;
+        flex: 0 0 auto;
+      }
+      @media (max-width: 1180px) {
+        #trainersView #trnGrid {
+          grid-template-columns: repeat(2, 1fr) !important;
+        }
+      }
+      @media (max-width: 760px) {
+        #trainersView {
+          overflow-y: auto;
+        }
+        #trainersView #trnGrid {
+          grid-template-columns: 1fr !important;
+        }
+      }
     </style>
   </head>
   <body>
@@ -6209,28 +6240,36 @@
         <!-- ===== Trainers view ===== -->
         <div class="trainings-view" id="trainersView" style="display:none;padding:28px 28px 16px;">
 
-          <!-- Header row -->
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
-            <div>
-              <h2 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#21383d;letter-spacing:-.01em;">Trainers</h2>
-              <p style="margin:0;font-size:13px;color:#607277;">Active L&amp;D facilitators from Employee master</p>
+          <!-- Header row: title + count on the left, controls on the right -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap;">
+            <div style="min-width:0;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <h2 style="margin:0;font-size:22px;font-weight:700;color:#21383d;letter-spacing:-.01em;">Trainers</h2>
+                <span id="trn-count" style="font-size:11.5px;font-weight:600;color:#007c77;background:#eaf5f3;border:1px solid #cfe9e5;border-radius:999px;padding:3px 10px;white-space:nowrap;"></span>
+              </div>
+              <p style="margin:4px 0 0;font-size:13px;color:#607277;">Active L&amp;D facilitators from Employee master</p>
             </div>
-          </div>
-
-          <!-- Search + filter bar -->
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
-            <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #dfe7e9;border-radius:6px;padding:0 13px;height:38px;flex:1;max-width:400px;transition:border-color .12s;">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:#607277;flex-shrink:0;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-              <input id="trn-search" placeholder="Search trainer by name…" autocomplete="off" style="border:none;outline:none;background:transparent;font-size:13px;color:#21383d;width:100%;" />
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #dfe7e9;border-radius:6px;padding:0 11px;height:34px;width:230px;transition:border-color .12s;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px;height:15px;color:#607277;flex-shrink:0;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+                <input id="trn-search" placeholder="Search trainer by name…" autocomplete="off" style="border:none;outline:none;background:transparent;font-size:12.5px;color:#21383d;width:100%;" />
+              </div>
+              <select id="trn-dept" style="height:34px;border:1px solid #dfe7e9;border-radius:6px;background:#fff;padding:0 10px;font-size:12.5px;color:#21383d;outline:none;cursor:pointer;min-width:150px;">
+                <option value="">All Departments</option>
+              </select>
+              <select id="trn-branch" style="height:34px;border:1px solid #dfe7e9;border-radius:6px;background:#fff;padding:0 10px;font-size:12.5px;color:#21383d;outline:none;cursor:pointer;min-width:140px;">
+                <option value="">All Branches</option>
+              </select>
+              <select id="trn-sort" style="height:34px;border:1px solid #dfe7e9;border-radius:6px;background:#fff;padding:0 10px;font-size:12.5px;color:#21383d;outline:none;cursor:pointer;min-width:150px;">
+                <option value="name">Sort: Name (A–Z)</option>
+                <option value="total">Sort: Most trainings</option>
+                <option value="completed">Sort: Most completed</option>
+              </select>
             </div>
-            <select id="trn-dept" style="height:38px;border:1px solid #dfe7e9;border-radius:6px;background:#fff;padding:0 13px;font-size:13px;color:#21383d;outline:none;cursor:pointer;min-width:160px;">
-              <option value="">All Departments</option>
-            </select>
-            <span id="trn-count" style="font-size:12px;color:#607277;white-space:nowrap;"></span>
           </div>
 
           <!-- Grid -->
-          <div id="trnGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;flex:1;align-content:start;overflow-y:auto;min-height:0;">
+          <div id="trnGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;align-content:start;">
             <div style="grid-column:1/-1;padding:48px 0;text-align:center;color:#94a3b8;font-size:13px;">Loading trainers…</div>
           </div>
 
@@ -14450,11 +14489,11 @@
           });
 
         /* ===== Trainers Directory ===== */
-        var trnState = { page: 1, pageSize: 12, search: "", dept: "", total: 0 };
+        var trnState = { page: 1, pageSize: 9, search: "", dept: "", branch: "", sort: "name", total: 0 };
         var trnSearchTimer = null;
 
         function loadTrainersView() {
-          // Load departments once
+          // Load departments + branches once
           var deptSel = document.getElementById("trn-dept");
           if (deptSel && deptSel.options.length <= 1) {
             api("get_trainer_departments").then(function(depts) {
@@ -14462,6 +14501,16 @@
                 var o = document.createElement("option");
                 o.value = d; o.textContent = d;
                 deptSel.appendChild(o);
+              });
+            });
+          }
+          var brSel = document.getElementById("trn-branch");
+          if (brSel && brSel.options.length <= 1) {
+            api("get_trainer_branches").then(function(branches) {
+              (branches || []).forEach(function(b) {
+                var o = document.createElement("option");
+                o.value = b; o.textContent = b;
+                brSel.appendChild(o);
               });
             });
           }
@@ -14474,6 +14523,8 @@
           api("get_trainers_list", {
             search: trnState.search || null,
             department: trnState.dept || null,
+            branch: trnState.branch || null,
+            sort: trnState.sort || null,
             page: trnState.page,
             page_size: trnState.pageSize,
           }).then(function(res) {
@@ -14566,6 +14617,22 @@
         if (trnDeptEl) {
           trnDeptEl.addEventListener("change", function() {
             trnState.dept = trnDeptEl.value;
+            trnState.page = 1;
+            fetchTrainers();
+          });
+        }
+        var trnBranchEl = document.getElementById("trn-branch");
+        if (trnBranchEl) {
+          trnBranchEl.addEventListener("change", function() {
+            trnState.branch = trnBranchEl.value;
+            trnState.page = 1;
+            fetchTrainers();
+          });
+        }
+        var trnSortEl = document.getElementById("trn-sort");
+        if (trnSortEl) {
+          trnSortEl.addEventListener("change", function() {
+            trnState.sort = trnSortEl.value || "name";
             trnState.page = 1;
             fetchTrainers();
           });
