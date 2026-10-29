@@ -1206,11 +1206,7 @@ def upload_leave_allocations():
         if ext == "csv":
             rows = read_csv_content(content)
         elif ext in ("xlsx", "xls"):
-            rows = read_xlsx_file_from_attached_file(frappe.get_doc({
-                "doctype": "File",
-                "file_name": file_doc.filename,
-                "content": content,
-            }))
+            rows = read_xlsx_file_from_attached_file(fcontent=content)
         else:
             return {"success": False, "message": _("Unsupported file format: '{0}'. Please upload CSV or XLSX").format(ext or "unknown")}
 
@@ -1230,7 +1226,8 @@ def upload_leave_allocations():
                 continue
             row_data = {}
             for j, col in enumerate(header):
-                val = row[j].strip() if j < len(row) and row[j] else ""
+                raw = row[j] if j < len(row) else None
+                val = "" if raw is None else str(raw).strip()
                 row_data[col] = val
 
             emp_code = row_data.get("employee code", "").strip()
@@ -1278,21 +1275,37 @@ def upload_leave_allocations():
                     "to_date": (">=", from_date),
                 }, "name")
 
+                # Current balance before adjustment
+                current_bal = 0
+                for _b in get_leave_balances(emp_code):
+                    if _b.leave_type == leave_type:
+                        current_bal = flt(_b.unused_leaves)
+                        break
+
                 if existing:
                     doc = frappe.get_doc("Leave Allocation", existing)
-                    doc.new_leaves_allocated = new_leaves
-                    doc.from_date = from_date
-                    doc.to_date = to_date
-                    try:
-                        doc.save(ignore_permissions=True)
-                        if doc.docstatus == 0:
-                            doc.submit()
-                    except Exception:
-                        doc.db_set({
-                            "new_leaves_allocated": new_leaves,
-                            "from_date": from_date,
-                            "to_date": to_date,
-                        })
+                    orig_from = doc.from_date
+                    orig_to = doc.to_date
+                    # Do NOT update new_leaves_allocated here: saving a submitted
+                    # allocation triggers on_update_after_submit which auto-creates
+                    # a ledger entry (duplicate). Balance is adjusted manually below.
+                    # Adjust ledger so actual balance becomes `new_leaves`
+                    # Keep original period so existing ledger entries stay included.
+                    delta = flt(new_leaves) - flt(current_bal)
+                    if abs(delta) > 0.0001:
+                        from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
+                        create_leave_ledger_entry(
+                            doc,
+                            frappe._dict(
+                                leaves=delta,
+                                from_date=orig_from,
+                                to_date=orig_to,
+                                is_carry_forward=0,
+                                is_expired=0,
+                                is_lwp=0,
+                            ),
+                            submit=True,
+                        )
                     results["updated"] += 1
                 else:
                     doc = frappe.get_doc({
@@ -1306,6 +1319,22 @@ def upload_leave_allocations():
                     })
                     doc.insert(ignore_permissions=True)
                     doc.submit()
+                    # Adjust for any pre-existing balance so net balance = new_leaves
+                    delta = -flt(current_bal)
+                    if abs(delta) > 0.0001:
+                        from hrms.hr.doctype.leave_ledger_entry.leave_ledger_entry import create_leave_ledger_entry
+                        create_leave_ledger_entry(
+                            doc,
+                            frappe._dict(
+                                leaves=delta,
+                                from_date=from_date,
+                                to_date=to_date,
+                                is_carry_forward=0,
+                                is_expired=0,
+                                is_lwp=0,
+                            ),
+                            submit=True,
+                        )
                     results["created"] += 1
             except Exception as e:
                 results["errors"].append(f"Row {i}: {str(e)}")
