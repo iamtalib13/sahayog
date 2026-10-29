@@ -71,6 +71,7 @@ doctype_js = {
     "Asset Movement": "public/js/asset_movement.js",
     "Asset": "public/js/asset_custom.js",
     "Employee": "public/js/employee.js",
+    "User": "public/js/user_custom.js",
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",

@@ -121,11 +121,11 @@ def emp_enable_disable(doc, method):
 
 def validate_relieving_date_status(doc, method=None):
     """
-    If relieving_date is today or in the future (>= today), ensure status remains 'Active'.
-    Today is the employee's last working day, so they are relieved only after today has passed.
+    If relieving_date is in the future (> today) and status is not explicitly set to Left, keep Active.
+    If relieving_date is set and status is Left, allow Left status.
     Also ensures that Active employees have their linked User account enabled.
     """
-    if doc.relieving_date:
+    if doc.relieving_date and doc.status != "Left":
         today_date = getdate(today())
         relieving_date = getdate(doc.relieving_date)
         if relieving_date >= today_date:
