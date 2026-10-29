@@ -989,18 +989,6 @@ def update_training_status(training_name, field, value):
                         frappe.utils.format_date(end_date)
                     )
                 )
-        # Completion needs participants; agent trainings additionally need
-        # every agent's attendance marked (employees have no attendance step).
-        parts = frappe.db.get_all(
-            "Training Participant",
-            filters={"parent": training_name},
-            fields=["reference_doctype", "attendance_status"],
-        )
-        if not parts:
-            frappe.throw(_("Add participants before marking completion."))
-        agents = [p for p in parts if (p.reference_doctype or "Employee") == "Agent"]
-        if agents and any((p.attendance_status or "") not in ("Present", "Absent") for p in agents):
-            frappe.throw(_("Mark attendance for all swayamsevikas before marking completion."))
         # Completing (this tick makes 5/5) needs budget filled first (min ₹1
         # each) — no completion without budget.
         eff = {f: doc.get(f) for f in COMPLETION_FIELDS}
