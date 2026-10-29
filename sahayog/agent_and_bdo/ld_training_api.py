@@ -3574,3 +3574,222 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
             "program_opts": program_opts,
         }
     }
+
+
+# ─────────────────────────────────────────────────────────────
+# Trainers Directory
+# ─────────────────────────────────────────────────────────────
+
+@frappe.whitelist()
+def get_trainers_list(search=None, department=None, page=1, page_size=12):
+    """
+    Returns paginated list of employees who have conducted at least one training
+    (appear as trainer in Training doctype), enriched with Employee master fields.
+    """
+    page      = int(page or 1)
+    page_size = int(page_size or 12)
+
+    # All distinct trainer values from Training doctype. The field stores
+    # employee_name (portal + desk), but older rows may hold the Employee ID,
+    # so resolve both to Employee records.
+    trainer_rows = frappe.db.get_all(
+        "Training",
+        fields=["trainer"],
+        filters={"docstatus": ["<", 2]},
+        group_by="trainer",
+    )
+    trainer_values = list({r.trainer for r in trainer_rows if r.trainer})
+
+    if not trainer_values:
+        return {"trainers": [], "total": 0, "page": page, "page_size": page_size}
+
+    resolved = frappe.db.get_all(
+        "Employee",
+        filters={"status": "Active"},
+        or_filters=[
+            ["name", "in", trainer_values],
+            ["employee_name", "in", trainer_values],
+        ],
+        fields=["name", "employee_name"],
+        limit_page_length=0,
+    )
+    trainer_ids = [e.name for e in resolved]
+    trainer_key_by_id = {e.name: (e.employee_name or e.name) for e in resolved}
+    if not trainer_ids:
+        return {"trainers": [], "total": 0, "page": page, "page_size": page_size}
+
+    # Fetch Employee records for those IDs
+    filters = [["name", "in", trainer_ids], ["status", "=", "Active"]]
+    if search:
+        filters.append(["employee_name", "like", f"%{search}%"])
+    if department:
+        filters.append(["department", "=", department])
+
+    fields = [
+        "name", "employee_name", "designation", "department",
+        "company_email", "cell_number", "image",
+        "date_of_joining", "branch",
+    ]
+    total = frappe.db.count("Employee", filters=filters)
+    employees = frappe.db.get_all(
+        "Employee",
+        filters=filters,
+        fields=fields,
+        order_by="employee_name asc",
+        limit_start=(page - 1) * page_size,
+        limit_page_length=page_size,
+    )
+
+    today_str = str(frappe.utils.getdate())
+
+    # Enrich with training stats
+    result = []
+    for emp in employees:
+        emp_id = emp["name"]
+        trainer_keys = list({k for k in (emp_id, trainer_key_by_id.get(emp_id)) if k})
+        # Total trainings as trainer
+        all_t = frappe.db.count("Training", {"trainer": ["in", trainer_keys], "docstatus": ["<", 2]})
+        # Completed trainings
+        completed_t = frappe.db.count("Training", {
+            "trainer": ["in", trainer_keys],
+            "docstatus": ["<", 2],
+            "training_delivered": 1,
+            "attendance_marked": 1,
+            "pre_assessment_taken": 1,
+            "post_assessment_taken": 1,
+            "feedback_taken": 1,
+        })
+        # Upcoming (from_date >= today)
+        upcoming_t = frappe.db.count("Training", {
+            "trainer": ["in", trainer_keys],
+            "docstatus": ["<", 2],
+            "from_date": [">=", today_str],
+        })
+        result.append({
+            "employee_id":   emp_id,
+            "name":          emp["employee_name"] or emp_id,
+            "designation":   emp["designation"] or "",
+            "department":    emp["department"] or "",
+            "email":         emp["company_email"] or "",
+            "phone":         emp["cell_number"] or "",
+            "image":         emp["image"] or "",
+            "branch":        emp["branch"] or "",
+            "total":         all_t,
+            "completed":     completed_t,
+            "upcoming":      upcoming_t,
+        })
+
+    return {
+        "trainers": result,
+        "total":    total,
+        "page":     page,
+        "page_size": page_size,
+    }
+
+
+@frappe.whitelist()
+def get_trainer_profile(employee_id):
+    """
+    Returns full trainer profile: employee info + upcoming & recent trainings.
+    """
+    emp = frappe.db.get_value(
+        "Employee", employee_id,
+        ["name", "employee_name", "designation", "department",
+         "company_email", "cell_number", "image", "branch", "date_of_joining"],
+        as_dict=True,
+    )
+    if not emp:
+        frappe.throw(f"Employee {employee_id} not found.")
+
+    # Training.trainer stores employee_name (portal + desk); older rows may
+    # hold the Employee ID. Match either so profile stats are complete.
+    trainer_keys = list({k for k in (employee_id, emp["employee_name"]) if k})
+
+    today_str = str(frappe.utils.getdate())
+    MONTHS_SHORT = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]
+
+    def fmt_session(t):
+        d = str(t.from_date or "")[:10]
+        p = d.split("-")
+        return {
+            "name":          t.name,
+            "program":       t.training_program or "Training",
+            "from_date":     d,
+            "to_date":       str(t.to_date or d)[:10],
+            "day":           p[2].lstrip("0") if len(p) == 3 else "",
+            "month":         MONTHS_SHORT[int(p[1]) - 1] if len(p) == 3 else "",
+            "training_type": t.training_type or "",
+            "location":      t.training_location or "",
+            "status":        get_training_status(t),
+            "participants":  frappe.db.count("Training Participant", {"parent": t.name}),
+        }
+
+    # Upcoming sessions (next 60 days)
+    upcoming_raw = frappe.db.get_all(
+        "Training",
+        filters={
+            "trainer": ["in", trainer_keys],
+            "from_date": [">=", today_str],
+            "docstatus": ["<", 2],
+        },
+        fields=["name", "training_program", "from_date", "to_date",
+                "training_type", "training_location",
+                *COMPLETION_FIELDS],
+        order_by="from_date asc",
+        limit=5,
+    )
+
+    # Recent completed sessions (last 90 days)
+    ninety_ago = str(frappe.utils.add_days(frappe.utils.getdate(), -90))
+    recent_raw = frappe.db.get_all(
+        "Training",
+        filters={
+            "trainer": ["in", trainer_keys],
+            "from_date": ["between", [ninety_ago, today_str]],
+            "docstatus": ["<", 2],
+        },
+        fields=["name", "training_program", "from_date", "to_date",
+                "training_type", "training_location",
+                *COMPLETION_FIELDS],
+        order_by="from_date desc",
+        limit=5,
+    )
+
+    total   = frappe.db.count("Training", {"trainer": ["in", trainer_keys], "docstatus": ["<", 2]})
+    completed = frappe.db.count("Training", {
+        "trainer": ["in", trainer_keys], "docstatus": ["<", 2],
+        "training_delivered": 1, "attendance_marked": 1,
+        "pre_assessment_taken": 1, "post_assessment_taken": 1, "feedback_taken": 1,
+    })
+
+    return {
+        "employee_id":  emp["name"],
+        "name":         emp["employee_name"] or emp["name"],
+        "designation":  emp["designation"] or "",
+        "department":   emp["department"] or "",
+        "email":        emp["company_email"] or "",
+        "phone":        emp["cell_number"] or "",
+        "image":        emp["image"] or "",
+        "branch":       emp["branch"] or "",
+        "total":        total,
+        "completed":    completed,
+        "upcoming_count": len(upcoming_raw),
+        "upcoming":     [fmt_session(t) for t in upcoming_raw],
+        "recent":       [fmt_session(t) for t in recent_raw],
+    }
+
+
+@frappe.whitelist()
+def get_trainer_departments():
+    """All departments that have at least one trainer."""
+    trainer_rows = frappe.db.get_all("Training", fields=["trainer"],
+                                      filters={"docstatus": ["<", 2]}, group_by="trainer")
+    values = [r.trainer for r in trainer_rows if r.trainer]
+    if not values:
+        return []
+    # trainer stores employee_name; match Employee ID too for older rows.
+    depts = frappe.db.get_all("Employee",
+                               filters={"status": "Active"},
+                               or_filters=[["name", "in", values], ["employee_name", "in", values]],
+                               fields=["department"], group_by="department")
+    return sorted([d.department for d in depts if d.department])

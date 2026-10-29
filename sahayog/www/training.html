@@ -6206,18 +6206,74 @@
             </div>
           </div>
         </div>
+        <!-- ===== Trainers view ===== -->
+        <div class="trainings-view" id="trainersView" style="display:none;padding:28px 28px 16px;">
+
+          <!-- Header row -->
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:20px;">
+            <div>
+              <h2 style="margin:0 0 4px;font-size:22px;font-weight:700;color:#21383d;letter-spacing:-.01em;">Trainers</h2>
+              <p style="margin:0;font-size:13px;color:#607277;">Active L&amp;D facilitators from Employee master</p>
+            </div>
+          </div>
+
+          <!-- Search + filter bar -->
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap;">
+            <div style="display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #dfe7e9;border-radius:6px;padding:0 13px;height:38px;flex:1;max-width:400px;transition:border-color .12s;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;color:#607277;flex-shrink:0;"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+              <input id="trn-search" placeholder="Search trainer by name…" autocomplete="off" style="border:none;outline:none;background:transparent;font-size:13px;color:#21383d;width:100%;" />
+            </div>
+            <select id="trn-dept" style="height:38px;border:1px solid #dfe7e9;border-radius:6px;background:#fff;padding:0 13px;font-size:13px;color:#21383d;outline:none;cursor:pointer;min-width:160px;">
+              <option value="">All Departments</option>
+            </select>
+            <span id="trn-count" style="font-size:12px;color:#607277;white-space:nowrap;"></span>
+          </div>
+
+          <!-- Grid -->
+          <div id="trnGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;flex:1;align-content:start;overflow-y:auto;min-height:0;">
+            <div style="grid-column:1/-1;padding:48px 0;text-align:center;color:#94a3b8;font-size:13px;">Loading trainers…</div>
+          </div>
+
+          <!-- Pagination footer -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">
+            <span id="trn-range" style="font-size:11px;color:#607277;"></span>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <button id="trn-prev" class="pg-btn" title="Previous page">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+              </button>
+              <span id="trn-page-label" style="font-size:12px;font-weight:600;color:#007c77;background:#eaf5f3;border-radius:4px;padding:2px 9px;"></span>
+              <button id="trn-next" class="pg-btn" title="Next page">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+              </button>
+            </div>
+          </div>
+        </div>
       </main>
     </div>
 
-    <!-- ===== Trainers view ===== -->
-    <div class="trainings-view" id="trainersView" style="display: none">
-      <div class="tr-head-row">
-        <div>
-          <h2>Trainers</h2>
-        </div>
+    <!-- Trainer profile side panel -->
+    <div class="overlay" id="trnOverlay"></div>
+    <div id="trnPanel" style="position:fixed;top:0;right:0;bottom:0;width:500px;max-width:95vw;background:#fff;box-shadow:-8px 0 28px rgba(18,47,53,.15);z-index:1000;transform:translateX(102%);transition:transform .2s ease;display:flex;flex-direction:column;">
+
+      <!-- Panel header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0 24px;height:60px;border-bottom:1px solid #dfe7e9;flex-shrink:0;">
+        <span style="font-size:15px;font-weight:600;color:#21383d;">Trainer Profile</span>
+        <button id="trnPanelClose" style="width:30px;height:30px;border:none;background:#f8fafb;border-radius:6px;cursor:pointer;display:grid;place-items:center;color:#607277;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
       </div>
-      <div style="padding: 40px 0; text-align: center; color: var(--ink-3); font-size: 13px;">
-        Coming soon — Trainer management will be implemented here.
+
+      <!-- Panel body (scrollable) -->
+      <div id="trnPanelBody" style="flex:1;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:20px;">
+        <div style="text-align:center;padding:40px 0;color:#94a3b8;font-size:13px;">Select a trainer to view profile.</div>
+      </div>
+
+      <!-- Panel footer -->
+      <div style="padding:0 24px;height:64px;border-top:1px solid #dfe7e9;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#607277;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span id="trnPanelFootLabel">L&amp;D Admin view</span>
+        </div>
       </div>
     </div>
 
@@ -14361,6 +14417,9 @@
           if (tab === "dashboard") {
             loadDashboardView();
           }
+          if (tab === "trainers") {
+            setTimeout(function() { if (typeof loadTrainersView === "function") loadTrainersView(); }, 0);
+          }
         }
         window.switchTab = switchTab;
 
@@ -14389,6 +14448,254 @@
           .addEventListener("click", function () {
             switchTab("trainers");
           });
+
+        /* ===== Trainers Directory ===== */
+        var trnState = { page: 1, pageSize: 12, search: "", dept: "", total: 0 };
+        var trnSearchTimer = null;
+
+        function loadTrainersView() {
+          // Load departments once
+          var deptSel = document.getElementById("trn-dept");
+          if (deptSel && deptSel.options.length <= 1) {
+            api("get_trainer_departments").then(function(depts) {
+              (depts || []).forEach(function(d) {
+                var o = document.createElement("option");
+                o.value = d; o.textContent = d;
+                deptSel.appendChild(o);
+              });
+            });
+          }
+          fetchTrainers();
+        }
+
+        function fetchTrainers() {
+          var grid = document.getElementById("trnGrid");
+          if (grid) grid.innerHTML = '<div style="grid-column:1/-1;padding:48px 0;text-align:center;color:#94a3b8;font-size:13px;">Loading…</div>';
+          api("get_trainers_list", {
+            search: trnState.search || null,
+            department: trnState.dept || null,
+            page: trnState.page,
+            page_size: trnState.pageSize,
+          }).then(function(res) {
+            trnState.total = res.total || 0;
+            renderTrainerGrid(res.trainers || []);
+            renderTrnPagination();
+          }).catch(function(e) {
+            if (grid) grid.innerHTML = '<div style="grid-column:1/-1;padding:48px 0;text-align:center;color:#dc2626;font-size:13px;">Error: ' + esc(e.message) + '</div>';
+          });
+        }
+
+        function renderTrainerGrid(trainers) {
+          var grid = document.getElementById("trnGrid");
+          var count = document.getElementById("trn-count");
+          if (!grid) return;
+          if (count) count.textContent = trnState.total + " trainer" + (trnState.total === 1 ? "" : "s") + " found";
+          if (!trainers.length) {
+            grid.innerHTML = '<div style="grid-column:1/-1;padding:48px 0;text-align:center;color:#94a3b8;font-size:13px;">No trainers found.</div>';
+            return;
+          }
+          grid.innerHTML = trainers.map(function(t) {
+            var initials = (t.name || "?").split(" ").map(function(w){ return w[0]; }).slice(0,2).join("").toUpperCase();
+            var avatar = t.image
+              ? '<img src="' + esc(t.image) + '" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+              : '<div style="width:64px;height:64px;border-radius:50%;background:#dcefed;color:#00565b;display:grid;place-items:center;font-size:18px;font-weight:700;flex-shrink:0;">' + esc(initials) + '</div>';
+            return '<div class="trn-card" data-empid="' + esc(t.employee_id) + '" style="background:#fff;border:1px solid #dfe7e9;border-radius:10px;padding:18px;display:flex;flex-direction:column;gap:12px;cursor:pointer;transition:border-color .12s,box-shadow .12s;">' +
+              '<div style="display:flex;align-items:center;gap:12px;">' +
+                avatar +
+                '<div style="min-width:0;">' +
+                  '<div style="font-size:15px;font-weight:600;color:#21383d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.name) + '</div>' +
+                  (t.designation ? '<div style="font-size:12px;font-weight:500;color:#21383d;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.designation) + '</div>' : '') +
+                  (t.department ? '<div style="font-size:11px;color:#607277;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(t.department) + '</div>' : '') +
+                '</div>' +
+              '</div>' +
+              '<div style="display:flex;gap:8px;flex-wrap:wrap;">' +
+                '<span style="background:#eaf5f3;color:#007c77;font-size:11px;font-weight:600;border-radius:4px;padding:3px 8px;">' + t.total + ' Total</span>' +
+                '<span style="background:#dcfce7;color:#15803d;font-size:11px;font-weight:600;border-radius:4px;padding:3px 8px;">' + t.completed + ' Completed</span>' +
+                (t.upcoming ? '<span style="background:#dbeafe;color:#2563eb;font-size:11px;font-weight:600;border-radius:4px;padding:3px 8px;">' + t.upcoming + ' Upcoming</span>' : '') +
+              '</div>' +
+              (t.branch ? '<div style="font-size:11px;color:#607277;border-top:1px solid #dfe7e9;padding-top:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">📍 ' + esc(t.branch) + '</div>' : '') +
+              '<div style="display:flex;align-items:center;justify-content:space-between;border-top:1px solid #dfe7e9;padding-top:10px;margin-top:auto;">' +
+                '<span style="font-size:12px;font-weight:600;color:#007c77;">View profile</span>' +
+                '<svg viewBox="0 0 24 24" fill="none" stroke="#008b86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>' +
+              '</div>' +
+            '</div>';
+          }).join("");
+          // Hover effect + click
+          grid.querySelectorAll(".trn-card").forEach(function(card) {
+            card.addEventListener("mouseenter", function() {
+              card.style.borderColor = "#008b86";
+              card.style.boxShadow = "0 4px 14px rgba(0,139,134,.12)";
+            });
+            card.addEventListener("mouseleave", function() {
+              card.style.borderColor = "#dfe7e9";
+              card.style.boxShadow = "";
+            });
+            card.addEventListener("click", function() {
+              openTrainerPanel(card.dataset.empid);
+            });
+          });
+        }
+
+        function renderTrnPagination() {
+          var total = trnState.total, ps = trnState.pageSize, p = trnState.page;
+          var pages = Math.max(1, Math.ceil(total / ps));
+          var start = (p - 1) * ps + 1, end = Math.min(p * ps, total);
+          var rangeEl = document.getElementById("trn-range");
+          var labelEl = document.getElementById("trn-page-label");
+          var prevBtn = document.getElementById("trn-prev");
+          var nextBtn = document.getElementById("trn-next");
+          if (rangeEl) rangeEl.textContent = total ? start + "–" + end + " of " + total : "";
+          if (labelEl) labelEl.textContent = p + " / " + pages;
+          if (prevBtn) prevBtn.disabled = p <= 1;
+          if (nextBtn) nextBtn.disabled = p >= pages;
+        }
+
+        // Search debounce
+        var trnSearchEl = document.getElementById("trn-search");
+        if (trnSearchEl) {
+          trnSearchEl.addEventListener("input", function() {
+            clearTimeout(trnSearchTimer);
+            trnSearchTimer = setTimeout(function() {
+              trnState.search = trnSearchEl.value.trim();
+              trnState.page = 1;
+              fetchTrainers();
+            }, 300);
+          });
+        }
+        var trnDeptEl = document.getElementById("trn-dept");
+        if (trnDeptEl) {
+          trnDeptEl.addEventListener("change", function() {
+            trnState.dept = trnDeptEl.value;
+            trnState.page = 1;
+            fetchTrainers();
+          });
+        }
+        var trnPrevBtn = document.getElementById("trn-prev");
+        if (trnPrevBtn) trnPrevBtn.addEventListener("click", function() {
+          if (trnState.page > 1) { trnState.page--; fetchTrainers(); }
+        });
+        var trnNextBtn = document.getElementById("trn-next");
+        if (trnNextBtn) trnNextBtn.addEventListener("click", function() {
+          var pages = Math.ceil(trnState.total / trnState.pageSize);
+          if (trnState.page < pages) { trnState.page++; fetchTrainers(); }
+        });
+
+        // Panel open/close
+        function openTrainerPanel(empId) {
+          var panel = document.getElementById("trnPanel");
+          var overlay = document.getElementById("trnOverlay");
+          var body = document.getElementById("trnPanelBody");
+          if (!panel) return;
+          if (body) body.innerHTML = '<div style="text-align:center;padding:40px 0;color:#94a3b8;font-size:13px;">Loading…</div>';
+          if (panel) panel.style.transform = "translateX(0)";
+          if (overlay) overlay.classList.add("open");
+          api("get_trainer_profile", { employee_id: empId }).then(function(t) {
+            renderTrainerPanel(t);
+          }).catch(function(e) {
+            if (body) body.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:16px;">Error: ' + esc(e.message) + '</div>';
+          });
+        }
+
+        function closeTrainerPanel() {
+          var panel = document.getElementById("trnPanel");
+          var overlay = document.getElementById("trnOverlay");
+          if (panel) panel.style.transform = "translateX(102%)";
+          if (overlay) overlay.classList.remove("open");
+        }
+
+        var trnCloseBtn = document.getElementById("trnPanelClose");
+        if (trnCloseBtn) trnCloseBtn.addEventListener("click", closeTrainerPanel);
+        var trnOverlayEl = document.getElementById("trnOverlay");
+        if (trnOverlayEl) trnOverlayEl.addEventListener("click", closeTrainerPanel);
+
+        function renderTrainerPanel(t) {
+          var body = document.getElementById("trnPanelBody");
+          if (!body) return;
+          var initials = (t.name || "?").split(" ").map(function(w){ return w[0]; }).slice(0,2).join("").toUpperCase();
+          var avatar = t.image
+            ? '<img src="' + esc(t.image) + '" alt="" style="width:96px;height:96px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+            : '<div style="width:96px;height:96px;border-radius:50%;background:#dcefed;color:#00565b;display:grid;place-items:center;font-size:26px;font-weight:700;flex-shrink:0;">' + esc(initials) + '</div>';
+
+          var sessionsHtml = "";
+          if (t.upcoming && t.upcoming.length) {
+            sessionsHtml = t.upcoming.map(function(s) {
+              return '<div style="display:flex;align-items:center;gap:12px;border:1px solid #dfe7e9;border-radius:6px;padding:12px;">' +
+                '<div style="width:44px;height:48px;background:#eaf5f3;border-radius:4px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;flex-shrink:0;">' +
+                  '<span style="font-size:9px;font-weight:700;color:#007c77;text-transform:uppercase;">' + esc(s.month) + '</span>' +
+                  '<span style="font-size:20px;color:#007c77;font-weight:400;line-height:1;">' + esc(s.day) + '</span>' +
+                '</div>' +
+                '<div style="flex:1;min-width:0;">' +
+                  '<div style="font-size:12px;font-weight:600;color:#21383d;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' + esc(s.program) + '</div>' +
+                  '<div style="font-size:11px;color:#607277;margin-top:3px;">' + esc(s.training_type || "") + (s.location ? " · " + esc(s.location) : "") + '</div>' +
+                  '<div style="font-size:11px;color:#007c77;font-weight:600;margin-top:4px;cursor:pointer;" data-tname="' + esc(s.name) + '">View training →</div>' +
+                '</div>' +
+              '</div>';
+            }).join("");
+          } else {
+            sessionsHtml = '<div style="font-size:12px;color:#94a3b8;font-style:italic;padding:4px 0;">No upcoming sessions</div>';
+          }
+
+          body.innerHTML =
+            // Identity
+            '<div style="display:flex;align-items:center;gap:18px;">' +
+              avatar +
+              '<div style="min-width:0;">' +
+                '<div style="font-size:22px;font-weight:600;color:#21383d;">' + esc(t.name) + '</div>' +
+                (t.designation ? '<div style="font-size:13px;font-weight:500;color:#21383d;margin-top:3px;">' + esc(t.designation) + '</div>' : '') +
+                (t.department ? '<div style="font-size:12px;color:#607277;margin-top:2px;">' + esc(t.department) + '</div>' : '') +
+                '<div style="display:flex;align-items:center;gap:5px;margin-top:5px;">' +
+                  '<svg viewBox="0 0 24 24" fill="none" stroke="#008b86" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' +
+                  '<span style="font-size:11px;color:#007c77;">Internal Trainer</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            // Divider
+            '<div style="height:1px;background:#dfe7e9;"></div>' +
+            // Stats
+            '<div style="display:flex;gap:12px;">' +
+              '<div style="flex:1;text-align:center;background:#f8fafb;border-radius:8px;padding:12px 8px;">' +
+                '<div style="font-size:22px;font-weight:700;color:#21383d;">' + t.total + '</div>' +
+                '<div style="font-size:11px;color:#607277;margin-top:2px;">Total</div>' +
+              '</div>' +
+              '<div style="flex:1;text-align:center;background:#f0fdf4;border-radius:8px;padding:12px 8px;">' +
+                '<div style="font-size:22px;font-weight:700;color:#15803d;">' + t.completed + '</div>' +
+                '<div style="font-size:11px;color:#607277;margin-top:2px;">Completed</div>' +
+              '</div>' +
+              '<div style="flex:1;text-align:center;background:#eff6ff;border-radius:8px;padding:12px 8px;">' +
+                '<div style="font-size:22px;font-weight:700;color:#2563eb;">' + t.upcoming_count + '</div>' +
+                '<div style="font-size:11px;color:#607277;margin-top:2px;">Upcoming</div>' +
+              '</div>' +
+            '</div>' +
+            // Upcoming sessions
+            '<div>' +
+              '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">' +
+                '<span style="font-size:14px;font-weight:600;color:#21383d;">Upcoming Sessions</span>' +
+                '<span style="font-size:11px;color:#607277;">' + t.upcoming_count + ' session' + (t.upcoming_count === 1 ? '' : 's') + '</span>' +
+              '</div>' +
+              '<div style="display:flex;flex-direction:column;gap:8px;">' + sessionsHtml + '</div>' +
+            '</div>' +
+            // Contact
+            (t.email ? '<div style="display:flex;align-items:center;gap:12px;background:#f8fafb;border-radius:6px;padding:14px;">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="#007c77" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="18" height="18"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>' +
+              '<div>' +
+                '<div style="font-size:10px;color:#607277;">Official Contact</div>' +
+                '<a href="mailto:' + esc(t.email) + '" style="font-size:12px;font-weight:500;color:#007c77;text-decoration:none;">' + esc(t.email) + '</a>' +
+              '</div>' +
+            '</div>' : '');
+
+          // Wire up "View training →" links in panel
+          body.querySelectorAll("[data-tname]").forEach(function(el) {
+            el.addEventListener("click", function() {
+              var tname = el.dataset.tname;
+              var ev = (state.calEvents || []).find(function(e) { return e.name === tname; });
+              if (ev) { closeTrainerPanel(); openDrawer(ev, "view"); }
+              else {
+                switchTab("calendar");
+                closeTrainerPanel();
+              }
+            });
+          });
+        }
 
         /* ===== Dashboard (inline, L&D Admin only) ===== */
         var dashLoaded = false;
