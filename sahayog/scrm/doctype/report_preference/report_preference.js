@@ -12,6 +12,7 @@ frappe.ui.form.on("Report Preference", {
       districts: new Set(),
       sol_ids: new Set(),
       override_designation_permission: 1,
+      allow_download_report: 1,
     };
     frm.resolved_branches = [];
   },
@@ -62,6 +63,9 @@ frappe.ui.form.on("Report Preference", {
     frm.state.override_designation_permission = frm.doc.override_designation_permission !== undefined
       ? frm.doc.override_designation_permission
       : (pref && pref.override_designation_permission !== undefined ? pref.override_designation_permission : 1);
+    frm.state.allow_download_report = frm.doc.allow_download_report !== undefined
+      ? frm.doc.allow_download_report
+      : (pref && pref.allow_download_report !== undefined ? pref.allow_download_report : 1);
 
     let zones = (frm.doc.zone || []).map(d => d.zone).filter(Boolean);
     if (!zones.length && pref && pref.zones && frm.is_new() && (!frm.state || !frm.state.user)) zones = pref.zones;
@@ -109,6 +113,7 @@ frappe.ui.form.on("Report Preference", {
     frm.doc.tag = frm.state.tag || "";
     frm.doc.access_type = frm.state.access_type || "Geographical (Zone / Region / District)";
     frm.doc.override_designation_permission = frm.state.override_designation_permission ? 1 : 0;
+    frm.doc.allow_download_report = frm.state.allow_download_report ? 1 : 0;
 
     frm.clear_table("zone");
     frm.clear_table("region");
@@ -156,7 +161,8 @@ frappe.ui.form.on("Report Preference", {
             regions: Array.from(frm.state.regions),
             districts: Array.from(frm.state.districts),
             sol_ids: Array.from(frm.state.sol_ids),
-            override_designation_permission: frm.state.override_designation_permission ? 1 : 0
+            override_designation_permission: frm.state.override_designation_permission ? 1 : 0,
+            allow_download_report: frm.state.allow_download_report ? 1 : 0
           }
         },
         callback: function (r) {
@@ -729,6 +735,19 @@ frappe.ui.form.on("Report Preference", {
           </span>
         </div>
 
+        <!-- Allow Download Report Checkbox -->
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0 4px 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; font-size: 12px; font-weight: 600; color: #1e293b; user-select: none;">
+            <input type="checkbox" id="min-chk-allow-download-report"
+              ${frm.state.allow_download_report ? 'checked' : ''}
+              style="width: 14px; height: 14px; cursor: pointer; accent-color: #0284c7;" />
+            Allow Download Report
+          </label>
+          <span style="font-size: 10.5px; color: #64748b;">
+            (When checked, the user can see and use the Download button in reports)
+          </span>
+        </div>
+
         <!-- 1. GEO CONTROLS SECTION -->
         <div class="min-box-row ${!isGeo ? 'min-box-disabled' : ''}">
           <!-- Zone Box -->
@@ -1019,6 +1038,12 @@ frappe.ui.form.on("Report Preference", {
     // Override Designation Permission Checkbox
     $w.find("#min-chk-override-designation").on("change", function () {
       frm.state.override_designation_permission = $(this).is(":checked") ? 1 : 0;
+      frm.trigger("auto_save_preference");
+    });
+
+    // Allow Download Report Checkbox
+    $w.find("#min-chk-allow-download-report").on("change", function () {
+      frm.state.allow_download_report = $(this).is(":checked") ? 1 : 0;
       frm.trigger("auto_save_preference");
     });
 
