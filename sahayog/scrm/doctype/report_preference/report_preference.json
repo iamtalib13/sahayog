@@ -138,7 +138,7 @@
    "default": "1",
    "fieldname": "allow_download_report",
    "fieldtype": "Check",
-   "label": "Allow Download Report"
+   "label": "Allow Drishti Download"
    }
  ],
  "grid_page_length": 50,
