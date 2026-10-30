@@ -42,6 +42,7 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     districts: new Set(),
     sol_ids: new Set(),
     override_designation_permission: 1,
+    allow_download_report: 1,
     meta_data: {},
 
     // Strong Server-Side Pagination & Employee Filter State
@@ -219,6 +220,9 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         state.override_designation_permission = (pref && pref.override_designation_permission !== undefined)
           ? (pref.override_designation_permission ? 1 : 0)
           : 1;
+        state.allow_download_report = (pref && pref.allow_download_report !== undefined)
+          ? (pref.allow_download_report ? 1 : 0)
+          : 1;
 
         // Smart access_type resolution:
         let savedAccessType = pref ? pref.access_type : null;
@@ -276,7 +280,8 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
         regions: Array.from(state.regions),
         districts: Array.from(state.districts),
         sol_ids: Array.from(state.sol_ids),
-        override_designation_permission: state.override_designation_permission ? 1 : 0
+        override_designation_permission: state.override_designation_permission ? 1 : 0,
+        allow_download_report: state.allow_download_report ? 1 : 0
       }
     };
 
@@ -573,6 +578,18 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
           </label>
           <span style="font-size: 10px; color: #64748b;">
             (When checked, this will bypass the user's designation-based permissions)
+          </span>
+        </div>
+        <!-- Allow Download Report Checkbox -->
+        <div style="display: flex; align-items: center; gap: 8px; padding: 6px 0 4px 0; border-bottom: 1px solid #e2e8f0; margin-bottom: 8px;">
+          <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; margin: 0; font-size: 11.5px; font-weight: 600; color: #1e293b; user-select: none;">
+            <input type="checkbox" id="min-chk-allow-download-report"
+              ${state.allow_download_report ? 'checked' : ''}
+              style="width: 14px; height: 14px; cursor: pointer; accent-color: #0284c7;" />
+            Allow Download Report
+          </label>
+          <span style="font-size: 10px; color: #64748b;">
+            (When checked, the user can see and use the Download button in reports)
           </span>
         </div>
 
@@ -1364,6 +1381,12 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
     // Override Designation Permission Checkbox
     $m.find("#min-chk-override-designation").on("change", function () {
       state.override_designation_permission = $(this).is(":checked") ? 1 : 0;
+      autoSave();
+    });
+
+    // Allow Download Report Checkbox
+    $m.find("#min-chk-allow-download-report").on("change", function () {
+      state.allow_download_report = $(this).is(":checked") ? 1 : 0;
       autoSave();
     });
 
