@@ -12,7 +12,7 @@ frappe.ui.form.on("Report Preference", {
       districts: new Set(),
       sol_ids: new Set(),
       override_designation_permission: 1,
-      allow_download_report: 1,
+      allow_download_report: 0,
     };
     frm.resolved_branches = [];
   },
@@ -65,7 +65,7 @@ frappe.ui.form.on("Report Preference", {
       : (pref && pref.override_designation_permission !== undefined ? pref.override_designation_permission : 1);
     frm.state.allow_download_report = frm.doc.allow_download_report !== undefined
       ? frm.doc.allow_download_report
-      : (pref && pref.allow_download_report !== undefined ? pref.allow_download_report : 1);
+      : (pref && pref.allow_download_report !== undefined ? pref.allow_download_report : 0);
 
     let zones = (frm.doc.zone || []).map(d => d.zone).filter(Boolean);
     if (!zones.length && pref && pref.zones && frm.is_new() && (!frm.state || !frm.state.user)) zones = pref.zones;

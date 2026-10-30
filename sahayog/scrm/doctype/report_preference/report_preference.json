@@ -134,12 +134,12 @@
    "fieldtype": "Check",
    "label": "Override Designation Permission"
   },
-   {
-   "default": "1",
+  {
+   "default": "0",
    "fieldname": "allow_download_report",
    "fieldtype": "Check",
    "label": "Allow Drishti Download"
-   }
+  }
  ],
  "grid_page_length": 50,
  "hide_toolbar": 1,
