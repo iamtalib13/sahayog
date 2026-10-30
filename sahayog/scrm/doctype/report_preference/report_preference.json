@@ -14,6 +14,7 @@
   "full_name",
   "enabled",
   "override_designation_permission",
+  "allow_download_report",
   "tag",
   "access_type",
   "zone",
@@ -132,7 +133,13 @@
    "fieldname": "override_designation_permission",
    "fieldtype": "Check",
    "label": "Override Designation Permission"
-  }
+  },
+   {
+   "default": "1",
+   "fieldname": "allow_download_report",
+   "fieldtype": "Check",
+   "label": "Allow Download Report"
+   }
  ],
  "grid_page_length": 50,
  "hide_toolbar": 1,
