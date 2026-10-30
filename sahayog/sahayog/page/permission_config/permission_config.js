@@ -586,10 +586,10 @@ frappe.pages["permission-config"].on_page_load = function (wrapper) {
             <input type="checkbox" id="min-chk-allow-download-report"
               ${state.allow_download_report ? 'checked' : ''}
               style="width: 14px; height: 14px; cursor: pointer; accent-color: #0284c7;" />
-            Allow Download Report
+            Allow Drishti Download
           </label>
           <span style="font-size: 10px; color: #64748b;">
-            (When checked, the user can see and use the Download button in reports)
+            (When checked, the user can see and use the Drishti Download button in reports)
           </span>
         </div>
 
