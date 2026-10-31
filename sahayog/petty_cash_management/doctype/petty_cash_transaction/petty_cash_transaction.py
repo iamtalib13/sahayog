@@ -2204,8 +2204,10 @@ def download_consolidated_txt_api(transaction_date=None):
             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
         )
 
-    selected_date = str(getdate(transaction_date)
-                        ) if transaction_date else nowdate()
+    selected_date = getdate(transaction_date) if transaction_date else getdate(nowdate())
+    if selected_date >= getdate(nowdate()):
+        frappe.throw("You can only download TTUM for previous dates, not for today or future dates.")
+    selected_date = str(selected_date)
 
     transactions = frappe.get_all(
         "Petty Cash Transaction",
