@@ -19,7 +19,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 #     try:
 #         # Fetch Finacle Settings
 #         finacle_settings = frappe.get_single("Finacle Settings")
-        
+
 #         # URL Handling (Fallback included)
 #         mig_url = None
 #         if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
@@ -37,15 +37,15 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 #         # Generate Request UUID
 #         request_uuid = str(uuid.uuid4())
-        
+
 #         # Transaction Date (MIG Compatibility)
 #         if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
 #             message_date = datetime.strptime(str(finacle_settings.transaction_date), '%Y-%m-%d')
 #         else:
 #             message_date = datetime.now()
-        
+
 #         formatted_message_date = message_date.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
-        
+
 #         # EXACT XML REQUEST
 #         xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
 # <FIXML xsi:schemaLocation="http://www.finacle.com/fixml LoanAcctAdd.xsd" xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -88,7 +88,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 #                     <CustId>400024494</CustId>
 #                 </CustId>
 #                 <LoanAcctId>
-#                 <AcctOpenDt>2026-01-15T00:00:00.000</AcctOpenDt> 
+#                 <AcctOpenDt>2026-01-15T00:00:00.000</AcctOpenDt>
 #                     <AcctType>
 #                         <SchmCode>3010</SchmCode>
 #                     </AcctType>
@@ -100,7 +100,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 #                 <LoanAcctGenInfo>
 #                     <AcctStmtMode>N</AcctStmtMode>
 #                     <DespatchMode>N</DespatchMode>
-                    
+
 #                 </LoanAcctGenInfo>
 #                 <LoanGenDetails>
 #                     <LoanPeriodMonths>24</LoanPeriodMonths>
@@ -116,7 +116,7 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 #                             <EqInstallType>R</EqInstallType>
 #                             <EqInstallFormula>P</EqInstallFormula>
 #                         </EqInstallDetails>
-                        
+
 #                         <RepmtRec>
 #                             <InstallmentId>EIDEM</InstallmentId>
 #                             <InstallStartDt>2026-02-14T00:00:00.000</InstallStartDt>
@@ -169,29 +169,29 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 #                 response_dict = xmltodict.parse(response.text)
 #                 fixml = get_xml_dict(response_dict.get('FIXML'))
 #                 body = get_xml_dict(fixml.get('Body'))
-                
+
 #                 # CHECK FOR ERROR (Handle both List and Dict cases)
 #                 if 'Error' in body:
 #                     error_node = get_xml_dict(body['Error'])
 #                     exception_node = get_xml_dict(error_node.get('FIBusinessException'))
 #                     error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
-                    
+
 #                     return {
 #                         "status": "FAILED",
 #                         "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
 #                         "full_response": response.text  # <--- Shows full XML
 #                     }
-                
+
 #                 # CHECK SUCCESS
 #                 header = get_xml_dict(fixml.get('Header'))
 #                 response_header = get_xml_dict(header.get('ResponseHeader'))
 #                 host_transaction = get_xml_dict(response_header.get('HostTransaction'))
-                
+
 #                 if host_transaction.get('Status') == 'SUCCESS':
 #                     add_response = get_xml_dict(body.get('LoanAcctAddResponse'))
 #                     rs = get_xml_dict(add_response.get('LoanAcctAddRs'))
 #                     acct_id = get_xml_dict(rs.get('AcctId'))
-                    
+
 #                     return {
 #                         "status": "SUCCESS",
 #                         "account_id": acct_id.get('AcctId'),
@@ -201,21 +201,21 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 #                     }
 #                 else:
 #                     return {
-#                         "status": "FAILED", 
-#                         "message": "Host Transaction Failed (Unknown Error)", 
+#                         "status": "FAILED",
+#                         "message": "Host Transaction Failed (Unknown Error)",
 #                         "full_response": response.text
 #                     }
 
 #             except Exception as e:
 #                 return {
-#                     "status": "ERROR", 
-#                     "message": f"Parsing Logic Error: {str(e)}", 
+#                     "status": "ERROR",
+#                     "message": f"Parsing Logic Error: {str(e)}",
 #                     "full_response": response.text
 #                 }
 #         else:
 #             return {
-#                 "status": "ERROR", 
-#                 "message": f"HTTP {response.status_code}", 
+#                 "status": "ERROR",
+#                 "message": f"HTTP {response.status_code}",
 #                 "full_response": response.text
 #             }
 
@@ -229,33 +229,27 @@ requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 #     return create_finacle_loan_account()
 
 
-
-
-import frappe
-import requests
-import uuid
-import xmltodict
-from datetime import datetime
-
 # Disable SSL warnings
-from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 # HELPER: Safely get first item if it's a list, or the dict itself
+
+
 def get_xml_dict(obj):
     if isinstance(obj, list):
         return obj[0] if obj else {}
     return obj if isinstance(obj, dict) else {}
 
+
 @frappe.whitelist()
-def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount, 
-                                loan_period_months, installment_start_date, 
-                                num_installments, operative_account_id, 
+def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount,
+                                loan_period_months, installment_start_date,
+                                num_installments, operative_account_id,
                                 account_open_date=None):
     try:
         # 1. Fetch Finacle Settings & URL
         finacle_settings = frappe.get_single("Finacle Settings")
-        
+
         mig_url = None
         if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
             mig_url = finacle_settings.mig_url
@@ -265,37 +259,44 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
             mig_url = finacle_settings.finacle_url
         else:
             mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
-            frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
+            frappe.log_error(
+                "Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
 
         if not mig_url:
-             return {"status": "ERROR", "message": "No Finacle URL found."}
+            return {"status": "ERROR", "message": "No Finacle URL found."}
 
         # 2. Logic for Dates and Format
         request_uuid = str(uuid.uuid4())
-        
+
         # Message Date (Timestamp for Header)
         # Use transaction_date from settings if available (MIG compatibility), else current time
         if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
-            msg_date_obj = datetime.strptime(str(finacle_settings.transaction_date), '%Y-%m-%d')
+            msg_date_obj = datetime.strptime(
+                str(finacle_settings.transaction_date), '%Y-%m-%d')
         else:
             msg_date_obj = datetime.now()
-        
-        formatted_message_date = msg_date_obj.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
+
+        formatted_message_date = msg_date_obj.strftime(
+            '%Y-%m-%dT%H:%M:%S.%f')[:-3]
 
         # Handle Account Open Date
         acct_open_dt_tag = ""
         if account_open_date:
             try:
-                open_dt_obj = datetime.strptime(str(account_open_date), '%Y-%m-%d')
-                formatted_open_date = open_dt_obj.strftime('%Y-%m-%dT00:00:00.000')
+                open_dt_obj = datetime.strptime(
+                    str(account_open_date), '%Y-%m-%d')
+                formatted_open_date = open_dt_obj.strftime(
+                    '%Y-%m-%dT00:00:00.000')
                 acct_open_dt_tag = f"<AcctOpenDt>{formatted_open_date}</AcctOpenDt>"
             except ValueError:
                 return {"status": "ERROR", "message": "Invalid account_open_date format. Use YYYY-MM-DD"}
 
         # Handle Installment Start Date
         try:
-            inst_start_dt_obj = datetime.strptime(str(installment_start_date), '%Y-%m-%d')
-            formatted_inst_date = inst_start_dt_obj.strftime('%Y-%m-%dT%H:%M:%S.000')
+            inst_start_dt_obj = datetime.strptime(
+                str(installment_start_date), '%Y-%m-%d')
+            formatted_inst_date = inst_start_dt_obj.strftime(
+                '%Y-%m-%dT%H:%M:%S.000')
         except ValueError:
             return {"status": "ERROR", "message": "Invalid installment_start_date format. Use YYYY-MM-DD"}
 
@@ -400,12 +401,15 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
 </FIXML>'''
 
         # 4. Log & Send
-        frappe.log_error(title=f"Finacle Loan Creation Req {request_uuid}", message=xml_request)
+        frappe.log_error(
+            title=f"Finacle Loan Creation Req {request_uuid}", message=xml_request)
 
         headers = {'Content-Type': 'application/xml'}
-        response = requests.post(mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
+        response = requests.post(
+            mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
 
-        frappe.log_error(title=f"Finacle Loan Creation Res {response.status_code}", message=response.text)
+        frappe.log_error(
+            title=f"Finacle Loan Creation Res {response.status_code}", message=response.text)
 
         # 5. Parse Response
         if response.status_code == 200:
@@ -413,30 +417,34 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
                 response_dict = xmltodict.parse(response.text)
                 fixml = get_xml_dict(response_dict.get('FIXML'))
                 body = get_xml_dict(fixml.get('Body'))
-                
+
                 # CHECK FOR ERROR
                 if 'Error' in body:
                     error_node = get_xml_dict(body['Error'])
-                    exception_node = get_xml_dict(error_node.get('FIBusinessException'))
-                    error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
-                    
+                    exception_node = get_xml_dict(
+                        error_node.get('FIBusinessException'))
+                    error_detail = get_xml_dict(
+                        exception_node.get('ErrorDetail'))
+
                     return {
                         "status": "FAILED",
                         "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
                         "full_response": response.text,
                         "request_sent": xml_request
                     }
-                
+
                 # CHECK SUCCESS
                 header = get_xml_dict(fixml.get('Header'))
                 response_header = get_xml_dict(header.get('ResponseHeader'))
-                host_transaction = get_xml_dict(response_header.get('HostTransaction'))
-                
+                host_transaction = get_xml_dict(
+                    response_header.get('HostTransaction'))
+
                 if host_transaction.get('Status') == 'SUCCESS':
-                    add_response = get_xml_dict(body.get('LoanAcctAddResponse'))
+                    add_response = get_xml_dict(
+                        body.get('LoanAcctAddResponse'))
                     rs = get_xml_dict(add_response.get('LoanAcctAddRs'))
                     acct_id = get_xml_dict(rs.get('AcctId'))
-                    
+
                     return {
                         "status": "SUCCESS",
                         "account_id": acct_id.get('AcctId'),
@@ -447,32 +455,35 @@ def create_finacle_loan_account(customer_id, scheme_code, branch_id, loan_amount
                     }
                 else:
                     return {
-                        "status": "FAILED", 
-                        "message": "Host Transaction Failed (Unknown Error)", 
+                        "status": "FAILED",
+                        "message": "Host Transaction Failed (Unknown Error)",
                         "full_response": response.text,
                         "request_sent": xml_request
                     }
 
             except Exception as e:
                 return {
-                    "status": "ERROR", 
-                    "message": f"Parsing Logic Error: {str(e)}", 
+                    "status": "ERROR",
+                    "message": f"Parsing Logic Error: {str(e)}",
                     "full_response": response.text,
                     "request_sent": xml_request
                 }
         else:
             return {
-                "status": "ERROR", 
-                "message": f"HTTP {response.status_code}", 
+                "status": "ERROR",
+                "message": f"HTTP {response.status_code}",
                 "full_response": response.text,
                 "request_sent": xml_request
             }
 
     except Exception as e:
-        frappe.log_error(title="Finacle Code Error", message=frappe.get_traceback())
+        frappe.log_error(title="Finacle Code Error",
+                         message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
 
 # Wrapper for Postman testing
+
+
 @frappe.whitelist()
 def test_create_loan_account():
     # Example usage - You can change these values in Postman now by editing this file
@@ -486,20 +497,17 @@ def test_create_loan_account():
         installment_start_date="2026-02-14",
         num_installments="24",
         operative_account_id="100110020034025",
-        account_open_date="2026-01-14" # Optional: Leave None to use system date
+        account_open_date="2026-01-14"  # Optional: Leave None to use system date
     )
 
 
-
-
-
 @frappe.whitelist()
-def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id, 
-                                disbursement_date=None, remarks="Loan Disbursement"):
+def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
+                                  disbursement_date=None, remarks="Loan Disbursement"):
     try:
         # 1. Fetch Finacle Settings & URL
         finacle_settings = frappe.get_single("Finacle Settings")
-        
+
         mig_url = None
         if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
             mig_url = finacle_settings.mig_url
@@ -509,38 +517,41 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
             mig_url = finacle_settings.finacle_url
         else:
             # return {"status": "ERROR", "message": "No Finacle URL found in settings."}
-            # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
-            mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
+            mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
+            # mig_url= 'https://smcprd.sahayog.net.in:2950/FISERVLET/fihttp'
 
-            frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
+            frappe.log_error(
+                "Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
 
         # 2. Logic for Dates and IDs
         # Extract SOL ID (first 4 digits) as per your comments
-        loan_sol_id = loan_account_id[:4] 
+        loan_sol_id = loan_account_id[:4]
         oper_sol_id = operative_account_id[:4]
 
         # Handle Disbursement Date (Value Date provided by Finance Team)
         if disbursement_date:
-            val_date_obj = datetime.strptime(str(disbursement_date), '%Y-%m-%d')
+            val_date_obj = datetime.strptime(
+                str(disbursement_date), '%Y-%m-%d')
         else:
             val_date_obj = datetime.now()
-        
+
         formatted_val_date = val_date_obj.strftime('%Y-%m-%dT00:00:00.000')
 
         # Handle Transaction Date (Finacle System Date)
         if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
-            txn_date_obj = datetime.strptime(str(finacle_settings.transaction_date), '%Y-%m-%d')
+            txn_date_obj = datetime.strptime(
+                str(finacle_settings.transaction_date), '%Y-%m-%d')
         else:
             txn_date_obj = datetime.now()
-            
+
         formatted_txn_date = txn_date_obj.strftime('%Y-%m-%dT00:00:00.000')
-        
+
         # Message Date (Timestamp for Header)
         msg_date_str = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
 
         request_uuid = str(uuid.uuid4())
 
-                # 3. Construct XML
+        # 3. Construct XML
         # 3. Construct XML (CORRECTED - REMOVED NESTING)
         xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
 <FIXML xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.finacle.com/fixml loanDisbursement.xsd">
@@ -626,14 +637,16 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
   </Body>
 </FIXML>'''
 
-
         # 4. Log & Send
-        frappe.log_error(title=f"Finacle Disbursement Req {request_uuid}", message=xml_request)
+        frappe.log_error(
+            title=f"Finacle Disbursement Req {request_uuid}", message=xml_request)
 
         headers = {'Content-Type': 'application/xml'}
-        response = requests.post(mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
+        response = requests.post(
+            mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
 
-        frappe.log_error(title=f"Finacle Disbursement Res {response.status_code}", message=response.text)
+        frappe.log_error(
+            title=f"Finacle Disbursement Res {response.status_code}", message=response.text)
 
         # 5. Parse Response
         if response.status_code == 200:
@@ -645,8 +658,10 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
                 # CHECK FOR ERROR
                 if 'Error' in body:
                     error_node = get_xml_dict(body['Error'])
-                    exception_node = get_xml_dict(error_node.get('FIBusinessException'))
-                    error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
+                    exception_node = get_xml_dict(
+                        error_node.get('FIBusinessException'))
+                    error_detail = get_xml_dict(
+                        exception_node.get('ErrorDetail'))
                     return {
                         "status": "FAILED",
                         "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
@@ -656,14 +671,18 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
                 # CHECK SUCCESS
                 header = get_xml_dict(fixml.get('Header'))
                 response_header = get_xml_dict(header.get('ResponseHeader'))
-                host_transaction = get_xml_dict(response_header.get('HostTransaction'))
+                host_transaction = get_xml_dict(
+                    response_header.get('HostTransaction'))
 
                 if host_transaction.get('Status') == 'SUCCESS':
-                    disb_res = get_xml_dict(body.get('loanDisbursementResponse'))
-                    output_struct = get_xml_dict(disb_res.get('LoanDisbursementOutputStruct'))
-                    tran_msg = get_xml_dict(output_struct.get('tranMesgOutput'))
+                    disb_res = get_xml_dict(
+                        body.get('loanDisbursementResponse'))
+                    output_struct = get_xml_dict(
+                        disb_res.get('LoanDisbursementOutputStruct'))
+                    tran_msg = get_xml_dict(
+                        output_struct.get('tranMesgOutput'))
                     tran_id_node = get_xml_dict(tran_msg.get('tranIdentifier'))
-                    
+
                     return {
                         "status": "SUCCESS",
                         "tran_id": tran_id_node.get('TrnId'),
@@ -685,9 +704,9 @@ def disburse_finacle_loan_account(loan_account_id, amount, operative_account_id,
             return {"status": "ERROR", "message": f"HTTP {response.status_code}", "full_response": response.text}
 
     except Exception as e:
-        frappe.log_error(title="Finacle Disbursement Error", message=frappe.get_traceback())
+        frappe.log_error(title="Finacle Disbursement Error",
+                         message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
-
 
 
 # Wrapper for Postman testing
@@ -701,7 +720,6 @@ def test_disburse_loan():
         disbursement_date="2026-01-19",
         remarks="Test Disbursement from test api"
     )
-
 
 
 @frappe.whitelist()
@@ -720,7 +738,7 @@ def get_account_statement_with_pagination(
     try:
         # Fetch Finacle Settings
         finacle_settings = frappe.get_single("Finacle Settings")
-        
+
         # URL Handling (Fallback included)
         mig_url = None
         if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
@@ -733,7 +751,8 @@ def get_account_statement_with_pagination(
             # mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
             mig_url = "https://smcmig.sahayog.com:2950/FISERVLET/fihttp"
 
-            frappe.log_error("Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
+            frappe.log_error(
+                "Finacle Warning", "Using hardcoded URL. Add 'mig_url' to Finacle Settings.")
 
         if not mig_url:
             return {"status": "ERROR", "message": "No Finacle URL found."}
@@ -745,41 +764,43 @@ def get_account_statement_with_pagination(
 
         # Generate Request UUID
         request_uuid = str(uuid.uuid4())
-        
+
         # Transaction Date (MIG Compatibility)
         if hasattr(finacle_settings, 'transaction_date') and finacle_settings.transaction_date:
-            message_date = datetime.strptime(str(finacle_settings.transaction_date), '%Y-%m-%d')
+            message_date = datetime.strptime(
+                str(finacle_settings.transaction_date), '%Y-%m-%d')
         else:
             message_date = datetime.now()
-        
-        formatted_message_date = message_date.strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
-        
+
+        formatted_message_date = message_date.strftime(
+            '%Y-%m-%dT%H:%M:%S.%f')[:-3]
+
         # Build pagination details XML section
         pagination_xml = ""
         if last_balance_value or last_pstd_date or last_txn_date or last_txn_id or last_txn_srl_no:
             pagination_xml = "<paginationDetails>"
-            
+
             if last_balance_value:
                 pagination_xml += f"""
                     <lastBalance>
                         <amountValue>{last_balance_value}</amountValue>
                         <currencyCode>{last_balance_currency}</currencyCode>
                     </lastBalance>"""
-            
+
             if last_pstd_date:
                 pagination_xml += f"<lastPstdDate>{last_pstd_date}</lastPstdDate>"
-            
+
             if last_txn_date:
                 pagination_xml += f"<lastTxnDate>{last_txn_date}</lastTxnDate>"
-            
+
             if last_txn_id:
                 pagination_xml += f"<lastTxnId>{last_txn_id}</lastTxnId>"
-            
+
             if last_txn_srl_no:
                 pagination_xml += f"<lastTxnSrlNo>{last_txn_srl_no}</lastTxnSrlNo>"
-            
+
             pagination_xml += "</paginationDetails>"
-        
+
         # EXACT XML REQUEST
         xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
 <FIXML xsi:schemaLocation="http://www.finacle.com/fixml getFullAccountStatementWithPagination.xsd" xmlns="http://www.finacle.com/fixml" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -812,7 +833,8 @@ def get_account_statement_with_pagination(
 </FIXML>'''
 
         # Log Request
-        frappe.log_error(title=f"Finacle Statement Request {request_uuid}", message=xml_request)
+        frappe.log_error(
+            title=f"Finacle Statement Request {request_uuid}", message=xml_request)
 
         # Send Request
         headers = {'Content-Type': 'application/xml'}
@@ -825,35 +847,40 @@ def get_account_statement_with_pagination(
         )
 
         # Log Response
-        frappe.log_error(title=f"Finacle Statement Response {response.status_code}", message=response.text)
+        frappe.log_error(
+            title=f"Finacle Statement Response {response.status_code}", message=response.text)
 
         if response.status_code == 200:
             try:
                 response_dict = xmltodict.parse(response.text)
                 fixml = get_xml_dict(response_dict.get('FIXML'))
                 body = get_xml_dict(fixml.get('Body'))
-                
+
                 # CHECK FOR ERROR (Handle both List and Dict cases)
                 if 'Error' in body:
                     error_node = get_xml_dict(body['Error'])
-                    exception_node = get_xml_dict(error_node.get('FIBusinessException'))
-                    error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
-                    
+                    exception_node = get_xml_dict(
+                        error_node.get('FIBusinessException'))
+                    error_detail = get_xml_dict(
+                        exception_node.get('ErrorDetail'))
+
                     return {
                         "status": "FAILED",
                         "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
                         "full_response": response.text,
                         "request_sent": xml_request
                     }
-                
+
                 # CHECK SUCCESS
                 header = get_xml_dict(fixml.get('Header'))
                 response_header = get_xml_dict(header.get('ResponseHeader'))
-                host_transaction = get_xml_dict(response_header.get('HostTransaction'))
-                
+                host_transaction = get_xml_dict(
+                    response_header.get('HostTransaction'))
+
                 if host_transaction.get('Status') == 'SUCCESS':
-                    statement_response = get_xml_dict(body.get('getFullAccountStatementWithPaginationResponse'))
-                    
+                    statement_response = get_xml_dict(
+                        body.get('getFullAccountStatementWithPaginationResponse'))
+
                     return {
                         "status": "SUCCESS",
                         "message": "Account Statement Retrieved Successfully",
@@ -863,28 +890,29 @@ def get_account_statement_with_pagination(
                     }
                 else:
                     return {
-                        "status": "FAILED", 
-                        "message": "Host Transaction Failed (Unknown Error)", 
+                        "status": "FAILED",
+                        "message": "Host Transaction Failed (Unknown Error)",
                         "full_response": response.text,
                         "request_sent": xml_request
                     }
 
             except Exception as e:
                 return {
-                    "status": "ERROR", 
-                    "message": f"Parsing Logic Error: {str(e)}", 
+                    "status": "ERROR",
+                    "message": f"Parsing Logic Error: {str(e)}",
                     "full_response": response.text,
                     "request_sent": xml_request
                 }
         else:
             return {
-                "status": "ERROR", 
-                "message": f"HTTP {response.status_code}", 
+                "status": "ERROR",
+                "message": f"HTTP {response.status_code}",
                 "full_response": response.text
             }
 
     except Exception as e:
-        frappe.log_error(title="Finacle Statement Code Error", message=frappe.get_traceback())
+        frappe.log_error(title="Finacle Statement Code Error",
+                         message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
 
 
@@ -908,22 +936,16 @@ def test_get_account_statement():
     )
 
 
-
-
 ################################################################################
 # CREATE FINACLE RETAIL CUSTOMER
 
-import frappe
-import requests
-import xmltodict
-import uuid
-from datetime import datetime
-
 # Helper function
+
 def get_xml_dict(xml_node):
     if xml_node is None:
         return {}
     return xml_node
+
 
 @frappe.whitelist()
 def create_finacle_retail_customer(
@@ -934,11 +956,11 @@ def create_finacle_retail_customer(
     gender="M",
     salutation="MR.",
     pref_name=None,
-    
+
     # PARAMETERS (Default to working values you found)
-    language="India (English)",        
-    tax_deduction_table="ZERO", 
-    
+    language="India (English)",
+    tax_deduction_table="ZERO",
+
     # Address Details
     addr_line1=None,
     addr_line2=None,
@@ -946,16 +968,16 @@ def create_finacle_retail_customer(
     state="MH",
     postal_code=None,
     country="IN",
-    
+
     # Contact Details
     mobile_number=None,
     email=None,
-    
+
     # Document Details
     doc_code="2",
     doc_reference_num="123412341234",
     doc_type_code="1",
-    
+
     # Other Details
     mother_maiden_name=None,
     primary_sol_id="1000",
@@ -965,7 +987,7 @@ def create_finacle_retail_customer(
     employment_status="Employed",
     is_minor="N",
     is_staff="N",
-    
+
     # Optional Advanced Fields
     relationship_opening_date=None,
     manager="UBSADMIN",
@@ -983,7 +1005,7 @@ def create_finacle_retail_customer(
     try:
         # 1. Fetch Finacle Settings & URL
         finacle_settings = frappe.get_single("Finacle Settings")
-        
+
         mig_url = None
         if hasattr(finacle_settings, 'mig_url') and finacle_settings.mig_url:
             mig_url = finacle_settings.mig_url
@@ -1000,32 +1022,35 @@ def create_finacle_retail_customer(
         birth_dt = dob_obj.strftime('%d')
         birth_month = dob_obj.strftime('%b').upper()
         birth_year = dob_obj.strftime('%Y')
-        
+
         if relationship_opening_date:
-            rel_open_obj = datetime.strptime(str(relationship_opening_date), '%Y-%m-%d')
+            rel_open_obj = datetime.strptime(
+                str(relationship_opening_date), '%Y-%m-%d')
         else:
             rel_open_obj = datetime.now()
         formatted_rel_open = rel_open_obj.strftime('%Y-%m-%dT00:00:00.000')
-        
+
         msg_date_str = datetime.now().strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]
         addr_start_date = rel_open_obj.strftime('%Y-%m-%dT00:00:00.000')
         phone_start_date = addr_start_date
         phone_end_date = "2099-12-31T00:00:00.000"
-        
+
         tax_start_date = f"{rel_open_obj.year}-04-01T00:00:00.000"
         tax_end_date = f"{rel_open_obj.year + 1}-03-31T00:00:00.000"
         tds_submit_date = rel_open_obj.strftime('%d-%m-%Y')
-        
+
         doc_issue_date = formatted_rel_open
         rating_date = formatted_rel_open
-        
+
         request_uuid = str(uuid.uuid4())
-        
-        if not pref_name: pref_name = first_name
-        if not free_text_label: free_text_label = addr_line2 or addr_line1 or "."
-        
+
+        if not pref_name:
+            pref_name = first_name
+        if not free_text_label:
+            free_text_label = addr_line2 or addr_line1 or "."
+
         # 3. Build Dynamic XML Sections
-        
+
         # Tax Table Section - Only include if value provided
         tax_table_xml = ""
         if tax_deduction_table:
@@ -1045,7 +1070,7 @@ def create_finacle_retail_customer(
                   </PhoneEmailDtls>
                   <EndDt>{phone_end_date}</EndDt>
                   <StartDt>{phone_start_date}</StartDt>"""
-        
+
         email_section = ""
         if email:
             email_section = f"""
@@ -1059,7 +1084,6 @@ def create_finacle_retail_customer(
                   <EndDt>{phone_end_date}</EndDt>
                   <StartDt>{phone_start_date}</StartDt>
                </PhoneEmailDtls>"""
-        
 
         # 4. Construct XML Request
         xml_request = f'''<?xml version="1.0" encoding="UTF-8"?>
@@ -1218,12 +1242,15 @@ def create_finacle_retail_customer(
 </FIXML>'''
 
         # 5. Log & Send Request
-        frappe.log_error(title=f"Finacle RetCust Req {request_uuid}", message=xml_request)
-        
+        frappe.log_error(
+            title=f"Finacle RetCust Req {request_uuid}", message=xml_request)
+
         headers = {'Content-Type': 'application/xml'}
-        response = requests.post(mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
-        
-        frappe.log_error(title=f"Finacle RetCust Res {response.status_code}", message=response.text)
+        response = requests.post(
+            mig_url, data=xml_request, headers=headers, verify=False, timeout=30)
+
+        frappe.log_error(
+            title=f"Finacle RetCust Res {response.status_code}", message=response.text)
 
         # 6. Parse Response
         if response.status_code == 200:
@@ -1231,27 +1258,32 @@ def create_finacle_retail_customer(
                 response_dict = xmltodict.parse(response.text)
                 fixml = get_xml_dict(response_dict.get('FIXML'))
                 body = get_xml_dict(fixml.get('Body'))
-                
+
                 # CHECK FOR ERROR
                 if 'Error' in body:
                     error_node = get_xml_dict(body['Error'])
-                    exception_node = get_xml_dict(error_node.get('FIBusinessException'))
-                    error_detail = get_xml_dict(exception_node.get('ErrorDetail'))
+                    exception_node = get_xml_dict(
+                        error_node.get('FIBusinessException'))
+                    error_detail = get_xml_dict(
+                        exception_node.get('ErrorDetail'))
                     return {
                         "status": "FAILED",
                         "message": f"{error_detail.get('ErrorCode')}: {error_detail.get('ErrorDesc')}",
                         "full_response": response.text,
-                        "request_sent": xml_request # Added Request XML to Error Response too
+                        "request_sent": xml_request  # Added Request XML to Error Response too
                     }
-                
+
                 # CHECK SUCCESS
                 header = get_xml_dict(fixml.get('Header'))
                 response_header = get_xml_dict(header.get('ResponseHeader'))
-                host_transaction = get_xml_dict(response_header.get('HostTransaction'))
-                
+                host_transaction = get_xml_dict(
+                    response_header.get('HostTransaction'))
+
                 if host_transaction.get('Status') == 'SUCCESS':
-                    ret_cust_response = get_xml_dict(body.get('RetCustAddResponse'))
-                    ret_cust_rs = get_xml_dict(ret_cust_response.get('RetCustAddRs'))
+                    ret_cust_response = get_xml_dict(
+                        body.get('RetCustAddResponse'))
+                    ret_cust_rs = get_xml_dict(
+                        ret_cust_response.get('RetCustAddRs'))
                     return {
                         "status": "SUCCESS",
                         "cif_id": ret_cust_rs.get('CustId'),
@@ -1262,32 +1294,35 @@ def create_finacle_retail_customer(
                     }
                 else:
                     return {
-                        "status": "FAILED", 
-                        "message": "Host Transaction Failed", 
+                        "status": "FAILED",
+                        "message": "Host Transaction Failed",
                         "full_response": response.text,
                         "request_sent": xml_request
                     }
-                    
+
             except Exception as e:
                 return {
-                    "status": "ERROR", 
-                    "message": f"Parsing Error: {str(e)}", 
+                    "status": "ERROR",
+                    "message": f"Parsing Error: {str(e)}",
                     "full_response": response.text,
                     "request_sent": xml_request
                 }
         else:
             return {
-                "status": "ERROR", 
-                "message": f"HTTP {response.status_code}", 
+                "status": "ERROR",
+                "message": f"HTTP {response.status_code}",
                 "full_response": response.text,
                 "request_sent": xml_request
             }
-            
+
     except Exception as e:
-        frappe.log_error(title="Finacle RetCust Creation Error", message=frappe.get_traceback())
+        frappe.log_error(title="Finacle RetCust Creation Error",
+                         message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
 
 # Wrapper for Postman testing
+
+
 @frappe.whitelist()
 def test_create_retail_customer():
     return create_finacle_retail_customer(
@@ -1298,8 +1333,8 @@ def test_create_retail_customer():
         salutation="MISS",
         mobile_number="9745594078",
         doc_reference_num="709038084885",
-        
+
         # KEY CHANGES HERE FOR SUCCESS
-        language="India (English)",  
-        tax_deduction_table="ZERO" 
+        language="India (English)",
+        tax_deduction_table="ZERO"
     )
