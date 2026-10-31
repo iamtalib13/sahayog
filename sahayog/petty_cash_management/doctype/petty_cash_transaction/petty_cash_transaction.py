@@ -1183,98 +1183,101 @@ class PettyCashTransaction(Document):
     #     frappe.response['filecontent'] = final_txt
     #     frappe.response['type'] = 'download'
 
-    def download_transaction_txt(self):
-        content = []
-        from frappe.utils import getdate
+###############################################################################################################
 
-        date_obj = getdate(self.transaction_date)
-        ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
+    # individual transaction ttum download method
+    # def download_transaction_txt(self):
+    #     content = []
+    #     from frappe.utils import getdate
 
-        if self.branch_type == "Zonal":
-            currency_str = f"INR1000"
-        else:
-            currency_str = f"INR{self.branch}"
+    #     date_obj = getdate(self.transaction_date)
+    #     ttum_date = date_obj.strftime("%b%y").upper()  # JAN26
 
-        narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} {self.name}"
-        debitDescription = ""
-        total_debit = 0.0
+    #     if self.branch_type == "Zonal":
+    #         currency_str = f"INR1000"
+    #     else:
+    #         currency_str = f"INR{self.branch}"
 
-        # --- 1. DEBIT ROWS (Expenses) ---
-        for row in self.items:
-            if not row.finacle_gl_code:
-                frappe.throw(f"Row #{row.idx} is missing Finacle GL Code")
+    #     narrative_suffix = self.custom_ttum_remarks if self.custom_ttum_remarks else f"{ttum_date} {self.name}"
+    #     debitDescription = ""
+    #     total_debit = 0.0
 
-            amount_str = "{:.2f}".format(row.amount)
-            total_debit += row.amount
+    #     # --- 1. DEBIT ROWS (Expenses) ---
+    #     for row in self.items:
+    #         if not row.finacle_gl_code:
+    #             frappe.throw(f"Row #{row.idx} is missing Finacle GL Code")
 
-            raw_desc = f"{row.description}" if row.description else narrative_suffix
-            debitDescription = raw_desc[:30]
+    #         amount_str = "{:.2f}".format(row.amount)
+    #         total_debit += row.amount
 
-            padding_count = 17 - len(amount_str)
-            if padding_count < 10:
-                padding_count = 10
+    #         raw_desc = f"{row.description}" if row.description else narrative_suffix
+    #         debitDescription = raw_desc[:30]
 
-            space_str = " " * padding_count
+    #         padding_count = 17 - len(amount_str)
+    #         if padding_count < 10:
+    #             padding_count = 10
 
-            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
-            content.append(line)
+    #         space_str = " " * padding_count
 
-        # --- 2. CREDIT ROW (Branch Wallet) ---
-        wallet_gl = frappe.db.get_value(
-            "Branch Petty Cash Account",
-            {"branch": self.branch},
-            "gl_sub_code"
-        )
-        if not wallet_gl:
-            frappe.throw(f"GL Sub Code not found for Branch {self.branch}")
+    #         line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debitDescription}"
+    #         content.append(line)
 
-        total_amount_str = "{:.2f}".format(total_debit)
+    #     # --- 2. CREDIT ROW (Branch Wallet) ---
+    #     wallet_gl = frappe.db.get_value(
+    #         "Branch Petty Cash Account",
+    #         {"branch": self.branch},
+    #         "gl_sub_code"
+    #     )
+    #     if not wallet_gl:
+    #         frappe.throw(f"GL Sub Code not found for Branch {self.branch}")
 
-        padding_count = 17 - len(total_amount_str)
-        if padding_count < 10:
-            padding_count = 10
+    #     total_amount_str = "{:.2f}".format(total_debit)
 
-        space_str = " " * padding_count
+    #     padding_count = 17 - len(total_amount_str)
+    #     if padding_count < 10:
+    #         padding_count = 10
 
-        # Keep description exactly 30 chars
-        creditDescription = narrative_suffix[:30].ljust(30)
+    #     space_str = " " * padding_count
 
-        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
+    #     # Keep description exactly 30 chars
+    #     creditDescription = narrative_suffix[:30].ljust(30)
 
-        # --- 3. ADD ENTITY DETAILS ONLY FOR ZONAL ---
-        if self.branch_type == "Zonal":
-            entity_id = str(self.entity_id or "").strip()
-            entity_type = str(self.entity_type or "").strip()
+    #     credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{creditDescription}"
 
-            # only append if entity_id exists
-            if entity_id:
-                extra_spaces_after_desc = " " * 852
+    #     # --- 3. ADD ENTITY DETAILS ONLY FOR ZONAL ---
+    #     if self.branch_type == "Zonal":
+    #         entity_id = str(self.entity_id or "").strip()
+    #         entity_type = str(self.entity_type or "").strip()
 
-                if len(entity_id) == 4:
-                    entity_id_padding = " " * 12
-                elif len(entity_id) == 5:
-                    entity_id_padding = " " * 11
-                else:
-                    entity_id_padding = ""
+    #         # only append if entity_id exists
+    #         if entity_id:
+    #             extra_spaces_after_desc = " " * 852
 
-                entity_type_padding = " " * 5
+    #             if len(entity_id) == 4:
+    #                 entity_id_padding = " " * 12
+    #             elif len(entity_id) == 5:
+    #                 entity_id_padding = " " * 11
+    #             else:
+    #                 entity_id_padding = ""
 
-                credit_line = (
-                    f"{credit_line}"
-                    f"{extra_spaces_after_desc}"
-                    f"{entity_id}"
-                    f"{entity_id_padding}"
-                    f"{entity_type}"
-                    f"{entity_type_padding}"
-                )
+    #             entity_type_padding = " " * 5
 
-        content.append(credit_line)
+    #             credit_line = (
+    #                 f"{credit_line}"
+    #                 f"{extra_spaces_after_desc}"
+    #                 f"{entity_id}"
+    #                 f"{entity_id_padding}"
+    #                 f"{entity_type}"
+    #                 f"{entity_type_padding}"
+    #             )
 
-        final_txt = "\n".join(content)
+    #     content.append(credit_line)
 
-        frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
-        frappe.response['filecontent'] = final_txt
-        frappe.response['type'] = 'download'
+    #     final_txt = "\n".join(content)
+
+    #     frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
+    #     frappe.response['filecontent'] = final_txt
+    #     frappe.response['type'] = 'download'
 
     def validate_item_descriptions(self):
         for row in self.items:
@@ -1496,6 +1499,7 @@ class PettyCashTransaction(Document):
     #                         row.idx
     #                     )
     #                 )
+
 
     def validate_payment_mode_details(self):
         """
@@ -2200,8 +2204,10 @@ def download_consolidated_txt_api(transaction_date=None):
             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
         )
 
-    selected_date = str(getdate(transaction_date)
-                        ) if transaction_date else nowdate()
+    selected_date = getdate(transaction_date) if transaction_date else getdate(nowdate())
+    if selected_date >= getdate(nowdate()):
+        frappe.throw("You can only download TTUM for previous dates, not for today or future dates.")
+    selected_date = str(selected_date)
 
     transactions = frappe.get_all(
         "Petty Cash Transaction",

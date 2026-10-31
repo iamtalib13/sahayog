@@ -12,14 +12,14 @@ function get_approval_status_color(status) {
 }
 
 frappe.listview_settings['Petty Cash Transaction'] = {
-    get_indicator: function(doc) {
+    get_indicator: function (doc) {
         const status = doc.approval_status || 'Draft';
         return [__(status), get_approval_status_color(status), `approval_status,=,${status}`];
     },
 
 
-    onload: function(listview) {
-        listview.page.add_inner_button(__('Download Report'), function() {
+    onload: function (listview) {
+        listview.page.add_inner_button(__('Download Report'), function () {
             // download_filtered_report_listview(listview);
             ask_date_range_and_download();
         });
@@ -29,11 +29,11 @@ frappe.listview_settings['Petty Cash Transaction'] = {
             frappe.user.has_role('HO Petty Cash Manager') ||
             frappe.user.has_role('HO Petty Cash Verifier')
         ) {
-            listview.page.add_inner_button(__('Excel Report'), function() {
+            listview.page.add_inner_button(__('Excel Report'), function () {
                 ask_date_and_download('excel');
             }, __('Download Files'));
 
-            listview.page.add_inner_button(__('TXT File (Finacle)'), function() {
+            listview.page.add_inner_button(__('TXT File (Finacle)'), function () {
                 ask_date_and_download('txt');
             }, __('Download Files'));
         }
@@ -47,11 +47,16 @@ frappe.listview_settings['Petty Cash Transaction'] = {
                         fieldname: 'transaction_date',
                         fieldtype: 'Date',
                         reqd: 1,
-                        default: frappe.datetime.get_today()
+                        // default: frappe.datetime.get_today()
+                        default: frappe.datetime.add_days(frappe.datetime.get_today(), -1)
                     }
                 ],
                 primary_action_label: __('Download'),
                 primary_action(values) {
+                    if (file_type === 'txt' && values.transaction_date >= frappe.datetime.get_today()) {
+                        frappe.msgprint(__('You can only download TTUM for previous dates, not for today or future dates.'));
+                        return;
+                    }
                     dialog.hide();
 
                     if (file_type === 'excel') {
@@ -73,7 +78,7 @@ frappe.listview_settings['Petty Cash Transaction'] = {
                 },
                 freeze: true,
                 freeze_message: __('Checking and Generating Excel...'),
-                callback: function(r) {
+                callback: function (r) {
                     if (r.message && r.message.status === 'success') {
                         let filedata = r.message.filecontent;
                         let filename = r.message.filename;
@@ -110,7 +115,7 @@ frappe.listview_settings['Petty Cash Transaction'] = {
                         });
                     }
                 },
-                error: function(r) {
+                error: function (r) {
                     frappe.show_alert({
                         message: __('Failed to generate consolidated Excel. Please try again.'),
                         indicator: 'red'
@@ -128,7 +133,7 @@ frappe.listview_settings['Petty Cash Transaction'] = {
                 },
                 freeze: true,
                 freeze_message: __('Checking and Generating TTUM...'),
-                callback: function(r) {
+                callback: function (r) {
                     if (r.message && r.message.status === 'success') {
                         let filedata = r.message.filecontent;
                         let filename = r.message.filename;
@@ -159,7 +164,7 @@ frappe.listview_settings['Petty Cash Transaction'] = {
                         });
                     }
                 },
-                error: function(r) {
+                error: function (r) {
                     frappe.show_alert({
                         message: __('Failed to generate consolidated TTUM. Please try again.'),
                         indicator: 'red'
@@ -182,7 +187,7 @@ frappe.listview_settings['Petty Cash Transaction'] = {
                 args: {
                     filters: filters
                 },
-                callback: function(r) {
+                callback: function (r) {
                     if (r.message) {
                         let filedata = r.message.filecontent;
                         let filename = r.message.filename;
@@ -214,7 +219,7 @@ frappe.listview_settings['Petty Cash Transaction'] = {
                         }, 5);
                     }
                 },
-                error: function(r) {
+                error: function (r) {
                     frappe.show_alert({
                         message: __('Failed to generate report. Please check console for errors.'),
                         indicator: 'red'
@@ -229,26 +234,26 @@ frappe.listview_settings['Petty Cash Transaction'] = {
 function download_filtered_report(listview) {
     // Get current filters from list view
     let filters = listview.get_filters_for_args();
-    
+
     // Show loading indicator
     frappe.show_alert({
         message: __('Generating Excel report...'),
         indicator: 'blue'
     }, 5);
-    
+
     // Call backend method
     frappe.call({
         method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_transaction_report',
         args: {
             filters: filters
         },
-        callback: function(r) {
+        callback: function (r) {
             if (r.message) {
                 // Decode base64 and trigger download
                 let file_data = r.message.filecontent;
                 let filename = r.message.filename;
                 let record_count = r.message.record_count;
-                
+
                 // Convert base64 to blob
                 let binary = atob(file_data);
                 let array = new Uint8Array(binary.length);
@@ -256,7 +261,7 @@ function download_filtered_report(listview) {
                     array[i] = binary.charCodeAt(i);
                 }
                 let blob = new Blob([array], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-                
+
                 // Create download link
                 let url = window.URL.createObjectURL(blob);
                 let a = document.createElement('a');
@@ -266,7 +271,7 @@ function download_filtered_report(listview) {
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                
+
                 // Show success message
                 frappe.show_alert({
                     message: __('Downloaded {0} records successfully!', [record_count]),
@@ -274,7 +279,7 @@ function download_filtered_report(listview) {
                 }, 5);
             }
         },
-        error: function(r) {
+        error: function (r) {
             frappe.show_alert({
                 message: __('Failed to generate report. Please check console for errors.'),
                 indicator: 'red'
@@ -294,12 +299,12 @@ function download_consolidated_excel() {
         method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_consolidated_excel_api',
         freeze: true,
         freeze_message: __('Checking and Generating Excel...'),
-        callback: function(r) {
+        callback: function (r) {
             if (r.message && r.message.status === 'success') {
                 // Decode base64 and trigger download
                 let file_data = r.message.filecontent;
                 let filename = r.message.filename;
-                
+
                 let binary = atob(file_data);
                 let array = new Uint8Array(binary.length);
                 for (let i = 0; i < binary.length; i++) {
@@ -314,7 +319,7 @@ function download_consolidated_excel() {
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                
+
                 frappe.show_alert({
                     message: __('Consolidated Excel downloaded successfully!'),
                     indicator: 'green'
@@ -328,10 +333,10 @@ function download_consolidated_excel() {
                 });
             }
         },
-        error: function(r) {
-            frappe.show_alert({ 
-                message: __('Failed to generate consolidated Excel. Please try again.'), 
-                indicator: 'red' 
+        error: function (r) {
+            frappe.show_alert({
+                message: __('Failed to generate consolidated Excel. Please try again.'),
+                indicator: 'red'
             }, 5);
             console.error('Consolidated Excel error:', r);
         }
@@ -343,12 +348,12 @@ function download_consolidated_txt() {
         method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_consolidated_txt_api',
         freeze: true,
         freeze_message: __('Checking and Generating TTUM...'),
-        callback: function(r) {
+        callback: function (r) {
             if (r.message && r.message.status === 'success') {
                 // Trigger text file download
                 let file_data = r.message.filecontent;
                 let filename = r.message.filename;
-                
+
                 let blob = new Blob([file_data], { type: 'text/plain' });
                 let url = window.URL.createObjectURL(blob);
                 let a = document.createElement('a');
@@ -358,7 +363,7 @@ function download_consolidated_txt() {
                 a.click();
                 document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
-                
+
                 frappe.show_alert({
                     message: __('Consolidated TTUM downloaded successfully!'),
                     indicator: 'green'
@@ -372,10 +377,10 @@ function download_consolidated_txt() {
                 });
             }
         },
-        error: function(r) {
-            frappe.show_alert({ 
-                message: __('Failed to generate consolidated TTUM. Please try again.'), 
-                indicator: 'red' 
+        error: function (r) {
+            frappe.show_alert({
+                message: __('Failed to generate consolidated TTUM. Please try again.'),
+                indicator: 'red'
             }, 5);
             console.error('Consolidated TTUM error:', r);
         }
@@ -434,7 +439,7 @@ function download_detailed_report_by_date_range(from_date, to_date) {
         },
         freeze: true,
         freeze_message: __('Preparing detailed Excel report...'),
-        callback: function(r) {
+        callback: function (r) {
             if (r.message) {
                 let filedata = r.message.filecontent;
                 let filename = r.message.filename;
@@ -466,7 +471,7 @@ function download_detailed_report_by_date_range(from_date, to_date) {
                 }, 5);
             }
         },
-        error: function(r) {
+        error: function (r) {
             frappe.show_alert({
                 message: __('Failed to generate detailed report.'),
                 indicator: 'red'
