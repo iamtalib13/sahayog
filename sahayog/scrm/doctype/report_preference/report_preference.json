@@ -14,6 +14,7 @@
   "full_name",
   "enabled",
   "override_designation_permission",
+  "allow_download_report",
   "tag",
   "access_type",
   "zone",
@@ -132,6 +133,12 @@
    "fieldname": "override_designation_permission",
    "fieldtype": "Check",
    "label": "Override Designation Permission"
+  },
+  {
+   "default": "0",
+   "fieldname": "allow_download_report",
+   "fieldtype": "Check",
+   "label": "Allow Drishti Download"
   }
  ],
  "grid_page_length": 50,
