@@ -103,6 +103,8 @@ def create_loan_account(file_url, operation_type):
                 row_result['account_id'] = api_response.get('account_id', '')
                 row_result['request_sent'] = api_response.get(
                     'request_sent', '')
+                row_result["full_response"] = api_response.get(
+                    "full_response", "")
                 results.append(row_result)
 
                 if api_response.get('status') == 'SUCCESS':
@@ -220,6 +222,8 @@ def process_loan_disbursement(file_url, operation_type=None):
                     "charges_count", "")
                 row_result["request_sent"] = api_response.get(
                     "request_sent", "")
+                row_result["full_response"] = api_response.get(
+                    "full_response", "")
                 results.append(row_result)
 
                 if api_response.get("status") == "SUCCESS":
@@ -414,6 +418,8 @@ def create_cif(file_url, operation_type):
                 row_result['cif_id'] = api_response.get('cif_id', '')
                 row_result['request_sent'] = api_response.get(
                     'request_sent', '')
+                row_result["full_response"] = api_response.get(
+                    "full_response", "")
                 results.append(row_result)
 
                 if api_response.get('status') == 'SUCCESS':
@@ -509,6 +515,8 @@ def create_td_account(file_url, operation_type=None):
                 row_result['account_id'] = api_response.get('account_id', '')
                 row_result['request_sent'] = api_response.get(
                     'request_sent', '')
+                row_result["full_response"] = api_response.get(
+                    "full_response", "")
                 results.append(row_result)
 
                 if api_response.get('status') == 'SUCCESS':

@@ -9,6 +9,7 @@ from datetime import datetime
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
+
 @frappe.whitelist()
 def individual_finacle_fund_transfer_api(entry_name):
     """
@@ -16,13 +17,13 @@ def individual_finacle_fund_transfer_api(entry_name):
     Supports Multiple Debits and Multiple Credits.
     Production Ready Version: 2.0 (Multi-Leg Transaction)
     """
-    
+
     # ================= CONFIGURATION =================
-    FINACLE_PRODUCTION_URL = 'https://finacle.sahayog.com:PORT/FISERVLET/fihttp' 
+    # FINACLE_PRODUCTION_URL = 'https://finacle.sahayog.com:PORT/FISERVLET/fihttp'
     FINACLE_UAT_URL = 'https://smcmig.sahayog.com:2950/FISERVLET/fihttp'
-    
+
     # SET ACTIVE URL
-    ACTIVE_URL = FINACLE_UAT_URL 
+    ACTIVE_URL = FINACLE_UAT_URL
     # =================================================
 
     try:
@@ -44,12 +45,13 @@ def individual_finacle_fund_transfer_api(entry_name):
         part_trn_xml_list = []
         total_debit = 0.0
         total_credit = 0.0
-        
+
         for child in entry_doc.accounts:
             # Get Account Number (Custom Field or Fallback)
             account_doc = frappe.get_doc('Account', child.account)
-            finacle_account_id = account_doc.account_number if hasattr(account_doc, 'account_number') else child.account
-            
+            finacle_account_id = account_doc.account_number if hasattr(
+                account_doc, 'account_number') else child.account
+
             # Determine Flag and Amount
             if child.debit_in_account_currency > 0:
                 flg = 'D'
@@ -60,7 +62,7 @@ def individual_finacle_fund_transfer_api(entry_name):
                 amt = child.credit_in_account_currency
                 total_credit += amt
             else:
-                continue # Skip rows with 0 amount
+                continue  # Skip rows with 0 amount
 
             # Create XML Block for this Row
             part_xml = f"""
@@ -78,10 +80,12 @@ def individual_finacle_fund_transfer_api(entry_name):
 
         # 4. Validation Checks
         if not part_trn_xml_list:
-            frappe.throw("No valid accounts with amounts found in Journal Entry.")
-            
-        if abs(total_debit - total_credit) > 0.01: # allow tiny rounding diff
-            frappe.throw(f"Debit ({total_debit}) and Credit ({total_credit}) totals do not match!")
+            frappe.throw(
+                "No valid accounts with amounts found in Journal Entry.")
+
+        if abs(total_debit - total_credit) > 0.01:  # allow tiny rounding diff
+            frappe.throw(
+                f"Debit ({total_debit}) and Credit ({total_credit}) totals do not match!")
 
         # Join all parts into one string
         all_parts_xml = "".join(part_trn_xml_list)
@@ -121,22 +125,26 @@ def individual_finacle_fund_transfer_api(entry_name):
 
         # 6. Send Request
         headers = {'Content-Type': 'application/xml'}
-        response = requests.post(ACTIVE_URL, data=xml_data, headers=headers, verify=False, timeout=45)
+        response = requests.post(
+            ACTIVE_URL, data=xml_data, headers=headers, verify=False, timeout=45)
 
         # 7. Process Response
         if response.status_code == 200:
             try:
                 response_dict = xmltodict.parse(response.text)
                 fi_xml = response_dict.get('FIXML', {})
-                status = fi_xml.get('Header', {}).get('ResponseHeader', {}).get('HostTransaction', {}).get('Status', '').strip()
-                
+                status = fi_xml.get('Header', {}).get('ResponseHeader', {}).get(
+                    'HostTransaction', {}).get('Status', '').strip()
+
                 if status == "SUCCESS":
-                    rs_body = fi_xml.get('Body', {}).get('XferTrnAddResponse', {}).get('XferTrnAddRs', {})
-                    custom_trn_id = rs_body.get('TrnIdentifier', {}).get('TrnId', 'N/A').strip()
+                    rs_body = fi_xml.get('Body', {}).get(
+                        'XferTrnAddResponse', {}).get('XferTrnAddRs', {})
+                    custom_trn_id = rs_body.get(
+                        'TrnIdentifier', {}).get('TrnId', 'N/A').strip()
 
                     frappe.db.set_value('Journal Entry', entry_name, {
-                        'docstatus': 1, 
-                        'custom_finacle_response': response.text[:1000], 
+                        'docstatus': 1,
+                        'custom_finacle_response': response.text[:1000],
                         'custom_finacle_transaction_id': custom_trn_id,
                         'custom_petty_cash_date': datetime.now().date(),
                         'custom_petty_cash_remarks': f"Finacle Success: {custom_trn_id}",
@@ -144,15 +152,17 @@ def individual_finacle_fund_transfer_api(entry_name):
                     })
                     frappe.db.commit()
                     return {"status": "SUCCESS", "trn_id": custom_trn_id}
-                
+
                 else:
                     body_node = fi_xml.get('Body', {})
-                    error_node = body_node.get('Error', {}).get('FIBusinessException', {})
+                    error_node = body_node.get('Error', {}).get(
+                        'FIBusinessException', {})
                     error_details = error_node.get('ErrorDetail', [])
 
                     error_info = "Unknown Finacle Error"
                     if isinstance(error_details, list) and len(error_details) > 0:
-                        error_info = error_details[0].get('ErrorDesc', error_info)
+                        error_info = error_details[0].get(
+                            'ErrorDesc', error_info)
                     elif isinstance(error_details, dict):
                         error_info = error_details.get('ErrorDesc', error_info)
 
@@ -164,13 +174,16 @@ def individual_finacle_fund_transfer_api(entry_name):
                     return {"status": "FAILED", "message": error_info}
 
             except Exception as parse_error:
-                frappe.log_error(title="Finacle XML Parse Error", message=f"{parse_error}\n\n{response.text}")
+                frappe.log_error(title="Finacle XML Parse Error",
+                                 message=f"{parse_error}\n\n{response.text}")
                 return {"status": "ERROR", "message": "XML Parsing Failed. Check Error Log."}
 
         else:
-            frappe.log_error(title=f"Finacle HTTP {response.status_code}", message=response.text)
+            frappe.log_error(
+                title=f"Finacle HTTP {response.status_code}", message=response.text)
             return {"status": "ERROR", "message": f"HTTP {response.status_code} Error"}
 
     except Exception as e:
-        frappe.log_error(title="Finacle Integration Error", message=frappe.get_traceback())
+        frappe.log_error(title="Finacle Integration Error",
+                         message=frappe.get_traceback())
         return {"status": "ERROR", "message": str(e)}
