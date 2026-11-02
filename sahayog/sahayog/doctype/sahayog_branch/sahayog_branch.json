@@ -10,6 +10,7 @@
   "branch",
   "column_break_dpfb",
   "sol_id",
+  "disable_audit_checklist",
   "location_details_section",
   "state_code",
   "state",
@@ -43,6 +44,12 @@
    "non_negative": 1,
    "reqd": 1,
    "unique": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "disable_audit_checklist",
+   "fieldtype": "Check",
+   "label": "Disable Audit Checklist"
   },
   {
    "fieldname": "branch",
