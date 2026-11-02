@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <!-- v=20261102-1714 -->
+    <meta http-equiv="Expires" content="0" />
     <title>L&amp;D Training Calendar</title>
     <style>
       :root {
@@ -14724,7 +14728,7 @@
               card.style.boxShadow = "";
             });
             card.addEventListener("click", function() {
-              openTrainerPanel(card.dataset.empid);
+              openTrainerDashboard(card.dataset.empid);
             });
           });
         }
@@ -15288,7 +15292,7 @@
            the "Others" popup. */
         var dbProgOthers = [], dbProgTotal = 0;
         /* Trainer dashboard charts */
-        var trnDashTrendChart = null, trnDashProgChart = null;
+        var trnDashTrendChart = null, trnDashProgChart = null, trnDashStatusChart = null;
         var DB_COLORS = ["#0d9488","#2563eb","#7c3aed","#ea580c","#16a34a","#d97706","#db2777","#0284c7"];
         var dbSelectedYear = new Date().getFullYear();
         var dbSelectedMonth = new Date().getMonth() + 1;
@@ -15640,14 +15644,27 @@
         }
 
         function openTrainerDashboard(trainerKey) {
+          console.log("OPENING TRAINER DASHBOARD for:", trainerKey);
           var modal = document.getElementById("trainerDashModal");
           var body = document.getElementById("trnDashBody");
           var title = document.getElementById("trnDashTitle");
           if (!modal || !body) return;
-          if (title) title.textContent = "Trainer Dashboard";
+          if (title) {
+            var MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+            var mLabel = (dbSelectedYear && dbSelectedMonth)
+              ? " — " + MONTHS_FULL[dbSelectedMonth - 1] + " " + dbSelectedYear
+              : "";
+            title.textContent = "Trainer Performance Dashboard" + mLabel;
+          }
           body.innerHTML = '<div style="padding:40px 0;text-align:center;color:var(--ink-3);font-size:12px;"><div class="spinner" style="margin:0 auto 8px;"></div>Loading…</div>';
           modal.classList.add("open");
-          api("get_trainer_dashboard_data", { trainer: trainerKey, months: 6 }).then(function(d){
+          // Pass selected month/year from dashboard month picker
+          var apiArgs = { trainer: trainerKey, months: 6 };
+          if (dbSelectedYear && dbSelectedMonth) {
+            apiArgs.year  = dbSelectedYear;
+            apiArgs.month = dbSelectedMonth;
+          }
+          api("get_trainer_dashboard_data", apiArgs).then(function(d){
             renderTrainerDashboard(d);
           }).catch(function(e){
             body.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:12px;">Error: ' + esc(e.message) + '</div>';
@@ -15655,28 +15672,31 @@
         }
 
         function trnKpi(label, val, color) {
-          return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:8px 10px;">' +
+          return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;">' +
             '<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink-3);letter-spacing:.04em;">' + esc(label) + '</div>' +
-            '<div style="font-size:20px;font-weight:800;color:' + color + ';margin-top:2px;">' + (val == null ? "—" : val) + '</div>' +
+            '<div style="font-size:22px;font-weight:800;color:' + color + ';margin-top:4px;">' + (val == null ? "—" : val) + '</div>' +
           '</div>';
         }
 
-        function trnStatusSplit(counts) {
-          var total = Object.keys(counts).reduce(function(a,k){return a + (counts[k]||0);}, 0);
-          if (!total) return "";
-          var segs = [
-            {k:"completed",color:"#16a34a",label:"Completed"},
-            {k:"inprogress",color:"#ea580c",label:"In Progress"},
-            {k:"upcoming",color:"#2563eb",label:"Upcoming"},
-            {k:"pending",color:"#d97706",label:"Pending"},
-            {k:"cancelled",color:"#dc2626",label:"Cancelled"},
-            {k:"postponed",color:"#7c3aed",label:"Postponed"},
-            {k:"rescheduled",color:"#0284c7",label:"Rescheduled"},
-          ];
-          var bar = segs.map(function(s){ var v=counts[s.k]||0; if(!v) return ""; return '<div class="db-dist-seg" style="width:'+Math.round(v/total*100)+'%;background:'+s.color+';" title="'+s.label+': '+v+'"></div>'; }).join("");
-          var leg = segs.map(function(s){ var v=counts[s.k]||0; if(!v) return ""; return '<span class="db-dist-leg-item"><span class="db-dist-dot" style="background:'+s.color+';"></span>'+s.label+' '+v+'</span>'; }).join("");
-          return '<div class="db-card" style="margin-top:6px;"><div class="db-sec-head"><div class="db-sec-title">Status distribution</div></div><div class="db-dist-bar">'+bar+'</div><div class="db-dist-legend">'+leg+'</div></div>';
+        function trnStatusDonut(counts) {
+          var total = (counts.completed||0)+(counts.upcoming||0)+(counts.cancelled||0)+(counts.postponed||0)+(counts.rescheduled||0);
+          var c = counts.completed||0, u = counts.upcoming||0, x = (counts.cancelled||0)+(counts.postponed||0);
+          var canvas = document.getElementById("trn-dash-status");
+          if (!canvas || typeof Chart === "undefined") return;
+          if (trnDashStatusChart) { try { trnDashStatusChart.destroy(); } catch(e){} }
+          trnDashStatusChart = new Chart(canvas.getContext("2d"), {
+            type: "doughnut",
+            data: { labels: ["Conducted","Upcoming","Cancelled/Postponed"], datasets: [{ data: [c,u,x], backgroundColor: ["#16a34a","#2563eb","#dc2626"], borderWidth: 2, borderColor: "#fff", cutout: "65%" }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx){ var pct = total ? Math.round(ctx.raw/total*100) : 0; return ctx.label + ": " + ctx.raw + " (" + pct + "%)"; } } } } }
+          });
+          var leg = document.getElementById("trn-dash-status-leg");
+          if (leg) {
+            var items = [{l:"Conducted",v:c,col:"#16a34a"},{l:"Upcoming",v:u,col:"#2563eb"},{l:"Cancelled/Postponed",v:x,col:"#dc2626"}];
+            leg.innerHTML = items.map(function(it){ var pct = total ? Math.round(it.v/total*100) : 0; return '<div style="display:flex;align-items:center;gap:7px;font-size:11px;"><span style="width:9px;height:9px;border-radius:50%;background:'+it.col+';flex-shrink:0;"></span><span style="flex:1;color:var(--ink-2);">'+it.l+'</span><span style="font-weight:700;color:var(--ink-1);">'+it.v+'</span><span style="color:var(--ink-3);min-width:34px;text-align:right;">('+pct+'%)</span></div>'; }).join("");
+          }
         }
+
+        function trnStatusSplit(counts) { return ""; }
 
         function trnSessionList(list, showStatus) {
           if (!list || !list.length) return '<div class="db-empty">No sessions.</div>';
@@ -15695,68 +15715,108 @@
           var k = d.kpis || {};
           var initials = (d.name || "?").split(" ").map(function(w){ return w[0]; }).slice(0,2).join("").toUpperCase();
           var avatar = d.image
-            ? '<img src="' + esc(d.image) + '" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
-            : '<div style="width:64px;height:64px;border-radius:50%;background:#dcefed;color:#00565b;display:grid;place-items:center;font-size:20px;font-weight:700;flex-shrink:0;">' + esc(initials) + '</div>';
+            ? '<img src="' + esc(d.image) + '" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+            : '<div style="width:72px;height:72px;border-radius:50%;background:#dcefed;color:#00565b;display:grid;place-items:center;font-size:22px;font-weight:700;flex-shrink:0;">' + esc(initials) + '</div>';
 
           var html = "";
-          html += '<div style="display:flex;align-items:center;gap:16px;padding:12px 4px 8px;">' + avatar +
+          // Header card
+          html += '<div style="display:flex;align-items:center;gap:18px;padding:14px 6px 10px;flex-wrap:wrap;">' + avatar +
             '<div style="min-width:0;flex:1;">' +
-              '<div style="font-size:18px;font-weight:700;color:var(--ink-1);">' + esc(d.name) + '</div>' +
-              (d.designation ? '<div style="font-size:12.5px;color:var(--ink-2);margin-top:2px;">' + esc(d.designation) + '</div>' : '') +
-              '<div style="font-size:11.5px;color:var(--ink-3);margin-top:2px;">' + esc([d.department, d.division].filter(Boolean).join(" · ")) + (d.branch ? ' · ' + esc(d.branch) : '') + (d.zone ? ' · ' + esc(d.zone) : '') + '</div>' +
-              '<div style="display:flex;gap:6px;margin-top:6px;flex-wrap:wrap;">' +
-                '<span style="font-size:11px;font-weight:600;color:#007c77;background:#dcefed;border-radius:999px;padding:2px 8px;">Internal Trainer</span>' +
-                (d.status ? '<span style="font-size:11px;font-weight:600;color:' + (d.status === "Active" ? "#15803d" : "#b45309") + ';background:' + (d.status === "Active" ? "#dcfce7" : "#fef3c7") + ';border-radius:999px;padding:2px 8px;">' + esc(d.status) + '</span>' : '') +
+              '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                '<div style="font-size:20px;font-weight:700;color:var(--ink-1);">' + esc(d.name) + '</div>' +
+                '<span style="font-size:10.5px;font-weight:600;color:#15803d;background:#dcfce7;border-radius:999px;padding:2px 8px;">Active</span>' +
+                '<span style="font-size:10.5px;font-weight:600;color:#007c77;background:#dcefed;border-radius:999px;padding:2px 8px;">Internal Trainer</span>' +
+              '</div>' +
+              '<div style="font-size:11.5px;color:var(--ink-3);margin-top:3px;">Trainer ID: ' + esc(d.employee_number || d.employee_id) + '</div>' +
+              '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px 16px;margin-top:8px;font-size:12px;color:var(--ink-2);">' +
+                '<div><span style="color:var(--ink-3);">Department:</span> ' + esc(d.department || "—") + '</div>' +
+                '<div><span style="color:var(--ink-3);">Assigned Zone:</span> ' + esc(d.zone || "—") + '</div>' +
+                '<div><span style="color:var(--ink-3);">Email:</span> ' + esc(d.email || "—") + '</div>' +
+                '<div><span style="color:var(--ink-3);">Contact:</span> ' + esc(d.phone || "—") + '</div>' +
               '</div>' +
             '</div>' +
-            '<div style="text-align:right;"><div style="font-size:26px;font-weight:800;color:var(--ink-1);">' + (k.completion_rate != null ? k.completion_rate : 0) + '%</div><div style="font-size:10.5px;color:var(--ink-3);">Completion</div></div>' +
+            '<div style="text-align:right;"><div style="font-size:26px;font-weight:800;color:var(--ink-1);">' + (k.completion_rate != null ? k.completion_rate : 0) + '%</div><div style="font-size:10.5px;color:var(--ink-3);">Completion</div>' +
+            '<div style="margin-top:6px;"><button class="btn" style="font-size:11px;padding:4px 8px;" onclick="closeModal(\'trainerDashModal\');openTrainerPanel(\'' + esc(d.employee_id) + '\');">View Profile</button></div>' +
+            '</div>' +
           '</div>';
 
+          // KPI row
           html += '<div class="db-kpi-grid" style="margin-top:4px;">' +
-            trnKpi('Total', k.total, '#0d9488') +
+            trnKpi('Planned Trainings', k.total, '#0d9488') +
             trnKpi('Conducted', k.completed, '#16a34a') +
-            trnKpi('In Progress', k.in_progress, '#ea580c') +
-            trnKpi('Pending', k.pending, '#d97706') +
-            trnKpi('Participants', k.participants, '#2563eb') +
-            trnKpi('Hours', k.hours, '#7c3aed') +
+            trnKpi('Upcoming', k.upcoming, '#2563eb') +
+            trnKpi('Participants', k.participants, '#7c3aed') +
+            trnKpi('Avg. Feedback', '—', '#d97706') +
+            trnKpi('Completion Rate', (k.completion_rate != null ? k.completion_rate + '%' : '—'), '#ea580c') +
           '</div>';
 
+          // Middle row: bar chart + status donut
           html += '<div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;margin-top:6px;">' +
             '<div class="db-card">' +
-              '<div class="db-sec-head"><div class="db-sec-title">Monthly trend</div><div class="db-sec-sub">Last ' + d.months + ' months</div></div>' +
-              '<div style="position:relative;height:150px;"><canvas id="trn-dash-trend"></canvas></div>' +
+              '<div class="db-sec-head"><div class="db-sec-title">Monthly Training Performance</div><div class="db-sec-sub">Planned vs Conducted</div></div>' +
+              '<div style="position:relative;height:170px;"><canvas id="trn-dash-trend"></canvas></div>' +
             '</div>' +
             '<div class="db-card" style="justify-content:flex-start;">' +
-              '<div class="db-sec-head"><div class="db-sec-title">Programs</div><div class="db-sec-sub">Distribution</div></div>' +
-              '<div style="position:relative;height:110px;margin-bottom:6px;"><canvas id="trn-dash-prog"></canvas></div>' +
-              '<div id="trn-dash-prog-leg" class="db-prog-leg"></div>' +
+              '<div class="db-sec-head"><div class="db-sec-title">Training Status Distribution</div></div>' +
+              '<div style="position:relative;height:120px;margin-bottom:6px;"><canvas id="trn-dash-status"></canvas></div>' +
+              '<div id="trn-dash-status-leg" class="db-prog-leg"></div>' +
             '</div>' +
           '</div>';
 
-          html += trnStatusSplit(d.status_counts || {});
-
-          if (d.geography && d.geography.length) {
-            html += '<div class="db-card" style="margin-top:6px;"><div class="db-sec-head"><div class="db-sec-title">Geography</div></div>' +
-              '<div style="display:flex;flex-wrap:wrap;gap:6px;">' + d.geography.map(function(g){
-                return '<span style="font-size:11px;font-weight:600;color:var(--ink-1);background:var(--surface-2);border:1px solid var(--border);border-radius:999px;padding:3px 9px;">' + esc(g.zone) + ' <span style="color:var(--ink-3);">' + g.count + '</span></span>';
-              }).join("") + '</div></div>';
-          }
-
-          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">' +
-            '<div class="db-card"><div class="db-sec-head"><div class="db-sec-title">Upcoming sessions</div></div>' + trnSessionList(d.upcoming, false) + '</div>' +
-            '<div class="db-card"><div class="db-sec-head"><div class="db-sec-title">Recent sessions</div></div>' + trnSessionList(d.recent, true) + '</div>' +
+          // Lower middle: Zone-wise Coverage | Training History | Attendance & Feedback
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:6px;">' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Zone-wise Coverage</div></div>' +
+              '<div style="overflow-x:auto;"><table class="report-table" style="font-size:11.5px;"><thead><tr><th>Zone</th><th>Planned</th><th>Conducted</th><th>Participants</th></tr></thead><tbody>' +
+                (d.zone_coverage||[]).map(function(z){ return '<tr><td style="font-weight:600;">'+esc(z.zone)+'</td><td>'+z.planned+'</td><td>'+z.conducted+'</td><td>'+z.participants+'</td></tr>'; }).join("") +
+                ((d.zone_coverage||[]).length ? '' : '<tr><td colspan="4" class="db-empty">No data.</td></tr>') +
+              '</tbody></table></div>' +
+            '</div>' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Training History</div></div>' +
+              '<div style="max-height:180px;overflow-y:auto;"><table class="report-table" style="font-size:11.5px;"><thead><tr><th>Training</th><th>Date</th><th>Zone</th><th>Status</th></tr></thead><tbody>' +
+                (d.training_history||[]).map(function(s){ return '<tr><td style="font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(s.program)+'">'+esc(s.program)+'</td><td style="white-space:nowrap;">'+esc(s.from_date)+'</td><td>'+esc(s.zone||s.location||"—")+'</td><td>'+esc(s.status)+'</td></tr>'; }).join("") +
+                ((d.training_history||[]).length ? '' : '<tr><td colspan="4" class="db-empty">No data.</td></tr>') +
+              '</tbody></table></div>' +
+            '</div>' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Attendance &amp; Feedback</div></div>' +
+              '<div style="display:flex;flex-direction:column;gap:8px;">' +
+                '<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Total Participants</span><span style="font-weight:700;color:var(--ink-1);">' + (d.attendance.total||0) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Present</span><span style="font-weight:700;color:#16a34a;">' + (d.attendance.present||0) + '</span></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Absent</span><span style="font-weight:700;color:#dc2626;">' + (d.attendance.absent||0) + '</span></div>' +
+                '<div style="height:1px;background:var(--border);"></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Attendance Rate</span><span style="font-weight:700;color:var(--ink-1);">' + (d.attendance.rate||0) + '%</span></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:12px;"><span style="color:var(--ink-3);">Avg. Feedback</span><span style="font-weight:700;color:var(--ink-1);">' + (d.feedback_taken ? (d.feedback_taken + ' taken') : '—') + '</span></div>' +
+              '</div>' +
+            '</div>' +
           '</div>';
 
-          if (d.insights && d.insights.length) {
-            html += '<div class="db-card" style="margin-top:6px;"><div class="db-sec-head"><div class="db-sec-title">Insights</div></div><div class="db-ins-list">' +
-              d.insights.map(function(i){ return '<div class="db-ins db-ins-' + i.color + '"><div class="db-ins-icon">' + (DB_INS_ICONS[i.color] || DB_INS_ICONS.blue) + '</div><div><div class="db-ins-title">' + esc(i.title) + '</div><div class="db-ins-desc">' + esc(i.desc) + '</div></div></div>'; }).join("") +
-            '</div></div>';
-          }
+          // Bottom: Recent & Upcoming Trainings + Key Insights
+          html += '<div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;margin-top:6px;">' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Recent &amp; Upcoming Trainings</div></div>' +
+              '<div style="max-height:200px;overflow-y:auto;"><table class="report-table" style="font-size:11.5px;"><thead><tr><th>Training</th><th>Date</th><th>Zone</th><th>Status</th><th></th></tr></thead><tbody>' +
+                (d.upcoming||[]).concat(d.recent||[]).map(function(s){ return '<tr><td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(s.program)+'">'+esc(s.program)+'</td><td style="white-space:nowrap;">'+esc(s.from_date)+'</td><td>'+esc(s.zone||s.location||"—")+'</td><td>'+esc(s.status)+'</td><td style="color:#007c77;cursor:pointer;white-space:nowrap;" data-tname="'+esc(s.name)+'">View Details</td></tr>'; }).join("") +
+                (((d.upcoming||[]).length+(d.recent||[]).length) ? '' : '<tr><td colspan="5" class="db-empty">No sessions.</td></tr>') +
+              '</tbody></table></div>' +
+            '</div>' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Key Insights</div><div style="font-size:16px;">🏆</div></div>' +
+              '<div class="db-ins-list">' +
+                (d.insights||[]).map(function(i){ return '<div class="db-ins db-ins-'+i.color+'"><div class="db-ins-icon">'+(DB_INS_ICONS[i.color]||DB_INS_ICONS.blue)+'</div><div><div class="db-ins-title">'+esc(i.title)+'</div><div class="db-ins-desc">'+esc(i.desc)+'</div></div></div>'; }).join("") +
+                '<div class="db-ins db-ins-blue"><div class="db-ins-icon">'+DB_INS_ICONS.blue+'</div><div><div class="db-ins-title">'+(k.completion_rate||0)+'% completion rate</div><div class="db-ins-desc">Overall training delivery performance.</div></div></div>' +
+                '<div class="db-ins db-ins-green"><div class="db-ins-icon">'+DB_INS_ICONS.green+'</div><div><div class="db-ins-title">'+(d.zone_coverage&&d.zone_coverage.length?d.zone_coverage[0].zone:'—')+' most active zone</div><div class="db-ins-desc">Highest training volume in this zone.</div></div></div>' +
+                '<div class="db-ins db-ins-orange"><div class="db-ins-icon">'+DB_INS_ICONS.orange+'</div><div><div class="db-ins-title">'+(k.completed||0)+' trainings conducted</div><div class="db-ins-desc">With '+(k.participants||0)+' total participants.</div></div></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
 
           body.innerHTML = html;
 
+          // charts
           renderTrainerTrend(d.trend || []);
-          renderTrainerProg(d.program_coverage || []);
+          trnStatusDonut(d.status_counts || {});
 
           body.querySelectorAll("[data-tname]").forEach(function(el){
             el.addEventListener("click", function(e){
@@ -15774,31 +15834,14 @@
           trnDashTrendChart = new Chart(canvas.getContext("2d"), {
             type: "bar",
             data: { labels: trend.map(function(t){return t.month;}), datasets: [
-              { label: "Planned", data: trend.map(function(t){return t.planned;}), backgroundColor: "#cbd5e1" },
+              { label: "Planned", data: trend.map(function(t){return t.planned;}), backgroundColor: "#2563eb" },
               { label: "Conducted", data: trend.map(function(t){return t.conducted;}), backgroundColor: "#16a34a" },
             ]},
             options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10 } } } } }
           });
         }
 
-        function renderTrainerProg(progs) {
-          var canvas = document.getElementById("trn-dash-prog"); if (!canvas || typeof Chart === "undefined") return;
-          if (trnDashProgChart) { try { trnDashProgChart.destroy(); } catch(e){} }
-          var leg = document.getElementById("trn-dash-prog-leg");
-          if (!progs || !progs.length) { if (leg) leg.innerHTML = '<div style="color:var(--ink-3);text-align:center;font-size:11px;">No data</div>'; return; }
-          var TOP = 5, OTHERS = "#94a3b8";
-          var sorted = progs.map(function(p){ return { program: p.program, value: (p.conducted || p.planned || 0) }; }).sort(function(a,b){ return b.value - a.value; });
-          var slices = sorted.slice(0, TOP).map(function(p,i){ return { program: p.program, value: p.value, color: DB_COLORS[i % DB_COLORS.length] }; });
-          var rest = sorted.slice(TOP);
-          if (rest.length) slices.push({ program: "Others (" + rest.length + ")", value: rest.reduce(function(a,b){ return a + b.value; }, 0), color: OTHERS });
-          var total = slices.reduce(function(a,b){ return a + b.value; }, 0);
-          trnDashProgChart = new Chart(canvas.getContext("2d"), {
-            type: "doughnut",
-            data: { labels: slices.map(function(s){return s.program;}), datasets: [{ data: slices.map(function(s){return s.value;}), backgroundColor: slices.map(function(s){return s.color;}), borderWidth: 2, borderColor: "#fff", cutout: "65%" }] },
-            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx){ var pct = total ? Math.round(ctx.raw/total*100) : 0; return ctx.label + ": " + ctx.raw + " (" + pct + "%)"; } } } } }
-          });
-          if (leg) leg.innerHTML = slices.map(function(s){ var pct = total ? Math.round(s.value/total*100) : 0; return '<div style="display:flex;align-items:center;gap:7px;font-size:11px;"><span style="width:9px;height:9px;border-radius:50%;background:'+s.color+';flex-shrink:0;"></span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">'+esc(s.program)+'</span><span style="font-weight:700;color:var(--ink-1);">'+s.value+'</span><span style="color:var(--ink-3);min-width:30px;text-align:right;">('+pct+'%)</span></div>'; }).join("");
-        }
+        function renderTrainerProg(progs) { return; }
 
         function dbRenderZoneTable(zones) {
           var el=document.getElementById("db-zone-body"); if(!el) return;
