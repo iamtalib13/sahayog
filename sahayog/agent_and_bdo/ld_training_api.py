@@ -3781,6 +3781,7 @@ def get_trainer_profile(employee_id):
             "month":         MONTHS_SHORT[int(p[1]) - 1] if len(p) == 3 else "",
             "training_type": t.training_type or "",
             "location":      t.training_location or "",
+            "zone":          t.zone or t.training_location or "",
             "status":        get_training_status(t),
             "participants":  frappe.db.count("Training Participant", {"parent": t.name}),
         }
@@ -3865,15 +3866,22 @@ def get_trainer_profile(employee_id):
 
 
 @frappe.whitelist()
-def get_trainer_dashboard_data(trainer=None, months=6):
+def get_trainer_dashboard_data(trainer=None, months=6, year=None, month=None):
     """
     Consolidated dashboard payload for a single trainer:
     bio + KPIs + monthly trend + program coverage + status counts +
     geography + upcoming/recent sessions + insights.
+
+    If year + month are provided, KPIs and tables are filtered to that month only.
+    trend always shows last `months` months for context.
     """
     months = int(months or 6)
     if months < 1 or months > 12:
         months = 6
+
+    # Month filter
+    filter_year  = int(year)  if year  else None
+    filter_month = int(month) if month else None
 
     if not trainer:
         if _is_admin():
@@ -3937,6 +3945,11 @@ def get_trainer_dashboard_data(trainer=None, months=6):
         limit_page_length=5000,
     )
 
+    # Filter rows to selected month if year+month given
+    if filter_year and filter_month:
+        month_prefix = f"{filter_year}-{str(filter_month).zfill(2)}"
+        rows = [r for r in rows if str(r.from_date or "").startswith(month_prefix)]
+
     def is_completed(r):
         return all(r.get(f) for f in COMPLETION_FIELDS)
 
@@ -3954,6 +3967,7 @@ def get_trainer_dashboard_data(trainer=None, months=6):
     participants_total = sum((r.number_of_participants or 0) for r in rows)
     hours_total = round(sum(float(r.program_duration_hours or 0) for r in rows if is_completed(r)), 1)
     distinct_programs = len({(r.training_program or "Training") for r in rows})
+    feedback_taken_count = sum(1 for r in rows if r.get("feedback_taken"))
 
     MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
     trend = []
@@ -3998,6 +4012,7 @@ def get_trainer_dashboard_data(trainer=None, months=6):
             "day": p[2].lstrip("0") if len(p) == 3 else "",
             "month": MONTHS_SHORT[int(p[1]) - 1] if len(p) == 3 else "",
             "training_type": t.training_type or "",
+            "zone": t.zone or t.training_location or "—",
             "location": t.training_location or "",
             "status": get_training_status(t),
             "participants": frappe.db.count("Training Participant", {"parent": t.name}),
@@ -4005,6 +4020,41 @@ def get_trainer_dashboard_data(trainer=None, months=6):
 
     upcoming_raw = sorted([r for r in rows if str(r.from_date or "")[:10] >= today_str], key=lambda r: r.from_date or "")[:5]
     recent_raw = sorted([r for r in rows if str(r.from_date or "")[:10] < today_str], key=lambda r: r.from_date or "", reverse=True)[:5]
+
+    # Zone-wise coverage: planned / conducted / participants per zone.
+    zone_cov = {}
+    for r in rows:
+        z = r.zone or "—"
+        g = zone_cov.setdefault(z, {"zone": z, "planned": 0, "conducted": 0, "participants": 0})
+        g["planned"] += 1
+        if is_completed(r):
+            g["conducted"] += 1
+        g["participants"] += (r.number_of_participants or 0)
+    zone_coverage = sorted(zone_cov.values(), key=lambda x: -x["planned"])
+
+    # Training history: last 10 trainings (any status).
+    history_raw = sorted(rows, key=lambda r: str(r.from_date or ""), reverse=True)[:10]
+
+    # Attendance aggregation across this trainer's trainings.
+    training_names = [r.name for r in rows]
+    att_total = 0
+    att_present = 0
+    att_absent = 0
+    if training_names:
+        parts = frappe.db.get_all(
+            "Training Participant",
+            filters={"parent": ["in", training_names]},
+            fields=["attendance_status"],
+            limit_page_length=0,
+        )
+        for p in parts:
+            att_total += 1
+            st = (p.attendance_status or "").strip().lower()
+            if st == "present":
+                att_present += 1
+            elif st == "absent":
+                att_absent += 1
+    att_rate = round((att_present / att_total * 100), 2) if att_total else 0.0
 
     insights = []
     overdue = [r for r in rows if str(r.to_date or r.from_date or "")[:10] < today_str
@@ -4071,6 +4121,15 @@ def get_trainer_dashboard_data(trainer=None, months=6):
         "geography": geography,
         "upcoming": [fmt_session(t) for t in upcoming_raw],
         "recent": [fmt_session(t) for t in recent_raw],
+        "zone_coverage": zone_coverage,
+        "training_history": [fmt_session(t) for t in history_raw],
+        "attendance": {
+            "total": att_total,
+            "present": att_present,
+            "absent": att_absent,
+            "rate": att_rate,
+        },
+        "feedback_taken": feedback_taken_count,
         "insights": insights,
     }
 
