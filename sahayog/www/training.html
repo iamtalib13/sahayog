@@ -6356,6 +6356,30 @@
       </div>
     </div>
 
+    <!-- Modal: programs folded into the dashboard "Others" slice -->
+    <div class="modal-wrap" id="progOthersModal">
+      <div class="modal" style="width:min(440px, 94vw)">
+        <div class="modal-head">
+          <h3 id="progOthersTitle">Other programs</h3>
+          <button class="modal-close" data-close="progOthersModal" title="Close">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="16"
+              height="16"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div id="progOthersBody"></div>
+      </div>
+    </div>
+
     <!-- Modal: add training -->
     <div class="modal-wrap" id="addModal">
       <div class="modal new-training-modal">
@@ -11916,6 +11940,11 @@
           .addEventListener("click", function (e) {
             if (e.target === this) closeModal("moreModal");
           });
+        var progOthersModalEl = document.getElementById("progOthersModal");
+        if (progOthersModalEl)
+          progOthersModalEl.addEventListener("click", function (e) {
+            if (e.target === this) closeModal("progOthersModal");
+          });
         document.getElementById("btn-reset");
         document.querySelectorAll("[data-close]").forEach(function (b) {
           b.onclick = function () {
@@ -15088,7 +15117,22 @@
             ".db-ins-desc{font-size:10.5px;color:var(--ink-2);line-height:1.3;}",
 
             /* ── Program legend ── */
-            ".db-prog-leg{display:flex;flex-direction:column;gap:2px;font-size:11px;margin-top:4px;}",
+            ".db-prog-leg{display:flex;flex-direction:column;gap:2px;font-size:11px;margin-top:4px;max-height:96px;overflow-y:auto;padding-right:4px;}",
+            ".db-prog-leg::-webkit-scrollbar{width:5px;}.db-prog-leg::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}",
+            ".db-prog-row{display:flex;align-items:center;gap:7px;padding:1px 0;border-radius:4px;}",
+            ".db-prog-row[data-others]{cursor:pointer;}",
+            ".db-prog-row[data-others]:hover{background:#f1f5f9;}",
+            /* ── "Others" programs popup ── */
+            ".db-oth-sub{font-size:11px;color:var(--ink-3);margin-bottom:8px;}",
+            ".db-oth-list{display:flex;flex-direction:column;max-height:52vh;overflow-y:auto;padding-right:4px;}",
+            ".db-oth-list::-webkit-scrollbar{width:6px;}.db-oth-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}",
+            ".db-oth-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;}",
+            ".db-oth-row:last-child{border-bottom:none;}",
+            ".db-oth-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-1);font-weight:600;}",
+            ".db-oth-bar{flex:0 0 70px;height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden;}",
+            ".db-oth-bar>i{display:block;height:100%;background:#94a3b8;border-radius:3px;}",
+            ".db-oth-num{flex:0 0 auto;font-weight:700;color:var(--ink-1);}",
+            ".db-oth-pct{flex:0 0 38px;text-align:right;color:var(--ink-3);}",
 
             /* ── Misc ── */
             ".db-loading{display:flex;align-items:center;justify-content:center;height:50px;color:var(--ink-3);font-size:12px;gap:8px;}",
@@ -15206,6 +15250,9 @@
 
         /* ── Dashboard State & Charts ── */
         var dbTrendChart = null, dbProgChart = null, dbCovCharts = {};
+        /* Programs folded into the "Others" slice + overall total, kept for
+           the "Others" popup. */
+        var dbProgOthers = [], dbProgTotal = 0;
         var DB_COLORS = ["#0d9488","#2563eb","#7c3aed","#ea580c","#16a34a","#d97706","#db2777","#0284c7"];
         var dbSelectedYear = new Date().getFullYear();
         var dbSelectedMonth = new Date().getMonth() + 1;
@@ -15461,21 +15508,79 @@
         function dbRenderProgChart(progs) {
           var canvas=document.getElementById("db-prog-chart"); if(!canvas||typeof Chart==="undefined") return;
           if(dbProgChart){try{dbProgChart.destroy();}catch(e){}}
-          var leg=document.getElementById("db-prog-legend"); if(!progs.length){if(leg)leg.innerHTML='<div style="color:var(--ink-3);text-align:center;font-size:11.5px;">No data</div>';return;}
-          var vals=progs.map(function(p){return p.conducted||p.planned;}), total=vals.reduce(function(a,b){return a+b;},0);
+          var leg=document.getElementById("db-prog-legend"); if(!progs.length){dbProgOthers=[];dbProgTotal=0;if(leg)leg.innerHTML='<div style="color:var(--ink-3);text-align:center;font-size:11.5px;">No data</div>';return;}
+
+          /* Too many distinct training titles make a doughnut unreadable:
+             keep the top 7 slices and fold the long tail into one "Others"
+             slice (with the folded names in its tooltip). */
+          var TOP_N=7, OTHERS_COLOR="#94a3b8";
+          var sorted=progs.map(function(p){return {program:p.program,value:(p.conducted||p.planned||0)};})
+            .sort(function(a,b){return b.value-a.value;});
+          var slices=sorted.slice(0,TOP_N).map(function(p,i){
+            return {program:p.program,value:p.value,color:DB_COLORS[i%DB_COLORS.length]};
+          });
+          var rest=sorted.slice(TOP_N);
+          if(rest.length){
+            slices.push({
+              program:"Others ("+rest.length+" program"+(rest.length>1?"s":"")+")",
+              value:rest.reduce(function(a,b){return a+b.value;},0),
+              color:OTHERS_COLOR,
+              members:rest.map(function(p){return p.program+" ("+p.value+")";}).join("\n"),
+            });
+          }
+          var total=slices.reduce(function(a,b){return a+b.value;},0);
+          dbProgOthers=rest; dbProgTotal=total;
+
           dbProgChart=new Chart(canvas.getContext("2d"),{
             type:"doughnut",
-            data:{labels:progs.map(function(p){return p.program;}),datasets:[{data:vals,backgroundColor:DB_COLORS,borderWidth:2,borderColor:"#fff",cutout:"65%"}]},
-            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var pct=total?Math.round(ctx.raw/total*100):0;return ctx.label+": "+ctx.raw+" ("+pct+"%)";}}}}},
+            data:{labels:slices.map(function(s){return s.program;}),datasets:[{data:slices.map(function(s){return s.value;}),backgroundColor:slices.map(function(s){return s.color;}),borderWidth:2,borderColor:"#fff",cutout:"65%"}]},
+            options:{responsive:true,maintainAspectRatio:false,
+              onClick:function(e,els){if(els&&els.length){var s=slices[els[0].index];if(s&&s.members)openProgOthersModal();}},
+              onHover:function(e,els){canvas.style.cursor=(els&&els.length&&slices[els[0].index]&&slices[els[0].index].members)?"pointer":"default";},
+              plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var pct=total?Math.round(ctx.raw/total*100):0;var line=ctx.label+": "+ctx.raw+" ("+pct+"%)";var s=slices[ctx.dataIndex];if(s&&s.members){var mem=s.members.split("\n");var shown=mem.slice(0,6).map(function(m){return "   · "+m;});if(mem.length>6)shown.push("   · …");return [line].concat(shown);}return line;}}}}},
           });
-          if(leg) leg.innerHTML=progs.slice(0,5).map(function(p,i){
-            var pct=total?Math.round((p.conducted||p.planned)/total*100):0;
-            return '<div style="display:flex;align-items:center;gap:7px;">'+
-              '<span style="width:9px;height:9px;border-radius:50%;background:'+DB_COLORS[i%DB_COLORS.length]+';flex-shrink:0;display:inline-block;"></span>'+
-              '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">'+dbEsc(p.program)+'</span>'+
-              '<span style="font-weight:700;color:var(--ink-1);">'+(p.conducted||p.planned)+'</span>'+
-              '<span style="color:var(--ink-3);min-width:32px;text-align:right;">('+pct+'%)</span></div>';
+
+          if(leg) leg.innerHTML=slices.map(function(s){
+            var pct=total?Math.round(s.value/total*100):0;
+            var isOthers=!!s.members;
+            return '<div class="db-prog-row" '+(isOthers?'data-others="1" ':'')+'title="'+dbEsc(isOthers?"View all "+s.program:s.program)+'">'+
+              '<span style="width:9px;height:9px;border-radius:50%;background:'+s.color+';flex-shrink:0;display:inline-block;"></span>'+
+              '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">'+dbEsc(s.program)+'</span>'+
+              '<span style="font-weight:700;color:var(--ink-1);">'+s.value+'</span>'+
+              '<span style="color:var(--ink-3);min-width:32px;text-align:right;">('+pct+'%)</span>'+
+              (isOthers?'<span style="color:var(--ink-3);font-size:12px;flex-shrink:0;line-height:1;">&rsaquo;</span>':'')+'</div>';
           }).join("");
+          var othRow=leg?leg.querySelector("[data-others]"):null;
+          if(othRow) othRow.addEventListener("click", openProgOthersModal);
+        }
+
+        /* List every program that was folded into "Others" (top 7 kept). */
+        function openProgOthersModal() {
+          var list=(dbProgOthers||[]).slice().sort(function(a,b){return b.value-a.value;});
+          var body=document.getElementById("progOthersBody");
+          var title=document.getElementById("progOthersTitle");
+          var modal=document.getElementById("progOthersModal");
+          if(!body||!modal) return;
+          var sum=list.reduce(function(a,b){return a+b.value;},0);
+          if(title) title.textContent="Other programs ("+list.length+")";
+          if(!list.length){
+            body.innerHTML='<div style="padding:8px 0;color:var(--ink-3);font-size:12px;">No other programs in this period.</div>';
+          }else{
+            var max=list[0].value||1, allTotal=dbProgTotal||0;
+            body.innerHTML=
+              '<div class="db-oth-sub">'+list.length+' programs · '+sum+' trainings'+
+                (allTotal?' · '+Math.round(sum/allTotal*100)+'% of all':'')+'</div>'+
+              '<div class="db-oth-list">'+list.map(function(p){
+                var pct=allTotal?Math.round(p.value/allTotal*100):0;
+                return '<div class="db-oth-row" title="'+dbEsc(p.program)+'">'+
+                  '<span class="db-oth-name">'+dbEsc(p.program)+'</span>'+
+                  '<span class="db-oth-bar"><i style="width:'+Math.max(4,Math.round(p.value/max*100))+'%"></i></span>'+
+                  '<span class="db-oth-num">'+p.value+'</span>'+
+                  '<span class="db-oth-pct">('+pct+'%)</span>'+
+                '</div>';
+              }).join("")+'</div>';
+          }
+          modal.classList.add("open");
         }
 
         function dbRenderZoneTable(zones) {
