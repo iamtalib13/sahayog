@@ -3241,6 +3241,23 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
     # keep only rows whose end (to_date or from_date) falls within the month
     all_rows = [r for r in all_rows if str(r.to_date or r.from_date or "")[:10] >= month_start]
 
+    # trainer filter (param was previously unused)
+    trainer_keys_set = None
+    if trainer and str(trainer).strip():
+        t = str(trainer).strip()
+        emp = frappe.db.get_value("Employee", t, ["name", "employee_name"], as_dict=True)
+        if not emp:
+            emp = frappe.db.get_value("Employee", {"employee_name": t}, ["name", "employee_name"], as_dict=True)
+        keys = {k for k in ((emp["name"], emp["employee_name"]) if emp else (t,)) if k}
+        trainer_keys_set = keys
+        # non-admins may only view their own dashboard
+        if not _is_admin():
+            self_emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name"], as_dict=True)
+            self_keys = {k for k in ((self_emp["name"], self_emp["employee_name"]) if self_emp else ()) if k}
+            if not (keys & self_keys):
+                frappe.throw(_("You can only view your own dashboard."), frappe.PermissionError)
+        all_rows = [r for r in all_rows if (r.trainer or "") in keys]
+
     # geo filter
     geo_names = [r.name for r in all_rows]
     geo_map = _get_geographies_map(geo_names) if geo_names else {}
@@ -3264,6 +3281,8 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
 
     def trainer_ok(r):
         if not trainer: return True
+        if trainer_keys_set:
+            return (r.trainer or "") in trainer_keys_set
         return (r.trainer or "") == trainer
 
     rows = [r for r in all_rows if geo_ok(r) and prog_ok(r) and trainer_ok(r)]
@@ -3842,6 +3861,217 @@ def get_trainer_profile(employee_id):
         "upcoming_count": upcoming_count,
         "upcoming":     [fmt_session(t) for t in upcoming_raw],
         "recent":       [fmt_session(t) for t in recent_raw],
+    }
+
+
+@frappe.whitelist()
+def get_trainer_dashboard_data(trainer=None, months=6):
+    """
+    Consolidated dashboard payload for a single trainer:
+    bio + KPIs + monthly trend + program coverage + status counts +
+    geography + upcoming/recent sessions + insights.
+    """
+    months = int(months or 6)
+    if months < 1 or months > 12:
+        months = 6
+
+    if not trainer:
+        if _is_admin():
+            frappe.throw(_("trainer is required"))
+        trainer = _my_trainer_name() or frappe.session.user
+
+    emp = frappe.db.get_value("Employee", trainer, ["name", "employee_name"], as_dict=True)
+    if not emp:
+        emp = frappe.db.get_value("Employee", {"employee_name": trainer}, ["name", "employee_name"], as_dict=True)
+    if not emp:
+        frappe.throw(_("Trainer not found."))
+
+    trainer_keys = list({k for k in (emp["name"], emp["employee_name"]) if k})
+
+    # Permission: admin any; otherwise only self.
+    if not _is_admin():
+        self_emp = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["name", "employee_name"], as_dict=True)
+        self_keys = set()
+        if self_emp:
+            self_keys = {k for k in (self_emp["name"], self_emp["employee_name"]) if k}
+        if not (set(trainer_keys) & self_keys):
+            frappe.throw(_("You can only view your own trainer dashboard."), frappe.PermissionError)
+
+    # Bio (mirrors get_trainer_profile).
+    bio = frappe.db.get_value(
+        "Employee", emp["name"],
+        [
+            "name", "employee_name", "employee_number", "designation",
+            "department", "sub_department", "custom_division",
+            "custom_zone", "custom_region", "custom_district", "custom_cluter",
+            "branch", "sahayog_branch", "sol_id",
+            "company_email", "personal_email", "cell_number", "image",
+            "company", "employment_type", "grade", "date_of_joining",
+            "reports_to", "gender", "date_of_birth", "status", "blood_group",
+            "custom_uhid_number",
+        ],
+        as_dict=True,
+    ) or {}
+
+    branch_code = bio.get("sol_id") or bio.get("sahayog_branch") or ""
+    if not branch_code and bio.get("branch"):
+        branch_code = frappe.db.get_value("Branch", bio["branch"], "sol_id") or ""
+
+    reports_to_name = ""
+    if bio.get("reports_to"):
+        reports_to_name = frappe.db.get_value("Employee", bio["reports_to"], "employee_name") or bio["reports_to"]
+
+    today = frappe.utils.getdate()
+    today_str = str(today)
+
+    fields = ["name", "training_program", "from_date", "to_date", "start_time", "end_time",
+              "training_type", "training_location", "zone", "region", "district", "branch",
+              "number_of_participants", "program_duration_hours", *COMPLETION_FIELDS,
+              "budget_amount", "actual_expense", "status_override"]
+
+    rows = frappe.db.get_all(
+        "Training",
+        filters={"trainer": ["in", trainer_keys], "docstatus": ["<", 2]},
+        fields=fields,
+        order_by="from_date desc",
+        limit_page_length=5000,
+    )
+
+    def is_completed(r):
+        return all(r.get(f) for f in COMPLETION_FIELDS)
+
+    total = len(rows)
+    completed = sum(1 for r in rows if is_completed(r))
+    cancelled = sum(1 for r in rows if (r.status_override or "").lower() == "cancelled")
+    postponed = sum(1 for r in rows if (r.status_override or "").lower() == "postponed")
+    rescheduled = sum(1 for r in rows if (r.status_override or "").lower() == "rescheduled")
+    in_progress = sum(1 for r in rows if 0 < sum(1 for f in COMPLETION_FIELDS if r.get(f)) < 5)
+    upcoming_count = sum(1 for r in rows if str(r.from_date or "")[:10] >= today_str)
+    pending_count = sum(1 for r in rows
+                        if str(r.from_date or "")[:10] < today_str
+                        and not is_completed(r)
+                        and (r.status_override or "").lower() not in ("cancelled", "postponed", "rescheduled"))
+    participants_total = sum((r.number_of_participants or 0) for r in rows)
+    hours_total = round(sum(float(r.program_duration_hours or 0) for r in rows if is_completed(r)), 1)
+    distinct_programs = len({(r.training_program or "Training") for r in rows})
+
+    MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+    trend = []
+    for i in range(months - 1, -1, -1):
+        mdate = frappe.utils.add_months(today, -i)
+        y, m = mdate.year, mdate.month
+        key = f"{y}-{m:02d}"
+        planned = sum(1 for r in rows if str(r.from_date or "")[:7] == key)
+        conducted = sum(1 for r in rows if str(r.from_date or "")[:7] == key and is_completed(r))
+        trend.append({"month": MONTHS_SHORT[m - 1], "year": y, "planned": planned, "conducted": conducted})
+
+    prog_agg = {}
+    for r in rows:
+        p = r.training_program or "Training"
+        a = prog_agg.setdefault(p, {"program": p, "planned": 0, "conducted": 0})
+        a["planned"] += 1
+        if is_completed(r):
+            a["conducted"] += 1
+    program_coverage = sorted(prog_agg.values(), key=lambda x: -(x["conducted"] or x["planned"]))
+
+    status_counts = {
+        "completed": completed, "inprogress": in_progress, "upcoming": upcoming_count,
+        "pending": pending_count, "cancelled": cancelled, "postponed": postponed,
+        "rescheduled": rescheduled,
+    }
+
+    geo_agg = {}
+    for r in rows:
+        z = r.zone or "—"
+        g = geo_agg.setdefault(z, {"zone": z, "count": 0})
+        g["count"] += 1
+    geography = sorted(geo_agg.values(), key=lambda x: -x["count"])[:8]
+
+    def fmt_session(t):
+        d = str(t.from_date or "")[:10]
+        p = d.split("-")
+        return {
+            "name": t.name,
+            "program": t.training_program or "Training",
+            "from_date": d,
+            "to_date": str(t.to_date or d)[:10],
+            "day": p[2].lstrip("0") if len(p) == 3 else "",
+            "month": MONTHS_SHORT[int(p[1]) - 1] if len(p) == 3 else "",
+            "training_type": t.training_type or "",
+            "location": t.training_location or "",
+            "status": get_training_status(t),
+            "participants": frappe.db.count("Training Participant", {"parent": t.name}),
+        }
+
+    upcoming_raw = sorted([r for r in rows if str(r.from_date or "")[:10] >= today_str], key=lambda r: r.from_date or "")[:5]
+    recent_raw = sorted([r for r in rows if str(r.from_date or "")[:10] < today_str], key=lambda r: r.from_date or "", reverse=True)[:5]
+
+    insights = []
+    overdue = [r for r in rows if str(r.to_date or r.from_date or "")[:10] < today_str
+               and 0 < sum(1 for f in COMPLETION_FIELDS if r.get(f)) < 5]
+    if overdue:
+        insights.append({"color": "orange", "title": f"{len(overdue)} in-progress training(s) overdue",
+                         "desc": "Completion checks pending past end date."})
+    pending_budget = [r for r in rows if is_completed(r) and (not r.get("budget_amount") or not r.get("actual_expense"))]
+    if pending_budget:
+        insights.append({"color": "red", "title": f"{len(pending_budget)} completed training(s) missing budget",
+                         "desc": "Fill budget & expense to close."})
+    if not insights:
+        insights.append({"color": "green", "title": "All clear", "desc": "No alerts for this trainer."})
+
+    completion_rate = round((completed / total * 100) if total else 0, 1)
+
+    return {
+        "employee_id": bio.get("name") or emp["name"],
+        "employee_number": bio.get("employee_number") or bio.get("name"),
+        "name": bio.get("employee_name") or bio.get("name"),
+        "designation": bio.get("designation") or "",
+        "department": bio.get("department") or "",
+        "sub_department": bio.get("sub_department") or "",
+        "division": bio.get("custom_division") or "",
+        "zone": bio.get("custom_zone") or "",
+        "region": bio.get("custom_region") or "",
+        "district": bio.get("custom_district") or "",
+        "cluster": bio.get("custom_cluter") or "",
+        "branch": bio.get("branch") or "",
+        "branch_code": branch_code,
+        "email": bio.get("company_email") or "",
+        "personal_email": bio.get("personal_email") or "",
+        "phone": bio.get("cell_number") or "",
+        "image": bio.get("image") or "",
+        "company": bio.get("company") or "",
+        "employment_type": bio.get("employment_type") or "",
+        "grade": bio.get("grade") or "",
+        "date_of_joining": str(bio.get("date_of_joining") or ""),
+        "reports_to": bio.get("reports_to") or "",
+        "reports_to_name": reports_to_name,
+        "gender": bio.get("gender") or "",
+        "date_of_birth": str(bio.get("date_of_birth") or ""),
+        "status": bio.get("status") or "",
+        "blood_group": bio.get("blood_group") or "",
+        "uhid": bio.get("custom_uhid_number") or "",
+        "months": months,
+        "kpis": {
+            "total": total,
+            "completed": completed,
+            "upcoming": upcoming_count,
+            "in_progress": in_progress,
+            "pending": pending_count,
+            "cancelled": cancelled,
+            "postponed": postponed,
+            "rescheduled": rescheduled,
+            "participants": participants_total,
+            "hours": hours_total,
+            "distinct_programs": distinct_programs,
+            "completion_rate": completion_rate,
+        },
+        "trend": trend,
+        "program_coverage": program_coverage,
+        "status_counts": status_counts,
+        "geography": geography,
+        "upcoming": [fmt_session(t) for t in upcoming_raw],
+        "recent": [fmt_session(t) for t in recent_raw],
+        "insights": insights,
     }
 
 
