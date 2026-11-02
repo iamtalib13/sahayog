@@ -666,7 +666,11 @@
   let drishtiHeartbeatInterval = null;
 
   function handleDrishtiTracking() {
-    const isDrishti = (frappe.get_route_str && frappe.get_route_str().includes("sahayog_dashboard")) ||
+    const route =
+      (frappe.router && frappe.router.current_route)
+        ? frappe.router.current_route.join("/")
+        : "";
+    const isDrishti = route.includes("sahayog_dashboard") ||
                       (window.location.pathname.includes("sahayog_dashboard"));
 
     if (isDrishti) {
