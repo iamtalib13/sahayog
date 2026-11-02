@@ -15328,7 +15328,14 @@
               dbSelectedTrainer = this.value || "";
               var clearBtn = document.getElementById("db-trainer-clear");
               if (clearBtn) clearBtn.style.display = dbSelectedTrainer ? "" : "none";
-              refreshDashboard();
+              // Dashboard hamesha consolidated rahega — trainer select sirf popup kholta hai
+              if (dbSelectedTrainer) {
+                openTrainerDashboard(dbSelectedTrainer);
+                // Select wapas "All trainers" pe reset karo taaki dashboard consolidated rahe
+                this.value = "";
+                dbSelectedTrainer = "";
+                if (clearBtn) clearBtn.style.display = "none";
+              }
             });
           }
           var trainerClear = document.getElementById("db-trainer-clear");
