@@ -2,7 +2,7 @@
  "actions": [],
  "allow_rename": 1,
  "autoname": "format:TRN-{YY}{MM}-{####}",
- "creation": "2026-08-11 12:00:00",
+ "creation": "2026-11-02 11:05:10.096311",
  "doctype": "DocType",
  "engine": "InnoDB",
  "field_order": [
@@ -11,14 +11,15 @@
   "is_adhoc",
   "from_date",
   "to_date",
-  "column_break_details",
-   "start_time",
-   "end_time",
-   "program_duration_hours",
-   "training_location",
-  "training_type",
   "flyer",
   "trainer",
+  "column_break_details",
+  "start_time",
+  "end_time",
+  "program_duration_hours",
+  "training_location",
+  "training_type",
+  "trainer_remarks",
   "section_break_geo",
   "zone",
   "region",
@@ -26,37 +27,38 @@
   "branch",
   "column_break_geo",
   "geographies",
-   "section_break_participants",
-   "participants",
-   "number_of_participants",
-   "section_break_status",
+  "section_break_participants",
+  "participants",
+  "number_of_participants",
+  "section_break_status",
   "column_break_status",
   "status",
-   "status_override",
-   "postponed_on",
-   "postponement_reason",
-   "cancelled_on",
-   "cancellation_reason",
-   "original_from_date",
-   "original_to_date",
-   "original_start_time",
-   "original_end_time",
-   "schedule_history",
-   "trainer_remarks",
-   "additional_to",
-   "additional_cc",
-   "column_break_kvin",
+  "status_override",
+  "original_from_date",
+  "original_to_date",
+  "original_start_time",
+  "original_end_time",
+  "additional_to",
+  "additional_cc",
+  "column_break_kvin",
   "training_delivered",
   "pre_assessment_taken",
   "attendance_marked",
   "feedback_taken",
   "post_assessment_taken",
-   "notifications_section",
-   "closure_sent",
-   "invitation_7d_sent",
-   "invitation_3d_sent",
-   "section_break_budget",
+  "postponed_on",
+  "postponement_reason",
+  "cancelled_on",
+  "cancellation_reason",
+  "schedule_history",
+  "notifications_section",
+  "closure_sent",
+  "column_break_pdqh",
+  "invitation_7d_sent",
+  "invitation_3d_sent",
+  "section_break_budget",
   "budget_amount",
+  "column_break_gkvk",
   "actual_expense",
   "amended_from"
  ],
@@ -108,17 +110,17 @@
    "fieldtype": "Time",
    "label": "Start Time"
   },
-   {
-    "fieldname": "end_time",
-    "fieldtype": "Time",
-    "label": "End Time"
-   },
-   {
-    "description": "How many hours the program runs (numbers only, e.g. 2.5)",
-    "fieldname": "program_duration_hours",
-    "fieldtype": "Float",
-    "label": "Program Duration (Hours)"
-   },
+  {
+   "fieldname": "end_time",
+   "fieldtype": "Time",
+   "label": "End Time"
+  },
+  {
+   "description": "How many hours the program runs (numbers only, e.g. 2.5)",
+   "fieldname": "program_duration_hours",
+   "fieldtype": "Float",
+   "label": "Program Duration (Hours)"
+  },
   {
    "description": "Who conducts this training",
    "fieldname": "trainer",
@@ -190,19 +192,19 @@
    "fieldtype": "Section Break",
    "label": "Participants"
   },
-   {
-    "fieldname": "participants",
-    "fieldtype": "Table",
-    "label": "Participants",
-    "options": "Training Participant"
-   },
-   {
-    "default": "0",
-    "description": "Expected headcount (set by bulk upload; participant rows are added separately)",
-    "fieldname": "number_of_participants",
-    "fieldtype": "Int",
-    "label": "Number of Participants"
-   },
+  {
+   "fieldname": "participants",
+   "fieldtype": "Table",
+   "label": "Participants",
+   "options": "Training Participant"
+  },
+  {
+   "default": "0",
+   "description": "Expected headcount (set by bulk upload; participant rows are added separately)",
+   "fieldname": "number_of_participants",
+   "fieldtype": "Int",
+   "label": "Number of Participants"
+  },
   {
    "fieldname": "section_break_status",
    "fieldtype": "Section Break",
@@ -218,16 +220,15 @@
    "read_only": 1
   },
   {
-    "default": "",
-    "description": "Manual lifecycle override set by system (cancel/postpone/reschedule)",
-    "fieldname": "status_override",
-    "fieldtype": "Select",
-    "hidden": 1,
-    "label": "Status Override",
-    "no_copy": 1,
-    "options": "\nRescheduled\nCancelled\nPostponed",
-    "read_only": 1
-   },
+   "description": "Manual lifecycle override set by system (cancel/postpone/reschedule)",
+   "fieldname": "status_override",
+   "fieldtype": "Select",
+   "hidden": 1,
+   "label": "Status Override",
+   "no_copy": 1,
+   "options": "\nRescheduled\nCancelled\nPostponed",
+   "read_only": 1
+  },
   {
    "default": "0",
    "fieldname": "training_delivered",
@@ -262,96 +263,96 @@
    "fieldtype": "Check",
    "label": "Feedback Taken"
   },
-   {
-    "fieldname": "postponed_on",
-    "fieldtype": "Date",
-    "label": "Postponed On",
-    "read_only": 1
-   },
-   {
-    "fieldname": "postponement_reason",
-    "fieldtype": "Small Text",
-    "label": "Postponement Reason",
-    "read_only": 1
-   },
-   {
-    "fieldname": "cancelled_on",
-    "fieldtype": "Date",
-    "label": "Cancelled On",
-    "read_only": 1
-   },
-   {
-    "fieldname": "cancellation_reason",
-    "fieldtype": "Small Text",
-    "label": "Cancellation Reason",
-    "read_only": 1
-   },
-   {
-    "fieldname": "original_from_date",
-    "fieldtype": "Date",
-    "label": "Original From Date",
-    "read_only": 1
-   },
-   {
-    "fieldname": "original_to_date",
-    "fieldtype": "Date",
-    "label": "Original To Date",
-    "read_only": 1
-   },
-   {
-    "fieldname": "original_start_time",
-    "fieldtype": "Time",
-    "label": "Original Start Time",
-    "read_only": 1
-   },
-   {
-    "fieldname": "original_end_time",
-    "fieldtype": "Time",
-    "label": "Original End Time",
-    "read_only": 1
-   },
-   {
-    "fieldname": "schedule_history",
-    "fieldtype": "Long Text",
-    "hidden": 1,
-    "label": "Schedule History",
-    "read_only": 1
-   },
-   {
-    "fieldname": "trainer_remarks",
-    "fieldtype": "Small Text",
-    "label": "Trainer Remarks"
-   },
-   {
-    "description": "Comma-separated emails (zonal head, branch head, extra). Invitation mails go in CC to these.",
-    "fieldname": "additional_cc",
-    "fieldtype": "Small Text",
-    "label": "Additional CC Emails"
-   },
-   {
-    "description": "Comma-separated emails that always go in To (extra officers, division heads).",
-    "fieldname": "additional_to",
-    "fieldtype": "Small Text",
-    "label": "Additional To Emails"
-   },
-   {
-    "default": "0",
-    "fieldname": "invitation_7d_sent",
-    "fieldtype": "Check",
-    "hidden": 1,
-    "label": "Email Sent (7 Days Before)",
-    "no_copy": 1,
-    "read_only": 1
-   },
-   {
-    "default": "0",
-    "fieldname": "invitation_3d_sent",
-    "fieldtype": "Check",
-    "hidden": 1,
-    "label": "Email Sent (3 Days Before)",
-    "no_copy": 1,
-    "read_only": 1
-   },
+  {
+   "fieldname": "postponed_on",
+   "fieldtype": "Date",
+   "label": "Postponed On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "postponement_reason",
+   "fieldtype": "Small Text",
+   "label": "Postponement Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancelled_on",
+   "fieldtype": "Date",
+   "label": "Cancelled On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "cancellation_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancellation Reason",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_from_date",
+   "fieldtype": "Date",
+   "label": "Original From Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_to_date",
+   "fieldtype": "Date",
+   "label": "Original To Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_start_time",
+   "fieldtype": "Time",
+   "label": "Original Start Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "original_end_time",
+   "fieldtype": "Time",
+   "label": "Original End Time",
+   "read_only": 1
+  },
+  {
+   "fieldname": "schedule_history",
+   "fieldtype": "Long Text",
+   "hidden": 1,
+   "label": "Schedule History",
+   "read_only": 1
+  },
+  {
+   "fieldname": "trainer_remarks",
+   "fieldtype": "Small Text",
+   "label": "Trainer Remarks"
+  },
+  {
+   "description": "Comma-separated emails (zonal head, branch head, extra). Invitation mails go in CC to these.",
+   "fieldname": "additional_cc",
+   "fieldtype": "Small Text",
+   "label": "Additional CC Emails"
+  },
+  {
+   "description": "Comma-separated emails that always go in To (extra officers, division heads).",
+   "fieldname": "additional_to",
+   "fieldtype": "Small Text",
+   "label": "Additional To Emails"
+  },
+  {
+   "default": "0",
+   "fieldname": "invitation_7d_sent",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Email Sent (7 Days Before)",
+   "no_copy": 1,
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "invitation_3d_sent",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "Email Sent (3 Days Before)",
+   "no_copy": 1,
+   "read_only": 1
+  },
   {
    "default": "0",
    "fieldname": "closure_sent",
@@ -399,12 +400,19 @@
   {
    "fieldname": "column_break_kvin",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_pdqh",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "column_break_gkvk",
+   "fieldtype": "Column Break"
   }
  ],
  "grid_page_length": 50,
- "is_submittable": 0,
  "links": [],
- "modified": "2026-10-21 16:30:00.000000",
+ "modified": "2026-11-02 12:06:50.751663",
  "modified_by": "Administrator",
  "module": "Agent and BDO",
  "name": "Training",
@@ -422,13 +430,6 @@
    "role": "System Manager",
    "select": 1,
    "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "permlevel": 1,
-   "read": 1,
-   "role": "System Manager",
    "write": 1
   },
   {
@@ -442,7 +443,6 @@
    "role": "Trainer",
    "select": 1,
    "share": 1,
-   "submit": 1,
    "write": 1
   },
   {
@@ -467,13 +467,6 @@
    "role": "L&D Admin",
    "select": 1,
    "share": 1,
-   "submit": 1,
-   "write": 1
-  },
-  {
-   "permlevel": 1,
-   "read": 1,
-   "role": "L&D Admin",
    "write": 1
   },
   {
