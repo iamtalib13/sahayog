@@ -15721,6 +15721,17 @@
         function renderTrainerDashboard(d) {
           var body = document.getElementById("trnDashBody");
           if (!body) return;
+          function fmtDMYDate(dt) {
+            if (!dt) return "—";
+            var s = String(dt).slice(0, 10);
+            var sep = s.indexOf("-") !== -1 ? "-" : (s.indexOf("/") !== -1 ? "/" : null);
+            if (!sep) return s;
+            var p = s.split(sep);
+            if (p.length !== 3) return s;
+            if (p[0].length === 4) return p[2] + "-" + p[1] + "-" + p[0];
+            if (p[2].length === 4 && parseInt(p[1], 10) > 12) return p[1] + "-" + p[0] + "-" + p[2];
+            return p[0] + "-" + p[1] + "-" + p[2];
+          }
           var k = d.kpis || {};
           var initials = (d.name || "?").split(" ").map(function(w){ return w[0]; }).slice(0,2).join("").toUpperCase();
           var avatar = d.image
@@ -15784,7 +15795,7 @@
             '<div class="db-card">' +
               '<div class="db-sec-head"><div class="db-sec-title">Recent &amp; Upcoming Trainings</div></div>' +
               '<div style="max-height:180px;overflow-y:auto;"><table class="report-table" style="font-size:11.5px;"><thead><tr><th>Training</th><th>Date</th><th>Zone</th><th>Status</th></tr></thead><tbody>' +
-                (d.upcoming||[]).concat(d.recent||[]).map(function(s){ return '<tr><td style="font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(s.program)+'">'+esc(s.program)+'</td><td style="white-space:nowrap;">'+esc(s.from_date)+'</td><td>'+esc(s.zone||s.location||"—")+'</td><td>'+esc(s.status)+'</td></tr>'; }).join("") +
+                (d.upcoming||[]).concat(d.recent||[]).map(function(s){ return '<tr><td style="font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(s.program)+'">'+esc(s.program)+'</td><td style="white-space:nowrap;">'+esc(fmtDMYDate(s.from_date))+'</td><td>'+esc(s.zone||s.location||"—")+'</td><td>'+esc(s.status)+'</td></tr>'; }).join("") +
                 (((d.upcoming||[]).length+(d.recent||[]).length) ? '' : '<tr><td colspan="4" class="db-empty">No sessions.</td></tr>') +
               '</tbody></table></div>' +
             '</div>' +
@@ -15795,7 +15806,7 @@
             '<div class="db-card">' +
               '<div class="db-sec-head"><div class="db-sec-title">Training History</div></div>' +
               '<div style="max-height:200px;overflow-y:auto;"><table class="report-table" style="font-size:11.5px;"><thead><tr><th>Training</th><th>Date</th><th>Zone</th><th>Status</th></tr></thead><tbody>' +
-                (d.training_history||[]).map(function(s){ return '<tr><td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(s.program)+'">'+esc(s.program)+'</td><td style="white-space:nowrap;">'+esc(s.from_date)+'</td><td>'+esc(s.zone||s.location||"—")+'</td><td>'+esc(s.status)+'</td></tr>'; }).join("") +
+                (d.training_history||[]).map(function(s){ return '<tr><td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(s.program)+'">'+esc(s.program)+'</td><td style="white-space:nowrap;">'+esc(fmtDMYDate(s.from_date))+'</td><td>'+esc(s.zone||s.location||"—")+'</td><td>'+esc(s.status)+'</td></tr>'; }).join("") +
                 ((d.training_history||[]).length ? '' : '<tr><td colspan="4" class="db-empty">No data.</td></tr>') +
               '</tbody></table></div>' +
             '</div>' +
