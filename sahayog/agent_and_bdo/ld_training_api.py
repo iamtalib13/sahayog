@@ -3410,6 +3410,7 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
 
     # ---------- Program-wise coverage ----------
     prog_map = {}
+    type_map = {}
     for r in rows:
         p = r.training_program or "Other"
         if p not in prog_map:
@@ -3418,12 +3419,26 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
         if _st(r) == "completed":
             prog_map[p]["conducted"] += 1
 
+        tt = (r.training_type or "").strip() or "Unspecified"
+        if tt not in type_map:
+            type_map[tt] = {"planned": 0, "conducted": 0}
+        type_map[tt]["planned"] += 1
+        if _st(r) == "completed":
+            type_map[tt]["conducted"] += 1
+
     prog_coverage = sorted(
         [{"program": p, "planned": v["planned"], "conducted": v["conducted"],
           "pct": round(v["conducted"]/v["planned"]*100) if v["planned"] else 0}
          for p, v in prog_map.items()],
         key=lambda x: -x["planned"]
     )[:8]
+
+    type_coverage = sorted(
+        [{"type": t, "planned": v["planned"], "conducted": v["conducted"],
+          "pct": round(v["conducted"]/v["planned"]*100) if v["planned"] else 0}
+         for t, v in type_map.items()],
+        key=lambda x: -x["planned"]
+    )
 
     # ---------- Zone-wise table ----------
     # Normalize zone names (case-insensitive) to avoid duplicate rows (e.g. ZONE-3 vs Zone-3)
@@ -3573,6 +3588,7 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
         "coverage": coverage,
         "monthly_trend": trend,
         "program_coverage": prog_coverage,
+        "type_coverage": type_coverage,
         "zone_table": zone_table,
         "upcoming_trainings": upcoming_list,
         "insights": insights,

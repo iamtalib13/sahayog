@@ -15257,10 +15257,13 @@
                 '</div>',
               '</div>',
 
-              /* Program Distribution */
+              /* Program / Type Distribution */
               '<div class="db-card" style="justify-content:flex-start;">',
                 '<div>',
-                  '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Program Distribution</div><div class="db-sec-sub">Vertical-wise</div></div>',
+                  '<div class="db-sec-head" style="align-items:center;margin-bottom:6px;">',
+                    '<div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Distribution</div>',
+                    '<div class="db-cov-tabs" style="margin-bottom:0;width:124px;"><div class="db-cov-tab active" data-dbdist="program">Program</div><div class="db-cov-tab" data-dbdist="type">Type</div></div>',
+                  '</div>',
                   '<div style="position:relative;height:110px;margin-bottom:6px;"><canvas id="db-prog-chart"></canvas></div>',
                   '<div id="db-prog-legend" class="db-prog-leg"></div>',
                 '</div>',
@@ -15429,6 +15432,16 @@
             });
           }
 
+          /* Distribution tab switching (Program vs Type) */
+          document.querySelectorAll("[data-dbdist]").forEach(function(tab) {
+            tab.onclick = function() {
+              document.querySelectorAll("[data-dbdist]").forEach(function(t){ t.classList.remove("active"); });
+              tab.classList.add("active");
+              dbActiveDistTab = tab.dataset.dbdist || "program";
+              dbRenderDistribution();
+            };
+          });
+
           var viewAllBtn = document.getElementById("db-view-all-upcoming");
           if (viewAllBtn) {
             viewAllBtn.addEventListener("click", function (e) {
@@ -15558,7 +15571,9 @@
             dbRenderKPIs(d.kpis||{});
             dbRenderCoverage(d.coverage||{});
             dbRenderTrend(d.monthly_trend||[], d.kpis||{}, meta);
-            dbRenderProgChart(d.program_coverage||[]);
+            dbCurrentProgCoverage = d.program_coverage || [];
+            dbCurrentTypeCoverage = d.type_coverage || [];
+            dbRenderDistribution();
             dbRenderZoneTable(d.zone_table||[]);
             dbRenderUpcoming(d.upcoming_trainings||[]);
             dbRenderInsights(d.insights||[]);
@@ -15695,6 +15710,78 @@
               '<span>'+it.label+': <b>'+it.val+'</b></span>'+
               '</div>';
           }).join("");
+        }
+
+        var dbCurrentProgCoverage = [];
+        var dbCurrentTypeCoverage = [];
+        var dbActiveDistTab = "program";
+
+        function dbRenderDistribution() {
+          if (dbActiveDistTab === "type") {
+            dbRenderTypeChart(dbCurrentTypeCoverage || []);
+          } else {
+            dbRenderProgChart(dbCurrentProgCoverage || []);
+          }
+        }
+
+        function dbRenderTypeChart(types) {
+          var canvas = document.getElementById("db-prog-chart");
+          if (!canvas || typeof Chart === "undefined") return;
+          if (dbProgChart) { try { dbProgChart.destroy(); } catch(e){} }
+          var leg = document.getElementById("db-prog-legend");
+          if (!types || !types.length) {
+            if (leg) leg.innerHTML = '<div style="color:var(--ink-3);text-align:center;font-size:11.5px;">No data</div>';
+            return;
+          }
+          var TYPE_COLORS = { "Classroom": "#0d9488", "Virtual": "#2563eb", "Unspecified": "#94a3b8" };
+          var sorted = types.map(function(t, i) {
+            var val = t.conducted || t.planned || 0;
+            var col = TYPE_COLORS[t.type] || DB_COLORS[i % DB_COLORS.length];
+            return { label: t.type, value: val, planned: t.planned, conducted: t.conducted, color: col };
+          }).sort(function(a,b){ return b.value - a.value; });
+
+          var total = sorted.reduce(function(a,b){ return a + b.value; }, 0);
+
+          dbProgChart = new Chart(canvas.getContext("2d"), {
+            type: "doughnut",
+            data: {
+              labels: sorted.map(function(s){ return s.label; }),
+              datasets: [{
+                data: sorted.map(function(s){ return s.value; }),
+                backgroundColor: sorted.map(function(s){ return s.color; }),
+                borderWidth: 2,
+                borderColor: "#fff",
+                cutout: "65%"
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: function(ctx) {
+                      var pct = total ? Math.round(ctx.raw / total * 100) : 0;
+                      return ctx.label + ": " + ctx.raw + " (" + pct + "%)";
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          if (leg) {
+            leg.innerHTML = sorted.map(function(s) {
+              var pct = total ? Math.round(s.value / total * 100) : 0;
+              return '<div class="db-prog-row" title="' + dbEsc(s.label) + '">' +
+                '<span style="width:9px;height:9px;border-radius:50%;background:' + s.color + ';flex-shrink:0;display:inline-block;"></span>' +
+                '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">' + dbEsc(s.label) + '</span>' +
+                '<span style="font-weight:700;color:var(--ink-1);">' + s.value + '</span>' +
+                '<span style="color:var(--ink-3);min-width:32px;text-align:right;">(' + pct + '%)</span>' +
+              '</div>';
+            }).join("");
+          }
         }
 
         function dbRenderProgChart(progs) {
