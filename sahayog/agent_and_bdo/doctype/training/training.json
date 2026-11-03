@@ -30,6 +30,7 @@
   "section_break_participants",
   "participants",
   "number_of_participants",
+  "number_of_participants_attended",
   "section_break_status",
   "column_break_status",
   "status",
@@ -204,6 +205,13 @@
    "fieldname": "number_of_participants",
    "fieldtype": "Int",
    "label": "Number of Participants"
+  },
+  {
+   "default": "0",
+   "description": "Actual headcount who attended the training",
+   "fieldname": "number_of_participants_attended",
+   "fieldtype": "Int",
+   "label": "Participants Attended"
   },
   {
    "fieldname": "section_break_status",
