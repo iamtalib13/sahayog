@@ -15198,8 +15198,17 @@
                   '<button id="db-next-month" title="Next month" style="width:26px;height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M9 18l6-6-6-6"/></svg></button>',
                 '</div>',
                 '<span style="font-size:11px;font-weight:600;color:var(--ink-2);margin-left:6px;">Trainer:</span>',
-                '<select id="db-trainer-filter" style="height:26px;max-width:170px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:0 6px;font-size:11.5px;font-weight:600;color:var(--ink-1);outline:none;cursor:pointer;"><option value="">All trainers</option></select>',
-                '<button id="db-trainer-clear" title="Clear trainer filter" style="display:none;width:22px;height:22px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;font-size:12px;line-height:1;">&times;</button>',
+                '<div id="db-trainer-combobox" style="position:relative;display:inline-block;">',
+                  '<div style="display:flex;align-items:center;position:relative;">',
+                    '<input type="text" id="db-trainer-search" placeholder="Select or search trainer…" autocomplete="off" style="height:26px;width:195px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:0 24px 0 8px;font-size:11.5px;font-weight:600;color:var(--ink-1);outline:none;cursor:pointer;">',
+                    '<span id="db-trainer-arrow" style="position:absolute;right:6px;pointer-events:none;color:var(--ink-3);display:flex;align-items:center;">',
+                      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><path d="M6 9l6 6 6-6"/></svg>',
+                    '</span>',
+                  '</div>',
+                  '<div id="db-trainer-dropdown" style="display:none;position:absolute;top:100%;left:0;width:260px;max-height:220px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 6px 18px rgba(0,0,0,0.12);z-index:1050;margin-top:3px;"></div>',
+                  '<select id="db-trainer-filter" style="display:none;"><option value="">All trainers</option></select>',
+                  '<button id="db-trainer-clear" title="Clear trainer filter" style="display:none;width:22px;height:22px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;font-size:12px;line-height:1;">&times;</button>',
+                '</div>',
               '</div>',
               '<div id="db-period-label" style="font-size:12px;font-weight:600;color:var(--ink-2);"></div>',
             '</div>',
@@ -15374,8 +15383,49 @@
               dbSelectedTrainer = "";
               var sel = document.getElementById("db-trainer-filter");
               if (sel) sel.value = "";
+              var searchInput = document.getElementById("db-trainer-search");
+              if (searchInput) searchInput.value = "";
               this.style.display = "none";
               refreshDashboard();
+            });
+          }
+
+          var searchInput = document.getElementById("db-trainer-search");
+          var drop = document.getElementById("db-trainer-dropdown");
+          if (searchInput && drop) {
+            function filterTrainers() {
+              var q = (searchInput.value || "").trim().toLowerCase();
+              if (!q) {
+                renderDbTrainerDropdown(dbTrainersList);
+                return;
+              }
+              var filtered = dbTrainersList.filter(function(t) {
+                var nameMatch = (t.name || "").toLowerCase().indexOf(q) !== -1;
+                var idMatch = (t.employee_id || "").toLowerCase().indexOf(q) !== -1;
+                var numMatch = (t.employee_number || "").toLowerCase().indexOf(q) !== -1;
+                return nameMatch || idMatch || numMatch;
+              });
+              renderDbTrainerDropdown(filtered);
+            }
+
+            searchInput.addEventListener("focus", function () {
+              drop.style.display = "block";
+              filterTrainers();
+            });
+            searchInput.addEventListener("click", function () {
+              drop.style.display = "block";
+              filterTrainers();
+            });
+            searchInput.addEventListener("input", function () {
+              drop.style.display = "block";
+              filterTrainers();
+            });
+
+            document.addEventListener("click", function (e) {
+              var combobox = document.getElementById("db-trainer-combobox");
+              if (combobox && !combobox.contains(e.target)) {
+                drop.style.display = "none";
+              }
             });
           }
 
@@ -15406,11 +15456,52 @@
         }
         window.viewAllUpcomingTrainings = viewAllUpcomingTrainings;
 
+        var dbTrainersList = [];
+
+        function renderDbTrainerDropdown(list) {
+          var drop = document.getElementById("db-trainer-dropdown");
+          if (!drop) return;
+          if (!list || !list.length) {
+            drop.innerHTML = '<div style="padding:8px 12px;font-size:11.5px;color:var(--ink-3);font-style:italic;">No trainers found</div>';
+            return;
+          }
+          var html = '<div class="db-trainer-opt" data-tid="" style="padding:6px 10px;font-size:11.5px;font-weight:600;color:var(--ink-2);cursor:pointer;border-bottom:1px solid var(--border);background:var(--surface);">All trainers</div>';
+          list.forEach(function(t) {
+            var empId = t.employee_number || t.employee_id || "";
+            html += '<div class="db-trainer-opt" data-tid="' + esc(t.employee_id || t.name) + '" data-tname="' + esc(t.name) + '" style="padding:6px 10px;cursor:pointer;display:flex;flex-direction:column;gap:1px;border-bottom:1px solid rgba(0,0,0,0.04);background:var(--surface);">' +
+              '<div style="font-size:12px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+                '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.name) + '</span>' +
+                (empId ? '<span style="font-size:10.5px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);padding:1px 5px;border-radius:4px;flex-shrink:0;">' + esc(empId) + '</span>' : '') +
+              '</div>' +
+              (t.branch ? '<div style="font-size:10.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.branch) + (t.department ? ' · ' + esc(t.department) : '') + '</div>' : '') +
+            '</div>';
+          });
+          drop.innerHTML = html;
+
+          drop.querySelectorAll(".db-trainer-opt").forEach(function(el) {
+            el.addEventListener("mouseenter", function() { el.style.background = "var(--surface-2)"; });
+            el.addEventListener("mouseleave", function() { el.style.background = "var(--surface)"; });
+            el.addEventListener("click", function(e) {
+              e.stopPropagation();
+              var tid = el.dataset.tid;
+              var searchInput = document.getElementById("db-trainer-search");
+              if (searchInput) {
+                searchInput.value = el.dataset.tname || "";
+              }
+              drop.style.display = "none";
+              if (tid) {
+                openTrainerDashboard(tid);
+                if (searchInput) searchInput.value = "";
+              }
+            });
+          });
+        }
+
         function dbLoadTrainerOptions() {
           var sel = document.getElementById("db-trainer-filter");
-          if (!sel) return;
+          var searchInput = document.getElementById("db-trainer-search");
           var isAdmin = (state.role === "ld_admin");
-          api("get_trainers_list", { page_size: 100 }).then(function(res){
+          api("get_trainers_list", { page_size: 200 }).then(function(res){
             var trainers = (res && res.trainers) ? res.trainers : [];
             // non-admin: only self
             if (!isAdmin) {
@@ -15420,21 +15511,25 @@
             }
             // sort by name
             trainers.sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
-            // rebuild options
-            sel.innerHTML = "";
-            var o0 = document.createElement("option"); o0.value=""; o0.textContent = isAdmin ? "All trainers" : "My dashboard"; sel.appendChild(o0);
-            trainers.forEach(function(t){
-              var op = document.createElement("option");
-              op.value = t.employee_id || t.name;
-              op.textContent = t.name + (t.branch ? " · " + t.branch : "");
-              sel.appendChild(op);
-            });
+            dbTrainersList = trainers;
+            renderDbTrainerDropdown(trainers);
+
+            if (sel) {
+              sel.innerHTML = "";
+              var o0 = document.createElement("option"); o0.value=""; o0.textContent = isAdmin ? "All trainers" : "My dashboard"; sel.appendChild(o0);
+              trainers.forEach(function(t){
+                var op = document.createElement("option");
+                op.value = t.employee_id || t.name;
+                op.textContent = t.name + (t.branch ? " · " + t.branch : "");
+                sel.appendChild(op);
+              });
+            }
+
             if (!isAdmin && trainers.length) {
-              sel.value = trainers[0].employee_id || trainers[0].name;
-              dbSelectedTrainer = sel.value;
-              var clearBtn = document.getElementById("db-trainer-clear");
-              if (clearBtn) clearBtn.style.display = "none";
-              sel.disabled = true;
+              if (searchInput) {
+                searchInput.value = trainers[0].name;
+                searchInput.disabled = true;
+              }
             }
           }).catch(function(){});
         }
