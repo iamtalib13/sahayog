@@ -48,6 +48,7 @@ def has_bm_verification_permission(user=None):
     allowed_roles = {
         "Administrator",
         "System Manager",
+        "BM Lead Verifier",
     }
     if any(r in roles for r in allowed_roles):
         return True
