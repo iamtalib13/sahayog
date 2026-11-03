@@ -15777,7 +15777,7 @@
             '<div class="db-card">' +
               '<div class="db-sec-head"><div class="db-sec-title">Zone-wise Coverage</div></div>' +
               '<div style="overflow-x:auto;"><table class="report-table" style="font-size:11.5px;"><thead><tr><th>Zone</th><th>Planned</th><th>Conducted</th><th>Participants</th></tr></thead><tbody>' +
-                (d.zone_coverage||[]).map(function(z){ return '<tr><td style="font-weight:600;">'+esc(z.zone)+'</td><td>'+z.planned+'</td><td>'+z.conducted+'</td><td>'+z.participants+'</td></tr>'; }).join("") +
+                (d.zone_coverage||[]).slice().sort(function(a,b){ var na=parseInt((a.zone||'').replace(/\D/g,''),10)||999, nb=parseInt((b.zone||'').replace(/\D/g,''),10)||999; return na-nb; }).map(function(z){ return '<tr><td style="font-weight:600;">'+esc(z.zone)+'</td><td>'+z.planned+'</td><td>'+z.conducted+'</td><td>'+z.participants+'</td></tr>'; }).join("") +
                 ((d.zone_coverage||[]).length ? '' : '<tr><td colspan="4" class="db-empty">No data.</td></tr>') +
               '</tbody></table></div>' +
             '</div>' +
