@@ -543,6 +543,7 @@ function toggleBMVerificationSection(frm) {
   const is_manager_role =
     is_admin ||
     user_roles.includes("System Manager") ||
+    user_roles.includes("BM Lead Verifier") ||
     user_roles.includes("Branch Manager") ||
     user_roles.includes("Operations Support Manager") ||
     user_roles.includes("Sales Manager");
