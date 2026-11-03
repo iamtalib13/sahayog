@@ -15192,7 +15192,11 @@
                   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:#005a60;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
                   'Training Period:',
                 '</span>',
-                '<input type="month" id="db-month-picker" value="'+mv+'" style="height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:0 8px;font-size:12px;font-weight:600;color:var(--ink-1);outline:none;cursor:pointer;">',
+                '<div style="display:inline-flex;align-items:center;gap:3px;">',
+                  '<button id="db-prev-month" title="Previous month" style="width:26px;height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M15 18l-6-6 6-6"/></svg></button>',
+                  '<input type="month" id="db-month-picker" value="'+mv+'" style="height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:0 8px;font-size:12px;font-weight:600;color:var(--ink-1);outline:none;cursor:pointer;">',
+                  '<button id="db-next-month" title="Next month" style="width:26px;height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M9 18l6-6-6-6"/></svg></button>',
+                '</div>',
                 '<span style="font-size:11px;font-weight:600;color:var(--ink-2);margin-left:6px;">Trainer:</span>',
                 '<select id="db-trainer-filter" style="height:26px;max-width:170px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:0 6px;font-size:11.5px;font-weight:600;color:var(--ink-1);outline:none;cursor:pointer;"><option value="">All trainers</option></select>',
                 '<button id="db-trainer-clear" title="Clear trainer filter" style="display:none;width:22px;height:22px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;font-size:12px;line-height:1;">&times;</button>',
@@ -15303,6 +15307,33 @@
         function bindDashboardEvents() {
           var picker = document.getElementById("db-month-picker");
           var currBtn = document.getElementById("db-current-month");
+          var prevBtn = document.getElementById("db-prev-month");
+          var nextBtn = document.getElementById("db-next-month");
+
+          function updateDbMonth(y, m) {
+            dbSelectedYear = y;
+            dbSelectedMonth = m;
+            if (picker) {
+              picker.value = y + "-" + String(m).padStart(2, "0");
+            }
+            refreshDashboard();
+          }
+
+          if (prevBtn) {
+            prevBtn.addEventListener("click", function () {
+              var m = dbSelectedMonth - 1, y = dbSelectedYear;
+              if (m < 1) { m = 12; y--; }
+              updateDbMonth(y, m);
+            });
+          }
+
+          if (nextBtn) {
+            nextBtn.addEventListener("click", function () {
+              var m = dbSelectedMonth + 1, y = dbSelectedYear;
+              if (m > 12) { m = 1; y++; }
+              updateDbMonth(y, m);
+            });
+          }
 
           if (picker) {
             picker.addEventListener("change", function () {
@@ -15317,10 +15348,7 @@
           if (currBtn) {
             currBtn.addEventListener("click", function () {
               var now = new Date();
-              dbSelectedYear = now.getFullYear();
-              dbSelectedMonth = now.getMonth() + 1;
-              syncDbMonthPicker();
-              refreshDashboard();
+              updateDbMonth(now.getFullYear(), now.getMonth() + 1);
             });
           }
 
