@@ -6,7 +6,7 @@
     <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
-    <!-- v=20261102-1714 -->
+    <!-- v=20261103-1615 -->
     <meta http-equiv="Expires" content="0" />
     <title>L&amp;D Training Calendar</title>
     <style>
@@ -6892,6 +6892,28 @@
                         min="0"
                       />
                     </div>
+                    <div class="fx-row2">
+                      <div class="fx-field">
+                        <span class="fx-label">Expected Participants</span>
+                        <input
+                          type="number"
+                          class="fx-input"
+                          id="new-expected-count"
+                          placeholder="e.g. 30"
+                          min="0"
+                        />
+                      </div>
+                      <div class="fx-field">
+                        <span class="fx-label">Participants Attended</span>
+                        <input
+                          type="number"
+                          class="fx-input"
+                          id="new-attended-count"
+                          placeholder="e.g. 25"
+                          min="0"
+                        />
+                      </div>
+                    </div>
                     <!-- Schedule preview + conflict hint: hidden for now (validation toasts still active)
               <div class="fx-preview" id="new-schedule-preview">Select date and time</div>
               <div class="fx-alert" id="sched-alert" style="display:none">
@@ -8875,6 +8897,9 @@
             ((ev.number_of_participants || 0)
               ? metaRow("Expected Participants", ev.number_of_participants)
               : "") +
+            ((ev.number_of_participants_attended || 0)
+              ? metaRow("Attended", ev.number_of_participants_attended)
+              : "") +
             ((ev.program_duration_hours || 0)
               ? metaRow(
                   "Duration",
@@ -9440,15 +9465,23 @@
           });
           return s;
         }
-        function attendanceSummaryHTML(s, isAgent) {
-          if (!s.total)
+        function attendanceSummaryHTML(s, isAgent, attendedCount) {
+          if (!s.total) {
+            if (attendedCount != null && attendedCount > 0) {
+              return '<span class="att-summary" style="color:var(--green);font-weight:600;">' + attendedCount + ' Attended</span>';
+            }
             return '<span class="att-summary">No participants</span>';
+          }
           if (isAgent === false) {
+            var attTxt = (attendedCount != null && attendedCount > 0)
+              ? ' · <b style="color:var(--green);">' + attendedCount + ' Attended</b>'
+              : '';
             return (
               '<span class="att-summary">' +
               s.total +
               ' Employee' +
               (s.total === 1 ? '' : 's') +
+              attTxt +
               '</span>'
             );
           }
@@ -9486,12 +9519,34 @@
         }
         function attendanceRowsHTML(ev, editable) {
           var list = ev.participant_list || [];
-          if (!list.length)
-            return '<div style="font-size:13px;color:var(--ink-3)">No participants added.</div>';
           var isAgent = list.some(function(p) { return p.reference_doctype === "Agent"; });
-          /* Employee participants: attendance is not marked, render clean list */
-          if (!isAgent) {
+          /* Employee participants (or trainings without agent participants):
+             attendance is not marked row-by-row. Show attended headcount card. */
+          if (!list.length || !isAgent) {
+            var attendedVal = ev.number_of_participants_attended || 0;
+            var isDone = completionScore(ev) === 5;
+            var canEditAtt = editable && !isDone;
+            var empAttBox =
+              '<div class="emp-att-box" style="margin-bottom:12px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
+                '<div>' +
+                  '<div style="font-size:12.5px;font-weight:600;color:var(--ink-1);">Participants Attended</div>' +
+                  '<div style="font-size:11px;color:var(--ink-3);">' + (list.length ? "Employee attendance headcount" : "Headcount who attended") + '</div>' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:6px;">' +
+                  (canEditAtt
+                    ? '<input type="number" id="drw-emp-attended" min="0" value="' + (attendedVal || '') + '" placeholder="0" style="width:75px;height:28px;padding:0 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;background:var(--surface);" />' +
+                      '<button type="button" class="btn btn-primary" id="btn-save-emp-attended" style="height:28px;padding:0 10px;font-size:12px;">Save</button>'
+                    : '<span style="font-size:14px;font-weight:700;color:var(--green);">' + (attendedVal || 0) + ' Attended</span>'
+                  ) +
+                '</div>' +
+              '</div>';
+
+            if (!list.length) {
+              return empAttBox + '<div style="font-size:13px;color:var(--ink-3)">No participants added.</div>';
+            }
+
             return (
+              empAttBox +
               '<div class="att-compact">' +
               list
                 .map(function (p) {
@@ -9574,6 +9629,7 @@
             summary = attendanceSummaryHTML(
               attendanceSummary(ev.participant_list),
               ev.participant_list.length ? isAgt : undefined,
+              ev.number_of_participants_attended
             );
             inner = attendanceRowsHTML(ev, editable);
           }
@@ -9599,6 +9655,7 @@
               s0.innerHTML = attendanceSummaryHTML(
                 attendanceSummary(ev.participant_list),
                 ev.participant_list.length ? isAgt0 : undefined,
+                ev.number_of_participants_attended
               );
             }
             refreshCheckLocks(ev);
@@ -9609,6 +9666,8 @@
               ev.participant_list = full.participant_list || [];
               if (full.participants != null)
                 ev.participants = full.participants;
+              if (full.number_of_participants_attended != null)
+                ev.number_of_participants_attended = full.number_of_participants_attended;
               var b = document.getElementById("drw-attendance");
               if (!b) return;
               b.innerHTML = attendanceRowsHTML(ev, editable);
@@ -9619,6 +9678,7 @@
                 s.innerHTML = attendanceSummaryHTML(
                   attendanceSummary(ev.participant_list),
                   ev.participant_list.length ? isAgt : undefined,
+                  ev.number_of_participants_attended
                 );
               }
               refreshCheckLocks(ev);
@@ -9631,6 +9691,51 @@
             });
         }
         function bindAttendanceButtons(ev) {
+          var empSaveBtn = document.getElementById("btn-save-emp-attended");
+          var empInp = document.getElementById("drw-emp-attended");
+          if (empSaveBtn && empInp) {
+            var doSaveEmp = function () {
+              var raw = empInp.value.trim();
+              var val = raw === "" ? 0 : parseInt(raw, 10);
+              if (isNaN(val) || val < 0) {
+                showToast("Participants Attended must be 0 or more");
+                return;
+              }
+              empSaveBtn.disabled = true;
+              api("update_training_status", {
+                training_name: ev.name,
+                field: "number_of_participants_attended",
+                value: val,
+              })
+                .then(function () {
+                  ev.number_of_participants_attended = val;
+                  showToast("Attended count saved (" + val + ")");
+                  empSaveBtn.disabled = false;
+                  var s = document.getElementById("drw-att-summary");
+                  if (s && ev.participant_list) {
+                    var isAgt = ev.participant_list.some(function (p) {
+                      return p.reference_doctype === "Agent";
+                    });
+                    s.innerHTML = attendanceSummaryHTML(
+                      attendanceSummary(ev.participant_list),
+                      ev.participant_list.length ? isAgt : undefined,
+                      val
+                    );
+                  }
+                })
+                .catch(function (err) {
+                  empSaveBtn.disabled = false;
+                  showToast("Could not save: " + ((err && err.message) || err));
+                });
+            };
+            empSaveBtn.onclick = doSaveEmp;
+            empInp.onkeydown = function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                doSaveEmp();
+              }
+            };
+          }
           document
             .querySelectorAll("#drw-attendance .att-row")
             .forEach(function (row) {
@@ -9801,6 +9906,23 @@
             });
           }
 
+          var empAttEl = document.getElementById("drw-emp-attended");
+          if (!isDoneSave && empAttEl) {
+            var rawAtt = empAttEl.value.trim();
+            var newAtt = rawAtt === "" ? 0 : parseInt(rawAtt, 10);
+            if (!isNaN(newAtt) && newAtt >= 0 && newAtt !== (ev.number_of_participants_attended || 0)) {
+              tasks.push(function () {
+                return api("update_training_status", {
+                  training_name: ev.name,
+                  field: "number_of_participants_attended",
+                  value: newAtt,
+                }).then(function () {
+                  ev.number_of_participants_attended = newAtt;
+                });
+              });
+            }
+          }
+
           var canBudget = state.role === "ld_admin" || isOwnTraining(ev);
           var budgetTasks = [];
           if (canBudget && !isDoneSave) {
@@ -9948,6 +10070,8 @@
           if (typeof updateMandaysChip === "function") updateMandaysChip(0);
           var expCreateEl = document.getElementById("new-expected-count");
           if (expCreateEl) expCreateEl.value = "";
+          var attCreateEl = document.getElementById("new-attended-count");
+          if (attCreateEl) attCreateEl.value = "";
           ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
             function (id) {
               var el = document.getElementById(id);
@@ -10296,6 +10420,7 @@
           }
           f("new-training-type", ev.training_type || "");
           f("new-expected-count", ev.number_of_participants != null ? ev.number_of_participants : "");
+          f("new-attended-count", ev.number_of_participants_attended != null ? ev.number_of_participants_attended : "");
           // L&D Admin can reschedule any training.
           // Trainers can reschedule their own trainings (owner or trainer match).
           var canResched = state.role === "ld_admin" || (state.role === "trainer" && isOwnTraining(ev));
@@ -10304,7 +10429,7 @@
           var isDone = completionScore(ev) === 5;
           if (isDone) canResched = false;
           var canEditTime = !isDone && (canResched || ownDone);
-          ["new-from-date", "new-to-date", "new-expected-count", "new-duration"].forEach(
+          ["new-from-date", "new-to-date", "new-expected-count", "new-attended-count", "new-duration"].forEach(
             function (id) {
               var el = document.getElementById(id);
               if (el) {
@@ -10814,6 +10939,13 @@
             return;
           }
           var expChanged = expEl ? expVal !== (ev.number_of_participants || 0) : false;
+          var attEl = document.getElementById("new-attended-count");
+          var attVal = attEl ? (attEl.value.trim() === "" ? 0 : parseInt(attEl.value.trim(), 10)) : (ev.number_of_participants_attended || 0);
+          if (isNaN(attVal) || attVal < 0) {
+            showToast("Participants Attended must be 0 or more");
+            return;
+          }
+          var attChanged = attEl ? attVal !== (ev.number_of_participants_attended || 0) : false;
           var durEl2 = document.getElementById("new-duration");
           var durRaw = durEl2 ? durEl2.value.trim() : "";
           var durVal = durRaw === "" ? null : parseFloat(durRaw);
@@ -10830,7 +10962,7 @@
           var geoChanged = beforeGeo !== afterGeo;
           var adhocVal = document.getElementById("new-adhoc").checked ? 1 : 0;
           var adhocChanged = !isDoneSave && adhocVal !== (ev.is_adhoc ? 1 : 0);
-          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged || adhocChanged || durChanged)) {
+          if (!isDoneSave && (scheduleChanged || expChanged || attChanged || geoChanged || adhocChanged || durChanged)) {
             if (!fromDate) {
               showToast("From Date is required");
               return;
@@ -10882,6 +11014,7 @@
                 training_type: trainingType || null,
                 training_location: trainingLocation || null,
                 number_of_participants: expChanged ? expVal : null,
+                number_of_participants_attended: attChanged ? attVal : null,
                 geographies: geoChanged ? JSON.stringify(state.selectedGeographies) : null,
                 is_adhoc: adhocChanged ? adhocVal : null,
                 program_duration_hours: durChanged ? durVal : null,
@@ -10895,6 +11028,7 @@
                 ev.training_location = trainingLocation;
                 ev.is_adhoc = adhocVal;
                 if (expChanged) ev.number_of_participants = expVal;
+                if (attChanged) ev.number_of_participants_attended = attVal;
                 if (durChanged) ev.program_duration_hours = durVal;
                 /* ev.geographies refreshes from the get_training_details
                    refetch after save — no manual merge needed. */
@@ -11340,6 +11474,10 @@
             trainer_remarks: agenda.trim() || null,
             additional_cc: null, /* managed via Mail Recipients dialog in edit mode */
             is_adhoc: isAdhoc,
+            number_of_participants:
+              (document.getElementById("new-expected-count") || {}).value || null,
+            number_of_participants_attended:
+              (document.getElementById("new-attended-count") || {}).value || null,
             program_duration_hours:
               (document.getElementById("new-duration") || {}).value || null,
             participants: JSON.stringify(state.selectedParticipants),
