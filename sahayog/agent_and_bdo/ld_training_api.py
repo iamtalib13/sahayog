@@ -23,6 +23,7 @@ CALENDAR_FIELDS = [
     "name", "training_program", "from_date", "to_date", "start_time", "end_time",
     "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
     "is_adhoc", "docstatus", "status", "trainer_remarks", "number_of_participants",
+    "number_of_participants_attended",
     "program_duration_hours",
     "training_delivered", "attendance_marked",
     "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
@@ -624,6 +625,7 @@ def get_calendar_data(year, month, zone=None, region=None, district=None, branch
             "branches": branches,
             "participants": participants.get(r.name, 0),
             "number_of_participants": r.number_of_participants or 0,
+            "number_of_participants_attended": r.number_of_participants_attended or 0,
             "program_duration_hours": r.program_duration_hours or 0,
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
@@ -742,6 +744,7 @@ def get_training_list(
             "branches": branches,
             "participants": participants.get(r.name, 0),
             "number_of_participants": r.number_of_participants or 0,
+            "number_of_participants_attended": r.number_of_participants_attended or 0,
             "program_duration_hours": r.program_duration_hours or 0,
             "is_adhoc": r.is_adhoc or 0,
             "docstatus": r.docstatus,
@@ -891,7 +894,7 @@ def create_training(**kwargs):
         "trainer", "training_location", "training_type", "zone", "region", "district", "branch",
         "trainer_remarks", "additional_cc", "training_delivered", "attendance_marked",
         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
-        "number_of_participants", "program_duration_hours",
+        "number_of_participants", "number_of_participants_attended", "program_duration_hours",
     }
     doc = frappe.new_doc("Training")
     participants = frappe.parse_json(kwargs.get("participants") or "[]")
@@ -906,6 +909,13 @@ def create_training(**kwargs):
             frappe.throw(_("Number of Participants must be a whole number."))
         if doc.number_of_participants < 0:
             frappe.throw(_("Number of Participants cannot be negative."))
+    if doc.get("number_of_participants_attended") not in (None, ""):
+        try:
+            doc.number_of_participants_attended = int(doc.number_of_participants_attended)
+        except (TypeError, ValueError):
+            frappe.throw(_("Participants Attended must be a whole number."))
+        if doc.number_of_participants_attended < 0:
+            frappe.throw(_("Participants Attended cannot be negative."))
     if doc.start_time:
         doc.start_time = _normalize_time(doc.start_time)
     if doc.end_time:
@@ -972,9 +982,9 @@ def create_training(**kwargs):
 def update_training_status(training_name, field, value):
     """
     Trainer updates a completion checkpoint after conducting the training.
-    Allowed: the 5 completion fields or trainer_remarks.
+    Allowed: the 5 completion fields, trainer_remarks, or number_of_participants_attended.
     """
-    if field not in (*COMPLETION_FIELDS, "trainer_remarks"):
+    if field not in (*COMPLETION_FIELDS, "trainer_remarks", "number_of_participants_attended"):
         frappe.throw(_("Field '{0}' is not allowed for status update.").format(field))
 
     doc = frappe.get_doc("Training", training_name)
@@ -1002,6 +1012,14 @@ def update_training_status(training_name, field, value):
 
     if field == "trainer_remarks":
         frappe.db.set_value("Training", training_name, "trainer_remarks", value)
+    elif field == "number_of_participants_attended":
+        try:
+            val = int(value or 0)
+        except (TypeError, ValueError):
+            val = 0
+        if val < 0:
+            frappe.throw(_("Participants Attended cannot be negative."))
+        frappe.db.set_value("Training", training_name, "number_of_participants_attended", val)
     else:
         frappe.db.set_value("Training", training_name, field, int(bool(value)))
 
@@ -1554,7 +1572,7 @@ def get_mis_report(
         rows = frappe.db.sql(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
             "t.trainer, t.is_adhoc, t.training_type, t.start_time, t.end_time, t.trainer_remarks, "
-            "t.program_duration_hours, "
+            "t.program_duration_hours, t.number_of_participants, t.number_of_participants_attended, "
             "p.idx, p.reference_doctype, p.agent_employee, p.full_name, p.attendance_status "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC "
@@ -1566,7 +1584,7 @@ def get_mis_report(
         rows = frappe.db.sql(
             "SELECT t.name AS training_name, t.training_program, t.from_date, t.to_date, "
             "t.trainer, t.is_adhoc, t.training_type, t.start_time, t.end_time, t.trainer_remarks, "
-            "t.program_duration_hours, "
+            "t.program_duration_hours, t.number_of_participants, t.number_of_participants_attended, "
             "p.idx, p.reference_doctype, p.agent_employee, p.full_name, p.attendance_status "
             + base
             + " ORDER BY t.from_date ASC, t.start_time ASC, p.idx ASC",
@@ -1628,7 +1646,40 @@ def get_mis_report(
         # Attendance % is per-training (present ÷ invited), repeated on each row.
         _b = _att.get(r.training_name, {"Present": 0, "Absent": 0, "Unmarked": 0})
         _inv = _b.get("Present", 0) + _b.get("Absent", 0) + _b.get("Unmarked", 0)
-        _pct = round(_b.get("Present", 0) * 100 / _inv, 1) if _inv else ""
+        _present = _b.get("Present", 0)
+
+        # Fallback to training-level headcount when child rows have no participants
+        # or when child rows exist but attendance was not individually marked.
+        try:
+            _expected = int(r.number_of_participants or 0)
+        except (TypeError, ValueError):
+            _expected = 0
+        try:
+            _manual_attended = int(r.number_of_participants_attended or 0)
+        except (TypeError, ValueError):
+            _manual_attended = 0
+
+        if not r.agent_employee:
+            # Training without individual participant rows (e.g. bulk-uploaded)
+            tot_present = _manual_attended if (_manual_attended > 0 or _expected > 0) else ""
+            tot_invited = max(_expected, _manual_attended) if (_expected or _manual_attended) else 0
+            _pct = round(_manual_attended * 100 / tot_invited, 1) if tot_invited else ""
+        else:
+            tot_present = 1 if r.attendance_status == "Present" else 0
+            if _inv:
+                if _present > 0:
+                    _pct = round(_present * 100 / _inv, 1)
+                elif _manual_attended > 0:
+                    tot_invited = max(_inv, _expected)
+                    _pct = round(_manual_attended * 100 / tot_invited, 1) if tot_invited else ""
+                else:
+                    _pct = 0.0
+            elif _expected or _manual_attended:
+                tot_invited = _expected if _expected > 0 else _manual_attended
+                _pct = round(_manual_attended * 100 / tot_invited, 1) if tot_invited else ""
+            else:
+                _pct = ""
+
         # Duration: computed from times, else the stored program hours.
         _dur = _training_hours(r.start_time, r.end_time, no_of_days)
         if _dur == "":
@@ -1667,7 +1718,7 @@ def get_mis_report(
             "day_4": "",
             "day_5": "",
             "day_6": "",
-            "total_present": "" if not r.agent_employee else (1 if r.attendance_status == "Present" else 0),
+            "total_present": tot_present,
             "attendance_pct": _pct,
             "pre_test_score": "",
             "post_test_score": "",
@@ -1773,6 +1824,7 @@ def get_adherence_report(
         "t.trainer, t.zone, t.branch, t.training_location, t.status, t.docstatus, "
         "t.training_delivered, t.attendance_marked, t.pre_assessment_taken, "
         "t.post_assessment_taken, t.feedback_taken, t.number_of_participants, "
+        "t.number_of_participants_attended, "
         "t.trainer_remarks, t.budget_amount, t.actual_expense, t.closure_sent "
     )
     order = " ORDER BY t.from_date ASC, t.start_time ASC"
@@ -1843,6 +1895,18 @@ def get_adherence_report(
             expected = 0
         if expected > invited:
             invited = expected
+
+        attended = present
+        # For employee trainings (where individual attendance marking is off)
+        # or where present == 0, use manual headcount if entered:
+        manual_attended = int(getattr(t, "number_of_participants_attended", 0) or 0)
+        if not attended and manual_attended > 0:
+            attended = manual_attended
+            if not absent and invited >= attended:
+                absent = max(0, invited - attended)
+        if invited < attended:
+            invited = attended
+
         status = t.status or get_training_status(_row_tag(t))
         geos = geo_map.get(t.name, [])
         codes = [g["branch"] for g in geos if g["branch"]] or ([t.branch] if t.branch else [])
@@ -1867,7 +1931,7 @@ def get_adherence_report(
             "pre_assessment_taken": "Yes" if t.pre_assessment_taken else "No",
             "post_assessment_taken": "Yes" if t.post_assessment_taken else "No",
             "feedback_taken": "Yes" if t.feedback_taken else "No",
-            "participants_attended": present,
+            "participants_attended": attended,
             "closure_report_shared": "Yes" if t.closure_sent else "No",
             "absentee_count": absent,
             "absentee_pct": round(absent * 100 / invited, 1) if invited else "",
@@ -1947,7 +2011,8 @@ def get_trainer_performance_report(
     trainings = frappe.db.sql(
         "SELECT t.name, t.training_program, t.from_date, t.to_date, t.trainer, "
         "t.program_duration_hours, t.training_delivered, t.attendance_marked, "
-        "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status "
+        "t.pre_assessment_taken, t.post_assessment_taken, t.feedback_taken, t.status, "
+        "t.number_of_participants, t.number_of_participants_attended "
         "FROM `tabTraining` t WHERE {where} "
         "ORDER BY t.from_date ASC, t.start_time ASC".format(where=where),
         params,
@@ -1990,7 +2055,10 @@ def get_trainer_performance_report(
             a["pending"] += 1
         if end_str and end_str < today_str and status != "Completed":
             a["overdue"] += 1
-        a["participants"] += pcounts.get(t.name, 0)
+        p_cnt = pcounts.get(t.name, 0)
+        if not p_cnt:
+            p_cnt = int(t.number_of_participants_attended or t.number_of_participants or 0)
+        a["participants"] += p_cnt
         try:
             a["hours"] += float(t.program_duration_hours or 0)
         except (TypeError, ValueError):
@@ -2550,7 +2618,7 @@ def _replace_geographies(training_name, geographies):
 
 
 @frappe.whitelist()
-def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None, is_adhoc=None, program_duration_hours=None):
+def update_training_schedule(name, from_date=None, to_date=None, start_time=None, end_time=None, training_location=None, training_type=None, number_of_participants=None, geographies=None, is_adhoc=None, program_duration_hours=None, number_of_participants_attended=None):
     """
     Reschedule a training — L&D Admin can change anything; a trainer can
     reschedule only their own trainings (created by them or assigned to them).
@@ -2603,6 +2671,13 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
             frappe.throw(_("Number of Participants must be a whole number."))
         if updates["number_of_participants"] < 0:
             frappe.throw(_("Number of Participants cannot be negative."))
+    if number_of_participants_attended is not None:
+        try:
+            updates["number_of_participants_attended"] = int(number_of_participants_attended)
+        except (TypeError, ValueError):
+            frappe.throw(_("Participants Attended must be a whole number."))
+        if updates["number_of_participants_attended"] < 0:
+            frappe.throw(_("Participants Attended cannot be negative."))
     if is_adhoc is not None:
         updates["is_adhoc"] = 1 if str(is_adhoc).strip().lower() in ("1", "true", "yes") else 0
     if program_duration_hours is not None:
@@ -2791,6 +2866,8 @@ def bulk_upload_training(month=None):
                 col_idx.setdefault("program duration in hours", col_idx[_h])
             if _h.startswith("number of participants invited"):
                 col_idx.setdefault("number of participants", col_idx[_h])
+            if "attended" in _h:
+                col_idx.setdefault("participants attended", col_idx[_h])
 
         def get_val(row, *keys):
             for key in keys:
@@ -2897,7 +2974,8 @@ def bulk_upload_training(month=None):
             trainer_id = get_val(row, "Trainer ID")
             type_raw = get_val(row, "Training Type", "Type")
             duration_raw = get_val(row, "Training Days", "Training Duration", "Duration", "Duration (Days)")
-            count_raw = get_val(row, "Number of Participants", "No. of Participants", "Participants Count", "Participant Count")
+            count_raw = get_val(row, "Number of Participants", "No. of Participants", "Participants Count", "Participant Count", "Expected Participants", "Participants Invited")
+            attended_raw = get_val(row, "Participants Attended", "Number of Participants Attended", "No. of Participants Attended", "Attended Count", "Attended", "Actual Attended")
             location_raw = get_val(row, "Training Location", "Location", "Venue")
             hours_raw = get_val(row, "Program Duration in Hours", "Program Duration", "Duration in Hours", "Duration Hours")
 
@@ -3069,6 +3147,17 @@ def bulk_upload_training(month=None):
                 if count < 0:
                     errors.append(f"Row {i}: Number of Participants cannot be negative")
                     continue
+            if not attended_raw:
+                attended_count = 0
+            else:
+                try:
+                    attended_count = int(float(attended_raw))
+                except Exception:
+                    errors.append(f"Row {i}: Invalid Participants Attended '{attended_raw}'")
+                    continue
+                if attended_count < 0:
+                    errors.append(f"Row {i}: Participants Attended cannot be negative")
+                    continue
             # Program duration in hours: numbers only, blank allowed
             if not hours_raw:
                 hours = None
@@ -3091,6 +3180,7 @@ def bulk_upload_training(month=None):
                 "region": region_final,
                 "duration": duration,
                 "count": count,
+                "attended_count": attended_count,
                 "hours": hours,
                 "location": location_raw,
             })
@@ -3123,6 +3213,7 @@ def bulk_upload_training(month=None):
                 doc.training_type = t["training_type"]
                 doc.training_location = t["location"]
                 doc.number_of_participants = t["count"]
+                doc.number_of_participants_attended = t["attended_count"]
                 if t["hours"] is not None:
                     doc.program_duration_hours = t["hours"]
                 doc.start_time = ""
@@ -3170,10 +3261,10 @@ def get_bulk_upload_template():
     # One row = one training. No participant rows — headcount goes in
     # "Number of Participants". Duration auto-sets To Date in the app.
     # Sample uses real program / SOL ID / trainer ID values from the system.
-    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Zone", "Region", "Trainer ID", "Training Type", "Training Location", "Training Days", "Program Duration in Hours", "Number of Participants"]
+    header = ["S.No", "Training Date", "Program Name", "Branch Code", "Zone", "Region", "Trainer ID", "Training Type", "Training Location", "Training Days", "Program Duration in Hours", "Number of Participants", "Participants Attended"]
     sample = [
-        ["1", "28/09/2026", "Training SK", "1000", "ZONE-1", "HO", "1754", "Classroom", "GONDIA-HO", "3", "6", "20"],
-        ["2", "29/09/2026", "JLL Training", "1012", "ZONE-1", "REGION-1", "8751", "Virtual", "GONDIA", "1", "2", "15"],
+        ["1", "28/09/2026", "Training SK", "1000", "ZONE-1", "HO", "1754", "Classroom", "GONDIA-HO", "3", "6", "20", "18"],
+        ["2", "29/09/2026", "JLL Training", "1012", "ZONE-1", "REGION-1", "8751", "Virtual", "GONDIA", "1", "2", "15", "15"],
     ]
     import csv, io
     out = io.StringIO()
@@ -3950,7 +4041,7 @@ def get_trainer_dashboard_data(trainer=None, months=6, year=None, month=None):
 
     fields = ["name", "training_program", "from_date", "to_date", "start_time", "end_time",
               "training_type", "training_location", "zone", "region", "district", "branch",
-              "number_of_participants", "program_duration_hours", *COMPLETION_FIELDS,
+              "number_of_participants", "number_of_participants_attended", "program_duration_hours", *COMPLETION_FIELDS,
               "budget_amount", "actual_expense", "status_override"]
 
     rows = frappe.db.get_all(
@@ -4070,6 +4161,22 @@ def get_trainer_dashboard_data(trainer=None, months=6, year=None, month=None):
                 att_present += 1
             elif st == "absent":
                 att_absent += 1
+        # Also account for employee trainings where individual rows are not marked
+        parts_with_att = {p.parent for p in frappe.db.get_all(
+            "Training Participant",
+            filters={"parent": ["in", training_names], "attendance_status": ["in", ["Present", "Absent"]]},
+            fields=["parent"],
+            limit_page_length=0,
+        )}
+        for r in rows:
+            if r.name not in parts_with_att and getattr(r, "number_of_participants_attended", 0):
+                n_att = int(r.number_of_participants_attended or 0)
+                n_exp = int(r.number_of_participants or 0)
+                if n_att > 0:
+                    att_present += n_att
+                    att_total += max(n_att, n_exp)
+                    if n_exp > n_att:
+                        att_absent += (n_exp - n_att)
     att_rate = round((att_present / att_total * 100), 2) if att_total else 0.0
 
     insights = []
