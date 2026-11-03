@@ -15268,9 +15268,13 @@
             ".db-tbl-scroll{overflow-x:auto;flex:1;}",
 
             /* ── Upcoming table ── */
+            ".db-upcoming-scroll{max-height:118px;overflow-y:auto;overflow-x:auto;}",
+            ".db-upcoming-scroll::-webkit-scrollbar{width:4px;height:4px;}",
+            ".db-upcoming-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}",
+            ".db-upcoming-scroll::-webkit-scrollbar-thumb:hover{background:#94a3b8;}",
             ".db-utbl{width:100%;border-collapse:collapse;font-size:11.5px;}",
             ".db-utbl thead tr{background:#e6f0f2;border-bottom:1px solid #cbd5e1;}",
-            ".db-utbl thead th{padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#004e54;white-space:nowrap;}",
+            ".db-utbl thead th{position:sticky;top:0;background:#e6f0f2;z-index:2;padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#004e54;white-space:nowrap;}",
             ".db-utbl tbody tr{border-bottom:1px solid var(--border);}.db-utbl tbody tr:hover{background:#f8fafc;}",
             ".db-utbl tbody td{padding:5px 8px;}",
             ".db-utbl td.u-prog{font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
@@ -15282,7 +15286,10 @@
             ".db-sp-completed{background:#dcfce7;color:#16a34a}.db-sp-pending{background:#fef3c7;color:#d97706}",
 
             /* ── Insights panel ── */
-            ".db-ins-list{display:flex;flex-direction:column;gap:4px;}",
+            ".db-ins-card{flex:1;min-height:0;}",
+            ".db-ins-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:120px;}",
+            ".db-ins-list::-webkit-scrollbar{width:4px;}",
+            ".db-ins-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}",
             ".db-ins{display:flex;align-items:flex-start;gap:7px;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);}",
             ".db-ins-icon{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;flex-shrink:0;margin-top:1px;}",
             ".db-ins-icon svg{width:11px;height:11px;}",
@@ -15427,11 +15434,11 @@
                     '<div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Upcoming Trainings</div>',
                     '<button class="db-view-link" id="db-view-all-upcoming" type="button" onclick="viewAllUpcomingTrainings()">View All →</button>',
                   '</div>',
-                  '<div class="db-tbl-scroll"><table class="db-utbl"><thead><tr><th>Program</th><th>Date</th><th>Zone</th><th>Trainer</th><th>Status</th></tr></thead><tbody id="db-upcoming-body"><tr><td colspan="5" class="db-empty"><div class="spinner" style="margin:auto;"></div></td></tr></tbody></table></div>',
+                  '<div class="db-tbl-scroll db-upcoming-scroll"><table class="db-utbl"><thead><tr><th>Program</th><th>Date</th><th>Zone</th><th>Trainer</th><th>Status</th></tr></thead><tbody id="db-upcoming-body"><tr><td colspan="5" class="db-empty"><div class="spinner" style="margin:auto;"></div></td></tr></tbody></table></div>',
                 '</div>',
 
                 /* Insights & Alerts */
-                '<div class="db-card" id="db-ins-card">',
+                '<div class="db-card db-ins-card" id="db-ins-card">',
                   '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Insights & Alerts</div></div>',
                   '<div class="db-ins-list" id="db-insights"><div class="db-loading"><div class="spinner"></div></div></div>',
                 '</div>',
