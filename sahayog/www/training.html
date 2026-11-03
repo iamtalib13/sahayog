@@ -15755,6 +15755,7 @@
             trnKpi('Conducted', k.completed, '#16a34a') +
             trnKpi('Upcoming', k.upcoming, '#2563eb') +
             trnKpi('Participants', k.participants, '#7c3aed') +
+            trnKpi('Pending', k.pending != null ? k.pending : '—', '#d97706') +
             trnKpi('Completion Rate', (k.completion_rate != null ? k.completion_rate + '%' : '—'), '#ea580c') +
           '</div>';
 
