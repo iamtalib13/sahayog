@@ -14607,6 +14607,8 @@
           }
         }
         window.switchTab = switchTab;
+        window.closeModal = closeModal;
+        window.openTrainerPanel = openTrainerPanel;
 
         document
           .getElementById("nav-calendar")
@@ -14728,7 +14730,7 @@
               card.style.boxShadow = "";
             });
             card.addEventListener("click", function() {
-              openTrainerDashboard(card.dataset.empid);
+              openTrainerPanel(card.dataset.empid);
             });
           });
         }
@@ -15743,7 +15745,7 @@
               '</div>' +
             '</div>' +
             '<div style="text-align:right;"><div style="font-size:26px;font-weight:800;color:var(--ink-1);">' + (k.completion_rate != null ? k.completion_rate : 0) + '%</div><div style="font-size:10.5px;color:var(--ink-3);">Completion</div>' +
-            '<div style="margin-top:6px;"><button class="btn" style="font-size:11px;padding:4px 8px;" onclick="closeModal(\'trainerDashModal\');openTrainerPanel(\'' + esc(d.employee_id) + '\');">View Profile</button></div>' +
+            '<div style="margin-top:6px;"><button class="btn" style="font-size:11px;padding:4px 8px;" onclick="closeModal(\'trainerDashModal\');switchTab(\'trainers\');openTrainerPanel(\'' + esc(d.employee_id) + '\');">View Profile</button></div>' +
             '</div>' +
           '</div>';
 
