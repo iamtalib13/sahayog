@@ -15739,7 +15739,7 @@
           }
           var TYPE_COLORS = { "Classroom": "#0d9488", "Virtual": "#2563eb", "Unspecified": "#94a3b8" };
           var sorted = types.map(function(t, i) {
-            var val = t.conducted || t.planned || 0;
+            var val = t.planned != null ? t.planned : (t.conducted || 0);
             var col = TYPE_COLORS[t.type] || DB_COLORS[i % DB_COLORS.length];
             return { label: t.type, value: val, planned: t.planned, conducted: t.conducted, color: col };
           }).sort(function(a,b){ return b.value - a.value; });
@@ -15797,7 +15797,7 @@
              keep the top 7 slices and fold the long tail into one "Others"
              slice (with the folded names in its tooltip). */
           var TOP_N=7, OTHERS_COLOR="#94a3b8";
-          var sorted=progs.map(function(p){return {program:p.program,value:(p.conducted||p.planned||0)};})
+          var sorted=progs.map(function(p){return {program:p.program,value:(p.planned!=null?p.planned:(p.conducted||0))};})
             .sort(function(a,b){return b.value-a.value;});
           var slices=sorted.slice(0,TOP_N).map(function(p,i){
             return {program:p.program,value:p.value,color:DB_COLORS[i%DB_COLORS.length]};
