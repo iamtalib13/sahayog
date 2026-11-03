@@ -15091,6 +15091,9 @@
             ".db-cov-tabs{display:flex;gap:2px;background:#e6f0f2;border-radius:var(--radius-sm);padding:2px;margin-bottom:6px;}",
             ".db-cov-tab{flex:1;text-align:center;padding:3px 0;font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;color:#004e54;}",
             ".db-cov-tab.active{background:#004e54;color:#ffffff;box-shadow:var(--shadow-1);}",
+            ".db-dist-tabs{display:flex;gap:2px;background:#e6f0f2;border-radius:var(--radius-sm);padding:2px;}",
+            ".db-dist-tab{flex:1;text-align:center;padding:3px 0;font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;color:#004e54;user-select:none;}",
+            ".db-dist-tab.active{background:#004e54;color:#ffffff;box-shadow:var(--shadow-1);}",
             ".db-cov-panel{display:none;}.db-cov-panel.active{display:block;}",
             ".db-cov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:6px;}",
             ".db-ci-lbl{font-size:9.5px;color:var(--ink-3);margin-bottom:1px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}",
@@ -15262,7 +15265,7 @@
                 '<div>',
                   '<div class="db-sec-head" style="align-items:center;margin-bottom:6px;">',
                     '<div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Distribution</div>',
-                    '<div class="db-cov-tabs" style="margin-bottom:0;width:124px;"><div class="db-cov-tab active" data-dbdist="program">Program</div><div class="db-cov-tab" data-dbdist="type">Type</div></div>',
+                    '<div class="db-dist-tabs" style="width:124px;"><div class="db-dist-tab active" data-dbdist="program">Program</div><div class="db-dist-tab" data-dbdist="type">Type</div></div>',
                   '</div>',
                   '<div style="position:relative;height:110px;margin-bottom:6px;"><canvas id="db-prog-chart"></canvas></div>',
                   '<div id="db-prog-legend" class="db-prog-leg"></div>',
@@ -15433,9 +15436,10 @@
           }
 
           /* Distribution tab switching (Program vs Type) */
-          document.querySelectorAll("[data-dbdist]").forEach(function(tab) {
-            tab.onclick = function() {
-              document.querySelectorAll("[data-dbdist]").forEach(function(t){ t.classList.remove("active"); });
+          document.querySelectorAll(".db-dist-tab").forEach(function(tab) {
+            tab.onclick = function(e) {
+              e.preventDefault();
+              document.querySelectorAll(".db-dist-tab").forEach(function(t){ t.classList.remove("active"); });
               tab.classList.add("active");
               dbActiveDistTab = tab.dataset.dbdist || "program";
               dbRenderDistribution();
