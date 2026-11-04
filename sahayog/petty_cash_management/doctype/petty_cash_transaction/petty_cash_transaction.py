@@ -1772,10 +1772,57 @@ class PettyCashTransaction(Document):
 
     def validate_daily_cash_expense_limit(self):
         """
-        Daily cash expense limit check is disabled; records are allowed to be
-        created and routed to the checker instead of being blocked here.
+        Prevents the branch from submitting countable Cash expenses above
+        the configured daily cash limit (summed across all submitted
+        records for the branch on the same date).
+
+        The configured value comes from:
+        Sahayog Settings.daily_cash_expense_limit
+        Only Cash payment-mode items count toward the limit.
         """
-        return
+        if self.transaction_type != "Expense":
+            return
+
+        daily_limit = flt(
+            frappe.db.get_single_value(
+                "Sahayog Settings",
+                "daily_cash_expense_limit"
+            ) or 0
+        )
+
+        # If not configured, skip the check instead of blocking.
+        if daily_limit <= 0:
+            return
+
+        current_cash_amount = self.get_current_document_countable_cash_amount()
+
+        # This transaction contains only transfers, or only exempt
+        # categories paid in cash. Neither consumes the daily cash limit.
+        if current_cash_amount <= 0:
+            return
+
+        already_used = self.get_submitted_daily_cash_usage()
+        remaining_limit = max(daily_limit - already_used, 0)
+        total_cash_usage = already_used + current_cash_amount
+
+        if total_cash_usage > daily_limit:
+            frappe.throw(
+                _(
+                    "Daily Cash Expense Limit exceeded for Branch {0} on {1}. "
+                    "Daily Limit: ₹{2}. Already Used: ₹{3}. "
+                    "Cash Amount in this Transaction: ₹{4}. "
+                    "Remaining Cash Limit: ₹{5}. "
+                    "Cash payments for categories configured as exempt in "
+                    "Sahayog Settings are excluded from this limit."
+                ).format(
+                    self.branch,
+                    self.transaction_date,
+                    daily_limit,
+                    already_used,
+                    current_cash_amount,
+                    remaining_limit,
+                )
+            )
 
         daily_limit = flt(
             frappe.db.get_single_value(
