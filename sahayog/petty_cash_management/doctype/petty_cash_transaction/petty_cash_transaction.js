@@ -127,6 +127,9 @@ frappe.ui.form.on('Petty Cash Transaction', {
         if (status === 'Pending Checker') {
             return [__('Pending Checker'), 'yellow', 'approvalstatus,=,Pending Checker'];
         }
+        if (status === 'Rejected') {
+            return [__('Rejected'), 'red', 'approvalstatus,=,Rejected'];
+        }
         if (status === 'Pending Approval') {
             return [__('Pending Approval'), 'orange', 'approvalstatus,=,Pending Approval'];
         }
@@ -300,6 +303,16 @@ frappe.ui.form.on('Petty Cash Transaction', {
                         frappe.call({
                             doc: frm.doc,
                             method: 'ho_checker_approve',
+                            callback: function () { frm.reload_doc(); }
+                        });
+                    });
+                }, "Actions");
+
+                frm.add_custom_button(__('Reject (Checker)'), function () {
+                    frappe.confirm('Reject this transaction?', () => {
+                        frappe.call({
+                            doc: frm.doc,
+                            method: 'ho_checker_reject',
                             callback: function () { frm.reload_doc(); }
                         });
                     });
@@ -776,6 +789,7 @@ function get_approval_status_color(status) {
     const color_map = {
         'Draft': 'grey',
         'Pending Checker': 'yellow',
+        'Rejected': 'red',
         'Pending Approval': 'orange',
         'Approved': 'blue',
         'Checked': 'teal',
