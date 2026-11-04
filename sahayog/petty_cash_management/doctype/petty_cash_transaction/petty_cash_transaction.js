@@ -124,8 +124,14 @@ frappe.ui.form.on('Petty Cash Transaction', {
         if (status === 'Draft') {
             return [__('Draft'), 'grey', 'approvalstatus,=,Draft'];
         }
+        if (status === 'Pending Checker') {
+            return [__('Pending Checker'), 'yellow', 'approvalstatus,=,Pending Checker'];
+        }
         if (status === 'Pending Approval') {
             return [__('Pending Approval'), 'orange', 'approvalstatus,=,Pending Approval'];
+        }
+        if (status === 'Checked') {
+            return [__('Checked'), 'teal', 'approvalstatus,=,Checked'];
         }
         if (status === 'Approved') {
             return [__('Approved'), 'blue', 'approvalstatus,=,Approved'];
@@ -286,8 +292,23 @@ frappe.ui.form.on('Petty Cash Transaction', {
             }
         }
 
+        // SCENARIO: Pending Checker -> Checker can approve
+        if (frm.doc.docstatus === 1 && frm.doc.approval_status === "Pending Checker") {
+            if (frappe.user.has_role('HO Petty Cash Checker') || frappe.session.user === 'Administrator') {
+                frm.add_custom_button(__('Approve (Checker)'), function () {
+                    frappe.confirm('Approve this transaction?', () => {
+                        frappe.call({
+                            doc: frm.doc,
+                            method: 'ho_checker_approve',
+                            callback: function () { frm.reload_doc(); }
+                        });
+                    });
+                }, "Actions");
+            }
+        }
+
         // SCENARIO 1 & 2: Limit OK -> Needs Verification
-        if (frm.doc.docstatus === 1 && frm.doc.approval_status === "Approved") {
+        if (frm.doc.docstatus === 1 && frm.doc.approval_status === "Approved" || frm.doc.docstatus === 1 && frm.doc.approval_status === "Checked") {
 
             // if (frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator') {
             // Added Verifier Role
@@ -754,8 +775,10 @@ function set_description_maxlength(frm) {
 function get_approval_status_color(status) {
     const color_map = {
         'Draft': 'grey',
+        'Pending Checker': 'yellow',
         'Pending Approval': 'orange',
         'Approved': 'blue',
+        'Checked': 'teal',
         'Verified': 'green',
         'Posted': 'purple',
         'Canceled': 'red'
