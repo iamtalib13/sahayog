@@ -123,7 +123,8 @@
    "depends_on": "eval:doc.gst_available == 1",
    "fieldname": "gst_no",
    "fieldtype": "Data",
-   "label": "GST NO."
+   "label": "GST NO.",
+   "mandatory_depends_on": "eval:doc.gst_available == 1"
   }
  ],
  "grid_page_length": 50,
