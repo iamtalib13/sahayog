@@ -288,6 +288,13 @@ class PettyCashTransaction(Document):
         # [NEW] Validate Item Descriptions (Max 30 chars)
         self.validate_item_descriptions()
 
+        # Validate GST No when GST Available is checked
+        for row in (self.items or []):
+            if row.gst_available and not row.gst_no:
+                frappe.throw(
+                    _("Row #{0}: GST No. is required when GST Available is checked.").format(row.idx)
+                )
+
         # Validate Payment Mode
         self.validate_payment_mode_details()
         self.validate_daily_cash_expense_limit()
