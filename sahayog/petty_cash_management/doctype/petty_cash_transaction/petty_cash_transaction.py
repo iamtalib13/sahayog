@@ -494,7 +494,7 @@ class PettyCashTransaction(Document):
             )
 
             if checker_required:
-                self.db_set("amount_deducted", 0, update_modified=False)
+                self.db_set("amount_deducted", self.amount, update_modified=False)
                 self.db_set("approval_status", "Pending Checker",
                             update_modified=False)
             elif self.amount_exceeding_limit > 0:
@@ -870,17 +870,8 @@ class PettyCashTransaction(Document):
         if self.docstatus != 1 or self.approval_status != "Pending Checker":
             frappe.throw(_("Document is not pending checker approval."))
 
-        if self.amount_exceeding_limit and self.amount_exceeding_limit > 0:
-            self.db_set("amount_deducted", self.amount_within_limit, update_modified=False)
-        else:
-            self.db_set("amount_deducted", self.amount, update_modified=False)
-
+        # Amount already deducted on submit; checker only changes status.
         self.db_set("approval_status", "Checked", update_modified=False)
-
-        if self.is_legacy_unsettled_cash_flow_enabled():
-            self.update_wallet()
-        else:
-            self.apply_new_flow_pending_approval_deduction()
 
         frappe.msgprint(
             msg=_("Checker Approved. Status set to Checked."),
@@ -1413,7 +1404,7 @@ class PettyCashTransaction(Document):
         if cint(self.wallet_effect_applied):
             return
 
-        if self.approval_status not in ["Approved", "Pending Approval", "Checked"]:
+        if self.approval_status not in ["Approved", "Pending Approval", "Checked", "Pending Checker"]:
             return
 
         deduct_amount = flt(self.get_effective_deduction_amount())
