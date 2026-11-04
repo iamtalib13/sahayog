@@ -2243,7 +2243,8 @@ def download_consolidated_txt_api(transaction_date=None):
         "Petty Cash Transaction",
         filters={
             "finacle_tran_date": selected_date,
-            "approval_status": "Verified"
+            "approval_status": "Verified",
+            "exclude_from_ttum": ["!=", 1]
         },
         pluck="name",
         order_by="creation ASC"
