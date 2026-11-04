@@ -329,8 +329,7 @@
    "fieldname": "daily_cash_expense_limit",
    "fieldtype": "Currency",
    "in_list_view": 1,
-   "label": "Daily Cash Expense Limit",
-   "reqd": 1
+   "label": "Daily Cash Expense Limit"
   },
   {
    "fieldname": "cash_limit_exempt_categories",
