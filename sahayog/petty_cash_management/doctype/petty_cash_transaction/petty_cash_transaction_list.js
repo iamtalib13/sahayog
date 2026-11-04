@@ -2,6 +2,7 @@ function get_approval_status_color(status) {
     const color_map = {
         'Draft': 'grey',
         'Pending Checker': 'yellow',
+        'Rejected': 'red',
         'Pending Approval': 'orange',
         'Approved': 'blue',
         'Checked': 'teal',
