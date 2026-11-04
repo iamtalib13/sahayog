@@ -886,6 +886,31 @@ class PettyCashTransaction(Document):
             indicator="blue"
         )
 
+    @frappe.whitelist()
+    def ho_checker_reject(self):
+        user_roles = frappe.get_roles()
+
+        if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
+            frappe.throw(_("Only HO Petty Cash Checker can reject."))
+
+        if self.docstatus != 1 or self.approval_status != "Pending Checker":
+            frappe.throw(_("Document is not pending checker approval."))
+
+        # Reverse the wallet deduction made on submit
+        if not self.is_legacy_unsettled_cash_flow_enabled():
+            self.apply_new_flow_terminal_credit("Rejected")
+        else:
+            wallet = self.get_branch_wallet_doc()
+            wallet.update_unsettled_cash(self.amount, "Withdrawal")
+
+        self.db_set("approval_status", "Rejected", update_modified=False)
+
+        frappe.msgprint(
+            msg=_("Checker Rejected. Status set to Rejected."),
+            title=_("Message"),
+            indicator="red"
+        )
+
     def apply_new_flow_pending_approval_deduction(self):
         if self.transaction_type != "Expense":
             return
