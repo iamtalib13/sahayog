@@ -1942,6 +1942,16 @@ def download_transaction_report(filters=None):
     if filters and isinstance(filters, str):
         filters = json.loads(filters)
 
+    # Auto-exclude single downloaded records from future bulk downloads
+    if filters and filters.get("name"):
+        frappe.db.set_value(
+            "Petty Cash Transaction",
+            filters.get("name"),
+            "exclude_from_ttum",
+            1,
+            update_modified=False,
+        )
+
     # 2. Fetch Data using frappe.get_all (Handles standard List View filters automatically)
     # We explicitly list the fields to ensure we get the data we need
     fields = [
@@ -2375,7 +2385,8 @@ def download_consolidated_excel_api(transaction_date=None):
         "Petty Cash Transaction",
         filters={
             "finacle_tran_date": selected_date,
-            "approval_status": "Verified"
+            "approval_status": "Verified",
+            "exclude_from_ttum": ["!=", 1]
         },
         pluck="name",
         order_by="creation ASC"
