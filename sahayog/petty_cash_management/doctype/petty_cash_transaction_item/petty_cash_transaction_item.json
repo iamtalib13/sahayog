@@ -120,6 +120,7 @@
    "label": "GST Available"
   },
   {
+   "depends_on": "eval:doc.gst_available == 1",
    "fieldname": "gst_no",
    "fieldtype": "Data",
    "label": "GST NO."
@@ -129,7 +130,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-11-04 17:18:30.831290",
+ "modified": "2026-11-04 17:20:16.237464",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction Item",
