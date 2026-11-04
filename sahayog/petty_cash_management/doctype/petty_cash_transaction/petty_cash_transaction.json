@@ -41,8 +41,8 @@
   "posted_to_finacle",
   "finacle_transaction_id",
   "remarks",
-  "amended_from",
-  "column_break_limits",
+  "exclude_from_ttum",
+  "amended_from",  "column_break_limits",
   "wallet_effect_applied",
   "wallet_effect_amount",
   "wallet_effect_reference_status",
@@ -147,6 +147,13 @@
    "fieldname": "remarks",
    "fieldtype": "Small Text",
    "label": "Remarks"
+  },
+  {
+   "default": "0",
+   "description": "Exclude this transaction from bulk TTUM (TXT) downloads.",
+   "fieldname": "exclude_from_ttum",
+   "fieldtype": "Check",
+   "label": "Exclude from TTUM"
   },
   {
    "fieldname": "amended_from",
