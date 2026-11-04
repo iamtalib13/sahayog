@@ -170,7 +170,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Approval Status",
-   "options": "Draft\nPending Checker\nPending Approval\nApproved\nChecked\nVerified\nPosted\nCanceled",
+   "options": "Draft\nPending Checker\nPending Approval\nApproved\nChecked\nRejected\nVerified\nPosted\nCanceled",
    "read_only": 1
   },
   {
