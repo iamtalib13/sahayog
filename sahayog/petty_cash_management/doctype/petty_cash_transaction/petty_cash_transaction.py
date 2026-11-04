@@ -486,7 +486,18 @@ class PettyCashTransaction(Document):
 
         # 2. Expense flow
         if self.transaction_type == "Expense":
-            if self.amount_exceeding_limit > 0:
+            # Checker level: if any child item amount exceeds its available category limit
+            checker_required = any(
+                (flt(item.amount) > flt(item.available_limit))
+                for item in (self.items or [])
+                if item.available_limit is not None
+            )
+
+            if checker_required:
+                self.db_set("amount_deducted", self.amount, update_modified=False)
+                self.db_set("approval_status", "Pending Checker",
+                            update_modified=False)
+            elif self.amount_exceeding_limit > 0:
                 self.db_set("amount_deducted",
                             self.amount_within_limit, update_modified=False)
                 self.db_set("approval_status", "Pending Approval",
@@ -849,6 +860,25 @@ class PettyCashTransaction(Document):
             indicator="blue"
         )
 
+    @frappe.whitelist()
+    def ho_checker_approve(self):
+        user_roles = frappe.get_roles()
+
+        if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
+            frappe.throw(_("Only HO Petty Cash Checker can approve."))
+
+        if self.docstatus != 1 or self.approval_status != "Pending Checker":
+            frappe.throw(_("Document is not pending checker approval."))
+
+        # Amount already deducted on submit; checker only changes status.
+        self.db_set("approval_status", "Checked", update_modified=False)
+
+        frappe.msgprint(
+            msg=_("Checker Approved. Status set to Checked."),
+            title=_("Message"),
+            indicator="blue"
+        )
+
     def apply_new_flow_pending_approval_deduction(self):
         if self.transaction_type != "Expense":
             return
@@ -856,7 +886,7 @@ class PettyCashTransaction(Document):
         if self.is_legacy_unsettled_cash_flow_enabled():
             return
 
-        if self.approval_status != "Approved":
+        if self.approval_status not in ["Approved", "Checked"]:
             return
 
         already_deducted = flt(self.wallet_effect_amount)
@@ -889,8 +919,8 @@ class PettyCashTransaction(Document):
             frappe.throw(
                 _("Only HO Petty Cash Manager or Verifier can verify."))
 
-        if self.approval_status != "Approved":
-            frappe.throw(_("Document must be Approved before Verification."))
+        if self.approval_status not in ["Approved", "Checked"]:
+            frappe.throw(_("Document must be Approved/Checked before Verification."))
 
         enable_integration = cint(
             frappe.db.get_single_value(
@@ -950,7 +980,7 @@ class PettyCashTransaction(Document):
         user_roles = frappe.get_roles(user)
 
         # [UPDATED] Allow Administrator and all HO roles to open the document
-        if user == 'Administrator' or any(r in user_roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier", "System Manager", "HO Petty Cash Auditor",]):
+        if user == 'Administrator' or any(r in user_roles for r in ["HO Petty Cash Manager", "HO Petty Cash Approver", "HO Petty Cash Verifier", "HO Petty Cash Checker", "System Manager", "HO Petty Cash Auditor",]):
             return True
 
         # Existing branch logic fallback
@@ -1374,7 +1404,7 @@ class PettyCashTransaction(Document):
         if cint(self.wallet_effect_applied):
             return
 
-        if self.approval_status not in ["Approved", "Pending Approval"]:
+        if self.approval_status not in ["Approved", "Pending Approval", "Checked", "Pending Checker"]:
             return
 
         deduct_amount = flt(self.get_effective_deduction_amount())
@@ -1710,14 +1740,10 @@ class PettyCashTransaction(Document):
 
     def validate_daily_cash_expense_limit(self):
         """
-        Prevents the branch from submitting countable Cash expenses above
-        the configured daily cash limit.
-
-        The configured value comes from:
-        Sahayog Settings.daily_cash_expense_limit
+        Daily cash expense limit check is disabled; records are allowed to be
+        created and routed to the checker instead of being blocked here.
         """
-        if self.transaction_type != "Expense":
-            return
+        return
 
         daily_limit = flt(
             frappe.db.get_single_value(
@@ -1727,12 +1753,16 @@ class PettyCashTransaction(Document):
         )
 
         if daily_limit <= 0:
-            frappe.throw(
+            # Not configured: skip the daily cash limit check instead of blocking submission.
+            frappe.msgprint(
                 _(
                     "Daily Cash Expense Limit is not configured. "
                     "Please configure it in Sahayog Settings under Petty Cash Management."
-                )
+                ),
+                alert=True,
+                indicator="orange",
             )
+            return
 
         current_cash_amount = self.get_current_document_countable_cash_amount()
 
