@@ -15304,6 +15304,10 @@
             ".db-prog-leg{display:flex;flex-direction:column;gap:2px;font-size:11px;margin-top:4px;max-height:96px;overflow-y:auto;padding-right:4px;}",
             ".db-prog-leg::-webkit-scrollbar{width:5px;}.db-prog-leg::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}",
             ".db-prog-row{display:flex;align-items:center;gap:7px;padding:1px 0;border-radius:4px;}",
+            ".db-cat-sub{padding-left:13px;font-size:10.5px;}",
+            ".db-cat-head{cursor:pointer;}",
+            ".db-cat-head:hover{background:#f1f5f9;}",
+            ".db-cat-kids{flex-direction:column;gap:2px;}",
             ".db-prog-row[data-others]{cursor:pointer;}",
             ".db-prog-row[data-others]:hover{background:#f1f5f9;}",
             /* ── "Others" programs popup ── */
@@ -15407,7 +15411,7 @@
                 '<div>',
                   '<div class="db-sec-head" style="align-items:center;margin-bottom:6px;">',
                     '<div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Distribution</div>',
-                    '<div class="db-dist-tabs" style="width:124px;"><div class="db-dist-tab active" data-dbdist="program">Program</div><div class="db-dist-tab" data-dbdist="type">Type</div></div>',
+                    '<div class="db-dist-tabs" style="width:186px;"><div class="db-dist-tab active" data-dbdist="program">Program</div><div class="db-dist-tab" data-dbdist="category">Category</div><div class="db-dist-tab" data-dbdist="type">Type</div></div>',
                   '</div>',
                   '<div style="position:relative;height:110px;margin-bottom:6px;"><canvas id="db-prog-chart"></canvas></div>',
                   '<div id="db-prog-legend" class="db-prog-leg"></div>',
@@ -15719,6 +15723,7 @@
             dbRenderTrend(d.monthly_trend||[], d.kpis||{}, meta);
             dbCurrentProgCoverage = d.program_coverage || [];
             dbCurrentTypeCoverage = d.type_coverage || [];
+            dbCurrentCategoryCoverage = d.category_coverage || [];
             dbRenderDistribution();
             dbRenderZoneTable(d.zone_table||[]);
             dbRenderUpcoming(d.upcoming_trainings||[]);
@@ -15860,13 +15865,119 @@
 
         var dbCurrentProgCoverage = [];
         var dbCurrentTypeCoverage = [];
+        var dbCurrentCategoryCoverage = [];
         var dbActiveDistTab = "program";
+        var dbCatOpen = {};
+
+        var DB_CATEGORY_COLORS = {
+          "Functional Training": "#0d9488",
+          "Retail Asset Training": "#2563eb",
+          "SS Training": "#7c3aed",
+          "Other": "#94a3b8"
+        };
 
         function dbRenderDistribution() {
           if (dbActiveDistTab === "type") {
             dbRenderTypeChart(dbCurrentTypeCoverage || []);
+          } else if (dbActiveDistTab === "category") {
+            dbRenderCategoryChart(dbCurrentCategoryCoverage || []);
           } else {
             dbRenderProgChart(dbCurrentProgCoverage || []);
+          }
+        }
+
+        /* Category view: donut of the client's categories with the programmes
+           under each category listed in the legend (sub-distribution). */
+        function dbRenderCategoryChart(cats) {
+          var canvas = document.getElementById("db-prog-chart");
+          if (!canvas || typeof Chart === "undefined") return;
+          if (dbProgChart) { try { dbProgChart.destroy(); } catch(e){} }
+          var leg = document.getElementById("db-prog-legend");
+          if (!cats || !cats.length) {
+            if (leg) leg.innerHTML = '<div style="color:var(--ink-3);text-align:center;font-size:11.5px;">No data</div>';
+            return;
+          }
+          var sorted = cats.map(function(c, i) {
+            return {
+              label: c.category,
+              value: c.planned != null ? c.planned : (c.conducted || 0),
+              conducted: c.conducted || 0,
+              programs: c.programs || [],
+              color: DB_CATEGORY_COLORS[c.category] || DB_COLORS[i % DB_COLORS.length]
+            };
+          }).sort(function(a, b) { return b.value - a.value; });
+
+          var total = sorted.reduce(function(a, b) { return a + b.value; }, 0);
+
+          dbProgChart = new Chart(canvas.getContext("2d"), {
+            type: "doughnut",
+            data: {
+              labels: sorted.map(function(s){ return s.label; }),
+              datasets: [{
+                data: sorted.map(function(s){ return s.value; }),
+                backgroundColor: sorted.map(function(s){ return s.color; }),
+                borderWidth: 2,
+                borderColor: "#fff",
+                cutout: "65%"
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: function(ctx) {
+                      var pct = total ? Math.round(ctx.raw / total * 100) : 0;
+                      return ctx.label + ": " + ctx.raw + " (" + pct + "%)";
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          if (leg) {
+            leg.innerHTML = sorted.map(function(s, idx) {
+              var pct = total ? Math.round(s.value / total * 100) : 0;
+              var open = dbCatOpen[s.label];
+              if (open === undefined) open = (idx === 0);
+              var head = '<div class="db-prog-row db-cat-head" data-cat-idx="' + idx + '" title="' + dbEsc(s.label + " — click to show/hide programs") + '">' +
+                '<span style="width:9px;height:9px;border-radius:50%;background:' + s.color + ';flex-shrink:0;display:inline-block;"></span>' +
+                '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:var(--ink-1);">' + dbEsc(s.label) + '</span>' +
+                '<span style="font-weight:700;color:var(--ink-1);">' + s.value + '</span>' +
+                '<span style="color:var(--ink-3);min-width:32px;text-align:right;">(' + pct + '%)</span>' +
+                '<span class="db-cat-chev" style="width:9px;text-align:center;color:var(--ink-3);flex-shrink:0;">' + (open ? "▾" : "▸") + '</span>' +
+              '</div>';
+              var kids = '<div class="db-cat-kids" data-kids-idx="' + idx + '" style="display:' + (open ? "flex" : "none") + ';">' +
+                (s.programs || []).map(function(p) {
+                  var ppct = total && p.planned ? Math.round(p.planned / total * 100) : 0;
+                  return '<div class="db-prog-row db-cat-sub" title="' + dbEsc(p.program) + '">' +
+                    '<span style="width:5px;height:5px;border-radius:50%;background:' + s.color + ';opacity:.65;flex-shrink:0;display:inline-block;"></span>' +
+                    '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">' + dbEsc(p.program) + '</span>' +
+                    '<span style="font-weight:600;color:var(--ink-2);">' + p.planned + '</span>' +
+                    '<span style="color:var(--ink-3);min-width:32px;text-align:right;">(' + ppct + '%)</span>' +
+                  '</div>';
+                }).join("") +
+              '</div>';
+              return head + kids;
+            }).join("");
+
+            leg.querySelectorAll(".db-cat-head").forEach(function(el) {
+              el.addEventListener("click", function() {
+                var idx = parseInt(el.dataset.catIdx, 10);
+                var s = sorted[idx]; if (!s) return;
+                var open = dbCatOpen[s.label];
+                if (open === undefined) open = (idx === 0);
+                open = !open;
+                dbCatOpen[s.label] = open;
+                var chev = el.querySelector(".db-cat-chev");
+                if (chev) chev.textContent = open ? "▾" : "▸";
+                var kids = leg.querySelector('[data-kids-idx="' + idx + '"]');
+                if (kids) kids.style.display = open ? "flex" : "none";
+              });
+            });
           }
         }
 

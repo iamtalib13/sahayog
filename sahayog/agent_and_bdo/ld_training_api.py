@@ -3289,11 +3289,68 @@ def get_branch_geo(branch):
 # L&D Training Dashboard — consolidated data API
 # ─────────────────────────────────────────────────────────────────────────────
 
+# Client's programme classification. Each category maps to the programmes it
+# contains; names are matched case/punctuation-insensitively so older rows with
+# slight naming variations still land in the right category. This is display
+# grouping only — no category is stored on the Training doctype.
+TRAINING_CATEGORY_PROGRAMS = {
+    "Functional Training": [
+        ("AUDIT TRAINING", ["Audit Training Program"]),
+        ("BBMC", ["Branch Manager Business Accumen Program", "Branch Manager Business Acumen Program",
+                  "Branch Business Master Class/ License to Operate"]),
+        ("Branch Operations Excellence Program", []),
+        ("Branch Visit", ["BRANCH VISIT"]),
+        ("CRM Training", []),
+        ("DDS Product Training", []),
+        ("Enablement program", ["Enablement Program"]),
+        ("Insurance Excellance Program", ["Insurance Excellence Program"]),
+        ("S-ONE Program", ["S One Program"]),
+        ("Utkarsh Training", ["Utkarsh - Elevation Journey"]),
+    ],
+    "Retail Asset Training": [
+        ("FOT Induction Program", ["FOT Star Induction Program"]),
+        ("JLL Process Training", []),
+        ("JLL Refresher Training", []),
+        ("Liecence to Operate JLL", ["License to Operate JLL", "Licence to Operate JLL", "RAMC/LTO", "LTO"]),
+        ("Retail Asset Master Class", []),
+        ("UTKARSH - JLL", []),
+    ],
+    "SS Training": [
+        ("Aarambh Workshop", ["AARAMBH WORKSHOP"]),
+        ("NIRMAN WORKSHOP", []),
+        ("PRAGATI PATH WORKSHOP", []),
+    ],
+}
+OTHER_TRAINING_CATEGORY = "Other"
+
+
+def _norm_program_name(value):
+    """Lower-case and strip everything except letters/digits for loose matching."""
+    return re.sub(r"[^a-z0-9]", "", (value or "").lower())
+
+
+# normalized alias -> (category, display programme name)
+_PROGRAM_CATEGORY_LOOKUP = {}
+for _category, _programs in TRAINING_CATEGORY_PROGRAMS.items():
+    for _display, _aliases in _programs:
+        for _alias in [_display, *_aliases]:
+            _PROGRAM_CATEGORY_LOOKUP[_norm_program_name(_alias)] = (_category, _display)
+
+
+def _program_category(program):
+    """Return (category, display programme name) for a Training.training_program value."""
+    program = (program or "").strip()
+    found = _PROGRAM_CATEGORY_LOOKUP.get(_norm_program_name(program))
+    if found:
+        return found
+    return OTHER_TRAINING_CATEGORY, (program or "Unspecified")
+
+
 @frappe.whitelist()
 def get_dashboard_data(year=None, month=None, zone=None, region=None, district=None, branch=None, trainer=None, program=None):
     """
     Single API call for the L&D Training Dashboard.
-    Returns: kpis, zone_table, monthly_trend, program_coverage,
+    Returns: kpis, zone_table, monthly_trend, program_coverage, category_coverage,
              upcoming_trainings, insights.
     Only accessible to L&D Admin / System Manager.
     """
@@ -3531,6 +3588,45 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
         key=lambda x: -x["planned"]
     )
 
+    # ---------- Category-wise coverage (client's programme classification) ----------
+    # Built from all rows (program_coverage is truncated to the top 8, which
+    # would make the category totals incomplete).
+    cat_map = {}
+    for r in rows:
+        category, display = _program_category(r.training_program)
+        cat = cat_map.setdefault(category, {"planned": 0, "conducted": 0, "programs": {}})
+        cat["planned"] += 1
+        is_completed = _st(r) == "completed"
+        if is_completed:
+            cat["conducted"] += 1
+
+        prog = cat["programs"].setdefault(display, {"planned": 0, "conducted": 0})
+        prog["planned"] += 1
+        if is_completed:
+            prog["conducted"] += 1
+
+    category_coverage = []
+    ordered_categories = list(TRAINING_CATEGORY_PROGRAMS)
+    if OTHER_TRAINING_CATEGORY in cat_map:
+        ordered_categories.append(OTHER_TRAINING_CATEGORY)
+    for category in ordered_categories:
+        v = cat_map.get(category)
+        if not v:
+            continue
+        programs = sorted(
+            [{"program": p, "planned": pv["planned"], "conducted": pv["conducted"],
+              "pct": round(pv["conducted"]/pv["planned"]*100) if pv["planned"] else 0}
+             for p, pv in v["programs"].items()],
+            key=lambda x: (-x["planned"], x["program"])
+        )
+        category_coverage.append({
+            "category": category,
+            "planned": v["planned"],
+            "conducted": v["conducted"],
+            "pct": round(v["conducted"]/v["planned"]*100) if v["planned"] else 0,
+            "programs": programs,
+        })
+
     # ---------- Zone-wise table ----------
     # Normalize zone names (case-insensitive) to avoid duplicate rows (e.g. ZONE-3 vs Zone-3)
     # Always normalize to standard uppercase "ZONE-X" format for consistency
@@ -3680,6 +3776,7 @@ def get_dashboard_data(year=None, month=None, zone=None, region=None, district=N
         "monthly_trend": trend,
         "program_coverage": prog_coverage,
         "type_coverage": type_coverage,
+        "category_coverage": category_coverage,
         "zone_table": zone_table,
         "upcoming_trainings": upcoming_list,
         "insights": insights,
