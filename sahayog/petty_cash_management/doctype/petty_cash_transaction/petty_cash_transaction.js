@@ -685,6 +685,18 @@ frappe.ui.form.on('Petty Cash Transaction Item', {
     },
 
 
+    gst_no: function (frm, cdt, cdn) {
+        let row = locals[cdt][cdn];
+        if (!row.gst_no) return;
+        const val = String(row.gst_no).trim();
+        if (val.length !== 15 || !/^[A-Za-z0-9]+$/.test(val)) {
+            frappe.show_alert({
+                message: __('Row {0}: GST No. must be exactly 15 alphanumeric characters.', [row.idx]),
+                indicator: 'red'
+            }, 4);
+        }
+    },
+
     expense_category: function (frm, cdt, cdn) {
         var row = locals[cdt][cdn];
         if (!frm.doc.branch || !frm.doc.transaction_date || !row.expense_category) {
