@@ -295,6 +295,13 @@ class PettyCashTransaction(Document):
                     _("Row #{0}: GST No. is required when GST Available is checked.").format(row.idx)
                 )
 
+            if row.gst_no:
+                gst = str(row.gst_no).strip()
+                if len(gst) != 15 or not gst.isalnum():
+                    frappe.throw(
+                        _("Row #{0}: GST No. must be exactly 15 alphanumeric characters.").format(row.idx)
+                    )
+
         # Validate Payment Mode
         self.validate_payment_mode_details()
         self.validate_daily_cash_expense_limit()
