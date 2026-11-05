@@ -56,8 +56,8 @@ frappe.listview_settings['Petty Cash Transaction'] = {
                 ],
                 primary_action_label: __('Download'),
                 primary_action(values) {
-                    if (file_type === 'txt' && values.transaction_date >= frappe.datetime.get_today()) {
-                        frappe.msgprint(__('You can only download TTUM for previous dates, not for today or future dates.'));
+                    if (file_type === 'txt' && values.transaction_date > frappe.datetime.get_today()) {
+                        frappe.msgprint(__('You can only download TTUM for today or previous dates, not for future dates.'));
                         return;
                     }
                     dialog.hide();
