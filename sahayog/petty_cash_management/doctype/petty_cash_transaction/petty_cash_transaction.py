@@ -2331,8 +2331,8 @@ def download_consolidated_txt_api(transaction_date=None):
         )
 
     selected_date = getdate(transaction_date) if transaction_date else getdate(nowdate())
-    if selected_date >= getdate(nowdate()):
-        frappe.throw("You can only download TTUM for previous dates, not for today or future dates.")
+    if selected_date > getdate(nowdate()):
+        frappe.throw("You can only download TTUM for today or previous dates, not for future dates.")
     selected_date = str(selected_date)
 
     transactions = frappe.get_all(
