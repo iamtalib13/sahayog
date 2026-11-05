@@ -288,6 +288,20 @@ class PettyCashTransaction(Document):
         # [NEW] Validate Item Descriptions (Max 30 chars)
         self.validate_item_descriptions()
 
+        # Validate GST No when GST Available is checked
+        for row in (self.items or []):
+            if row.gst_available and not row.gst_no:
+                frappe.throw(
+                    _("Row #{0}: GST No. is required when GST Available is checked.").format(row.idx)
+                )
+
+            if row.gst_no:
+                gst = str(row.gst_no).strip()
+                if len(gst) != 15 or not gst.isalnum():
+                    frappe.throw(
+                        _("Row #{0}: GST No. must be exactly 15 alphanumeric characters.").format(row.idx)
+                    )
+
         # Validate Payment Mode
         self.validate_payment_mode_details()
         self.validate_daily_cash_expense_limit()
@@ -877,6 +891,31 @@ class PettyCashTransaction(Document):
             msg=_("Checker Approved. Status set to Checked."),
             title=_("Message"),
             indicator="blue"
+        )
+
+    @frappe.whitelist()
+    def ho_checker_reject(self):
+        user_roles = frappe.get_roles()
+
+        if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
+            frappe.throw(_("Only HO Petty Cash Checker can reject."))
+
+        if self.docstatus != 1 or self.approval_status != "Pending Checker":
+            frappe.throw(_("Document is not pending checker approval."))
+
+        # Reverse the wallet deduction made on submit
+        if not self.is_legacy_unsettled_cash_flow_enabled():
+            self.apply_new_flow_terminal_credit("Rejected")
+        else:
+            wallet = self.get_branch_wallet_doc()
+            wallet.update_unsettled_cash(self.amount, "Withdrawal")
+
+        self.db_set("approval_status", "Rejected", update_modified=False)
+
+        frappe.msgprint(
+            msg=_("Checker Rejected. Status set to Rejected."),
+            title=_("Message"),
+            indicator="red"
         )
 
     def apply_new_flow_pending_approval_deduction(self):
@@ -1740,10 +1779,57 @@ class PettyCashTransaction(Document):
 
     def validate_daily_cash_expense_limit(self):
         """
-        Daily cash expense limit check is disabled; records are allowed to be
-        created and routed to the checker instead of being blocked here.
+        Prevents the branch from submitting countable Cash expenses above
+        the configured daily cash limit (summed across all submitted
+        records for the branch on the same date).
+
+        The configured value comes from:
+        Sahayog Settings.daily_cash_expense_limit
+        Only Cash payment-mode items count toward the limit.
         """
-        return
+        if self.transaction_type != "Expense":
+            return
+
+        daily_limit = flt(
+            frappe.db.get_single_value(
+                "Sahayog Settings",
+                "daily_cash_expense_limit"
+            ) or 0
+        )
+
+        # If not configured, skip the check instead of blocking.
+        if daily_limit <= 0:
+            return
+
+        current_cash_amount = self.get_current_document_countable_cash_amount()
+
+        # This transaction contains only transfers, or only exempt
+        # categories paid in cash. Neither consumes the daily cash limit.
+        if current_cash_amount <= 0:
+            return
+
+        already_used = self.get_submitted_daily_cash_usage()
+        remaining_limit = max(daily_limit - already_used, 0)
+        total_cash_usage = already_used + current_cash_amount
+
+        if total_cash_usage > daily_limit:
+            frappe.throw(
+                _(
+                    "Daily Cash Expense Limit exceeded for Branch {0} on {1}. "
+                    "Daily Limit: ₹{2}. Already Used: ₹{3}. "
+                    "Cash Amount in this Transaction: ₹{4}. "
+                    "Remaining Cash Limit: ₹{5}. "
+                    "Cash payments for categories configured as exempt in "
+                    "Sahayog Settings are excluded from this limit."
+                ).format(
+                    self.branch,
+                    self.transaction_date,
+                    daily_limit,
+                    already_used,
+                    current_cash_amount,
+                    remaining_limit,
+                )
+            )
 
         daily_limit = flt(
             frappe.db.get_single_value(
@@ -1941,6 +2027,16 @@ def download_transaction_report(filters=None):
     # 1. Parse filters if passed as JSON string
     if filters and isinstance(filters, str):
         filters = json.loads(filters)
+
+    # Auto-exclude single downloaded records from future bulk downloads
+    if filters and filters.get("name"):
+        frappe.db.set_value(
+            "Petty Cash Transaction",
+            filters.get("name"),
+            "exclude_from_ttum",
+            1,
+            update_modified=False,
+        )
 
     # 2. Fetch Data using frappe.get_all (Handles standard List View filters automatically)
     # We explicitly list the fields to ensure we get the data we need
@@ -2243,7 +2339,8 @@ def download_consolidated_txt_api(transaction_date=None):
         "Petty Cash Transaction",
         filters={
             "finacle_tran_date": selected_date,
-            "approval_status": "Verified"
+            "approval_status": "Verified",
+            "exclude_from_ttum": ["!=", 1]
         },
         pluck="name",
         order_by="creation ASC"
@@ -2374,7 +2471,8 @@ def download_consolidated_excel_api(transaction_date=None):
         "Petty Cash Transaction",
         filters={
             "finacle_tran_date": selected_date,
-            "approval_status": "Verified"
+            "approval_status": "Verified",
+            "exclude_from_ttum": ["!=", 1]
         },
         pluck="name",
         order_by="creation ASC"
