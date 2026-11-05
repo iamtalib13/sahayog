@@ -13,6 +13,7 @@
   "column_break_1",
   "branch",
   "branch_name",
+  "branch_zone",
   "branch_type",
   "entity_id",
   "is_bulk_allocation",
@@ -42,7 +43,8 @@
   "finacle_transaction_id",
   "remarks",
   "exclude_from_ttum",
-  "amended_from",  "column_break_limits",
+  "amended_from",
+  "column_break_limits",
   "wallet_effect_applied",
   "wallet_effect_amount",
   "wallet_effect_reference_status",
@@ -320,17 +322,23 @@
    "fieldtype": "Data",
    "label": "Entity ID",
    "read_only": 1
+  },
+  {
+   "fetch_from": "branch.zone",
+   "fieldname": "branch_zone",
+   "fieldtype": "Data",
+   "label": "Branch Zone"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-07-22 12:04:27.091707",
+ "modified": "2026-11-05 15:07:42.196858",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
- "naming_rule": "Expression (old style)",
+ "naming_rule": "Expression",
  "owner": "Administrator",
  "permissions": [
   {
@@ -394,16 +402,16 @@
    "write": 1
   },
   {
-    "email": 1,
-    "export": 1,
-    "print": 1,
-    "read": 1,
-    "report": 1,
-    "role": "HO Petty Cash Checker",
-    "share": 1,
-    "submit": 1,
-    "write": 1
-   },
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "HO Petty Cash Checker",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
   {
    "read": 1,
    "role": "HO Petty Cash Auditor"
