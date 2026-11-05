@@ -1344,6 +1344,15 @@ class PettyCashTransaction(Document):
 
         final_txt = "\n".join(content)
 
+        # Auto-exclude this record from future bulk TTUM downloads
+        frappe.db.set_value(
+            "Petty Cash Transaction",
+            self.name,
+            "exclude_from_ttum",
+            1,
+            update_modified=False,
+        )
+
         frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
         frappe.response['filecontent'] = final_txt
         frappe.response['type'] = 'download'
