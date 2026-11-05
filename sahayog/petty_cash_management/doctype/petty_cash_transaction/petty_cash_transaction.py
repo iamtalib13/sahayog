@@ -1344,6 +1344,15 @@ class PettyCashTransaction(Document):
 
         final_txt = "\n".join(content)
 
+        # Auto-exclude this record from future bulk TTUM downloads
+        frappe.db.set_value(
+            "Petty Cash Transaction",
+            self.name,
+            "exclude_from_ttum",
+            1,
+            update_modified=False,
+        )
+
         frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
         frappe.response['filecontent'] = final_txt
         frappe.response['type'] = 'download'
@@ -2331,8 +2340,8 @@ def download_consolidated_txt_api(transaction_date=None):
         )
 
     selected_date = getdate(transaction_date) if transaction_date else getdate(nowdate())
-    if selected_date >= getdate(nowdate()):
-        frappe.throw("You can only download TTUM for previous dates, not for today or future dates.")
+    if selected_date > getdate(nowdate()):
+        frappe.throw("You can only download TTUM for today or previous dates, not for future dates.")
     selected_date = str(selected_date)
 
     transactions = frappe.get_all(
