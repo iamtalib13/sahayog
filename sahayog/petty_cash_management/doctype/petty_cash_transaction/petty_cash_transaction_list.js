@@ -50,8 +50,7 @@ frappe.listview_settings['Petty Cash Transaction'] = {
                         fieldname: 'transaction_date',
                         fieldtype: 'Date',
                         reqd: 1,
-                        // default: frappe.datetime.get_today()
-                        default: frappe.datetime.add_days(frappe.datetime.get_today(), -1)
+                        default: frappe.datetime.get_today()
                     }
                 ],
                 primary_action_label: __('Download'),
