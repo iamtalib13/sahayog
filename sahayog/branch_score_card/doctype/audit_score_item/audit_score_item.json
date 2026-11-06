@@ -23,16 +23,15 @@
   },
   {
    "fieldname": "branch_score",
-   "fieldtype": "Int",
+   "fieldtype": "Float",
    "in_list_view": 1,
    "label": "Branch Score"
   },
   {
    "fieldname": "risk_level",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Risk Level",
-   "options": "Low Risk\nMedium Risk\nHigh Risk"
+   "label": "Risk Level"
   },
   {
    "fieldname": "audit_start_date",
@@ -47,10 +46,9 @@
   },
   {
    "fieldname": "audit_status",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Audit Status",
-   "options": "Completed\nPending"
+   "label": "Audit Status"
   },
   {
    "fieldname": "score_obtain",
@@ -63,7 +61,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-15 12:55:00.588583",
+ "modified": "2026-10-19 11:11:59.195459",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "Audit Score Item",
