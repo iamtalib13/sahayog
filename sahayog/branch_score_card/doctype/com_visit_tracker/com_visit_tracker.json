@@ -127,7 +127,7 @@
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-10 15:33:36.788737",
+ "modified": "2026-11-06 10:31:21.893673",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "COM Visit Tracker",
@@ -153,8 +153,11 @@
    "write": 1
   },
   {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
    "role": "Branch Scorecard Editor",
-   "read": 1
+   "write": 1
   }
  ],
  "row_format": "Dynamic",

@@ -33,10 +33,9 @@
   },
   {
    "fieldname": "performance_rating",
-   "fieldtype": "Select",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Performance Rating",
-   "options": "Excellent\nGood\nSatisfactory\nNeeds Improvement"
+   "label": "Performance Rating"
   },
   {
    "fieldname": "score_obtain",
@@ -49,7 +48,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-09-15 12:59:58.275829",
+ "modified": "2026-10-19 11:12:43.987786",
  "modified_by": "Administrator",
  "module": "Branch Score Card",
  "name": "COM Visit Item",

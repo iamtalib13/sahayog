@@ -92,11 +92,13 @@ def create_yearly_trackers():
 
 
 # Jin designations ko access milega (lowercase me likho)
-COM_DESIGNATIONS = {"cluster operation manager"}
-
+COM_DESIGNATIONS = {"cluster operation manager",
+                    "senior cluster operation manager",
+                    "regional operation manager",
+}
 
 def is_com(user):
-    """Sirf Cluster Operation Manager designation wale user ko access."""
+    """COM / Senior COM / Regional Operation Manager designation wale user ko access."""
     d = frappe.db.get_value("Employee", {"user_id": user}, "designation")
     return (d or "").strip().lower() in COM_DESIGNATIONS
 
