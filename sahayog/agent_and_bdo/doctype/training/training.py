@@ -5,6 +5,8 @@ import frappe
 from frappe import _
 from frappe.model.document import Document
 
+from sahayog.agent_and_bdo.ld_holidays import evaluate_training_holidays
+
 COMPLETION_FIELDS = [
     "training_delivered",
     "attendance_marked",
@@ -126,54 +128,28 @@ class Training(Document):
     def _validate_no_holiday_sunday(self):
         if not self.from_date:
             return
-        from_d = frappe.utils.getdate(self.from_date)
-        to_d = frappe.utils.getdate(self.to_date or self.from_date)
-        # Collect states from geographies (or legacy branch)
-        states = set()
+        # Rule: block only when the trainer (or the whole training) is on
+        # holiday. A holiday in *some* selected states is allowed with a
+        # warning because the trainer may belong to a different state.
         geos = self.get("geographies") or []
-        branches = [g.branch for g in geos if g.branch] if geos else ([self.branch] if self.branch else [])
-        for br in branches:
-            state = frappe.db.get_value("Sahayog Branch", br, "state")
-            if state:
-                states.add(state)
-        # Also include current user's state via Employee.holiday_list fallback if no branch state
-        if not states:
-            try:
-                emp_branch = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "sahayog_branch")
-                if emp_branch:
-                    s = frappe.db.get_value("Sahayog Branch", emp_branch, "state")
-                    if s:
-                        states.add(s)
-            except Exception:
-                pass
-        # Build holiday set for the date range
-        holiday_map = {}
-        for state in states:
-            # Try Employee.holiday_list style: Holiday List name is "{State} - YYYY"
-            for yr in range(from_d.year, to_d.year + 1):
-                hl = f"{state} - {yr}"
-                if not frappe.db.exists("Holiday List", hl):
-                    hl = frappe.db.get_value("Holiday List", {"holiday_list_name": ["like", f"{state} - %"]}, "name")
-                    if not hl:
-                        continue
-                rows = frappe.db.get_all("Holiday", filters={"parent": hl}, fields=["holiday_date", "description"])
-                for r in rows:
-                    d = frappe.utils.getdate(r.holiday_date)
-                    if from_d <= d <= to_d:
-                        # Descriptions may contain rich-text HTML — keep validation messages readable
-                        desc = frappe.utils.strip_html_tags(r.description or "") if r.description else ""
-                        holiday_map[str(d)] = " ".join(desc.split()) or "Holiday"
-        # Check each date in range
-        curr = from_d
-        while curr <= to_d:
-            d_str = str(curr)
-            # User-facing dates are always DD/MM/YYYY (backend stays ISO)
-            d_disp = f"{d_str[8:10]}/{d_str[5:7]}/{d_str[0:4]}"
-            if curr.weekday() == 6:
-                frappe.throw(_("Training cannot be scheduled on Sunday: {0}").format(d_disp))
-            if d_str in holiday_map:
-                frappe.throw(_("Training cannot be scheduled on Holiday ({0}): {1}").format(holiday_map[d_str], d_disp))
-            curr = frappe.utils.add_days(curr, 1)
+        branches = [g.branch for g in geos if g.branch] if geos else (
+            [self.branch] if self.branch else []
+        )
+        block, warnings = evaluate_training_holidays(
+            trainer=(self.trainer or "").strip() or None,
+            from_date=self.from_date,
+            to_date=self.to_date or self.from_date,
+            branches=branches,
+        )
+        if block:
+            frappe.throw(block)
+        if warnings:
+            frappe.msgprint(
+                "<br>".join(warnings),
+                title=_("Holiday notice"),
+                indicator="orange",
+                alert=True,
+            )
 
     def _validate_completed_budget(self):
         # Completed = all 5 checks ticked -> both budget fields mandatory, min ₹1.

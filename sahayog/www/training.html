@@ -4,6 +4,10 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="csrf-token" content="{{ frappe.session.csrf_token }}" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <!-- v=20261103-1615 -->
+    <meta http-equiv="Expires" content="0" />
     <title>L&amp;D Training Calendar</title>
     <style>
       :root {
@@ -638,9 +642,6 @@
       .today-card-loc {
         font-size: 11px;
         color: rgba(255, 255, 255, 0.6);
-      }
-        font-size: 11px;
-        color: var(--ink-3);
       }
       .today-more {
         font-size: 11.5px;
@@ -2119,7 +2120,7 @@
 
       /* ── Mail Recipients Modal ── */
       .mail-modal-dialog {
-        width: min(960px, 97vw) !important;
+        width: min(720px, 97vw) !important;
         max-width: 97vw !important;
         max-height: 92vh;
         display: flex;
@@ -2401,6 +2402,155 @@
         .mail-panel { max-height: 260px; }
         .mail-panel-manual { max-height: none; }
       }
+      /* ── Single-column recipient editor ── */
+      .mail-modal-body-single {
+        display: block;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 18px 22px;
+        background: var(--surface-2, #f8fafc);
+      }
+      .mail-recipient-card {
+        background: var(--surface, #fff);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .mail-recipient-card + .mail-recipient-card { margin-top: 12px; }
+      .mail-recipient-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .mail-recipient-title {
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-2);
+      }
+      .mail-recipient-title .mail-recipient-sub {
+        font-size: 10.5px;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+        color: var(--ink-3);
+        margin-left: 6px;
+      }
+      .mail-recipient-count {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-3);
+        white-space: nowrap;
+      }
+      .mail-recipient-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 24px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding-right: 2px;
+      }
+      .mail-recipient-chips::-webkit-scrollbar { width: 5px; }
+      .mail-recipient-chips::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+      .mail-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        max-width: 100%;
+        padding: 3px 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .mail-chip-to { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+      .mail-chip-cc { background: #f0fdf4; border-color: #d1fae5; color: #065f46; }
+      .mail-chip-manual { border-style: dashed; }
+      .mail-chip-badge {
+        font-size: 8.5px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 1px 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.75);
+        flex-shrink: 0;
+      }
+      .mail-chip-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      .mail-chip-email {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        opacity: 0.8;
+        font-size: 10.5px;
+      }
+      .mail-chip-remove {
+        border: none;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        opacity: 0.6;
+        padding: 0 0 0 1px;
+        font-size: 14px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .mail-chip-remove:hover { opacity: 1; }
+      .mail-empty-chip {
+        font-size: 11.5px;
+        color: var(--ink-3);
+        font-style: italic;
+      }
+      .mail-add-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .mail-add-input {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 7px 10px;
+        font-size: 12.5px;
+        color: var(--ink-1);
+        background: var(--surface, #fff);
+        outline: none;
+        font-family: inherit;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .mail-add-input:focus {
+        border-color: var(--accent, #2563eb);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .mail-add-input::placeholder { color: var(--ink-3); font-size: 11.5px; }
+      .mail-add-btn { flex-shrink: 0; }
+      .mail-add-error {
+        display: none;
+        margin-top: 5px;
+        font-size: 11px;
+        color: #dc2626;
+      }
+      .mail-add-error.show { display: block; }
+      .mail-recipient-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        margin-top: 14px;
+        font-size: 11px;
+        line-height: 1.5;
+        color: var(--ink-3);
+      }
+      .mail-recipient-note svg { flex-shrink: 0; margin-top: 1px; }
       /* Footer */
       .mail-modal-foot {
         display: flex;
@@ -6356,6 +6506,54 @@
       </div>
     </div>
 
+    <!-- Modal: programs folded into the dashboard "Others" slice -->
+    <div class="modal-wrap" id="progOthersModal">
+      <div class="modal" style="width:min(440px, 94vw)">
+        <div class="modal-head">
+          <h3 id="progOthersTitle">Other programs</h3>
+          <button class="modal-close" data-close="progOthersModal" title="Close">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="16"
+              height="16"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div id="progOthersBody"></div>
+      </div>
+    </div>
+
+    <!-- Modal: trainer consolidated dashboard -->
+    <div class="modal-wrap" id="trainerDashModal">
+      <div class="modal" style="width:min(960px, 96vw);max-height:90vh;">
+        <div class="modal-head">
+          <h3 id="trnDashTitle">Trainer Dashboard</h3>
+          <button class="modal-close" data-close="trainerDashModal" title="Close">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              width="16"
+              height="16"
+            >
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+        <div id="trnDashBody" style="overflow-y:auto;padding:4px 2px 12px;"></div>
+      </div>
+    </div>
+
     <!-- Modal: add training -->
     <div class="modal-wrap" id="addModal">
       <div class="modal new-training-modal">
@@ -6840,6 +7038,28 @@
                         min="0"
                       />
                     </div>
+                    <div class="fx-row2">
+                      <div class="fx-field">
+                        <span class="fx-label">Expected Participants</span>
+                        <input
+                          type="number"
+                          class="fx-input"
+                          id="new-expected-count"
+                          placeholder="e.g. 30"
+                          min="0"
+                        />
+                      </div>
+                      <div class="fx-field">
+                        <span class="fx-label">Participants Attended</span>
+                        <input
+                          type="number"
+                          class="fx-input"
+                          id="new-attended-count"
+                          placeholder="e.g. 25"
+                          min="0"
+                        />
+                      </div>
+                    </div>
                     <!-- Schedule preview + conflict hint: hidden for now (validation toasts still active)
               <div class="fx-preview" id="new-schedule-preview">Select date and time</div>
               <div class="fx-alert" id="sched-alert" style="display:none">
@@ -6903,7 +7123,7 @@
             </div>
             <div>
               <div class="mail-modal-title">Mail Recipients</div>
-              <div class="mail-modal-sub">Preview auto-recipients and add manual addresses for invitation &amp; closure emails</div>
+              <div class="mail-modal-sub">Choose who receives the invitation &amp; closure emails</div>
             </div>
           </div>
           <button class="modal-close" data-close="mailModal" title="Close">
@@ -6911,50 +7131,44 @@
           </button>
         </div>
 
-        <!-- 2-panel body -->
-        <div class="mail-modal-body">
+        <!-- Single-column recipient editor: auto + added addresses in one list -->
+        <div class="mail-modal-body mail-modal-body-single">
 
-          <!-- LEFT: Auto recipients (read-only) -->
-          <div class="mail-panel mail-panel-auto">
-            <div class="mail-panel-head">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
-              Auto Recipients
-              <span class="mail-section-badge">Read-only</span>
+          <!-- TO -->
+          <div class="mail-recipient-card">
+            <div class="mail-recipient-head">
+              <div class="mail-recipient-title">To <span class="mail-recipient-sub">who receives the mail</span></div>
+              <div class="mail-recipient-count" id="mail-to-count">—</div>
             </div>
-            <div class="mail-panel-hint">Derived from participants, branch heads and trainer. Updates automatically when training data changes.</div>
-            <div id="mail-auto" class="mail-auto-groups"></div>
+            <div class="mail-recipient-chips" id="mail-to-chips">
+              <div class="mail-empty-chip">Loading…</div>
+            </div>
+            <div class="mail-add-row">
+              <input type="email" class="mail-add-input" id="mail-to-input" placeholder="Add extra To recipient and press Enter" autocomplete="off">
+              <button type="button" class="btn mail-add-btn" id="mail-to-add">Add</button>
+            </div>
+            <div class="mail-add-error" id="mail-to-error"></div>
           </div>
 
-          <!-- Vertical divider -->
-          <div class="mail-panel-divider"></div>
-
-          <!-- RIGHT: Manual overrides (editable) -->
-          <div class="mail-panel mail-panel-manual">
-            <div class="mail-panel-head">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Manual Overrides
+          <!-- CC -->
+          <div class="mail-recipient-card">
+            <div class="mail-recipient-head">
+              <div class="mail-recipient-title">CC <span class="mail-recipient-sub">copied on the mail</span></div>
+              <div class="mail-recipient-count" id="mail-cc-count">—</div>
             </div>
-            <div class="mail-panel-hint">Add extra addresses here. These persist across all emails for this training.</div>
-
-            <div class="mail-manual-field">
-              <div class="mail-field-head">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                <span class="mail-field-label">Additional To</span>
-                <span class="mail-field-hint">Lands directly in To</span>
-              </div>
-              <textarea class="mail-textarea" id="mail-to" rows="4" placeholder="email1@example.com, email2@example.com, ..."></textarea>
-              <div class="mail-tag-preview" id="mail-to-preview"></div>
+            <div class="mail-recipient-chips" id="mail-cc-chips">
+              <div class="mail-empty-chip">Loading…</div>
             </div>
-
-            <div class="mail-manual-field" style="margin-top: 14px">
-              <div class="mail-field-head">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span class="mail-field-label">Additional CC</span>
-                <span class="mail-field-hint">Copied on the email</span>
-              </div>
-              <textarea class="mail-textarea" id="mail-cc" rows="4" placeholder="email1@example.com, email2@example.com, ..."></textarea>
-              <div class="mail-tag-preview" id="mail-cc-preview"></div>
+            <div class="mail-add-row">
+              <input type="email" class="mail-add-input" id="mail-cc-input" placeholder="Add extra CC recipient and press Enter" autocomplete="off">
+              <button type="button" class="btn mail-add-btn" id="mail-cc-add">Add</button>
             </div>
+            <div class="mail-add-error" id="mail-cc-error"></div>
+          </div>
+
+          <div class="mail-recipient-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span><b>Auto recipients</b> are picked from participants, branch heads and the trainer. <b>Added</b> emails are saved with this training and used for all its emails.</span>
           </div>
 
         </div>
@@ -6964,13 +7178,13 @@
         <div class="mail-modal-foot">
           <div class="mail-modal-foot-hint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            Changes apply to next invitation &amp; closure emails for this training
+            Changes apply to the next invitation &amp; closure emails for this training
           </div>
           <div class="mail-modal-foot-actions">
             <button class="btn" data-close="mailModal" type="button">Cancel</button>
             <button class="btn btn-primary mail-save-btn" id="btn-mail-save" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
-              Save Recipients
+              Save changes
             </button>
           </div>
         </div>
@@ -8823,6 +9037,9 @@
             ((ev.number_of_participants || 0)
               ? metaRow("Expected Participants", ev.number_of_participants)
               : "") +
+            ((ev.number_of_participants_attended || 0)
+              ? metaRow("Attended", ev.number_of_participants_attended)
+              : "") +
             ((ev.program_duration_hours || 0)
               ? metaRow(
                   "Duration",
@@ -9388,15 +9605,23 @@
           });
           return s;
         }
-        function attendanceSummaryHTML(s, isAgent) {
-          if (!s.total)
+        function attendanceSummaryHTML(s, isAgent, attendedCount) {
+          if (!s.total) {
+            if (attendedCount != null && attendedCount > 0) {
+              return '<span class="att-summary" style="color:var(--green);font-weight:600;">' + attendedCount + ' Attended</span>';
+            }
             return '<span class="att-summary">No participants</span>';
+          }
           if (isAgent === false) {
+            var attTxt = (attendedCount != null && attendedCount > 0)
+              ? ' · <b style="color:var(--green);">' + attendedCount + ' Attended</b>'
+              : '';
             return (
               '<span class="att-summary">' +
               s.total +
               ' Employee' +
               (s.total === 1 ? '' : 's') +
+              attTxt +
               '</span>'
             );
           }
@@ -9434,12 +9659,34 @@
         }
         function attendanceRowsHTML(ev, editable) {
           var list = ev.participant_list || [];
-          if (!list.length)
-            return '<div style="font-size:13px;color:var(--ink-3)">No participants added.</div>';
           var isAgent = list.some(function(p) { return p.reference_doctype === "Agent"; });
-          /* Employee participants: attendance is not marked, render clean list */
-          if (!isAgent) {
+          /* Employee participants (or trainings without agent participants):
+             attendance is not marked row-by-row. Show attended headcount card. */
+          if (!list.length || !isAgent) {
+            var attendedVal = ev.number_of_participants_attended || 0;
+            var isDone = completionScore(ev) === 5;
+            var canEditAtt = editable && !isDone;
+            var empAttBox =
+              '<div class="emp-att-box" style="margin-bottom:12px;padding:10px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:space-between;gap:12px;">' +
+                '<div>' +
+                  '<div style="font-size:12.5px;font-weight:600;color:var(--ink-1);">Participants Attended</div>' +
+                  '<div style="font-size:11px;color:var(--ink-3);">' + (list.length ? "Employee attendance headcount" : "Headcount who attended") + '</div>' +
+                '</div>' +
+                '<div style="display:flex;align-items:center;gap:6px;">' +
+                  (canEditAtt
+                    ? '<input type="number" id="drw-emp-attended" min="0" value="' + (attendedVal || '') + '" placeholder="0" style="width:75px;height:28px;padding:0 8px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;background:var(--surface);" />' +
+                      '<button type="button" class="btn btn-primary" id="btn-save-emp-attended" style="height:28px;padding:0 10px;font-size:12px;">Save</button>'
+                    : '<span style="font-size:14px;font-weight:700;color:var(--green);">' + (attendedVal || 0) + ' Attended</span>'
+                  ) +
+                '</div>' +
+              '</div>';
+
+            if (!list.length) {
+              return empAttBox + '<div style="font-size:13px;color:var(--ink-3)">No participants added.</div>';
+            }
+
             return (
+              empAttBox +
               '<div class="att-compact">' +
               list
                 .map(function (p) {
@@ -9522,6 +9769,7 @@
             summary = attendanceSummaryHTML(
               attendanceSummary(ev.participant_list),
               ev.participant_list.length ? isAgt : undefined,
+              ev.number_of_participants_attended
             );
             inner = attendanceRowsHTML(ev, editable);
           }
@@ -9547,6 +9795,7 @@
               s0.innerHTML = attendanceSummaryHTML(
                 attendanceSummary(ev.participant_list),
                 ev.participant_list.length ? isAgt0 : undefined,
+                ev.number_of_participants_attended
               );
             }
             refreshCheckLocks(ev);
@@ -9557,6 +9806,8 @@
               ev.participant_list = full.participant_list || [];
               if (full.participants != null)
                 ev.participants = full.participants;
+              if (full.number_of_participants_attended != null)
+                ev.number_of_participants_attended = full.number_of_participants_attended;
               var b = document.getElementById("drw-attendance");
               if (!b) return;
               b.innerHTML = attendanceRowsHTML(ev, editable);
@@ -9567,6 +9818,7 @@
                 s.innerHTML = attendanceSummaryHTML(
                   attendanceSummary(ev.participant_list),
                   ev.participant_list.length ? isAgt : undefined,
+                  ev.number_of_participants_attended
                 );
               }
               refreshCheckLocks(ev);
@@ -9579,6 +9831,51 @@
             });
         }
         function bindAttendanceButtons(ev) {
+          var empSaveBtn = document.getElementById("btn-save-emp-attended");
+          var empInp = document.getElementById("drw-emp-attended");
+          if (empSaveBtn && empInp) {
+            var doSaveEmp = function () {
+              var raw = empInp.value.trim();
+              var val = raw === "" ? 0 : parseInt(raw, 10);
+              if (isNaN(val) || val < 0) {
+                showToast("Participants Attended must be 0 or more");
+                return;
+              }
+              empSaveBtn.disabled = true;
+              api("update_training_status", {
+                training_name: ev.name,
+                field: "number_of_participants_attended",
+                value: val,
+              })
+                .then(function () {
+                  ev.number_of_participants_attended = val;
+                  showToast("Attended count saved (" + val + ")");
+                  empSaveBtn.disabled = false;
+                  var s = document.getElementById("drw-att-summary");
+                  if (s && ev.participant_list) {
+                    var isAgt = ev.participant_list.some(function (p) {
+                      return p.reference_doctype === "Agent";
+                    });
+                    s.innerHTML = attendanceSummaryHTML(
+                      attendanceSummary(ev.participant_list),
+                      ev.participant_list.length ? isAgt : undefined,
+                      val
+                    );
+                  }
+                })
+                .catch(function (err) {
+                  empSaveBtn.disabled = false;
+                  showToast("Could not save: " + ((err && err.message) || err));
+                });
+            };
+            empSaveBtn.onclick = doSaveEmp;
+            empInp.onkeydown = function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                doSaveEmp();
+              }
+            };
+          }
           document
             .querySelectorAll("#drw-attendance .att-row")
             .forEach(function (row) {
@@ -9749,6 +10046,23 @@
             });
           }
 
+          var empAttEl = document.getElementById("drw-emp-attended");
+          if (!isDoneSave && empAttEl) {
+            var rawAtt = empAttEl.value.trim();
+            var newAtt = rawAtt === "" ? 0 : parseInt(rawAtt, 10);
+            if (!isNaN(newAtt) && newAtt >= 0 && newAtt !== (ev.number_of_participants_attended || 0)) {
+              tasks.push(function () {
+                return api("update_training_status", {
+                  training_name: ev.name,
+                  field: "number_of_participants_attended",
+                  value: newAtt,
+                }).then(function () {
+                  ev.number_of_participants_attended = newAtt;
+                });
+              });
+            }
+          }
+
           var canBudget = state.role === "ld_admin" || isOwnTraining(ev);
           var budgetTasks = [];
           if (canBudget && !isDoneSave) {
@@ -9896,6 +10210,8 @@
           if (typeof updateMandaysChip === "function") updateMandaysChip(0);
           var expCreateEl = document.getElementById("new-expected-count");
           if (expCreateEl) expCreateEl.value = "";
+          var attCreateEl = document.getElementById("new-attended-count");
+          if (attCreateEl) attCreateEl.value = "";
           ["new-from-date", "new-to-date", "new-time", "new-end-time"].forEach(
             function (id) {
               var el = document.getElementById(id);
@@ -10084,98 +10400,213 @@
               fillEditDialog(ev);
             });
         }
-        /* ----- Mail recipients preview (To/CC with sources + manual extras) ----- */
+        /* ----- Mail recipients editor (auto + added addresses in one list) ----- */
         var mailEv = null;
+        var mailRecipients = null;
+        var mailState = { to: [], cc: [] };
+        var MAIL_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        function mailNormalizeEmail(email) {
+          return String(email || "").trim().toLowerCase();
+        }
+
+        function mailChipHtml(item) {
+          var cls = item.kind === "cc" ? "mail-chip-cc" : "mail-chip-to";
+          var manualCls = item.manual ? " mail-chip-manual" : "";
+          var showEmail = item.email && mailNormalizeEmail(item.name) !== mailNormalizeEmail(item.email);
+          var removeBtn = item.manual
+            ? '<button type="button" class="mail-chip-remove" data-mail-remove="1" data-kind="' +
+              item.kind + '" data-email="' + esc(item.email) + '" title="Remove">&times;</button>'
+            : "";
+          return '<span class="mail-chip ' + cls + manualCls + '" title="' + esc(item.email || item.name) + '">' +
+            (item.badge ? '<span class="mail-chip-badge">' + esc(item.badge) + "</span>" : "") +
+            '<span class="mail-chip-name">' + esc(item.name || item.email) + "</span>" +
+            (showEmail ? '<span class="mail-chip-email">(' + esc(item.email) + ")</span>" : "") +
+            removeBtn +
+          "</span>";
+        }
+
+        /* Merge auto + added recipients, de-duplicated by email. */
+        function mailCurrentView() {
+          var r = mailRecipients || {};
+          var toR = r.to || {}, ccR = r.cc || {};
+          var seen = {};
+          var to = [], cc = [];
+          function add(list, item) {
+            var key = mailNormalizeEmail(item.email);
+            if (!key || seen[key]) return;
+            seen[key] = 1;
+            list.push(item);
+          }
+          (toR.participants || []).forEach(function(p) {
+            add(to, { kind: "to", badge: "Participant", name: p.name || p.email, email: p.email });
+          });
+          (toR.branch_heads || []).forEach(function(b) {
+            add(to, { kind: "to", badge: "Branch Head", name: b.branch_name || b.branch || "Branch", email: b.email });
+          });
+          mailState.to.forEach(function(email) {
+            add(to, { kind: "to", badge: "Added", name: email, email: email, manual: true });
+          });
+          if (ccR.trainer) {
+            add(cc, { kind: "cc", badge: "Trainer", name: ccR.trainer_name || ccR.trainer, email: ccR.trainer });
+          }
+          mailState.cc.forEach(function(email) {
+            add(cc, { kind: "cc", badge: "Added", name: email, email: email, manual: true });
+          });
+          return { to: to, cc: cc };
+        }
+
+        function mailCountLabel(list, addedCount) {
+          var total = list.length;
+          if (!total) return "No recipients";
+          var parts = [total + " recipient" + (total === 1 ? "" : "s")];
+          var auto = total - addedCount;
+          if (auto > 0) parts.push(auto + " auto");
+          if (addedCount > 0) parts.push(addedCount + " added");
+          return parts.join(" · ");
+        }
+
+        function renderMailRecipients() {
+          var view = mailCurrentView();
+          ["to", "cc"].forEach(function(kind) {
+            var chipsEl = document.getElementById("mail-" + kind + "-chips");
+            var countEl = document.getElementById("mail-" + kind + "-count");
+            var list = view[kind];
+            var added = list.filter(function(x) { return x.manual; }).length;
+            if (countEl) countEl.textContent = mailCountLabel(list, added);
+            if (!chipsEl) return;
+            chipsEl.innerHTML = list.length
+              ? list.map(mailChipHtml).join("")
+              : '<span class="mail-empty-chip">' +
+                (kind === "to" ? "No To recipients yet" : "No CC recipients yet") +
+                "</span>";
+            chipsEl.querySelectorAll("[data-mail-remove]").forEach(function(btn) {
+              btn.onclick = function() {
+                var email = mailNormalizeEmail(btn.dataset.email);
+                var key = btn.dataset.kind;
+                mailState[key] = mailState[key].filter(function(e) {
+                  return mailNormalizeEmail(e) !== email;
+                });
+                renderMailRecipients();
+              };
+            });
+          });
+        }
+
+        function mailShowError(kind, message) {
+          var el = document.getElementById("mail-" + kind + "-error");
+          if (!el) return;
+          el.textContent = message || "";
+          el.classList.toggle("show", !!message);
+        }
+
+        function addMailRecipient(kind, raw) {
+          var value = String(raw || "").trim();
+          if (!value) return;
+          var parts = value.replace(/;/g, ",").split(",")
+            .map(function(s) { return s.trim(); })
+            .filter(Boolean);
+          var view = mailCurrentView();
+          var existing = {};
+          view.to.concat(view.cc).forEach(function(item) {
+            existing[mailNormalizeEmail(item.email)] = 1;
+          });
+          var errors = [];
+          parts.forEach(function(email) {
+            var key = mailNormalizeEmail(email);
+            if (!MAIL_EMAIL_RE.test(email)) {
+              errors.push("Enter a valid email address");
+            } else if (existing[key]) {
+              errors.push(email + " is already in the list");
+            } else {
+              existing[key] = 1;
+              mailState[kind].push(email);
+            }
+          });
+          mailShowError(kind, errors[0] || "");
+          renderMailRecipients();
+        }
+
         function openMailDialog(ev) {
           mailEv = ev;
-          var box = document.getElementById("mail-auto");
-          if (box) box.innerHTML = '<div class="mail-empty">Loading…</div>';
-          var toEl = document.getElementById("mail-to");
-          var ccEl = document.getElementById("mail-cc");
-          if (toEl) toEl.value = ev.additional_to || "";
-          if (ccEl) ccEl.value = ev.additional_cc || "";
+          mailRecipients = null;
+          mailState = { to: [], cc: [] };
+          ["to", "cc"].forEach(function(kind) {
+            var chipsEl = document.getElementById("mail-" + kind + "-chips");
+            var countEl = document.getElementById("mail-" + kind + "-count");
+            var inputEl = document.getElementById("mail-" + kind + "-input");
+            if (chipsEl) chipsEl.innerHTML = '<span class="mail-empty-chip">Loading…</span>';
+            if (countEl) countEl.textContent = "—";
+            if (inputEl) inputEl.value = "";
+            mailShowError(kind, "");
+          });
           document.getElementById("mailModal").classList.add("open");
 
-          /* Live tag preview helper */
-          function renderPreview(inputId, previewId, tagClass) {
-            var inp = document.getElementById(inputId);
-            var prev = document.getElementById(previewId);
-            if (!inp || !prev) return;
-            function refresh() {
-              var parts = inp.value.replace(/;/g, ",").split(",")
-                .map(function (s) { return s.trim(); })
-                .filter(function (s) { return s && s.indexOf("@") !== -1; });
-              if (!parts.length) { prev.innerHTML = ""; return; }
-              prev.innerHTML = parts.map(function (e) {
-                return '<span class="mail-tag ' + tagClass + '" title="' + esc(e) + '">' + esc(e) + "</span>";
-              }).join("");
+          ["to", "cc"].forEach(function(kind) {
+            var inputEl = document.getElementById("mail-" + kind + "-input");
+            var addBtn = document.getElementById("mail-" + kind + "-add");
+            if (inputEl) {
+              inputEl.onkeydown = function(e) {
+                if (e.key === "Enter" || e.key === "," || e.key === ";") {
+                  e.preventDefault();
+                  addMailRecipient(kind, inputEl.value);
+                  inputEl.value = "";
+                } else {
+                  mailShowError(kind, "");
+                }
+              };
             }
-            inp.addEventListener("input", refresh);
-            inp.addEventListener("blur", refresh);
-            refresh();
-          }
-          renderPreview("mail-to", "mail-to-preview", "mail-tag-to");
-          renderPreview("mail-cc", "mail-cc-preview", "mail-tag-cc");
+            if (addBtn) {
+              addBtn.onclick = function() {
+                if (!inputEl) return;
+                addMailRecipient(kind, inputEl.value);
+                inputEl.value = "";
+              };
+            }
+          });
 
           api("get_mail_recipients", { training_name: ev.name })
-            .then(function (r) {
+            .then(function(r) {
               if (!r || mailEv !== ev) return;
-              var boxEl = document.getElementById("mail-auto");
-
-              function group(title, list, tagClass, emptyText) {
-                var inner = "";
-                if (!list || !list.length) {
-                  inner = '<div class="mail-empty">' + esc(emptyText) + "</div>";
-                } else {
-                  inner = '<div class="mail-tags">' +
-                    list.map(function (t) {
-                      return '<span class="mail-tag ' + tagClass + '" title="' + esc(t) + '">' + esc(t) + "</span>";
-                    }).join("") + "</div>";
-                }
-                return '<div class="mail-group">' +
-                  '<div class="mail-group-title"><span class="mail-group-dot"></span>' + esc(title) + "</div>" +
-                  inner + "</div>";
-              }
-
-              var toP = ((r.to || {}).participants || []).map(function (p) {
-                return p.email;
-              });
-              var toB = ((r.to || {}).branch_heads || []).map(function (b) {
-                return "Branch " + b.branch + " <" + b.email + ">";
-              });
-              var ccT = r.cc && r.cc.trainer ? ["Trainer <" + r.cc.trainer + ">"] : [];
-
-              if (boxEl)
-                boxEl.innerHTML =
-                  group("To · Participants", toP, "mail-tag-to", "No participant emails on file") +
-                  group("To · Branch Heads", toB, "mail-tag-to", "No branch-head email on file") +
-                  group("To · Manual", (r.to || {}).manual, "mail-tag-to", "None added") +
-                  group("CC · Trainer", ccT, "mail-tag-cc", "No trainer email") +
-                  group("CC · Manual", (r.cc || {}).manual, "mail-tag-cc", "None added");
-
-              var toFill = document.getElementById("mail-to");
-              var ccFill = document.getElementById("mail-cc");
-              if (toFill) { toFill.value = ((r.to || {}).manual || []).join(", "); toFill.dispatchEvent(new Event("input")); }
-              if (ccFill) { ccFill.value = ((r.cc || {}).manual || []).join(", "); ccFill.dispatchEvent(new Event("input")); }
+              mailRecipients = r;
+              mailState = {
+                to: ((r.to || {}).manual || []).slice(),
+                cc: ((r.cc || {}).manual || []).slice(),
+              };
+              renderMailRecipients();
             })
-            .catch(function (err) {
-              var boxEl = document.getElementById("mail-auto");
-              if (boxEl)
-                boxEl.innerHTML =
-                  '<div class="mail-empty">Could not load preview: ' + esc((err && err.message) || err) + "</div>";
+            .catch(function(err) {
+              var chipsEl = document.getElementById("mail-to-chips");
+              if (chipsEl)
+                chipsEl.innerHTML =
+                  '<span class="mail-empty-chip">Could not load recipients: ' +
+                  esc((err && err.message) || err) + "</span>";
             });
 
           document.getElementById("btn-mail-save").onclick = function () {
-            var toVal = document.getElementById("mail-to").value;
-            var ccVal = document.getElementById("mail-cc").value;
+            ["to", "cc"].forEach(function(kind) {
+              var inputEl = document.getElementById("mail-" + kind + "-input");
+              if (inputEl && inputEl.value.trim()) {
+                addMailRecipient(kind, inputEl.value);
+                inputEl.value = "";
+              }
+            });
+            var hasError = ["to", "cc"].some(function(kind) {
+              var el = document.getElementById("mail-" + kind + "-error");
+              return el && el.classList.contains("show");
+            });
+            if (hasError) {
+              showToast("Fix the highlighted recipient first");
+              return;
+            }
             api("update_training_emails", {
-              training_name: ev.name,
-              additional_to: toVal,
-              additional_cc: ccVal,
+              training_name: mailEv.name,
+              additional_to: mailState.to.join(", "),
+              additional_cc: mailState.cc.join(", "),
             })
               .then(function () {
-                ev.additional_to = toVal;
-                ev.additional_cc = ccVal;
+                mailEv.additional_to = mailState.to.join(", ");
+                mailEv.additional_cc = mailState.cc.join(", ");
                 showToast("Mail recipients saved");
                 closeModal("mailModal");
               })
@@ -10244,6 +10675,7 @@
           }
           f("new-training-type", ev.training_type || "");
           f("new-expected-count", ev.number_of_participants != null ? ev.number_of_participants : "");
+          f("new-attended-count", ev.number_of_participants_attended != null ? ev.number_of_participants_attended : "");
           // L&D Admin can reschedule any training.
           // Trainers can reschedule their own trainings (owner or trainer match).
           var canResched = state.role === "ld_admin" || (state.role === "trainer" && isOwnTraining(ev));
@@ -10252,7 +10684,7 @@
           var isDone = completionScore(ev) === 5;
           if (isDone) canResched = false;
           var canEditTime = !isDone && (canResched || ownDone);
-          ["new-from-date", "new-to-date", "new-expected-count", "new-duration"].forEach(
+          ["new-from-date", "new-to-date", "new-expected-count", "new-attended-count", "new-duration"].forEach(
             function (id) {
               var el = document.getElementById(id);
               if (el) {
@@ -10762,6 +11194,13 @@
             return;
           }
           var expChanged = expEl ? expVal !== (ev.number_of_participants || 0) : false;
+          var attEl = document.getElementById("new-attended-count");
+          var attVal = attEl ? (attEl.value.trim() === "" ? 0 : parseInt(attEl.value.trim(), 10)) : (ev.number_of_participants_attended || 0);
+          if (isNaN(attVal) || attVal < 0) {
+            showToast("Participants Attended must be 0 or more");
+            return;
+          }
+          var attChanged = attEl ? attVal !== (ev.number_of_participants_attended || 0) : false;
           var durEl2 = document.getElementById("new-duration");
           var durRaw = durEl2 ? durEl2.value.trim() : "";
           var durVal = durRaw === "" ? null : parseFloat(durRaw);
@@ -10778,7 +11217,7 @@
           var geoChanged = beforeGeo !== afterGeo;
           var adhocVal = document.getElementById("new-adhoc").checked ? 1 : 0;
           var adhocChanged = !isDoneSave && adhocVal !== (ev.is_adhoc ? 1 : 0);
-          if (!isDoneSave && (scheduleChanged || expChanged || geoChanged || adhocChanged || durChanged)) {
+          if (!isDoneSave && (scheduleChanged || expChanged || attChanged || geoChanged || adhocChanged || durChanged)) {
             if (!fromDate) {
               showToast("From Date is required");
               return;
@@ -10830,10 +11269,11 @@
                 training_type: trainingType || null,
                 training_location: trainingLocation || null,
                 number_of_participants: expChanged ? expVal : null,
+                number_of_participants_attended: attChanged ? attVal : null,
                 geographies: geoChanged ? JSON.stringify(state.selectedGeographies) : null,
                 is_adhoc: adhocChanged ? adhocVal : null,
                 program_duration_hours: durChanged ? durVal : null,
-              }).then(function () {
+              }).then(function (res) {
                 ev.from_date = fromDate;
                 ev.to_date = toDate;
                 ev.start_time = startTime;
@@ -10843,7 +11283,11 @@
                 ev.training_location = trainingLocation;
                 ev.is_adhoc = adhocVal;
                 if (expChanged) ev.number_of_participants = expVal;
+                if (attChanged) ev.number_of_participants_attended = attVal;
                 if (durChanged) ev.program_duration_hours = durVal;
+                if (res && res.holiday_warnings && res.holiday_warnings.length) {
+                  showToast("⚠ " + res.holiday_warnings.join(" "));
+                }
                 /* ev.geographies refreshes from the get_training_details
                    refetch after save — no manual merge needed. */
               });
@@ -11288,13 +11732,17 @@
             trainer_remarks: agenda.trim() || null,
             additional_cc: null, /* managed via Mail Recipients dialog in edit mode */
             is_adhoc: isAdhoc,
+            number_of_participants:
+              (document.getElementById("new-expected-count") || {}).value || null,
+            number_of_participants_attended:
+              (document.getElementById("new-attended-count") || {}).value || null,
             program_duration_hours:
               (document.getElementById("new-duration") || {}).value || null,
             participants: JSON.stringify(state.selectedParticipants),
             submit: 1,
           };
           api("create_training", args)
-            .then(function () {
+            .then(function (res) {
               var p = date.split("-");
               state.selectedDate = new Date(
                 parseInt(p[0], 10),
@@ -11312,9 +11760,11 @@
               }
               closeModal("addModal");
               loadData(true);
-              showToast(
-                isAdhoc ? "Ad-hoc training scheduled" : "Training scheduled",
-              );
+              var _msg = isAdhoc ? "Ad-hoc training scheduled" : "Training scheduled";
+              if (res && res.holiday_warnings && res.holiday_warnings.length) {
+                _msg += " — ⚠ " + res.holiday_warnings.join(" ");
+              }
+              showToast(_msg);
             })
             .catch(function (e) {
               showToast("Could not save training: " + e.message);
@@ -11915,6 +12365,16 @@
           .getElementById("moreModal")
           .addEventListener("click", function (e) {
             if (e.target === this) closeModal("moreModal");
+          });
+        var progOthersModalEl = document.getElementById("progOthersModal");
+        if (progOthersModalEl)
+          progOthersModalEl.addEventListener("click", function (e) {
+            if (e.target === this) closeModal("progOthersModal");
+          });
+        var trainerDashModalEl = document.getElementById("trainerDashModal");
+        if (trainerDashModalEl)
+          trainerDashModalEl.addEventListener("click", function (e) {
+            if (e.target === this) closeModal("trainerDashModal");
           });
         document.getElementById("btn-reset");
         document.querySelectorAll("[data-close]").forEach(function (b) {
@@ -14545,6 +15005,8 @@
           }
         }
         window.switchTab = switchTab;
+        window.closeModal = closeModal;
+        window.openTrainerPanel = openTrainerPanel;
 
         document
           .getElementById("nav-calendar")
@@ -14742,6 +15204,8 @@
           if (overlay) overlay.classList.add("open");
           api("get_trainer_profile", { employee_id: empId }).then(function(t) {
             renderTrainerPanel(t);
+            var btn = document.querySelector("#trnPanelBody [data-trndash]");
+            if (btn) btn.onclick = function(){ openTrainerDashboard(btn.dataset.trndash); };
           }).catch(function(e) {
             if (body) body.innerHTML = '<div style="color:#dc2626;font-size:13px;padding:16px;">Error: ' + esc(e.message) + '</div>';
           });
@@ -14872,6 +15336,7 @@
                 '</div>' +
               '</div>' +
             '</div>' +
+            '<div style="margin-top:8px;"><button class="btn btn-primary" style="font-size:11.5px;padding:5px 10px;" data-trndash="' + esc(t.employee_id || t.employee_number || '') + '">View Dashboard</button></div>' +
             '<div style="height:1px;background:#dfe7e9;"></div>' +
             '<div style="display:flex;gap:12px;">' +
               '<div style="flex:1;text-align:center;background:#f8fafb;border-radius:8px;padding:12px 8px;">' +
@@ -14932,6 +15397,7 @@
             dashLoaded = true;
             wrap.innerHTML = buildDashboardHTML();
             bindDashboardEvents();
+            dbLoadTrainerOptions();
           }
           refreshDashboard();
         }
@@ -15023,6 +15489,9 @@
             ".db-cov-tabs{display:flex;gap:2px;background:#e6f0f2;border-radius:var(--radius-sm);padding:2px;margin-bottom:6px;}",
             ".db-cov-tab{flex:1;text-align:center;padding:3px 0;font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;color:#004e54;}",
             ".db-cov-tab.active{background:#004e54;color:#ffffff;box-shadow:var(--shadow-1);}",
+            ".db-dist-tabs{display:flex;gap:2px;background:#e6f0f2;border-radius:var(--radius-sm);padding:2px;}",
+            ".db-dist-tab{flex:1;text-align:center;padding:3px 0;font-size:11px;font-weight:600;border-radius:4px;cursor:pointer;color:#004e54;user-select:none;}",
+            ".db-dist-tab.active{background:#004e54;color:#ffffff;box-shadow:var(--shadow-1);}",
             ".db-cov-panel{display:none;}.db-cov-panel.active{display:block;}",
             ".db-cov-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:6px;}",
             ".db-ci-lbl{font-size:9.5px;color:var(--ink-3);margin-bottom:1px;font-weight:600;text-transform:uppercase;letter-spacing:.03em;}",
@@ -15062,9 +15531,13 @@
             ".db-tbl-scroll{overflow-x:auto;flex:1;}",
 
             /* ── Upcoming table ── */
+            ".db-upcoming-scroll{max-height:118px;overflow-y:auto;overflow-x:auto;}",
+            ".db-upcoming-scroll::-webkit-scrollbar{width:4px;height:4px;}",
+            ".db-upcoming-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}",
+            ".db-upcoming-scroll::-webkit-scrollbar-thumb:hover{background:#94a3b8;}",
             ".db-utbl{width:100%;border-collapse:collapse;font-size:11.5px;}",
             ".db-utbl thead tr{background:#e6f0f2;border-bottom:1px solid #cbd5e1;}",
-            ".db-utbl thead th{padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#004e54;white-space:nowrap;}",
+            ".db-utbl thead th{position:sticky;top:0;background:#e6f0f2;z-index:2;padding:5px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:#004e54;white-space:nowrap;}",
             ".db-utbl tbody tr{border-bottom:1px solid var(--border);}.db-utbl tbody tr:hover{background:#f8fafc;}",
             ".db-utbl tbody td{padding:5px 8px;}",
             ".db-utbl td.u-prog{font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}",
@@ -15076,7 +15549,10 @@
             ".db-sp-completed{background:#dcfce7;color:#16a34a}.db-sp-pending{background:#fef3c7;color:#d97706}",
 
             /* ── Insights panel ── */
-            ".db-ins-list{display:flex;flex-direction:column;gap:4px;}",
+            ".db-ins-card{flex:1;min-height:0;}",
+            ".db-ins-list{display:flex;flex-direction:column;gap:4px;overflow-y:auto;max-height:120px;}",
+            ".db-ins-list::-webkit-scrollbar{width:4px;}",
+            ".db-ins-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px;}",
             ".db-ins{display:flex;align-items:flex-start;gap:7px;padding:5px 8px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);}",
             ".db-ins-icon{width:22px;height:22px;border-radius:5px;display:grid;place-items:center;flex-shrink:0;margin-top:1px;}",
             ".db-ins-icon svg{width:11px;height:11px;}",
@@ -15088,7 +15564,26 @@
             ".db-ins-desc{font-size:10.5px;color:var(--ink-2);line-height:1.3;}",
 
             /* ── Program legend ── */
-            ".db-prog-leg{display:flex;flex-direction:column;gap:2px;font-size:11px;margin-top:4px;}",
+            ".db-prog-leg{display:flex;flex-direction:column;gap:2px;font-size:11px;margin-top:4px;max-height:96px;overflow-y:auto;padding-right:4px;}",
+            ".db-prog-leg::-webkit-scrollbar{width:5px;}.db-prog-leg::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}",
+            ".db-prog-row{display:flex;align-items:center;gap:7px;padding:1px 0;border-radius:4px;}",
+            ".db-cat-sub{padding-left:13px;font-size:10.5px;}",
+            ".db-cat-head{cursor:pointer;}",
+            ".db-cat-head:hover{background:#f1f5f9;}",
+            ".db-cat-kids{flex-direction:column;gap:2px;}",
+            ".db-prog-row[data-others]{cursor:pointer;}",
+            ".db-prog-row[data-others]:hover{background:#f1f5f9;}",
+            /* ── "Others" programs popup ── */
+            ".db-oth-sub{font-size:11px;color:var(--ink-3);margin-bottom:8px;}",
+            ".db-oth-list{display:flex;flex-direction:column;max-height:52vh;overflow-y:auto;padding-right:4px;}",
+            ".db-oth-list::-webkit-scrollbar{width:6px;}.db-oth-list::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px;}",
+            ".db-oth-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;}",
+            ".db-oth-row:last-child{border-bottom:none;}",
+            ".db-oth-name{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-1);font-weight:600;}",
+            ".db-oth-bar{flex:0 0 70px;height:6px;border-radius:3px;background:#e2e8f0;overflow:hidden;}",
+            ".db-oth-bar>i{display:block;height:100%;background:#94a3b8;border-radius:3px;}",
+            ".db-oth-num{flex:0 0 auto;font-weight:700;color:var(--ink-1);}",
+            ".db-oth-pct{flex:0 0 38px;text-align:right;color:var(--ink-3);}",
 
             /* ── Misc ── */
             ".db-loading{display:flex;align-items:center;justify-content:center;height:50px;color:var(--ink-3);font-size:12px;gap:8px;}",
@@ -15109,9 +15604,23 @@
                   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:14px;height:14px;color:#005a60;"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>',
                   'Training Period:',
                 '</span>',
-                '<button id="db-prev-month" class="icon-btn" style="width:26px;height:26px;" title="Previous Month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="15 18 9 12 15 6"/></svg></button>',
-                '<input type="month" id="db-month-picker" value="'+mv+'" style="height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:0 8px;font-size:12px;font-weight:600;color:var(--ink-1);outline:none;cursor:pointer;">',
-                '<button id="db-next-month" class="icon-btn" style="width:26px;height:26px;" title="Next Month"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><polyline points="9 18 15 12 9 6"/></svg></button>',
+                '<div style="display:inline-flex;align-items:center;gap:3px;">',
+                  '<button id="db-prev-month" title="Previous month" style="width:26px;height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M15 18l-6-6 6-6"/></svg></button>',
+                  '<input type="month" id="db-month-picker" value="'+mv+'" style="height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:0 8px;font-size:12px;font-weight:600;color:var(--ink-1);outline:none;cursor:pointer;">',
+                  '<button id="db-next-month" title="Next month" style="width:26px;height:26px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;color:var(--ink-2);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M9 18l6-6-6-6"/></svg></button>',
+                '</div>',
+                '<span style="font-size:11px;font-weight:600;color:var(--ink-2);margin-left:6px;">Trainer:</span>',
+                '<div id="db-trainer-combobox" style="position:relative;display:inline-block;">',
+                  '<div style="display:flex;align-items:center;position:relative;">',
+                    '<input type="text" id="db-trainer-search" placeholder="Select or search trainer…" autocomplete="off" style="height:26px;width:195px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);padding:0 24px 0 8px;font-size:11.5px;font-weight:600;color:var(--ink-1);outline:none;cursor:pointer;">',
+                    '<span id="db-trainer-arrow" style="position:absolute;right:6px;pointer-events:none;color:var(--ink-3);display:flex;align-items:center;">',
+                      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><path d="M6 9l6 6 6-6"/></svg>',
+                    '</span>',
+                  '</div>',
+                  '<div id="db-trainer-dropdown" style="display:none;position:absolute;top:100%;left:0;width:260px;max-height:220px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);box-shadow:0 6px 18px rgba(0,0,0,0.12);z-index:1050;margin-top:3px;"></div>',
+                  '<select id="db-trainer-filter" style="display:none;"><option value="">All trainers</option></select>',
+                  '<button id="db-trainer-clear" title="Clear trainer filter" style="display:none;width:22px;height:22px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface-2);cursor:pointer;font-size:12px;line-height:1;">&times;</button>',
+                '</div>',
               '</div>',
               '<div id="db-period-label" style="font-size:12px;font-weight:600;color:var(--ink-2);"></div>',
             '</div>',
@@ -15160,10 +15669,13 @@
                 '</div>',
               '</div>',
 
-              /* Program Distribution */
+              /* Program / Type Distribution */
               '<div class="db-card" style="justify-content:flex-start;">',
                 '<div>',
-                  '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Program Distribution</div><div class="db-sec-sub">Vertical-wise</div></div>',
+                  '<div class="db-sec-head" style="align-items:center;margin-bottom:6px;">',
+                    '<div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l3 3"/></svg>Distribution</div>',
+                    '<div class="db-dist-tabs" style="width:186px;"><div class="db-dist-tab active" data-dbdist="program">Program</div><div class="db-dist-tab" data-dbdist="category">Category</div><div class="db-dist-tab" data-dbdist="type">Type</div></div>',
+                  '</div>',
                   '<div style="position:relative;height:110px;margin-bottom:6px;"><canvas id="db-prog-chart"></canvas></div>',
                   '<div id="db-prog-legend" class="db-prog-leg"></div>',
                 '</div>',
@@ -15189,11 +15701,11 @@
                     '<div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Upcoming Trainings</div>',
                     '<button class="db-view-link" id="db-view-all-upcoming" type="button" onclick="viewAllUpcomingTrainings()">View All →</button>',
                   '</div>',
-                  '<div class="db-tbl-scroll"><table class="db-utbl"><thead><tr><th>Program</th><th>Date</th><th>Zone</th><th>Trainer</th><th>Status</th></tr></thead><tbody id="db-upcoming-body"><tr><td colspan="5" class="db-empty"><div class="spinner" style="margin:auto;"></div></td></tr></tbody></table></div>',
+                  '<div class="db-tbl-scroll db-upcoming-scroll"><table class="db-utbl"><thead><tr><th>Program</th><th>Date</th><th>Zone</th><th>Trainer</th><th>Status</th></tr></thead><tbody id="db-upcoming-body"><tr><td colspan="5" class="db-empty"><div class="spinner" style="margin:auto;"></div></td></tr></tbody></table></div>',
                 '</div>',
 
                 /* Insights & Alerts */
-                '<div class="db-card" id="db-ins-card">',
+                '<div class="db-card db-ins-card" id="db-ins-card">',
                   '<div class="db-sec-head"><div class="db-sec-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Insights & Alerts</div></div>',
                   '<div class="db-ins-list" id="db-insights"><div class="db-loading"><div class="spinner"></div></div></div>',
                 '</div>',
@@ -15206,15 +15718,46 @@
 
         /* ── Dashboard State & Charts ── */
         var dbTrendChart = null, dbProgChart = null, dbCovCharts = {};
+        /* Programs folded into the "Others" slice + overall total, kept for
+           the "Others" popup. */
+        var dbProgOthers = [], dbProgTotal = 0;
+        /* Trainer dashboard charts */
+        var trnDashTrendChart = null, trnDashProgChart = null, trnDashStatusChart = null;
         var DB_COLORS = ["#0d9488","#2563eb","#7c3aed","#ea580c","#16a34a","#d97706","#db2777","#0284c7"];
         var dbSelectedYear = new Date().getFullYear();
         var dbSelectedMonth = new Date().getMonth() + 1;
+        var dbSelectedTrainer = "";
 
         function bindDashboardEvents() {
           var picker = document.getElementById("db-month-picker");
+          var currBtn = document.getElementById("db-current-month");
           var prevBtn = document.getElementById("db-prev-month");
           var nextBtn = document.getElementById("db-next-month");
-          var currBtn = document.getElementById("db-current-month");
+
+          function updateDbMonth(y, m) {
+            dbSelectedYear = y;
+            dbSelectedMonth = m;
+            if (picker) {
+              picker.value = y + "-" + String(m).padStart(2, "0");
+            }
+            refreshDashboard();
+          }
+
+          if (prevBtn) {
+            prevBtn.addEventListener("click", function () {
+              var m = dbSelectedMonth - 1, y = dbSelectedYear;
+              if (m < 1) { m = 12; y--; }
+              updateDbMonth(y, m);
+            });
+          }
+
+          if (nextBtn) {
+            nextBtn.addEventListener("click", function () {
+              var m = dbSelectedMonth + 1, y = dbSelectedYear;
+              if (m > 12) { m = 1; y++; }
+              updateDbMonth(y, m);
+            });
+          }
 
           if (picker) {
             picker.addEventListener("change", function () {
@@ -15226,41 +15769,91 @@
             });
           }
 
-          if (prevBtn) {
-            prevBtn.addEventListener("click", function () {
-              if (dbSelectedMonth === 1) {
-                dbSelectedMonth = 12;
-                dbSelectedYear -= 1;
-              } else {
-                dbSelectedMonth -= 1;
-              }
-              syncDbMonthPicker();
-              refreshDashboard();
-            });
-          }
-
-          if (nextBtn) {
-            nextBtn.addEventListener("click", function () {
-              if (dbSelectedMonth === 12) {
-                dbSelectedMonth = 1;
-                dbSelectedYear += 1;
-              } else {
-                dbSelectedMonth += 1;
-              }
-              syncDbMonthPicker();
-              refreshDashboard();
-            });
-          }
-
           if (currBtn) {
             currBtn.addEventListener("click", function () {
               var now = new Date();
-              dbSelectedYear = now.getFullYear();
-              dbSelectedMonth = now.getMonth() + 1;
-              syncDbMonthPicker();
+              updateDbMonth(now.getFullYear(), now.getMonth() + 1);
+            });
+          }
+
+          var trainerSel = document.getElementById("db-trainer-filter");
+          if (trainerSel) {
+            trainerSel.addEventListener("change", function () {
+              dbSelectedTrainer = this.value || "";
+              var clearBtn = document.getElementById("db-trainer-clear");
+              if (clearBtn) clearBtn.style.display = dbSelectedTrainer ? "" : "none";
+              // Dashboard hamesha consolidated rahega — trainer select sirf popup kholta hai
+              if (dbSelectedTrainer) {
+                openTrainerDashboard(dbSelectedTrainer);
+                // Select wapas "All trainers" pe reset karo taaki dashboard consolidated rahe
+                this.value = "";
+                dbSelectedTrainer = "";
+                if (clearBtn) clearBtn.style.display = "none";
+              }
+            });
+          }
+          var trainerClear = document.getElementById("db-trainer-clear");
+          if (trainerClear) {
+            trainerClear.addEventListener("click", function () {
+              dbSelectedTrainer = "";
+              var sel = document.getElementById("db-trainer-filter");
+              if (sel) sel.value = "";
+              var searchInput = document.getElementById("db-trainer-search");
+              if (searchInput) searchInput.value = "";
+              this.style.display = "none";
               refreshDashboard();
             });
           }
+
+          var searchInput = document.getElementById("db-trainer-search");
+          var drop = document.getElementById("db-trainer-dropdown");
+          if (searchInput && drop) {
+            function filterTrainers() {
+              var q = (searchInput.value || "").trim().toLowerCase();
+              if (!q) {
+                renderDbTrainerDropdown(dbTrainersList);
+                return;
+              }
+              var filtered = dbTrainersList.filter(function(t) {
+                var nameMatch = (t.name || "").toLowerCase().indexOf(q) !== -1;
+                var idMatch = (t.employee_id || "").toLowerCase().indexOf(q) !== -1;
+                var numMatch = (t.employee_number || "").toLowerCase().indexOf(q) !== -1;
+                return nameMatch || idMatch || numMatch;
+              });
+              renderDbTrainerDropdown(filtered);
+            }
+
+            searchInput.addEventListener("focus", function () {
+              drop.style.display = "block";
+              filterTrainers();
+            });
+            searchInput.addEventListener("click", function () {
+              drop.style.display = "block";
+              filterTrainers();
+            });
+            searchInput.addEventListener("input", function () {
+              drop.style.display = "block";
+              filterTrainers();
+            });
+
+            document.addEventListener("click", function (e) {
+              var combobox = document.getElementById("db-trainer-combobox");
+              if (combobox && !combobox.contains(e.target)) {
+                drop.style.display = "none";
+              }
+            });
+          }
+
+          /* Distribution tab switching (Program vs Type) */
+          document.querySelectorAll(".db-dist-tab").forEach(function(tab) {
+            tab.onclick = function(e) {
+              e.preventDefault();
+              document.querySelectorAll(".db-dist-tab").forEach(function(t){ t.classList.remove("active"); });
+              tab.classList.add("active");
+              dbActiveDistTab = tab.dataset.dbdist || "program";
+              dbRenderDistribution();
+            };
+          });
 
           var viewAllBtn = document.getElementById("db-view-all-upcoming");
           if (viewAllBtn) {
@@ -15289,11 +15882,82 @@
         }
         window.viewAllUpcomingTrainings = viewAllUpcomingTrainings;
 
-        function syncDbMonthPicker() {
-          var picker = document.getElementById("db-month-picker");
-          if (picker) {
-            picker.value = dbSelectedYear + "-" + String(dbSelectedMonth).padStart(2, "0");
+        var dbTrainersList = [];
+
+        function renderDbTrainerDropdown(list) {
+          var drop = document.getElementById("db-trainer-dropdown");
+          if (!drop) return;
+          if (!list || !list.length) {
+            drop.innerHTML = '<div style="padding:8px 12px;font-size:11.5px;color:var(--ink-3);font-style:italic;">No trainers found</div>';
+            return;
           }
+          var html = '<div class="db-trainer-opt" data-tid="" style="padding:6px 10px;font-size:11.5px;font-weight:600;color:var(--ink-2);cursor:pointer;border-bottom:1px solid var(--border);background:var(--surface);">All trainers</div>';
+          list.forEach(function(t) {
+            var empId = t.employee_number || t.employee_id || "";
+            html += '<div class="db-trainer-opt" data-tid="' + esc(t.employee_id || t.name) + '" data-tname="' + esc(t.name) + '" style="padding:6px 10px;cursor:pointer;display:flex;flex-direction:column;gap:1px;border-bottom:1px solid rgba(0,0,0,0.04);background:var(--surface);">' +
+              '<div style="font-size:12px;font-weight:600;color:var(--ink-1);display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+                '<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.name) + '</span>' +
+                (empId ? '<span style="font-size:10.5px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);padding:1px 5px;border-radius:4px;flex-shrink:0;">' + esc(empId) + '</span>' : '') +
+              '</div>' +
+              (t.branch ? '<div style="font-size:10.5px;color:var(--ink-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + esc(t.branch) + (t.department ? ' · ' + esc(t.department) : '') + '</div>' : '') +
+            '</div>';
+          });
+          drop.innerHTML = html;
+
+          drop.querySelectorAll(".db-trainer-opt").forEach(function(el) {
+            el.addEventListener("mouseenter", function() { el.style.background = "var(--surface-2)"; });
+            el.addEventListener("mouseleave", function() { el.style.background = "var(--surface)"; });
+            el.addEventListener("click", function(e) {
+              e.stopPropagation();
+              var tid = el.dataset.tid;
+              var searchInput = document.getElementById("db-trainer-search");
+              if (searchInput) {
+                searchInput.value = el.dataset.tname || "";
+              }
+              drop.style.display = "none";
+              if (tid) {
+                openTrainerDashboard(tid);
+                if (searchInput) searchInput.value = "";
+              }
+            });
+          });
+        }
+
+        function dbLoadTrainerOptions() {
+          var sel = document.getElementById("db-trainer-filter");
+          var searchInput = document.getElementById("db-trainer-search");
+          var isAdmin = (state.role === "ld_admin");
+          api("get_trainers_list", { page_size: 200 }).then(function(res){
+            var trainers = (res && res.trainers) ? res.trainers : [];
+            // non-admin: only self
+            if (!isAdmin) {
+              var selfName = state.currentEmployeeName || state.currentEmployee || "";
+              var selfEmp = trainers.filter(function(t){ return t.name === selfName || t.employee_id === selfName; });
+              trainers = selfEmp.length ? selfEmp : trainers.filter(function(t){ return false; });
+            }
+            // sort by name
+            trainers.sort(function(a,b){ return (a.name||"").localeCompare(b.name||""); });
+            dbTrainersList = trainers;
+            renderDbTrainerDropdown(trainers);
+
+            if (sel) {
+              sel.innerHTML = "";
+              var o0 = document.createElement("option"); o0.value=""; o0.textContent = isAdmin ? "All trainers" : "My dashboard"; sel.appendChild(o0);
+              trainers.forEach(function(t){
+                var op = document.createElement("option");
+                op.value = t.employee_id || t.name;
+                op.textContent = t.name + (t.branch ? " · " + t.branch : "");
+                sel.appendChild(op);
+              });
+            }
+
+            if (!isAdmin && trainers.length) {
+              if (searchInput) {
+                searchInput.value = trainers[0].name;
+                searchInput.disabled = true;
+              }
+            }
+          }).catch(function(){});
         }
 
         function dbFillSelect(id, items, placeholder) {
@@ -15306,6 +15970,7 @@
 
         function refreshDashboard() {
           var args = { year: dbSelectedYear, month: dbSelectedMonth };
+          if (dbSelectedTrainer) args.trainer = dbSelectedTrainer;
           var kg = document.getElementById("db-kpi-grid");
           if(kg) kg.innerHTML='<div class="db-loading" style="grid-column:1/-1"><div class="spinner"></div> Loading…</div>';
 
@@ -15319,7 +15984,10 @@
             dbRenderKPIs(d.kpis||{});
             dbRenderCoverage(d.coverage||{});
             dbRenderTrend(d.monthly_trend||[], d.kpis||{}, meta);
-            dbRenderProgChart(d.program_coverage||[]);
+            dbCurrentProgCoverage = d.program_coverage || [];
+            dbCurrentTypeCoverage = d.type_coverage || [];
+            dbCurrentCategoryCoverage = d.category_coverage || [];
+            dbRenderDistribution();
             dbRenderZoneTable(d.zone_table||[]);
             dbRenderUpcoming(d.upcoming_trainings||[]);
             dbRenderInsights(d.insights||[]);
@@ -15458,25 +16126,461 @@
           }).join("");
         }
 
+        var dbCurrentProgCoverage = [];
+        var dbCurrentTypeCoverage = [];
+        var dbCurrentCategoryCoverage = [];
+        var dbActiveDistTab = "program";
+        var dbCatOpen = {};
+
+        var DB_CATEGORY_COLORS = {
+          "Functional Training": "#0d9488",
+          "Retail Asset Training": "#2563eb",
+          "SS Training": "#7c3aed",
+          "Other": "#94a3b8"
+        };
+
+        function dbRenderDistribution() {
+          if (dbActiveDistTab === "type") {
+            dbRenderTypeChart(dbCurrentTypeCoverage || []);
+          } else if (dbActiveDistTab === "category") {
+            dbRenderCategoryChart(dbCurrentCategoryCoverage || []);
+          } else {
+            dbRenderProgChart(dbCurrentProgCoverage || []);
+          }
+        }
+
+        /* Category view: donut of the client's categories with the programmes
+           under each category listed in the legend (sub-distribution). */
+        function dbRenderCategoryChart(cats) {
+          var canvas = document.getElementById("db-prog-chart");
+          if (!canvas || typeof Chart === "undefined") return;
+          if (dbProgChart) { try { dbProgChart.destroy(); } catch(e){} }
+          var leg = document.getElementById("db-prog-legend");
+          if (!cats || !cats.length) {
+            if (leg) leg.innerHTML = '<div style="color:var(--ink-3);text-align:center;font-size:11.5px;">No data</div>';
+            return;
+          }
+          var sorted = cats.map(function(c, i) {
+            return {
+              label: c.category,
+              value: c.planned != null ? c.planned : (c.conducted || 0),
+              conducted: c.conducted || 0,
+              programs: c.programs || [],
+              color: DB_CATEGORY_COLORS[c.category] || DB_COLORS[i % DB_COLORS.length]
+            };
+          }).sort(function(a, b) { return b.value - a.value; });
+
+          var total = sorted.reduce(function(a, b) { return a + b.value; }, 0);
+
+          dbProgChart = new Chart(canvas.getContext("2d"), {
+            type: "doughnut",
+            data: {
+              labels: sorted.map(function(s){ return s.label; }),
+              datasets: [{
+                data: sorted.map(function(s){ return s.value; }),
+                backgroundColor: sorted.map(function(s){ return s.color; }),
+                borderWidth: 2,
+                borderColor: "#fff",
+                cutout: "65%"
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: function(ctx) {
+                      var pct = total ? Math.round(ctx.raw / total * 100) : 0;
+                      return ctx.label + ": " + ctx.raw + " (" + pct + "%)";
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          if (leg) {
+            leg.innerHTML = sorted.map(function(s, idx) {
+              var pct = total ? Math.round(s.value / total * 100) : 0;
+              var open = dbCatOpen[s.label];
+              if (open === undefined) open = (idx === 0);
+              var head = '<div class="db-prog-row db-cat-head" data-cat-idx="' + idx + '" title="' + dbEsc(s.label + " — click to show/hide programs") + '">' +
+                '<span style="width:9px;height:9px;border-radius:50%;background:' + s.color + ';flex-shrink:0;display:inline-block;"></span>' +
+                '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700;color:var(--ink-1);">' + dbEsc(s.label) + '</span>' +
+                '<span style="font-weight:700;color:var(--ink-1);">' + s.value + '</span>' +
+                '<span style="color:var(--ink-3);min-width:32px;text-align:right;">(' + pct + '%)</span>' +
+                '<span class="db-cat-chev" style="width:9px;text-align:center;color:var(--ink-3);flex-shrink:0;">' + (open ? "▾" : "▸") + '</span>' +
+              '</div>';
+              var kids = '<div class="db-cat-kids" data-kids-idx="' + idx + '" style="display:' + (open ? "flex" : "none") + ';">' +
+                (s.programs || []).map(function(p) {
+                  var ppct = total && p.planned ? Math.round(p.planned / total * 100) : 0;
+                  return '<div class="db-prog-row db-cat-sub" title="' + dbEsc(p.program) + '">' +
+                    '<span style="width:5px;height:5px;border-radius:50%;background:' + s.color + ';opacity:.65;flex-shrink:0;display:inline-block;"></span>' +
+                    '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">' + dbEsc(p.program) + '</span>' +
+                    '<span style="font-weight:600;color:var(--ink-2);">' + p.planned + '</span>' +
+                    '<span style="color:var(--ink-3);min-width:32px;text-align:right;">(' + ppct + '%)</span>' +
+                  '</div>';
+                }).join("") +
+              '</div>';
+              return head + kids;
+            }).join("");
+
+            leg.querySelectorAll(".db-cat-head").forEach(function(el) {
+              el.addEventListener("click", function() {
+                var idx = parseInt(el.dataset.catIdx, 10);
+                var s = sorted[idx]; if (!s) return;
+                var open = dbCatOpen[s.label];
+                if (open === undefined) open = (idx === 0);
+                open = !open;
+                dbCatOpen[s.label] = open;
+                var chev = el.querySelector(".db-cat-chev");
+                if (chev) chev.textContent = open ? "▾" : "▸";
+                var kids = leg.querySelector('[data-kids-idx="' + idx + '"]');
+                if (kids) kids.style.display = open ? "flex" : "none";
+              });
+            });
+          }
+        }
+
+        function dbRenderTypeChart(types) {
+          var canvas = document.getElementById("db-prog-chart");
+          if (!canvas || typeof Chart === "undefined") return;
+          if (dbProgChart) { try { dbProgChart.destroy(); } catch(e){} }
+          var leg = document.getElementById("db-prog-legend");
+          if (!types || !types.length) {
+            if (leg) leg.innerHTML = '<div style="color:var(--ink-3);text-align:center;font-size:11.5px;">No data</div>';
+            return;
+          }
+          var TYPE_COLORS = { "Classroom": "#0d9488", "Virtual": "#2563eb", "Unspecified": "#94a3b8" };
+          var sorted = types.map(function(t, i) {
+            var val = t.planned != null ? t.planned : (t.conducted || 0);
+            var col = TYPE_COLORS[t.type] || DB_COLORS[i % DB_COLORS.length];
+            return { label: t.type, value: val, planned: t.planned, conducted: t.conducted, color: col };
+          }).sort(function(a,b){ return b.value - a.value; });
+
+          var total = sorted.reduce(function(a,b){ return a + b.value; }, 0);
+
+          dbProgChart = new Chart(canvas.getContext("2d"), {
+            type: "doughnut",
+            data: {
+              labels: sorted.map(function(s){ return s.label; }),
+              datasets: [{
+                data: sorted.map(function(s){ return s.value; }),
+                backgroundColor: sorted.map(function(s){ return s.color; }),
+                borderWidth: 2,
+                borderColor: "#fff",
+                cutout: "65%"
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: {
+                legend: { display: false },
+                tooltip: {
+                  callbacks: {
+                    label: function(ctx) {
+                      var pct = total ? Math.round(ctx.raw / total * 100) : 0;
+                      return ctx.label + ": " + ctx.raw + " (" + pct + "%)";
+                    }
+                  }
+                }
+              }
+            }
+          });
+
+          if (leg) {
+            leg.innerHTML = sorted.map(function(s) {
+              var pct = total ? Math.round(s.value / total * 100) : 0;
+              return '<div class="db-prog-row" title="' + dbEsc(s.label) + '">' +
+                '<span style="width:9px;height:9px;border-radius:50%;background:' + s.color + ';flex-shrink:0;display:inline-block;"></span>' +
+                '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">' + dbEsc(s.label) + '</span>' +
+                '<span style="font-weight:700;color:var(--ink-1);">' + s.value + '</span>' +
+                '<span style="color:var(--ink-3);min-width:32px;text-align:right;">(' + pct + '%)</span>' +
+              '</div>';
+            }).join("");
+          }
+        }
+
         function dbRenderProgChart(progs) {
           var canvas=document.getElementById("db-prog-chart"); if(!canvas||typeof Chart==="undefined") return;
           if(dbProgChart){try{dbProgChart.destroy();}catch(e){}}
-          var leg=document.getElementById("db-prog-legend"); if(!progs.length){if(leg)leg.innerHTML='<div style="color:var(--ink-3);text-align:center;font-size:11.5px;">No data</div>';return;}
-          var vals=progs.map(function(p){return p.conducted||p.planned;}), total=vals.reduce(function(a,b){return a+b;},0);
+          var leg=document.getElementById("db-prog-legend"); if(!progs.length){dbProgOthers=[];dbProgTotal=0;if(leg)leg.innerHTML='<div style="color:var(--ink-3);text-align:center;font-size:11.5px;">No data</div>';return;}
+
+          /* Too many distinct training titles make a doughnut unreadable:
+             keep the top 7 slices and fold the long tail into one "Others"
+             slice (with the folded names in its tooltip). */
+          var TOP_N=7, OTHERS_COLOR="#94a3b8";
+          var sorted=progs.map(function(p){return {program:p.program,value:(p.planned!=null?p.planned:(p.conducted||0))};})
+            .sort(function(a,b){return b.value-a.value;});
+          var slices=sorted.slice(0,TOP_N).map(function(p,i){
+            return {program:p.program,value:p.value,color:DB_COLORS[i%DB_COLORS.length]};
+          });
+          var rest=sorted.slice(TOP_N);
+          if(rest.length){
+            slices.push({
+              program:"Others ("+rest.length+" program"+(rest.length>1?"s":"")+")",
+              value:rest.reduce(function(a,b){return a+b.value;},0),
+              color:OTHERS_COLOR,
+              members:rest.map(function(p){return p.program+" ("+p.value+")";}).join("\n"),
+            });
+          }
+          var total=slices.reduce(function(a,b){return a+b.value;},0);
+          dbProgOthers=rest; dbProgTotal=total;
+
           dbProgChart=new Chart(canvas.getContext("2d"),{
             type:"doughnut",
-            data:{labels:progs.map(function(p){return p.program;}),datasets:[{data:vals,backgroundColor:DB_COLORS,borderWidth:2,borderColor:"#fff",cutout:"65%"}]},
-            options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var pct=total?Math.round(ctx.raw/total*100):0;return ctx.label+": "+ctx.raw+" ("+pct+"%)";}}}}},
+            data:{labels:slices.map(function(s){return s.program;}),datasets:[{data:slices.map(function(s){return s.value;}),backgroundColor:slices.map(function(s){return s.color;}),borderWidth:2,borderColor:"#fff",cutout:"65%"}]},
+            options:{responsive:true,maintainAspectRatio:false,
+              onClick:function(e,els){if(els&&els.length){var s=slices[els[0].index];if(s&&s.members)openProgOthersModal();}},
+              onHover:function(e,els){canvas.style.cursor=(els&&els.length&&slices[els[0].index]&&slices[els[0].index].members)?"pointer":"default";},
+              plugins:{legend:{display:false},tooltip:{callbacks:{label:function(ctx){var pct=total?Math.round(ctx.raw/total*100):0;var line=ctx.label+": "+ctx.raw+" ("+pct+"%)";var s=slices[ctx.dataIndex];if(s&&s.members){var mem=s.members.split("\n");var shown=mem.slice(0,6).map(function(m){return "   · "+m;});if(mem.length>6)shown.push("   · …");return [line].concat(shown);}return line;}}}}},
           });
-          if(leg) leg.innerHTML=progs.slice(0,5).map(function(p,i){
-            var pct=total?Math.round((p.conducted||p.planned)/total*100):0;
-            return '<div style="display:flex;align-items:center;gap:7px;">'+
-              '<span style="width:9px;height:9px;border-radius:50%;background:'+DB_COLORS[i%DB_COLORS.length]+';flex-shrink:0;display:inline-block;"></span>'+
-              '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">'+dbEsc(p.program)+'</span>'+
-              '<span style="font-weight:700;color:var(--ink-1);">'+(p.conducted||p.planned)+'</span>'+
-              '<span style="color:var(--ink-3);min-width:32px;text-align:right;">('+pct+'%)</span></div>';
+
+          if(leg) leg.innerHTML=slices.map(function(s){
+            var pct=total?Math.round(s.value/total*100):0;
+            var isOthers=!!s.members;
+            return '<div class="db-prog-row" '+(isOthers?'data-others="1" ':'')+'title="'+dbEsc(isOthers?"View all "+s.program:s.program)+'">'+
+              '<span style="width:9px;height:9px;border-radius:50%;background:'+s.color+';flex-shrink:0;display:inline-block;"></span>'+
+              '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink-2);">'+dbEsc(s.program)+'</span>'+
+              '<span style="font-weight:700;color:var(--ink-1);">'+s.value+'</span>'+
+              '<span style="color:var(--ink-3);min-width:32px;text-align:right;">('+pct+'%)</span>'+
+              (isOthers?'<span style="color:var(--ink-3);font-size:12px;flex-shrink:0;line-height:1;">&rsaquo;</span>':'')+'</div>';
+          }).join("");
+          var othRow=leg?leg.querySelector("[data-others]"):null;
+          if(othRow) othRow.addEventListener("click", openProgOthersModal);
+        }
+
+        /* List every program that was folded into "Others" (top 7 kept). */
+        function openProgOthersModal() {
+          var list=(dbProgOthers||[]).slice().sort(function(a,b){return b.value-a.value;});
+          var body=document.getElementById("progOthersBody");
+          var title=document.getElementById("progOthersTitle");
+          var modal=document.getElementById("progOthersModal");
+          if(!body||!modal) return;
+          var sum=list.reduce(function(a,b){return a+b.value;},0);
+          if(title) title.textContent="Other programs ("+list.length+")";
+          if(!list.length){
+            body.innerHTML='<div style="padding:8px 0;color:var(--ink-3);font-size:12px;">No other programs in this period.</div>';
+          }else{
+            var max=list[0].value||1, allTotal=dbProgTotal||0;
+            body.innerHTML=
+              '<div class="db-oth-sub">'+list.length+' programs · '+sum+' trainings'+
+                (allTotal?' · '+Math.round(sum/allTotal*100)+'% of all':'')+'</div>'+
+              '<div class="db-oth-list">'+list.map(function(p){
+                var pct=allTotal?Math.round(p.value/allTotal*100):0;
+                return '<div class="db-oth-row" title="'+dbEsc(p.program)+'">'+
+                  '<span class="db-oth-name">'+dbEsc(p.program)+'</span>'+
+                  '<span class="db-oth-bar"><i style="width:'+Math.max(4,Math.round(p.value/max*100))+'%"></i></span>'+
+                  '<span class="db-oth-num">'+p.value+'</span>'+
+                  '<span class="db-oth-pct">('+pct+'%)</span>'+
+                '</div>';
+              }).join("")+'</div>';
+          }
+          modal.classList.add("open");
+        }
+
+        function openTrainerDashboard(trainerKey) {
+          console.log("OPENING TRAINER DASHBOARD for:", trainerKey);
+          var modal = document.getElementById("trainerDashModal");
+          var body = document.getElementById("trnDashBody");
+          var title = document.getElementById("trnDashTitle");
+          if (!modal || !body) return;
+          if (title) {
+            var MONTHS_FULL = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+            var mLabel = (dbSelectedYear && dbSelectedMonth)
+              ? " — " + MONTHS_FULL[dbSelectedMonth - 1] + " " + dbSelectedYear
+              : "";
+            title.textContent = "Trainer Performance Dashboard" + mLabel;
+          }
+          body.innerHTML = '<div style="padding:40px 0;text-align:center;color:var(--ink-3);font-size:12px;"><div class="spinner" style="margin:0 auto 8px;"></div>Loading…</div>';
+          modal.classList.add("open");
+          // Pass selected month/year from dashboard month picker
+          var apiArgs = { trainer: trainerKey, months: 6 };
+          if (dbSelectedYear && dbSelectedMonth) {
+            apiArgs.year  = dbSelectedYear;
+            apiArgs.month = dbSelectedMonth;
+          }
+          api("get_trainer_dashboard_data", apiArgs).then(function(d){
+            renderTrainerDashboard(d);
+          }).catch(function(e){
+            body.innerHTML = '<div style="padding:16px;color:#dc2626;font-size:12px;">Error: ' + esc(e.message) + '</div>';
+          });
+        }
+
+        function trnKpi(label, val, color) {
+          return '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:10px 12px;">' +
+            '<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--ink-3);letter-spacing:.04em;">' + esc(label) + '</div>' +
+            '<div style="font-size:22px;font-weight:800;color:' + color + ';margin-top:4px;">' + (val == null ? "—" : val) + '</div>' +
+          '</div>';
+        }
+
+        function trnStatusDonut(counts) {
+          var total = (counts.completed||0)+(counts.upcoming||0)+(counts.cancelled||0)+(counts.postponed||0)+(counts.rescheduled||0);
+          var c = counts.completed||0, u = counts.upcoming||0, x = (counts.cancelled||0)+(counts.postponed||0);
+          var canvas = document.getElementById("trn-dash-status");
+          if (!canvas || typeof Chart === "undefined") return;
+          if (trnDashStatusChart) { try { trnDashStatusChart.destroy(); } catch(e){} }
+          trnDashStatusChart = new Chart(canvas.getContext("2d"), {
+            type: "doughnut",
+            data: { labels: ["Conducted","Upcoming","Cancelled/Postponed"], datasets: [{ data: [c,u,x], backgroundColor: ["#16a34a","#2563eb","#dc2626"], borderWidth: 2, borderColor: "#fff", cutout: "65%" }] },
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(ctx){ var pct = total ? Math.round(ctx.raw/total*100) : 0; return ctx.label + ": " + ctx.raw + " (" + pct + "%)"; } } } } }
+          });
+          var leg = document.getElementById("trn-dash-status-leg");
+          if (leg) {
+            var items = [{l:"Conducted",v:c,col:"#16a34a"},{l:"Upcoming",v:u,col:"#2563eb"},{l:"Cancelled/Postponed",v:x,col:"#dc2626"}];
+            leg.innerHTML = items.map(function(it){ var pct = total ? Math.round(it.v/total*100) : 0; return '<div style="display:flex;align-items:center;gap:7px;font-size:11px;"><span style="width:9px;height:9px;border-radius:50%;background:'+it.col+';flex-shrink:0;"></span><span style="flex:1;color:var(--ink-2);">'+it.l+'</span><span style="font-weight:700;color:var(--ink-1);">'+it.v+'</span><span style="color:var(--ink-3);min-width:34px;text-align:right;">('+pct+'%)</span></div>'; }).join("");
+          }
+        }
+
+        function trnStatusSplit(counts) { return ""; }
+
+        function trnSessionList(list, showStatus) {
+          if (!list || !list.length) return '<div class="db-empty">No sessions.</div>';
+          return list.map(function(s){
+            return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;" data-tname="'+esc(s.name)+'">' +
+              '<span style="font-size:11px;font-weight:700;color:var(--ink-3);min-width:34px;">'+esc(s.month)+' '+esc(s.day)+'</span>' +
+              '<span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:var(--ink-1);">'+esc(s.program)+'</span>' +
+              (showStatus?'<span style="font-size:10.5px;color:var(--ink-3);">'+esc(s.status)+'</span>':'') +
+            '</div>';
           }).join("");
         }
+
+        function renderTrainerDashboard(d) {
+          var body = document.getElementById("trnDashBody");
+          if (!body) return;
+          function fmtDMYDate(dt) {
+            if (!dt) return "—";
+            var s = String(dt).slice(0, 10);
+            var sep = s.indexOf("-") !== -1 ? "-" : (s.indexOf("/") !== -1 ? "/" : null);
+            if (!sep) return s;
+            var p = s.split(sep);
+            if (p.length !== 3) return s;
+            if (p[0].length === 4) return p[2] + "-" + p[1] + "-" + p[0];
+            if (p[2].length === 4 && parseInt(p[1], 10) > 12) return p[1] + "-" + p[0] + "-" + p[2];
+            return p[0] + "-" + p[1] + "-" + p[2];
+          }
+          var k = d.kpis || {};
+          var initials = (d.name || "?").split(" ").map(function(w){ return w[0]; }).slice(0,2).join("").toUpperCase();
+          var avatar = d.image
+            ? '<img src="' + esc(d.image) + '" alt="" style="width:72px;height:72px;border-radius:50%;object-fit:cover;flex-shrink:0;">'
+            : '<div style="width:72px;height:72px;border-radius:50%;background:#dcefed;color:#00565b;display:grid;place-items:center;font-size:22px;font-weight:700;flex-shrink:0;">' + esc(initials) + '</div>';
+
+          var html = "";
+          // Header card
+          html += '<div style="display:flex;align-items:center;gap:18px;padding:14px 6px 10px;flex-wrap:wrap;">' + avatar +
+            '<div style="min-width:0;flex:1;">' +
+              '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+                '<div style="font-size:20px;font-weight:700;color:var(--ink-1);">' + esc(d.name) + '</div>' +
+                '<span style="font-size:10.5px;font-weight:600;color:#15803d;background:#dcfce7;border-radius:999px;padding:2px 8px;">Active</span>' +
+                '<span style="font-size:10.5px;font-weight:600;color:#007c77;background:#dcefed;border-radius:999px;padding:2px 8px;">Internal Trainer</span>' +
+              '</div>' +
+              '<div style="font-size:11.5px;color:var(--ink-3);margin-top:3px;">Trainer ID: ' + esc(d.employee_number || d.employee_id) + '</div>' +
+              '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:4px 16px;margin-top:8px;font-size:12px;color:var(--ink-2);">' +
+                '<div><span style="color:var(--ink-3);">Department:</span> ' + esc(d.department || "—") + '</div>' +
+                '<div><span style="color:var(--ink-3);">Assigned Zone:</span> ' + esc(d.zone || "—") + '</div>' +
+                '<div><span style="color:var(--ink-3);">Email:</span> ' + esc(d.email || "—") + '</div>' +
+                '<div><span style="color:var(--ink-3);">Contact:</span> ' + esc(d.phone || "—") + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div style="text-align:right;"><div style="font-size:26px;font-weight:800;color:var(--ink-1);">' + (k.completion_rate != null ? k.completion_rate : 0) + '%</div><div style="font-size:10.5px;color:var(--ink-3);">Completion</div>' +
+            '<div style="margin-top:6px;"><button class="btn" style="font-size:11px;padding:4px 8px;" onclick="closeModal(\'trainerDashModal\');switchTab(\'trainers\');openTrainerPanel(\'' + esc(d.employee_id) + '\');">View Profile</button></div>' +
+            '</div>' +
+          '</div>';
+
+          // KPI row
+          html += '<div class="db-kpi-grid" style="margin-top:4px;">' +
+            trnKpi('Planned Trainings', k.total, '#0d9488') +
+            trnKpi('Conducted', k.completed, '#16a34a') +
+            trnKpi('Upcoming', k.upcoming, '#2563eb') +
+            trnKpi('Participants', k.participants, '#7c3aed') +
+            trnKpi('Pending', k.pending != null ? k.pending : '—', '#d97706') +
+            trnKpi('Completion Rate', (k.completion_rate != null ? k.completion_rate + '%' : '—'), '#ea580c') +
+          '</div>';
+
+          // Middle row: bar chart + status donut
+          html += '<div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;margin-top:6px;">' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Monthly Training Performance</div><div class="db-sec-sub">Planned vs Conducted</div></div>' +
+              '<div style="position:relative;height:170px;"><canvas id="trn-dash-trend"></canvas></div>' +
+            '</div>' +
+            '<div class="db-card" style="justify-content:flex-start;">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Training Status Distribution</div></div>' +
+              '<div style="position:relative;height:120px;margin-bottom:6px;"><canvas id="trn-dash-status"></canvas></div>' +
+              '<div id="trn-dash-status-leg" class="db-prog-leg"></div>' +
+            '</div>' +
+          '</div>';
+
+          // Lower middle: Zone-wise Coverage | Recent & Upcoming Trainings
+          html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:6px;">' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Zone-wise Coverage</div></div>' +
+              '<div style="overflow-x:auto;"><table class="report-table" style="font-size:11.5px;"><thead><tr><th>Zone</th><th>Planned</th><th>Conducted</th><th>Participants</th></tr></thead><tbody>' +
+                (d.zone_coverage||[]).slice().sort(function(a,b){ var na=parseInt((a.zone||'').replace(/\D/g,''),10)||999, nb=parseInt((b.zone||'').replace(/\D/g,''),10)||999; return na-nb; }).map(function(z){ return '<tr><td style="font-weight:600;">'+esc(z.zone)+'</td><td>'+z.planned+'</td><td>'+z.conducted+'</td><td>'+z.participants+'</td></tr>'; }).join("") +
+                ((d.zone_coverage||[]).length ? '' : '<tr><td colspan="4" class="db-empty">No data.</td></tr>') +
+              '</tbody></table></div>' +
+            '</div>' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Recent &amp; Upcoming Trainings</div></div>' +
+              '<div style="max-height:180px;overflow-y:auto;"><table class="report-table" style="font-size:11.5px;"><thead><tr><th>Training</th><th>Date</th><th>Zone</th><th>Status</th></tr></thead><tbody>' +
+                (d.upcoming||[]).concat(d.recent||[]).map(function(s){ return '<tr><td style="font-weight:600;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(s.program)+'">'+esc(s.program)+'</td><td style="white-space:nowrap;">'+esc(fmtDMYDate(s.from_date))+'</td><td>'+esc(s.zone||s.location||"—")+'</td><td>'+esc(s.status)+'</td></tr>'; }).join("") +
+                (((d.upcoming||[]).length+(d.recent||[]).length) ? '' : '<tr><td colspan="4" class="db-empty">No sessions.</td></tr>') +
+              '</tbody></table></div>' +
+            '</div>' +
+          '</div>';
+
+          // Bottom: Training History + Key Insights
+          html += '<div style="display:grid;grid-template-columns:2fr 1fr;gap:6px;margin-top:6px;">' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Training History</div></div>' +
+              '<div style="max-height:200px;overflow-y:auto;"><table class="report-table" style="font-size:11.5px;"><thead><tr><th>Training</th><th>Date</th><th>Zone</th><th>Status</th></tr></thead><tbody>' +
+                (d.training_history||[]).map(function(s){ return '<tr><td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="'+esc(s.program)+'">'+esc(s.program)+'</td><td style="white-space:nowrap;">'+esc(fmtDMYDate(s.from_date))+'</td><td>'+esc(s.zone||s.location||"—")+'</td><td>'+esc(s.status)+'</td></tr>'; }).join("") +
+                ((d.training_history||[]).length ? '' : '<tr><td colspan="4" class="db-empty">No data.</td></tr>') +
+              '</tbody></table></div>' +
+            '</div>' +
+            '<div class="db-card">' +
+              '<div class="db-sec-head"><div class="db-sec-title">Key Insights</div><div style="font-size:16px;">🏆</div></div>' +
+              '<div class="db-ins-list">' +
+                (d.insights||[]).map(function(i){ return '<div class="db-ins db-ins-'+i.color+'"><div class="db-ins-icon">'+(DB_INS_ICONS[i.color]||DB_INS_ICONS.blue)+'</div><div><div class="db-ins-title">'+esc(i.title)+'</div><div class="db-ins-desc">'+esc(i.desc)+'</div></div></div>'; }).join("") +
+                '<div class="db-ins db-ins-blue"><div class="db-ins-icon">'+DB_INS_ICONS.blue+'</div><div><div class="db-ins-title">'+(k.completion_rate||0)+'% completion rate</div><div class="db-ins-desc">Overall training delivery performance.</div></div></div>' +
+                '<div class="db-ins db-ins-green"><div class="db-ins-icon">'+DB_INS_ICONS.green+'</div><div><div class="db-ins-title">'+(d.zone_coverage&&d.zone_coverage.length?d.zone_coverage[0].zone:'—')+' most active zone</div><div class="db-ins-desc">Highest training volume in this zone.</div></div></div>' +
+                '<div class="db-ins db-ins-orange"><div class="db-ins-icon">'+DB_INS_ICONS.orange+'</div><div><div class="db-ins-title">'+(k.completed||0)+' trainings conducted</div><div class="db-ins-desc">With '+(k.participants||0)+' total participants.</div></div></div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+          body.innerHTML = html;
+
+          // charts
+          renderTrainerTrend(d.trend || []);
+          trnStatusDonut(d.status_counts || {});
+
+          body.querySelectorAll("[data-tname]").forEach(function(el){
+            el.addEventListener("click", function(e){
+              e.stopPropagation();
+              closeModal("trainerDashModal");
+              var ev = findTrainingByName(el.dataset.tname);
+              if (ev) openTrainingDialog(ev);
+            });
+          });
+        }
+
+        function renderTrainerTrend(trend) {
+          var canvas = document.getElementById("trn-dash-trend"); if (!canvas || typeof Chart === "undefined") return;
+          if (trnDashTrendChart) { try { trnDashTrendChart.destroy(); } catch(e){} }
+          trnDashTrendChart = new Chart(canvas.getContext("2d"), {
+            type: "bar",
+            data: { labels: trend.map(function(t){return t.month;}), datasets: [
+              { label: "Planned", data: trend.map(function(t){return t.planned;}), backgroundColor: "#2563eb" },
+              { label: "Conducted", data: trend.map(function(t){return t.conducted;}), backgroundColor: "#16a34a" },
+            ]},
+            options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom", labels: { boxWidth: 10, font: { size: 10 } } } } }
+          });
+        }
+
+        function renderTrainerProg(progs) { return; }
 
         function dbRenderZoneTable(zones) {
           var el=document.getElementById("db-zone-body"); if(!el) return;
@@ -15504,7 +16608,7 @@
               '<td class="u-prog" style="font-weight:600;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+dbEsc(t.program)+'</td>'+
               '<td class="u-date" style="white-space:nowrap;">'+dbFmtD(t.from_date)+'</td>'+
               '<td class="u-zone" style="white-space:nowrap;">'+dbEsc(t.zone)+'</td>'+
-              '<td class="u-trainer" style="white-space:nowrap;">'+dbEsc(t.trainer)+'</td>'+
+              '<td class="u-trainer" style="white-space:nowrap;cursor:pointer;color:#007c77;" data-trainer="' + dbEsc(t.trainer) + '">' + dbEsc(t.trainer) + '</td>'+
               '<td><span class="db-sp '+sp.cls+'"><span class="db-sp-dot" style="background:'+sp.dot+'"></span>'+sp.lbl+'</span></td>'+
               '</tr>';
           }).join("");
@@ -15517,6 +16621,12 @@
               } else {
                 viewAllUpcomingTrainings();
               }
+            });
+          });
+          el.querySelectorAll("td[data-trainer]").forEach(function(td){
+            td.addEventListener("click", function(e){
+              e.stopPropagation();
+              if (td.dataset.trainer) openTrainerDashboard(td.dataset.trainer);
             });
           });
         }

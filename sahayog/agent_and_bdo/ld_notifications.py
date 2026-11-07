@@ -5,8 +5,12 @@
 # Called daily by hooks.py scheduler
 #
 
+import os
+import shutil
+import subprocess
+
 import frappe
-from frappe.utils import today, add_days, formatdate
+from frappe.utils import today, add_days, formatdate, getdate
 
 from sahayog.agent_and_bdo.doctype.training.training import COMPLETION_FIELDS
 
@@ -186,9 +190,11 @@ def send_closure_for_training(training_name):
         training_name,
         ["name", "from_date", "to_date", "training_program", "trainer",
          "training_location", "zone", "region", "district", "branch",
-         "training_delivered", "attendance_marked", "pre_assessment_taken",
-         "post_assessment_taken", "feedback_taken", "trainer_remarks",
-         "additional_cc", "closure_sent", "docstatus", *COMPLETION_FIELDS],
+         "training_delivered", "attendance_marked",
+         "pre_assessment_taken", "post_assessment_taken", "feedback_taken",
+         "trainer_remarks", "additional_cc", "closure_sent", "docstatus",
+         "number_of_participants", "number_of_participants_attended",
+         "flyer", *COMPLETION_FIELDS],
         as_dict=True,
     )
     if not training or (training.docstatus or 0) >= 2:
@@ -202,7 +208,7 @@ def send_closure_for_training(training_name):
     if not to_emails and not cc_emails:
         return False
 
-    subject = f"Training Completed — {training.training_program or 'L&D Training'} | {_fmt_date(training.from_date)} - {_fmt_date(training.to_date)}"
+    subject = _closure_subject(training)
     message = _post_training_email_body(training)
     frappe.sendmail(
         recipients=to_emails or cc_emails,
@@ -212,7 +218,9 @@ def send_closure_for_training(training_name):
         message=message,
         attachments=_get_flyer_attachments(training_name),
         expose_recipients="header",
-        now=False,
+        # Send immediately instead of waiting for the Email Queue flush, so
+        # the closure mail still goes out when the site scheduler is off.
+        now=True,
     )
     frappe.db.set_value("Training", training_name, "closure_sent", 1)
     frappe.db.commit()
@@ -224,52 +232,397 @@ def send_closure_for_training(training_name):
 # ─────────────────────────────────────────────────────────────────────────────
 
 
-def _post_training_email_body(t):
-    def tick(val): return "✅ Yes" if val else "❌ No"
-    trainer_name = t.trainer or "—"
+def _g(t, key, default=None):
+    """Read a field from a Training dict or document."""
+    if isinstance(t, dict):
+        return t.get(key, default)
+    return getattr(t, key, default)
+
+
+def _closure_subject(t):
+    """Subject matches the client's closing-mail format."""
+    program = (_g(t, "training_program") or "L&D Training").strip()
+    branch = _branch_label(t)
+    suffix = f"_{branch}" if branch else ""
+    return f"Training Closer & Participants feedback {program}{suffix}"
+
+
+def _ordinal_day(day):
+    day = int(day)
+    suffix = "th" if 10 <= day % 100 <= 20 else {1: "st", 2: "nd", 3: "rd"}.get(day % 10, "th")
+    return f"{day:02d}{suffix}"
+
+
+def _closure_date_label(from_date, to_date):
+    """'05th & 06th Oct 2026' / '05th Oct 2026' / cross-month variant."""
+    if not from_date:
+        return "—"
     try:
-        trainer_designation = (
-            frappe.db.get_value("Employee", {"employee_name": t.trainer}, "designation")
-            if t.trainer else None
-        ) or "—"
+        start = getdate(from_date)
+        end = getdate(to_date) if to_date else start
     except Exception:
-        trainer_designation = "—"
+        return _fmt_date(from_date)
+    if start == end:
+        return f"{_ordinal_day(start.day)} {start.strftime('%b %Y')}"
+    if (start.year, start.month) == (end.year, end.month):
+        return (
+            f"{_ordinal_day(start.day)} & {_ordinal_day(end.day)} "
+            f"{start.strftime('%b %Y')}"
+        )
+    return (
+        f"{_ordinal_day(start.day)} {start.strftime('%b %Y')} & "
+        f"{_ordinal_day(end.day)} {end.strftime('%b %Y')}"
+    )
+
+
+def _training_days_label(from_date, to_date):
+    try:
+        start = getdate(from_date)
+        end = getdate(to_date) if to_date else start
+        days = (end - start).days + 1
+    except Exception:
+        days = 1
+    return f"{days}-Day" if days == 1 else f"{days}-Days"
+
+
+def _branch_label(t):
+    """Human branch name (Sahayog Branch.branch) for a branch code."""
+    code = (_g(t, "branch") or "").strip()
+    if not code:
+        return ""
+    try:
+        return (frappe.db.get_value("Sahayog Branch", code, "branch") or code).strip()
+    except Exception:
+        return code
+
+
+def _geo_label(value, prefix):
+    if not value:
+        return ""
+    text = str(value).strip()
+    if text.upper().startswith(prefix + "-"):
+        text = text[len(prefix) + 1:]
+    return text.strip()
+
+
+def _region_zone_phrase(t):
+    region = _geo_label(_g(t, "region"), "REGION")
+    zone = _geo_label(_g(t, "zone"), "ZONE")
+    if region and zone:
+        return f"Region {region} of Zone {zone}"
+    if zone:
+        return f"Zone {zone}"
+    if region:
+        return f"Region {region}"
+    return ""
+
+
+def _attendance_summary(t):
+    """Invited / attended / absent / % present from existing data only."""
+    name = _g(t, "name")
+    rows = []
+    try:
+        rows = frappe.db.get_all(
+            "Training Participant",
+            filters={"parent": name, "parenttype": "Training"},
+            fields=["attendance_status"],
+        )
+    except Exception:
+        rows = []
+
+    total = len(rows)
+    present = sum(
+        1
+        for r in rows
+        if str((r.get("attendance_status") if isinstance(r, dict) else r.attendance_status) or "")
+        .strip()
+        .lower()
+        == "present"
+    )
+
+    invited = frappe.utils.cint(_g(t, "number_of_participants"))
+    attended = frappe.utils.cint(_g(t, "number_of_participants_attended"))
+    # Fall back to the participant table when the headcount fields are blank.
+    invited = invited or total
+    attended = attended or present
+    absent = max(invited - attended, 0)
+    pct = min(round(attended * 100 / invited), 100) if invited else 0
+    return {"invited": invited, "attended": attended, "absent": absent, "pct": pct}
+
+
+def _topic_rows(t):
+    """Trainer agenda / remarks -> (topic, sub-topic) rows."""
+    raw = _g(t, "trainer_remarks") or ""
+    rows = []
+    for line in str(raw).replace("\r\n", "\n").split("\n"):
+        line = line.strip().lstrip("•-*–—").strip()
+        if not line:
+            continue
+        topic, sub = line, ""
+        for sep in (" — ", " – ", " - ", ": ", " | ", ":", "|"):
+            if sep in line:
+                left, right = line.split(sep, 1)
+                if left.strip() and right.strip():
+                    topic, sub = left.strip(), right.strip()
+                    break
+        rows.append((topic, sub))
+    return rows
+
+
+def _trainer_signature(t):
+    name = (_g(t, "trainer") or "").strip()
+    info = {"name": name, "designation": "", "phone": ""}
+    if not name:
+        return info
+    try:
+        emp = frappe.db.get_value(
+            "Employee",
+            {"employee_name": name},
+            ["designation", "cell_number"],
+            as_dict=True,
+        )
+        if emp:
+            info["designation"] = (emp.get("designation") or "").strip()
+            info["phone"] = (emp.get("cell_number") or "").strip()
+    except Exception:
+        pass
+    return info
+
+
+def _site_relative_path(path):
+    """Convert an absolute site path to the form <img embed="..."> expects."""
+    site = frappe.get_site_path().rstrip(os.sep)
+    rel = os.path.relpath(path, site).replace(os.sep, "/")
+    if rel.startswith("public/"):
+        rel = rel[len("public/"):]  # public files resolve as "files/..."
+    return rel
+
+
+def _flyer_inline_path(training_name):
+    """Site-relative path to a raster preview of the flyer, for inline display.
+
+    PDFs are converted with pdftoppm (first page). Returns None whenever the
+    flyer is missing or cannot be rendered — the mail must never fail because
+    of this.
+    """
+    try:
+        url = frappe.db.get_value("Training", training_name, "flyer")
+        if not url:
+            return None
+        file_name = frappe.db.get_value("File", {"file_url": url}, "name")
+        if not file_name:
+            return None
+        file_doc = frappe.get_doc("File", file_name)
+        source = file_doc.get_full_path()
+        if not source or not os.path.exists(source):
+            return None
+        ext = os.path.splitext(source)[1].lower()
+        if ext in (".png", ".jpg", ".jpeg", ".gif", ".webp"):
+            return _site_relative_path(source)
+        if ext != ".pdf":
+            return None
+        pdftoppm = shutil.which("pdftoppm")
+        if not pdftoppm:
+            return None
+        out_dir = frappe.get_site_path("private", "files", "ld_closure_flyers")
+        os.makedirs(out_dir, exist_ok=True)
+        out_base = os.path.join(out_dir, frappe.scrub(training_name))
+        subprocess.run(
+            [
+                pdftoppm, "-f", "1", "-l", "1", "-r", "130",
+                "-png", "-singlefile", source, out_base,
+            ],
+            check=True,
+            timeout=30,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        out_png = out_base + ".png"
+        return _site_relative_path(out_png) if os.path.exists(out_png) else None
+    except Exception as e:
+        frappe.log_error(
+            f"Training flyer preview failed for {training_name}: {e}", "LD Notification"
+        )
+        return None
+
+
+def _section(title, inner):
+    if not inner:
+        return ""
+    return (
+        f'<p style="margin:18px 0 6px;font-weight:700">{title}</p>{inner}'
+    )
+
+
+def _post_training_email_body(t):
+    """Closing mail in the client's 'Training Closer & Participants feedback' format.
+
+    Uses only data already present in the system. Sections with no data are
+    omitted so the automatic closure mail never goes out broken.
+    """
+    esc = frappe.utils.escape_html
+    program = esc((_g(t, "training_program") or "L&D Training").strip())
+    branch = esc(_branch_label(t))
+    date_label = _closure_date_label(_g(t, "from_date"), _g(t, "to_date"))
+    days_label = _training_days_label(_g(t, "from_date"), _g(t, "to_date"))
+    region_zone = esc(_region_zone_phrase(t))
+    att = _attendance_summary(t)
+    trainer = _trainer_signature(t)
+
+    td = "padding:6px 10px;font-size:12.5px;border:1px solid #444;"
+    th = (
+        "padding:6px 10px;font-size:11.5px;font-weight:700;text-align:left;"
+        "letter-spacing:.02em;background:#f2f2f2;border:1px solid #444;"
+    )
+    table = "width:100%;max-width:560px;border-collapse:collapse;margin:8px 0 4px;"
+
+    # ── Attendance ────────────────────────────────────────────────────────
+    attendance_inner = ""
+    if att["invited"] > 0:
+        lead = (
+            f"The Program was Organized for the employees of {region_zone}. "
+            if region_zone
+            else ""
+        )
+        attendance_inner = f"""
+        <p style="margin:0 0 8px">
+          {lead}A total of <b>{att['invited']}</b> employees were invited, out of
+          which <b>{att['attended']}</b> employees attended the program,
+          resulting <b>{att['pct']} %</b> attendance rate.
+        </p>
+        <table style="{table}">
+          <tr>
+            <th style="{th}">Participants Invited</th>
+            <th style="{th}">Attended</th>
+            <th style="{th}">Absent</th>
+            <th style="{th}">% Present</th>
+          </tr>
+          <tr>
+            <td style="{td}text-align:center">{att['invited']}</td>
+            <td style="{td}text-align:center">{att['attended']}</td>
+            <td style="{td}text-align:center">{att['absent']}</td>
+            <td style="{td}text-align:center">{att['pct']} %</td>
+          </tr>
+        </table>"""
+
+    # ── Evaluation (checkbox status — score data isn't stored anywhere) ───
+    pre = bool(_g(t, "pre_assessment_taken"))
+    post = bool(_g(t, "post_assessment_taken"))
+    evaluation_inner = ""
+    eval_rows = ""
+    if pre:
+        eval_rows += f'<tr><td style="{td}">Pre-Assessment</td><td style="{td}">✅ Conducted</td></tr>'
+    if post:
+        eval_rows += f'<tr><td style="{td}">Post-Assessment</td><td style="{td}">✅ Conducted</td></tr>'
+    if eval_rows:
+        if pre and post:
+            eval_para = (
+                "As part of the learning evaluation process, a Pre-Assessment and "
+                "a Post-Assessment were conducted for the participants."
+            )
+        elif pre:
+            eval_para = (
+                "As part of the learning evaluation process, a Pre-Assessment was "
+                "conducted for the participants."
+            )
+        else:
+            eval_para = (
+                "As part of the learning evaluation process, a Post-Assessment was "
+                "conducted for the participants."
+            )
+        evaluation_inner = f"""
+        <p style="margin:0 0 8px">{eval_para}</p>
+        <table style="{table}">
+          <tr><th style="{th}">Activities</th><th style="{th}">Status</th></tr>
+          {eval_rows}
+        </table>"""
+
+    # ── Feedback (checkbox status) ────────────────────────────────────────
+    feedback_inner = ""
+    if _g(t, "feedback_taken"):
+        feedback_inner = f"""
+        <p style="margin:0 0 8px">
+          As part of the training program, participant feedback was also collected
+          on parameters such as content, methodology, faculty and overall training
+          experience.
+        </p>
+        <table style="{table}">
+          <tr><th style="{th}">Activity</th><th style="{th}">Status</th></tr>
+          <tr><td style="{td}">Participant Feedback</td><td style="{td}">✅ Collected</td></tr>
+        </table>
+        <p style="margin:8px 0 0">
+          The feedback received will be used to further improve the quality and
+          effectiveness of future training programs.
+        </p>"""
+
+    # ── Topics (agenda from trainer remarks) ──────────────────────────────
+    topics_inner = ""
+    topics = _topic_rows(t)
+    if topics:
+        rows = "".join(
+            f'<tr><td style="{td}font-weight:600">{esc(topic)}</td>'
+            f'<td style="{td}">{esc(sub or "—")}</td></tr>'
+            for topic, sub in topics
+        )
+        topics_inner = f"""
+        <table style="{table}">
+          <tr><th style="{th}">Topic Covered</th><th style="{th}">Sub-Topics</th></tr>
+          {rows}
+        </table>"""
+
+    # ── Training moments (flyer preview + attachment note) ────────────────
+    moments_inner = ""
+    flyer_img = _flyer_inline_path(_g(t, "name"))
+    if flyer_img or _g(t, "flyer"):
+        visual = ""
+        if flyer_img:
+            visual = (
+                f'<p style="margin:10px 0 0"><img embed="{esc(flyer_img)}" '
+                'alt="Training Moments" style="width:100%;max-width:560px;'
+                'border:1px solid #ddd;border-radius:6px;display:block" /></p>'
+            )
+        else:
+            visual = (
+                '<p style="margin:8px 0 0;font-size:12.5px;color:#555">'
+                "The training flyer / moments document is attached with this email.</p>"
+            )
+        moments_inner = f"""
+        <p style="margin:0 0 8px">
+          To capture the learning journey and active participation of the
+          participants, we are also sharing glimpses from the training sessions.
+        </p>{visual}"""
+
+    # ── Signature ─────────────────────────────────────────────────────────
+    sig_lines = [f"<b>{esc(trainer['name'] or '—')}</b>"]
+    if trainer["designation"]:
+        sig_lines.append(esc(trainer["designation"]))
+    sig_lines.append("HR – Learning and Development")
+    sig_lines.append("www.sahayogmultistate.com")
+    if trainer["phone"]:
+        sig_lines.append(f"Phone No: {esc(trainer['phone'])}")
+    signature = "<br>".join(sig_lines)
+
+    at_branch = f" at the <b>{branch}</b> branch" if branch else ""
 
     return f"""
-    <div style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto">
-      <h2 style="color:#166534;border-bottom:2px solid #dcfce7;padding-bottom:8px">
-        ✅ Training Completed
-      </h2>
-      <p>Dear Team,</p>
-      <p>The following L&amp;D training has been completed. Here is the status update:</p>
-      <table style="width:100%;border-collapse:collapse;margin:16px 0">
-        <tr><td style="padding:6px 0;color:#64748b;width:160px">Training Program</td>
-            <td style="padding:6px 0;font-weight:600">{t.training_program or "—"}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b">Date</td>
-            <td style="padding:6px 0">{_fmt_date(t.from_date)} - {_fmt_date(t.to_date)}</td></tr>
-        <tr><td style="padding:6px 0;color:#64748b">Zone / District</td>
-            <td style="padding:6px 0">{t.zone or "—"} / {t.district or "—"}</td></tr>
-      </table>
-      <h4 style="margin:16px 0 8px;color:#374151">Training Status Checklist</h4>
-      <table style="width:100%;border-collapse:collapse">
-        <tr style="background:#f8fafc"><td style="padding:7px 10px">Training Delivered</td>
-            <td style="padding:7px 10px">{tick(t.training_delivered)}</td></tr>
-        <tr><td style="padding:7px 10px">Attendance Marked</td>
-            <td style="padding:7px 10px">{tick(t.attendance_marked)}</td></tr>
-        <tr style="background:#f8fafc"><td style="padding:7px 10px">Pre-Assessment Taken</td>
-            <td style="padding:7px 10px">{tick(t.pre_assessment_taken)}</td></tr>
-        <tr><td style="padding:7px 10px">Post-Assessment Taken</td>
-            <td style="padding:7px 10px">{tick(t.post_assessment_taken)}</td></tr>
-        <tr style="background:#f8fafc"><td style="padding:7px 10px">Feedback Taken</td>
-            <td style="padding:7px 10px">{tick(t.feedback_taken)}</td></tr>
-      </table>
-      {f'<p style="margin-top:14px;font-size:13px"><b>Trainer Remarks:</b> {t.trainer_remarks}</p>' if t.trainer_remarks else ""}
-      <br>
-      <p style="margin:0">Regards,</p>
-      <p style="margin:4px 0 0"><b>{frappe.utils.escape_html(trainer_name)}</b> ({frappe.utils.escape_html(trainer_designation)})<br>
-      HR-Learning and Development<br>
-      www.sahayogmultistate.com</p>
-      <p style="color:#64748b;font-size:12px;margin-top:24px">
+    <div style="font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#222;max-width:620px;margin:0 auto;line-height:1.55">
+      <p style="margin:0 0 10px">Dear Sir/Madam,</p>
+      <p style="margin:0 0 14px">
+        We are pleased to inform you that the <b>{days_label} {program}</b>
+        which was conducted from <b>{date_label}</b>{at_branch}, was successfully
+        concluded.
+      </p>
+
+      {_section("Training Attendance:", attendance_inner)}
+      {_section("Training Evaluation:", evaluation_inner)}
+      {_section("Training Feedback:", feedback_inner)}
+      {_section("Training Topic:", topics_inner)}
+      {_section("📸 Training Moments &amp; Highlights:", moments_inner)}
+
+      <p style="margin:22px 0 0">Regards,</p>
+      <p style="margin:4px 0 0">{signature}</p>
+
+      <p style="margin:22px 0 0;font-size:11.5px;color:#777">
         This is an automated closure update from the L&amp;D Training System.
       </p>
     </div>
