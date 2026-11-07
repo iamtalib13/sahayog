@@ -119,37 +119,37 @@ frappe.ui.form.on('Petty Cash Transaction', {
     },
 
     get_indicator: function (doc) {
-        const status = doc.approvalstatus || 'Draft';
+        const status = doc.approval_status || 'Draft';
 
         if (status === 'Draft') {
-            return [__('Draft'), 'grey', 'approvalstatus,=,Draft'];
+            return [__('Draft'), 'grey', 'approval_status,=,Draft'];
         }
         if (status === 'Pending Checker') {
-            return [__('Pending Checker'), 'yellow', 'approvalstatus,=,Pending Checker'];
+            return [__('Pending Checker'), 'yellow', 'approval_status,=,Pending Checker'];
         }
         if (status === 'Rejected') {
-            return [__('Rejected'), 'red', 'approvalstatus,=,Rejected'];
+            return [__('Rejected'), 'red', 'approval_status,=,Rejected'];
         }
         if (status === 'Pending Approval') {
-            return [__('Pending Approval'), 'orange', 'approvalstatus,=,Pending Approval'];
+            return [__('Pending Approval'), 'orange', 'approval_status,=,Pending Approval'];
         }
         if (status === 'Checked') {
-            return [__('Checked'), 'teal', 'approvalstatus,=,Checked'];
+            return [__('Checked'), 'teal', 'approval_status,=,Checked'];
         }
         if (status === 'Approved') {
-            return [__('Approved'), 'blue', 'approvalstatus,=,Approved'];
+            return [__('Approved'), 'blue', 'approval_status,=,Approved'];
         }
         if (status === 'Verified') {
-            return [__('Verified'), 'green', 'approvalstatus,=,Verified'];
+            return [__('Verified'), 'green', 'approval_status,=,Verified'];
         }
         if (status === 'Posted') {
-            return [__('Posted'), 'purple', 'approvalstatus,=,Posted'];
+            return [__('Posted'), 'purple', 'approval_status,=,Posted'];
         }
         if (status === 'Canceled') {
-            return [__('Canceled'), 'red', 'approvalstatus,=,Canceled'];
+            return [__('Canceled'), 'red', 'approval_status,=,Canceled'];
         }
 
-        return [__(status), 'grey', `approvalstatus,=,${status}`];
+        return [__(status), 'grey', `approval_status,=,${status}`];
     },
 
     validate: function (frm) {
