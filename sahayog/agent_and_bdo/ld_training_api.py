@@ -1406,6 +1406,7 @@ MIS_REPORT_COLUMNS = [
     {"key": "training_type", "label": "Training Type"},
     {"key": "no_of_days", "label": "No of Day"},
     {"key": "duration_hours", "label": "Training duration (Hours)"},
+    {"key": "man_day", "label": "Man Day"},
     # NOTE (needs per-day attendance tracking):
     # {"key": "day_1", "label": "Day-1"},
     # {"key": "day_2", "label": "Day-2"},
@@ -1700,6 +1701,12 @@ def get_mis_report(
                 _dur = int(_hrs) if _hrs and float(_hrs).is_integer() else (_hrs or "")
             except (TypeError, ValueError):
                 _dur = ""
+        try:
+            _man_day = (float(_dur) / 8) if _dur not in ("", None) else ""
+            if _man_day != "" and float(_man_day).is_integer():
+                _man_day = int(_man_day)
+        except (TypeError, ValueError):
+            _man_day = ""
         out.append({
             "s_no": seq,
             "emp_id": (r.agent_employee or "") if is_emp else "",
@@ -1724,6 +1731,7 @@ def get_mis_report(
             "training_type": r.training_type or "",
             "no_of_days": no_of_days,
             "duration_hours": _dur,
+            "man_day": _man_day,
             "day_1": "",
             "day_2": "",
             "day_3": "",
@@ -1760,6 +1768,8 @@ ADHERENCE_REPORT_COLUMNS = [
     {"key": "training_type", "label": "Training Type"},
     {"key": "start_date", "label": "Start Date"},
     {"key": "end_date", "label": "End Date"},
+    {"key": "duration_hours", "label": "Training Duration (Hours)"},
+    {"key": "man_day", "label": "Man Day"},
     {"key": "zone", "label": "Zone"},
     {"key": "training_location", "label": "Training Location"},
     # NOTE (needs invitation tracking):
@@ -1836,7 +1846,8 @@ def get_adherence_report(
         "t.trainer, t.zone, t.branch, t.training_location, t.status, t.docstatus, "
         "t.training_delivered, t.attendance_marked, t.pre_assessment_taken, "
         "t.post_assessment_taken, t.feedback_taken, t.number_of_participants, "
-        "t.number_of_participants_attended, "
+        "t.number_of_participants_attended, t.start_time, t.end_time, "
+        "t.program_duration_hours, "
         "t.trainer_remarks, t.budget_amount, t.actual_expense, t.closure_sent "
     )
     order = " ORDER BY t.from_date ASC, t.start_time ASC"
@@ -1922,6 +1933,28 @@ def get_adherence_report(
         status = t.status or get_training_status(_row_tag(t))
         geos = geo_map.get(t.name, [])
         codes = [g["branch"] for g in geos if g["branch"]] or ([t.branch] if t.branch else [])
+        try:
+            _adh_days = (
+                frappe.utils.getdate(str(t.to_date or t.from_date or "")[:10])
+                - frappe.utils.getdate(str(t.from_date or "")[:10])
+            ).days + 1
+            if _adh_days < 1:
+                _adh_days = 1
+        except Exception:
+            _adh_days = 1
+        _adh_dur = _training_hours(t.start_time, t.end_time, _adh_days)
+        if _adh_dur == "":
+            try:
+                _adh_hrs = float(t.program_duration_hours or 0)
+                _adh_dur = int(_adh_hrs) if _adh_hrs and float(_adh_hrs).is_integer() else (_adh_hrs or "")
+            except (TypeError, ValueError):
+                _adh_dur = ""
+        try:
+            _adh_man_day = (float(_adh_dur) / 8) if _adh_dur not in ("", None) else ""
+            if _adh_man_day != "" and float(_adh_man_day).is_integer():
+                _adh_man_day = int(_adh_man_day)
+        except (TypeError, ValueError):
+            _adh_man_day = ""
         out.append({
             "s_no": seq,
             "facilitator_name": t.trainer or "",
@@ -1930,6 +1963,8 @@ def get_adherence_report(
             "training_type": t.training_type or "",
             "start_date": str(t.from_date or "")[:10],
             "end_date": str(t.to_date or t.from_date or "")[:10],
+            "duration_hours": _adh_dur,
+            "man_day": _adh_man_day,
             "zone": t.zone or "",
             "training_location": "; ".join(_branch_label(x) for x in codes),
             "invitation_shared": "",
@@ -1971,6 +2006,7 @@ TRAINER_REPORT_COLUMNS = [
     {"key": "overdue", "label": "Overdue"},
     {"key": "participants", "label": "Participants"},
     {"key": "hours", "label": "Training Hours"},
+    {"key": "man_days", "label": "Man Days"},
 ]
 
 
@@ -2089,6 +2125,14 @@ def get_trainer_performance_report(
         e = emp_data.get(tid) if tid else emp_by_name.get(name)
         branch_code = (getattr(e, "sahayog_branch", "") or "") if e else ""
         hours = round(a["hours"], 1)
+        try:
+            _trn_man_days = (hours / 8) if hours not in ("", None) else ""
+            if _trn_man_days != "" and float(_trn_man_days).is_integer():
+                _trn_man_days = int(_trn_man_days)
+            else:
+                _trn_man_days = round(_trn_man_days, 2) if _trn_man_days != "" else ""
+        except (TypeError, ValueError):
+            _trn_man_days = ""
         out.append({
             "trainer_id": tid,
             "trainer_name": name,
@@ -2101,6 +2145,7 @@ def get_trainer_performance_report(
             "overdue": a["overdue"],
             "participants": a["participants"],
             "hours": int(hours) if float(hours).is_integer() else hours,
+            "man_days": _trn_man_days,
         })
     out.sort(key=lambda r: (-r["total"], r["trainer_name"]))
 
