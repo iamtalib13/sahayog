@@ -2450,7 +2450,12 @@
         flex-wrap: wrap;
         gap: 6px;
         min-height: 24px;
+        max-height: 200px;
+        overflow-y: auto;
+        padding-right: 2px;
       }
+      .mail-recipient-chips::-webkit-scrollbar { width: 5px; }
+      .mail-recipient-chips::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
       .mail-chip {
         display: inline-flex;
         align-items: center;
