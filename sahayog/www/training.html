@@ -2120,7 +2120,7 @@
 
       /* ── Mail Recipients Modal ── */
       .mail-modal-dialog {
-        width: min(960px, 97vw) !important;
+        width: min(720px, 97vw) !important;
         max-width: 97vw !important;
         max-height: 92vh;
         display: flex;
@@ -2402,6 +2402,150 @@
         .mail-panel { max-height: 260px; }
         .mail-panel-manual { max-height: none; }
       }
+      /* ── Single-column recipient editor ── */
+      .mail-modal-body-single {
+        display: block;
+        min-height: 0;
+        overflow-y: auto;
+        padding: 18px 22px;
+        background: var(--surface-2, #f8fafc);
+      }
+      .mail-recipient-card {
+        background: var(--surface, #fff);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+      .mail-recipient-card + .mail-recipient-card { margin-top: 12px; }
+      .mail-recipient-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .mail-recipient-title {
+        font-size: 12px;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--ink-2);
+      }
+      .mail-recipient-title .mail-recipient-sub {
+        font-size: 10.5px;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+        color: var(--ink-3);
+        margin-left: 6px;
+      }
+      .mail-recipient-count {
+        font-size: 11px;
+        font-weight: 600;
+        color: var(--ink-3);
+        white-space: nowrap;
+      }
+      .mail-recipient-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        min-height: 24px;
+      }
+      .mail-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        max-width: 100%;
+        padding: 3px 8px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        font-size: 11.5px;
+        line-height: 1.4;
+      }
+      .mail-chip-to { background: #eff6ff; border-color: #bfdbfe; color: #1e40af; }
+      .mail-chip-cc { background: #f0fdf4; border-color: #d1fae5; color: #065f46; }
+      .mail-chip-manual { border-style: dashed; }
+      .mail-chip-badge {
+        font-size: 8.5px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        padding: 1px 5px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.75);
+        flex-shrink: 0;
+      }
+      .mail-chip-name {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font-weight: 600;
+      }
+      .mail-chip-email {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        opacity: 0.8;
+        font-size: 10.5px;
+      }
+      .mail-chip-remove {
+        border: none;
+        background: transparent;
+        color: inherit;
+        cursor: pointer;
+        opacity: 0.6;
+        padding: 0 0 0 1px;
+        font-size: 14px;
+        line-height: 1;
+        flex-shrink: 0;
+      }
+      .mail-chip-remove:hover { opacity: 1; }
+      .mail-empty-chip {
+        font-size: 11.5px;
+        color: var(--ink-3);
+        font-style: italic;
+      }
+      .mail-add-row {
+        display: flex;
+        gap: 6px;
+        margin-top: 10px;
+      }
+      .mail-add-input {
+        flex: 1;
+        min-width: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 7px 10px;
+        font-size: 12.5px;
+        color: var(--ink-1);
+        background: var(--surface, #fff);
+        outline: none;
+        font-family: inherit;
+        transition: border-color 0.15s, box-shadow 0.15s;
+      }
+      .mail-add-input:focus {
+        border-color: var(--accent, #2563eb);
+        box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+      }
+      .mail-add-input::placeholder { color: var(--ink-3); font-size: 11.5px; }
+      .mail-add-btn { flex-shrink: 0; }
+      .mail-add-error {
+        display: none;
+        margin-top: 5px;
+        font-size: 11px;
+        color: #dc2626;
+      }
+      .mail-add-error.show { display: block; }
+      .mail-recipient-note {
+        display: flex;
+        align-items: flex-start;
+        gap: 7px;
+        margin-top: 14px;
+        font-size: 11px;
+        line-height: 1.5;
+        color: var(--ink-3);
+      }
+      .mail-recipient-note svg { flex-shrink: 0; margin-top: 1px; }
       /* Footer */
       .mail-modal-foot {
         display: flex;
@@ -6974,7 +7118,7 @@
             </div>
             <div>
               <div class="mail-modal-title">Mail Recipients</div>
-              <div class="mail-modal-sub">Preview auto-recipients and add manual addresses for invitation &amp; closure emails</div>
+              <div class="mail-modal-sub">Choose who receives the invitation &amp; closure emails</div>
             </div>
           </div>
           <button class="modal-close" data-close="mailModal" title="Close">
@@ -6982,50 +7126,44 @@
           </button>
         </div>
 
-        <!-- 2-panel body -->
-        <div class="mail-modal-body">
+        <!-- Single-column recipient editor: auto + added addresses in one list -->
+        <div class="mail-modal-body mail-modal-body-single">
 
-          <!-- LEFT: Auto recipients (read-only) -->
-          <div class="mail-panel mail-panel-auto">
-            <div class="mail-panel-head">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
-              Auto Recipients
-              <span class="mail-section-badge">Read-only</span>
+          <!-- TO -->
+          <div class="mail-recipient-card">
+            <div class="mail-recipient-head">
+              <div class="mail-recipient-title">To <span class="mail-recipient-sub">who receives the mail</span></div>
+              <div class="mail-recipient-count" id="mail-to-count">—</div>
             </div>
-            <div class="mail-panel-hint">Derived from participants, branch heads and trainer. Updates automatically when training data changes.</div>
-            <div id="mail-auto" class="mail-auto-groups"></div>
+            <div class="mail-recipient-chips" id="mail-to-chips">
+              <div class="mail-empty-chip">Loading…</div>
+            </div>
+            <div class="mail-add-row">
+              <input type="email" class="mail-add-input" id="mail-to-input" placeholder="Add extra To recipient and press Enter" autocomplete="off">
+              <button type="button" class="btn mail-add-btn" id="mail-to-add">Add</button>
+            </div>
+            <div class="mail-add-error" id="mail-to-error"></div>
           </div>
 
-          <!-- Vertical divider -->
-          <div class="mail-panel-divider"></div>
-
-          <!-- RIGHT: Manual overrides (editable) -->
-          <div class="mail-panel mail-panel-manual">
-            <div class="mail-panel-head">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-              Manual Overrides
+          <!-- CC -->
+          <div class="mail-recipient-card">
+            <div class="mail-recipient-head">
+              <div class="mail-recipient-title">CC <span class="mail-recipient-sub">copied on the mail</span></div>
+              <div class="mail-recipient-count" id="mail-cc-count">—</div>
             </div>
-            <div class="mail-panel-hint">Add extra addresses here. These persist across all emails for this training.</div>
-
-            <div class="mail-manual-field">
-              <div class="mail-field-head">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-                <span class="mail-field-label">Additional To</span>
-                <span class="mail-field-hint">Lands directly in To</span>
-              </div>
-              <textarea class="mail-textarea" id="mail-to" rows="4" placeholder="email1@example.com, email2@example.com, ..."></textarea>
-              <div class="mail-tag-preview" id="mail-to-preview"></div>
+            <div class="mail-recipient-chips" id="mail-cc-chips">
+              <div class="mail-empty-chip">Loading…</div>
             </div>
-
-            <div class="mail-manual-field" style="margin-top: 14px">
-              <div class="mail-field-head">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                <span class="mail-field-label">Additional CC</span>
-                <span class="mail-field-hint">Copied on the email</span>
-              </div>
-              <textarea class="mail-textarea" id="mail-cc" rows="4" placeholder="email1@example.com, email2@example.com, ..."></textarea>
-              <div class="mail-tag-preview" id="mail-cc-preview"></div>
+            <div class="mail-add-row">
+              <input type="email" class="mail-add-input" id="mail-cc-input" placeholder="Add extra CC recipient and press Enter" autocomplete="off">
+              <button type="button" class="btn mail-add-btn" id="mail-cc-add">Add</button>
             </div>
+            <div class="mail-add-error" id="mail-cc-error"></div>
+          </div>
+
+          <div class="mail-recipient-note">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span><b>Auto recipients</b> are picked from participants, branch heads and the trainer. <b>Added</b> emails are saved with this training and used for all its emails.</span>
           </div>
 
         </div>
@@ -7035,13 +7173,13 @@
         <div class="mail-modal-foot">
           <div class="mail-modal-foot-hint">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="13" height="13"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
-            Changes apply to next invitation &amp; closure emails for this training
+            Changes apply to the next invitation &amp; closure emails for this training
           </div>
           <div class="mail-modal-foot-actions">
             <button class="btn" data-close="mailModal" type="button">Cancel</button>
             <button class="btn btn-primary mail-save-btn" id="btn-mail-save" type="button">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13"/><polyline points="7 3 7 8 15 8"/></svg>
-              Save Recipients
+              Save changes
             </button>
           </div>
         </div>
@@ -10257,98 +10395,213 @@
               fillEditDialog(ev);
             });
         }
-        /* ----- Mail recipients preview (To/CC with sources + manual extras) ----- */
+        /* ----- Mail recipients editor (auto + added addresses in one list) ----- */
         var mailEv = null;
+        var mailRecipients = null;
+        var mailState = { to: [], cc: [] };
+        var MAIL_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        function mailNormalizeEmail(email) {
+          return String(email || "").trim().toLowerCase();
+        }
+
+        function mailChipHtml(item) {
+          var cls = item.kind === "cc" ? "mail-chip-cc" : "mail-chip-to";
+          var manualCls = item.manual ? " mail-chip-manual" : "";
+          var showEmail = item.email && mailNormalizeEmail(item.name) !== mailNormalizeEmail(item.email);
+          var removeBtn = item.manual
+            ? '<button type="button" class="mail-chip-remove" data-mail-remove="1" data-kind="' +
+              item.kind + '" data-email="' + esc(item.email) + '" title="Remove">&times;</button>'
+            : "";
+          return '<span class="mail-chip ' + cls + manualCls + '" title="' + esc(item.email || item.name) + '">' +
+            (item.badge ? '<span class="mail-chip-badge">' + esc(item.badge) + "</span>" : "") +
+            '<span class="mail-chip-name">' + esc(item.name || item.email) + "</span>" +
+            (showEmail ? '<span class="mail-chip-email">(' + esc(item.email) + ")</span>" : "") +
+            removeBtn +
+          "</span>";
+        }
+
+        /* Merge auto + added recipients, de-duplicated by email. */
+        function mailCurrentView() {
+          var r = mailRecipients || {};
+          var toR = r.to || {}, ccR = r.cc || {};
+          var seen = {};
+          var to = [], cc = [];
+          function add(list, item) {
+            var key = mailNormalizeEmail(item.email);
+            if (!key || seen[key]) return;
+            seen[key] = 1;
+            list.push(item);
+          }
+          (toR.participants || []).forEach(function(p) {
+            add(to, { kind: "to", badge: "Participant", name: p.name || p.email, email: p.email });
+          });
+          (toR.branch_heads || []).forEach(function(b) {
+            add(to, { kind: "to", badge: "Branch Head", name: b.branch_name || b.branch || "Branch", email: b.email });
+          });
+          mailState.to.forEach(function(email) {
+            add(to, { kind: "to", badge: "Added", name: email, email: email, manual: true });
+          });
+          if (ccR.trainer) {
+            add(cc, { kind: "cc", badge: "Trainer", name: ccR.trainer_name || ccR.trainer, email: ccR.trainer });
+          }
+          mailState.cc.forEach(function(email) {
+            add(cc, { kind: "cc", badge: "Added", name: email, email: email, manual: true });
+          });
+          return { to: to, cc: cc };
+        }
+
+        function mailCountLabel(list, addedCount) {
+          var total = list.length;
+          if (!total) return "No recipients";
+          var parts = [total + " recipient" + (total === 1 ? "" : "s")];
+          var auto = total - addedCount;
+          if (auto > 0) parts.push(auto + " auto");
+          if (addedCount > 0) parts.push(addedCount + " added");
+          return parts.join(" · ");
+        }
+
+        function renderMailRecipients() {
+          var view = mailCurrentView();
+          ["to", "cc"].forEach(function(kind) {
+            var chipsEl = document.getElementById("mail-" + kind + "-chips");
+            var countEl = document.getElementById("mail-" + kind + "-count");
+            var list = view[kind];
+            var added = list.filter(function(x) { return x.manual; }).length;
+            if (countEl) countEl.textContent = mailCountLabel(list, added);
+            if (!chipsEl) return;
+            chipsEl.innerHTML = list.length
+              ? list.map(mailChipHtml).join("")
+              : '<span class="mail-empty-chip">' +
+                (kind === "to" ? "No To recipients yet" : "No CC recipients yet") +
+                "</span>";
+            chipsEl.querySelectorAll("[data-mail-remove]").forEach(function(btn) {
+              btn.onclick = function() {
+                var email = mailNormalizeEmail(btn.dataset.email);
+                var key = btn.dataset.kind;
+                mailState[key] = mailState[key].filter(function(e) {
+                  return mailNormalizeEmail(e) !== email;
+                });
+                renderMailRecipients();
+              };
+            });
+          });
+        }
+
+        function mailShowError(kind, message) {
+          var el = document.getElementById("mail-" + kind + "-error");
+          if (!el) return;
+          el.textContent = message || "";
+          el.classList.toggle("show", !!message);
+        }
+
+        function addMailRecipient(kind, raw) {
+          var value = String(raw || "").trim();
+          if (!value) return;
+          var parts = value.replace(/;/g, ",").split(",")
+            .map(function(s) { return s.trim(); })
+            .filter(Boolean);
+          var view = mailCurrentView();
+          var existing = {};
+          view.to.concat(view.cc).forEach(function(item) {
+            existing[mailNormalizeEmail(item.email)] = 1;
+          });
+          var errors = [];
+          parts.forEach(function(email) {
+            var key = mailNormalizeEmail(email);
+            if (!MAIL_EMAIL_RE.test(email)) {
+              errors.push("Enter a valid email address");
+            } else if (existing[key]) {
+              errors.push(email + " is already in the list");
+            } else {
+              existing[key] = 1;
+              mailState[kind].push(email);
+            }
+          });
+          mailShowError(kind, errors[0] || "");
+          renderMailRecipients();
+        }
+
         function openMailDialog(ev) {
           mailEv = ev;
-          var box = document.getElementById("mail-auto");
-          if (box) box.innerHTML = '<div class="mail-empty">Loading…</div>';
-          var toEl = document.getElementById("mail-to");
-          var ccEl = document.getElementById("mail-cc");
-          if (toEl) toEl.value = ev.additional_to || "";
-          if (ccEl) ccEl.value = ev.additional_cc || "";
+          mailRecipients = null;
+          mailState = { to: [], cc: [] };
+          ["to", "cc"].forEach(function(kind) {
+            var chipsEl = document.getElementById("mail-" + kind + "-chips");
+            var countEl = document.getElementById("mail-" + kind + "-count");
+            var inputEl = document.getElementById("mail-" + kind + "-input");
+            if (chipsEl) chipsEl.innerHTML = '<span class="mail-empty-chip">Loading…</span>';
+            if (countEl) countEl.textContent = "—";
+            if (inputEl) inputEl.value = "";
+            mailShowError(kind, "");
+          });
           document.getElementById("mailModal").classList.add("open");
 
-          /* Live tag preview helper */
-          function renderPreview(inputId, previewId, tagClass) {
-            var inp = document.getElementById(inputId);
-            var prev = document.getElementById(previewId);
-            if (!inp || !prev) return;
-            function refresh() {
-              var parts = inp.value.replace(/;/g, ",").split(",")
-                .map(function (s) { return s.trim(); })
-                .filter(function (s) { return s && s.indexOf("@") !== -1; });
-              if (!parts.length) { prev.innerHTML = ""; return; }
-              prev.innerHTML = parts.map(function (e) {
-                return '<span class="mail-tag ' + tagClass + '" title="' + esc(e) + '">' + esc(e) + "</span>";
-              }).join("");
+          ["to", "cc"].forEach(function(kind) {
+            var inputEl = document.getElementById("mail-" + kind + "-input");
+            var addBtn = document.getElementById("mail-" + kind + "-add");
+            if (inputEl) {
+              inputEl.onkeydown = function(e) {
+                if (e.key === "Enter" || e.key === "," || e.key === ";") {
+                  e.preventDefault();
+                  addMailRecipient(kind, inputEl.value);
+                  inputEl.value = "";
+                } else {
+                  mailShowError(kind, "");
+                }
+              };
             }
-            inp.addEventListener("input", refresh);
-            inp.addEventListener("blur", refresh);
-            refresh();
-          }
-          renderPreview("mail-to", "mail-to-preview", "mail-tag-to");
-          renderPreview("mail-cc", "mail-cc-preview", "mail-tag-cc");
+            if (addBtn) {
+              addBtn.onclick = function() {
+                if (!inputEl) return;
+                addMailRecipient(kind, inputEl.value);
+                inputEl.value = "";
+              };
+            }
+          });
 
           api("get_mail_recipients", { training_name: ev.name })
-            .then(function (r) {
+            .then(function(r) {
               if (!r || mailEv !== ev) return;
-              var boxEl = document.getElementById("mail-auto");
-
-              function group(title, list, tagClass, emptyText) {
-                var inner = "";
-                if (!list || !list.length) {
-                  inner = '<div class="mail-empty">' + esc(emptyText) + "</div>";
-                } else {
-                  inner = '<div class="mail-tags">' +
-                    list.map(function (t) {
-                      return '<span class="mail-tag ' + tagClass + '" title="' + esc(t) + '">' + esc(t) + "</span>";
-                    }).join("") + "</div>";
-                }
-                return '<div class="mail-group">' +
-                  '<div class="mail-group-title"><span class="mail-group-dot"></span>' + esc(title) + "</div>" +
-                  inner + "</div>";
-              }
-
-              var toP = ((r.to || {}).participants || []).map(function (p) {
-                return p.email;
-              });
-              var toB = ((r.to || {}).branch_heads || []).map(function (b) {
-                return "Branch " + b.branch + " <" + b.email + ">";
-              });
-              var ccT = r.cc && r.cc.trainer ? ["Trainer <" + r.cc.trainer + ">"] : [];
-
-              if (boxEl)
-                boxEl.innerHTML =
-                  group("To · Participants", toP, "mail-tag-to", "No participant emails on file") +
-                  group("To · Branch Heads", toB, "mail-tag-to", "No branch-head email on file") +
-                  group("To · Manual", (r.to || {}).manual, "mail-tag-to", "None added") +
-                  group("CC · Trainer", ccT, "mail-tag-cc", "No trainer email") +
-                  group("CC · Manual", (r.cc || {}).manual, "mail-tag-cc", "None added");
-
-              var toFill = document.getElementById("mail-to");
-              var ccFill = document.getElementById("mail-cc");
-              if (toFill) { toFill.value = ((r.to || {}).manual || []).join(", "); toFill.dispatchEvent(new Event("input")); }
-              if (ccFill) { ccFill.value = ((r.cc || {}).manual || []).join(", "); ccFill.dispatchEvent(new Event("input")); }
+              mailRecipients = r;
+              mailState = {
+                to: ((r.to || {}).manual || []).slice(),
+                cc: ((r.cc || {}).manual || []).slice(),
+              };
+              renderMailRecipients();
             })
-            .catch(function (err) {
-              var boxEl = document.getElementById("mail-auto");
-              if (boxEl)
-                boxEl.innerHTML =
-                  '<div class="mail-empty">Could not load preview: ' + esc((err && err.message) || err) + "</div>";
+            .catch(function(err) {
+              var chipsEl = document.getElementById("mail-to-chips");
+              if (chipsEl)
+                chipsEl.innerHTML =
+                  '<span class="mail-empty-chip">Could not load recipients: ' +
+                  esc((err && err.message) || err) + "</span>";
             });
 
           document.getElementById("btn-mail-save").onclick = function () {
-            var toVal = document.getElementById("mail-to").value;
-            var ccVal = document.getElementById("mail-cc").value;
+            ["to", "cc"].forEach(function(kind) {
+              var inputEl = document.getElementById("mail-" + kind + "-input");
+              if (inputEl && inputEl.value.trim()) {
+                addMailRecipient(kind, inputEl.value);
+                inputEl.value = "";
+              }
+            });
+            var hasError = ["to", "cc"].some(function(kind) {
+              var el = document.getElementById("mail-" + kind + "-error");
+              return el && el.classList.contains("show");
+            });
+            if (hasError) {
+              showToast("Fix the highlighted recipient first");
+              return;
+            }
             api("update_training_emails", {
-              training_name: ev.name,
-              additional_to: toVal,
-              additional_cc: ccVal,
+              training_name: mailEv.name,
+              additional_to: mailState.to.join(", "),
+              additional_cc: mailState.cc.join(", "),
             })
               .then(function () {
-                ev.additional_to = toVal;
-                ev.additional_cc = ccVal;
+                mailEv.additional_to = mailState.to.join(", ");
+                mailEv.additional_cc = mailState.cc.join(", ");
                 showToast("Mail recipients saved");
                 closeModal("mailModal");
               })

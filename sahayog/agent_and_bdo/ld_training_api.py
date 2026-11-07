@@ -1261,10 +1261,13 @@ def get_mail_recipients(training_name):
         if email:
             participants.append({"name": p.full_name or p.agent_employee, "email": email})
 
-    branch_heads = [
-        {"branch": code, "email": email}
-        for code, email in _get_branch_head_emails(doc)
-    ]
+    branch_heads = []
+    for code, email in _get_branch_head_emails(doc):
+        branch_heads.append({
+            "branch": code,
+            "branch_name": (frappe.db.get_value("Sahayog Branch", code, "branch") or "").strip(),
+            "email": email,
+        })
     trainer_email = _trainer_email(doc.trainer)
     return {
         "to": {
@@ -1274,6 +1277,7 @@ def get_mail_recipients(training_name):
         },
         "cc": {
             "trainer": trainer_email,
+            "trainer_name": (doc.trainer or "").strip(),
             "manual": _parse_cc(doc.additional_cc),
         },
     }
