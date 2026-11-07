@@ -910,10 +910,14 @@ class PettyCashTransaction(Document):
             frappe.throw(_("Document is not pending checker approval."))
 
         # Amount already deducted on submit; checker only changes status.
-        self.db_set("approval_status", "Checked", update_modified=False)
+        # After the checker approves a pending-checker transaction, route the
+        # document to the HO Approver's queue ("Pending Approval") so the HO
+        # Petty Cash Approver can approve/reject the limit exceedance before
+        # the HO Verifier moves the document to "Verified".
+        self.db_set("approval_status", "Pending Approval", update_modified=False)
 
         frappe.msgprint(
-            msg=_("Checker Approved. Status set to Checked."),
+            msg=_("Checker Approved. Status set to Pending Approval for HO Approver."),
             title=_("Message"),
             indicator="blue"
         )
