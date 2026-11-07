@@ -290,6 +290,16 @@ frappe.ui.form.on('Petty Cash Transaction', {
                         });
                     });
                 }, "Actions"); // Should appear in 'Actions' button
+
+                frm.add_custom_button(__('Reject (Approver)'), function () {
+                    frappe.confirm('Reject this expense?', () => {
+                        frappe.call({
+                            doc: frm.doc,
+                            method: 'ho_approver_reject',
+                            callback: function () { frm.reload_doc(); }
+                        });
+                    });
+                }, "Actions");
             } else {
                 console.log(">> User does not have permission for Limit Approval");
             }

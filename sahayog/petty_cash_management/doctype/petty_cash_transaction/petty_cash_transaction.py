@@ -875,6 +875,31 @@ class PettyCashTransaction(Document):
         )
 
     @frappe.whitelist()
+    def ho_approver_reject(self):
+        user_roles = frappe.get_roles()
+
+        if "HO Petty Cash Approver" not in user_roles and frappe.session.user != "Administrator":
+            frappe.throw(_("Only HO Petty Cash Approver can reject."))
+
+        if self.docstatus != 1 or self.approval_status != "Pending Approval":
+            frappe.throw(_("Document is not pending approval."))
+
+        # Reverse the wallet deduction made during the submit/approval flow
+        if not self.is_legacy_unsettled_cash_flow_enabled():
+            self.apply_new_flow_terminal_credit("Rejected")
+        else:
+            wallet = self.get_branch_wallet_doc()
+            wallet.update_unsettled_cash(self.amount, "Withdrawal")
+
+        self.db_set("approval_status", "Rejected", update_modified=False)
+
+        frappe.msgprint(
+            msg=_("Approver Rejected. Status set to Rejected."),
+            title=_("Message"),
+            indicator="red"
+        )
+
+    @frappe.whitelist()
     def ho_checker_approve(self):
         user_roles = frappe.get_roles()
 
@@ -960,6 +985,20 @@ class PettyCashTransaction(Document):
 
         if self.approval_status not in ["Approved", "Checked"]:
             frappe.throw(_("Document must be Approved/Checked before Verification."))
+
+        # BEFORE moving to 'Verified': if the document reached here via the
+        # Checker's path ("Checked"), route it through the HO Petty Cash
+        # Approver's approval first. The approver must approve (via
+        # ho_approve_limit -> 'Pending Approval' -> 'Approved') before the
+        # verifier/pay action can set the final status to 'Verified'.
+        if self.approval_status == "Checked":
+            self.db_set("approval_status", "Pending Approval", update_modified=False)
+            frappe.msgprint(
+                msg=_("HO Petty Cash Approver approval required before verification."),
+                title=_("Pending Approval"),
+                indicator="orange"
+            )
+            return
 
         enable_integration = cint(
             frappe.db.get_single_value(
