@@ -14,6 +14,10 @@ from sahayog.agent_and_bdo.doctype.training.training import (
     COMPLETION_FIELDS,
     get_training_status,
 )
+from sahayog.agent_and_bdo.ld_holidays import (
+    evaluate_training_holidays,
+    warnings_for_training,
+)
 
 ADMIN_ROLES = {"L&D Admin", "System Manager", "Administrator"}
 TRAINER_ROLES = {"Trainer", "Trainer Head"}
@@ -975,7 +979,11 @@ def create_training(**kwargs):
                 })
 
     doc.insert()
-    return get_training_details(doc.name)
+    result = get_training_details(doc.name)
+    _holiday_warnings = warnings_for_training(doc)
+    if _holiday_warnings:
+        result["holiday_warnings"] = _holiday_warnings
+    return result
 
 
 @frappe.whitelist()
@@ -2654,6 +2662,27 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
         if frappe.utils.get_time(end_norm) <= frappe.utils.get_time(start_norm):
             frappe.throw(_("End Time must be after Start Time."))
 
+    # Holiday rule (trainer-centric): block when the trainer or *all* selected
+    # states are on holiday. A holiday in *some* states is allowed (warning).
+    if geographies is not None:
+        _geo_rows = frappe.parse_json(geographies) or []
+        _branches = [
+            (g.get("branch") or g.get("name"))
+            for g in _geo_rows
+            if isinstance(g, dict) and (g.get("branch") or g.get("name"))
+        ]
+    else:
+        _branches = frappe.get_all("Training Geography", filters={"parent": name}, pluck="branch")
+
+    _block, _holiday_warnings = evaluate_training_holidays(
+        trainer=doc.trainer,
+        from_date=from_date,
+        to_date=to_date,
+        branches=_branches,
+    )
+    if _block:
+        frappe.throw(_block)
+
     updates = {
         "from_date": from_date,
         "to_date":   to_date,
@@ -2757,7 +2786,10 @@ def update_training_schedule(name, from_date=None, to_date=None, start_time=None
         frappe.db.set_value("Training", name, "status_override", "Rescheduled")
 
     frappe.db.commit()
-    return {"success": True}
+    _result = {"success": True}
+    if _holiday_warnings:
+        _result["holiday_warnings"] = _holiday_warnings
+    return _result
 
 
 @frappe.whitelist()
@@ -3003,35 +3035,20 @@ def bulk_upload_training(month=None):
             if _td.weekday() == 6:
                 errors.append(f"Row {i}: Training Date '{_td_disp}' is a Sunday — trainings cannot be scheduled on Sundays")
                 continue
-            # Holiday check — use uploader's state-wise holiday list
-            _STATE_PREFIX_BU = {
-                "MAHARASHTRA": "Maharashtra", "MADHYA PRADESH": "Madhya Pradesh",
-                "KARNATAKA": "Karnataka", "UTTARAKHAND": "Uttarakhand",
-                "HIMACHAL PRADESH": "Himachal Pradesh", "CHANDIGARH": "Chandigarh",
-                "PUDUCHERRY": "Pondicherry", "JAMMU AND KASHMIR": "Jammu & Kashmir",
-            }
-            _emp_bl = frappe.db.get_value("Employee", {"user_id": frappe.session.user}, ["holiday_list", "company", "sahayog_branch"], as_dict=True)
-            _hl = None
-            if _emp_bl:
-                _hl = _emp_bl.holiday_list
-                if not _hl and _emp_bl.sahayog_branch:
-                    _st = frappe.db.get_value("Sahayog Branch", _emp_bl.sahayog_branch, "state")
-                    if _st:
-                        _pfx = _STATE_PREFIX_BU.get(str(_st).strip().upper())
-                        if _pfx:
-                            _cand = f"{_pfx} - {_td.year}"
-                            _hl = _cand if frappe.db.exists("Holiday List", _cand) else frappe.db.get_value("Holiday List", {"name": ["like", f"{_pfx} - %"]}, "name")
-                if not _hl and _emp_bl.company:
-                    _hl = frappe.db.get_value("Company", _emp_bl.company, "default_holiday_list")
-            if _hl:
-                _hol_row = frappe.db.sql(
-                    "SELECT description FROM `tabHoliday` WHERE parent=%s AND holiday_date=%s LIMIT 1",
-                    (_hl, training_date), as_dict=True
-                )
-                if _hol_row:
-                    _hdesc = (_hol_row[0].description or "Holiday").strip()
-                    errors.append(f"Row {i}: Training Date '{_td_disp}' is a Holiday ({_hdesc}) — trainings cannot be scheduled on holidays")
-                    continue
+            # Holiday check — trainer-centric (per-row Trainer ID), fallback to
+            # uploader's holiday list only when no trainer is given.
+            _trainer_for_row = (
+                trainer_id if (trainer_id and frappe.db.exists("Employee", trainer_id))
+                else frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
+            )
+            _block_hol, _ = evaluate_training_holidays(
+                trainer=_trainer_for_row,
+                from_date=training_date,
+                to_date=training_date,
+            )
+            if _block_hol:
+                errors.append(f"Row {i}: {_block_hol}")
+                continue
             if not program:
                 errors.append(f"Row {i}: Program Name / Training Title is required")
                 continue

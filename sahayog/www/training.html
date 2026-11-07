@@ -11273,7 +11273,7 @@
                 geographies: geoChanged ? JSON.stringify(state.selectedGeographies) : null,
                 is_adhoc: adhocChanged ? adhocVal : null,
                 program_duration_hours: durChanged ? durVal : null,
-              }).then(function () {
+              }).then(function (res) {
                 ev.from_date = fromDate;
                 ev.to_date = toDate;
                 ev.start_time = startTime;
@@ -11285,6 +11285,9 @@
                 if (expChanged) ev.number_of_participants = expVal;
                 if (attChanged) ev.number_of_participants_attended = attVal;
                 if (durChanged) ev.program_duration_hours = durVal;
+                if (res && res.holiday_warnings && res.holiday_warnings.length) {
+                  showToast("⚠ " + res.holiday_warnings.join(" "));
+                }
                 /* ev.geographies refreshes from the get_training_details
                    refetch after save — no manual merge needed. */
               });
@@ -11739,7 +11742,7 @@
             submit: 1,
           };
           api("create_training", args)
-            .then(function () {
+            .then(function (res) {
               var p = date.split("-");
               state.selectedDate = new Date(
                 parseInt(p[0], 10),
@@ -11757,9 +11760,11 @@
               }
               closeModal("addModal");
               loadData(true);
-              showToast(
-                isAdhoc ? "Ad-hoc training scheduled" : "Training scheduled",
-              );
+              var _msg = isAdhoc ? "Ad-hoc training scheduled" : "Training scheduled";
+              if (res && res.holiday_warnings && res.holiday_warnings.length) {
+                _msg += " — ⚠ " + res.holiday_warnings.join(" ");
+              }
+              showToast(_msg);
             })
             .catch(function (e) {
               showToast("Could not save training: " + e.message);
