@@ -18,10 +18,12 @@ function log_matching_branch_visit_template(frm) {
 		frappe.db.get_list("Branch Visit Template", {
 			fields: ["name", "for_new"],
 			filters,
+			limit_page_length: 1,
 		}).then((res) => {
-			(res || []).forEach((row) => {
-				console.log(row.name);
-			});
+			const match = res && res[0];
+			if (match) {
+				frm.set_value("template", match.name);
+			}
 		});
 	});
 }
