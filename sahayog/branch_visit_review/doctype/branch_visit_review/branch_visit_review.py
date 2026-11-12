@@ -194,11 +194,9 @@ class BranchVisitReview(Document):
 		return frappe.db.get_value("Employee", {"employee_name": responsible}, "name")
 
 	def _make_sahayog_ticket(self, row, employee):
-		emp = frappe.db.get_value(
-			"Employee", employee, ["user_id", "department", "employee_name"], as_dict=True
+		session_employee = frappe.db.get_value(
+			"Employee", {"user_id": frappe.session.user}, "name"
 		)
-		if not emp:
-			return None
 
 		dept_name = "Admin"
 		ticket_type = "Branch Visit Review Queary"
@@ -214,8 +212,8 @@ class BranchVisitReview(Document):
 		ticket = frappe.get_doc(
 			{
 				"doctype": "Sahayog Ticket",
-				"employee_id": employee,
-				"assigned_to": emp.user_id or None,
+				"employee_id": session_employee,
+				"assigned_to": frappe.session.user,
 				"dept_name": dept_name,
 				"ticket_type": ticket_type,
 				"description": desc,
