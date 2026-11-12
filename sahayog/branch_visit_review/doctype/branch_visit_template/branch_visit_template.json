@@ -8,6 +8,7 @@
  "field_order": [
   "template_name",
   "applicable_branch_type",
+  "department",
   "is_active",
   "items"
  ],
@@ -40,11 +41,17 @@
    "fieldtype": "Table",
    "label": "Checklist Items",
    "options": "Branch Visit Template Item"
+  },
+  {
+   "fieldname": "department",
+   "fieldtype": "Link",
+   "label": "Department",
+   "options": "Department"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-10-16 11:06:04.336079",
+ "modified": "2026-11-12 11:30:44.162959",
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
  "name": "Branch Visit Template",
