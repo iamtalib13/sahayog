@@ -11,6 +11,44 @@ def get_branch_manager(sol_id):
     )
 
 
+def _map_ticket_status_to_action_status(ticket_status):
+    status = (ticket_status or "").strip()
+    if status in ("Resolved", "Closed"):
+        return "Resolved"
+    if status in ("In-Progress", "Read", "Re-Opened"):
+        return "In Progress"
+    return "Open"
+
+
+def sync_ticket_status_to_branch_visit_action(doc, method=None):
+    """Sync Sahayog Ticket status to linked Branch Visit Action Item row(s)."""
+    try:
+        ticket_status = getattr(doc, "status", None)
+        if not ticket_status:
+            return
+
+        action_status = _map_ticket_status_to_action_status(ticket_status)
+        rows = frappe.get_all(
+            "Branch Visit Action Item",
+            filters={"sahayog_ticket": doc.name},
+            fields=["name", "status", "parent"],
+        )
+        for row in rows:
+            if row.status != action_status:
+                frappe.db.set_value(
+                    "Branch Visit Action Item",
+                    row.name,
+                    "status",
+                    action_status,
+                    update_modified=False,
+                )
+    except Exception:
+        frappe.log_error(
+            title="Failed to sync Sahayog Ticket status to Branch Visit Action Item",
+            message=frappe.get_traceback(),
+        )
+
+
 @frappe.whitelist()
 def get_template_items(template):
     return frappe.get_all(
