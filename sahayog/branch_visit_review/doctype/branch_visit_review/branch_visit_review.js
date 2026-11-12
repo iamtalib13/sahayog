@@ -105,6 +105,20 @@ frappe.ui.form.on("Branch Visit Review", {
 	visited_by(frm) {
 		// set_visit_details_access(frm);
 		set_visitor_signoff_access(frm);
+		if (!frm.doc.visited_by) return;
+
+		frappe.db.get_value("Employee", frm.doc.visited_by, "department").then((r) => {
+			const dept = r && r.message && r.message.department;
+			if (!dept) return;
+			frappe.db.get_list("Branch Visit Template", {
+				fields: ["name"],
+				filters: { department: dept },
+			}).then((res) => {
+				(res || []).forEach((row) => {
+					console.log(row.name);
+				});
+			});
+		});
 	},
 	overall_assessment(frm) {
 		update_overall_badge(frm);
