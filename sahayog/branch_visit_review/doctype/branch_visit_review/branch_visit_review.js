@@ -23,6 +23,11 @@ function log_matching_branch_visit_template(frm) {
 			const match = res && res[0];
 			if (match) {
 				frm.set_value("template", match.name);
+				if (frm.doc.template === match.name) {
+					render_checklist(frm, frm.doc.template);
+				}
+			} else if (frm.doc.template) {
+				render_checklist(frm, frm.doc.template);
 			}
 		});
 	});
@@ -136,6 +141,9 @@ frappe.ui.form.on("Branch Visit Review", {
 	},
 	branch_is(frm) {
 		log_matching_branch_visit_template(frm);
+		if (frm.doc.template) {
+			render_checklist(frm, frm.doc.template);
+		}
 	},
 	overall_assessment(frm) {
 		update_overall_badge(frm);
@@ -630,16 +638,41 @@ function render_checklist(frm, template) {
 				leadership: active_tab === "leadership" ? "active" : "",
 			};
 
+			let review_tab_label = "Review Checklist";
+			let show_branch_tab = false;
+			if (frm.doc.branch_is === "Existing" && frm.doc.visited_by) {
+				show_branch_tab = true;
+				review_tab_label = "Visiter checklist";
+			}
+
 			let tabs_html = "<div class='bvr-tabs'><div class='bvr-tab-bar'><ul class='nav nav-tabs'>";
-			tabs_html += "<li class='" + li_active.review + "'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
+			tabs_html += "<li class='" + li_active.review + "'><a class='tab-review' style='cursor:pointer;'>" + review_tab_label + "</a></li>";
+			if (show_branch_tab) {
+				tabs_html += "<li><a class='tab-branch' style='cursor:pointer;'>Branch Checklist</a></li>";
+			}
 			tabs_html += "<li class='" + li_active.action + "'><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
 			tabs_html += "<li class='" + li_active.leadership + "'><a class='tab-leadership' style='cursor:pointer;'>Leadership Assessment</a></li>";
 			tabs_html += "</ul>" + overall_html + "</div>";
 			tabs_html += "<div class='tab-content-review' style='display:" + (active_tab === "review" ? "block" : "none") + ";'>" + checklist_html + "</div>";
+			if (show_branch_tab) {
+				tabs_html += "<div class='tab-content-branch' style='display:none;'><div style='padding:12px;color:#6c7680;'>Branch Checklist</div></div>";
+			}
 			tabs_html += "<div class='tab-content-action' style='display:" + (active_tab === "action" ? "block" : "none") + ";'>" + action_html + "</div>";
 			tabs_html += "<div class='tab-content-leadership' style='display:" + (active_tab === "leadership" ? "block" : "none") + ";'>" + leadership_html + "</div></div>";
 
 			frm.fields_dict.checklist.$wrapper.html(tabs_html);
+
+			if (show_branch_tab) {
+				// verify visited_by has department; if not, revert to default
+				frappe.db.get_value("Employee", frm.doc.visited_by, "department").then((d) => {
+					const has_dept = d && d.message && d.message.department;
+					if (!has_dept) {
+						frm.fields_dict.checklist.$wrapper.find(".tab-branch").parent().remove();
+						frm.fields_dict.checklist.$wrapper.find(".tab-content-branch").remove();
+						frm.fields_dict.checklist.$wrapper.find(".tab-review").text("Review Checklist");
+					}
+				});
+			}
 
 			let style = `<style>
 				.bvr-tabs .bvr-tab-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; background: #f8f9fb; border-radius: 8px 8px 0 0; padding: 4px 8px 0 4px; }
@@ -738,6 +771,7 @@ function render_checklist(frm, template) {
 
 			let tab_map = {
 				".tab-review": ".tab-content-review",
+				".tab-branch": ".tab-content-branch",
 				".tab-action": ".tab-content-action",
 				".tab-leadership": ".tab-content-leadership",
 			};
