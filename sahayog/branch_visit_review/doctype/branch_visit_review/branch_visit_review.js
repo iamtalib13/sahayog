@@ -486,7 +486,7 @@ function render_checklist(frm, template) {
 
 					let show_branch_tab_flag = (frm.doc.branch_is === "Existing" && frm.doc.visited_by);
 
-					function build_checklist_section(items_subset) {
+					function build_checklist_section(items_subset, is_branch_tab) {
 						let html = "";
 						if (!items_subset || items_subset.length === 0) return html;
 						let grouped = {};
@@ -499,7 +499,12 @@ function render_checklist(frm, template) {
 						Object.keys(grouped).forEach(function (cat) {
 							let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
 							html += "<div class='category-header'><h5>" + cat + "</h5><button class='bvr-btn-add add-category-row' data-category='" + safe_cat + "' title='Add new row'>+</button></div>";
-							html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
+							let thead = "<thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th>";
+							if (is_branch_tab) {
+								thead += "<th style='width:100px;'>QTY</th><th style='width:140px;'>Condition</th>";
+							}
+							thead += "<th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead>";
+							html += "<table class='category-table' data-category='" + safe_cat + "'>" + thead + "<tbody>";
 							grouped[cat].forEach(function (row) {
 								let i = row._idx;
 								let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
@@ -538,7 +543,21 @@ function render_checklist(frm, template) {
 								} else {
 									review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + i + '" title="Add review">+</button>';
 								}
-								html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
+								html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td>";
+								if (is_branch_tab) {
+									let saved_qty = saved ? (saved.qty || "") : "";
+									let saved_cond = saved ? (saved.condition || "") : "";
+									let cond_opts = ["", "Best", "Better", "Good", "Average"];
+									let cond_html = '<select class="form-control branch-condition-select" data-parameter="' + i + '">';
+									cond_html += '<option value="">Select</option>';
+									["Best", "Better", "Good", "Average"].forEach(function (opt) {
+										cond_html += '<option value="' + opt + '"' + (saved_cond === opt ? " selected" : "") + ">" + opt + "</option>";
+									});
+									cond_html += "</select>";
+									html += "<td><input type='text' class='form-control branch-qty-input' data-parameter='" + i + "' placeholder='QTY' value='" + bvr_escape(saved_qty) + "'></td>";
+									html += "<td>" + cond_html + "</td>";
+								}
+								html += "<td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
 								sr++;
 							});
 							html += "</tbody></table>";
@@ -560,8 +579,8 @@ function render_checklist(frm, template) {
 					}
 				});
 
-				checklist_html = build_checklist_section(visitor_items);
-				branch_checklist_html = build_checklist_section(branch_items);
+				checklist_html = build_checklist_section(visitor_items, false);
+				branch_checklist_html = build_checklist_section(branch_items, true);
 
 				if (frm.doc.responses && frm.doc.responses.length > 0) {
 					let custom_items = [];
@@ -1014,6 +1033,44 @@ function render_checklist(frm, template) {
 						category: item.category,
 						parameter_name: item.parameter_name,
 						response: val,
+					});
+				}
+				frm.refresh_field("responses");
+			});
+
+			frm.fields_dict.checklist.$wrapper.off("blur.bvr-qty", ".branch-qty-input").on("blur.bvr-qty", ".branch-qty-input", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				let item = template_items[param_idx];
+				if (!item) return;
+				let existing = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; }) : null;
+				if (existing) {
+					existing.qty = val;
+				} else {
+					frm.add_child("responses", {
+						category: item.category,
+						parameter_name: item.parameter_name,
+						qty: val,
+					});
+				}
+				frm.refresh_field("responses");
+			});
+
+			frm.fields_dict.checklist.$wrapper.off("change.bvr-cond", ".branch-condition-select").on("change.bvr-cond", ".branch-condition-select", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				let item = template_items[param_idx];
+				if (!item) return;
+				let existing = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; }) : null;
+				if (existing) {
+					existing.condition = val;
+				} else {
+					frm.add_child("responses", {
+						category: item.category,
+						parameter_name: item.parameter_name,
+						condition: val,
 					});
 				}
 				frm.refresh_field("responses");
