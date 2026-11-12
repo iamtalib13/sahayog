@@ -554,7 +554,7 @@ function render_checklist(frm, template) {
 										cond_html += '<option value="' + opt + '"' + (saved_cond === opt ? " selected" : "") + ">" + opt + "</option>";
 									});
 									cond_html += "</select>";
-									html += "<td><input type='text' class='form-control branch-qty-input' data-parameter='" + i + "' placeholder='QTY' value='" + bvr_escape(saved_qty) + "'></td>";
+									html += "<td><input type='number' class='form-control branch-qty-input' data-parameter='" + i + "' placeholder='QTY' min='0' step='1' value='" + bvr_escape(saved_qty) + "'></td>";
 									html += "<td>" + cond_html + "</td>";
 								}
 								html += "<td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
@@ -1042,6 +1042,11 @@ function render_checklist(frm, template) {
 				let $this = $(this);
 				let param_idx = $this.data("parameter");
 				let val = $this.val();
+				if (val !== "") {
+					val = parseInt(val, 10);
+					if (isNaN(val) || val < 0) val = 0;
+					$this.val(val);
+				}
 				let item = template_items[param_idx];
 				if (!item) return;
 				let existing = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; }) : null;
