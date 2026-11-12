@@ -197,6 +197,7 @@ class BranchVisitReview(Document):
 		session_employee = frappe.db.get_value(
 			"Employee", {"user_id": frappe.session.user}, "name"
 		)
+		responsible_user = frappe.db.get_value("Employee", employee, "user_id")
 
 		dept_name = "Admin"
 		ticket_type = "Branch Visit Review Queary"
@@ -213,7 +214,7 @@ class BranchVisitReview(Document):
 			{
 				"doctype": "Sahayog Ticket",
 				"employee_id": session_employee,
-				"assigned_to": frappe.session.user,
+				"assigned_to": responsible_user or None,
 				"dept_name": dept_name,
 				"ticket_type": ticket_type,
 				"description": desc,
