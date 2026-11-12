@@ -152,3 +152,109 @@ class BranchVisitReview(Document):
 
 	def is_branch_head_user(self) -> bool:
 		return can_sign_branch_head(self.branch)
+
+	def on_update(self):
+		self.create_sahayog_tickets_for_actions()
+
+	def create_sahayog_tickets_for_actions(self):
+		if not frappe.db.exists("DocType", "Sahayog Ticket"):
+			return
+		if not self.action_items:
+			return
+
+		for row in self.action_items:
+			if not row.action_item or row.sahayog_ticket:
+				continue
+			if not row.responsible:
+				continue
+
+			try:
+				employee = self._resolve_employee(row.responsible)
+				if not employee:
+					continue
+
+				ticket_name = self._make_sahayog_ticket(row, employee)
+				if ticket_name:
+					frappe.db.set_value(row.doctype, row.name, "sahayog_ticket", ticket_name)
+					row.sahayog_ticket = ticket_name
+			except Exception:
+				frappe.log_error(
+					title="Sahayog Ticket creation failed for Branch Visit Review action item",
+					message=frappe.get_traceback(),
+				)
+
+	def _resolve_employee(self, responsible):
+		if frappe.db.exists("Employee", responsible):
+			return responsible
+		# try to extract id if stored as "Name (EMP-001)"
+		if "(" in responsible and responsible.endswith(")"):
+			candidate = responsible.rsplit("(", 1)[-1][:-1].strip()
+			if candidate and frappe.db.exists("Employee", candidate):
+				return candidate
+		return frappe.db.get_value("Employee", {"employee_name": responsible}, "name")
+
+	def _make_sahayog_ticket(self, row, employee):
+		emp = frappe.db.get_value(
+			"Employee", employee, ["user_id", "department", "employee_name"], as_dict=True
+		)
+		if not emp:
+			return None
+
+		dept_name = self._get_ticket_dept_name(emp.department)
+		ticket_type = self._get_ticket_type(dept_name)
+		if not dept_name or not ticket_type:
+			return None
+
+		desc = row.action_item or ""
+		desc += f"<br><br><b>Source:</b> Branch Visit Review {self.name}"
+		if self.branch:
+			desc += f"<br><b>Branch:</b> {self.branch}"
+
+		priority_map = {"High": "High", "Medium": "Medium", "Low": "Normal"}
+		priority = priority_map.get((row.priority or "").strip(), "Normal")
+
+		ticket = frappe.get_doc(
+			{
+				"doctype": "Sahayog Ticket",
+				"employee_id": employee,
+				"assigned_to": emp.user_id or None,
+				"dept_name": dept_name,
+				"ticket_type": ticket_type,
+				"description": desc,
+				"priority": priority,
+				"status": "Open",
+			}
+		)
+		ticket.insert(ignore_permissions=True)
+		return ticket.name
+
+	def _get_ticket_dept_name(self, emp_department=None):
+		if emp_department and frappe.db.exists("Departsection", emp_department):
+			return emp_department
+		for dept in ("Operations", "IT", "Admin", "HR", "HO"):
+			if frappe.db.exists("Departsection", dept):
+				return dept
+		return frappe.db.get_value("Departsection", {}, "name")
+
+	def _get_ticket_type(self, dept_name):
+		# Avoid types with special mandatory child-table requirements we don't populate
+		excluded = {"Account Service Request"}
+		tt = frappe.db.get_value(
+			"Ticket Type",
+			{"department": dept_name, "name": ("not in", list(excluded))},
+			"name",
+		)
+		if tt:
+			return tt
+		tt = frappe.db.get_value(
+			"Ticket Type",
+			{"department": dept_name},
+			"name",
+		)
+		if tt:
+			return tt
+		return frappe.db.get_value(
+			"Ticket Type",
+			{"name": ("not in", list(excluded))},
+			"name",
+		) or frappe.db.get_value("Ticket Type", {}, "name")

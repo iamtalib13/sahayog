@@ -12,7 +12,8 @@
   "tat",
   "status",
   "resolution_notes",
-  "proof"
+  "proof",
+  "sahayog_ticket"
  ],
  "fields": [
   {
@@ -65,6 +66,13 @@
    "fieldname": "proof",
    "fieldtype": "Attach",
    "label": "Proof"
+  },
+  {
+   "fieldname": "sahayog_ticket",
+   "fieldtype": "Link",
+   "label": "Sahayog Ticket",
+   "options": "Sahayog Ticket",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,
