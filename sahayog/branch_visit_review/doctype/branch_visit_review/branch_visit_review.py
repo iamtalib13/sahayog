@@ -200,10 +200,8 @@ class BranchVisitReview(Document):
 		if not emp:
 			return None
 
-		dept_name = self._get_ticket_dept_name(emp.department)
-		ticket_type = self._get_ticket_type(dept_name)
-		if not dept_name or not ticket_type:
-			return None
+		dept_name = "Admin"
+		ticket_type = "Branch Visit Review Queary"
 
 		desc = row.action_item or ""
 		desc += f"<br><br><b>Source:</b> Branch Visit Review {self.name}"
@@ -227,34 +225,3 @@ class BranchVisitReview(Document):
 		)
 		ticket.insert(ignore_permissions=True)
 		return ticket.name
-
-	def _get_ticket_dept_name(self, emp_department=None):
-		if emp_department and frappe.db.exists("Departsection", emp_department):
-			return emp_department
-		for dept in ("Operations", "IT", "Admin", "HR", "HO"):
-			if frappe.db.exists("Departsection", dept):
-				return dept
-		return frappe.db.get_value("Departsection", {}, "name")
-
-	def _get_ticket_type(self, dept_name):
-		# Avoid types with special mandatory child-table requirements we don't populate
-		excluded = {"Account Service Request"}
-		tt = frappe.db.get_value(
-			"Ticket Type",
-			{"department": dept_name, "name": ("not in", list(excluded))},
-			"name",
-		)
-		if tt:
-			return tt
-		tt = frappe.db.get_value(
-			"Ticket Type",
-			{"department": dept_name},
-			"name",
-		)
-		if tt:
-			return tt
-		return frappe.db.get_value(
-			"Ticket Type",
-			{"name": ("not in", list(excluded))},
-			"name",
-		) or frappe.db.get_value("Ticket Type", {}, "name")
