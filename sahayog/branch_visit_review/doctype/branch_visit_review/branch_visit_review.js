@@ -370,6 +370,12 @@ function open_action_item_dialog(frm, idx, item) {
 	modal_html += "<div class='bvr-modal-field'><label>Status</label><select class='form-control bvr-modal-input' data-field='status'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select></div>";
 	modal_html += "</div>";
 	modal_html += "<div class='bvr-modal-field'><label>Resolution Notes</label><textarea class='form-control bvr-modal-input' data-field='resolution_notes' rows='3' placeholder='Enter notes'>" + bvr_escape(item.resolution_notes) + "</textarea></div>";
+	if (item.sahayog_ticket) {
+		let tlink = frappe.utils.get_form_link
+			? frappe.utils.get_form_link("Sahayog Ticket", item.sahayog_ticket)
+			: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
+		modal_html += "<div class='bvr-modal-field'><label>Sahayog Ticket</label><div><a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a></div></div>";
+	}
 	modal_html += "</div>";
 	modal_html += "<div class='bvr-modal-footer'><button class='bvr-modal-btn bvr-modal-btn-cancel' type='button'>Cancel</button><button class='bvr-modal-btn bvr-modal-btn-save' type='button'>Save</button></div>";
 	modal_html += "</div></div>";
@@ -612,7 +618,7 @@ function render_checklist(frm, template) {
 				}
 			}
 
-			let action_html = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th><th style='width:130px;'>Target Date</th><th style='width:110px;'>Status</th><th>Resolution Notes</th><th style='width:40px;'></th></tr></thead><tbody>";
+			let action_html = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th><th style='width:130px;'>Target Date</th><th style='width:110px;'>Status</th><th>Resolution Notes</th><th style='width:140px;'>Ticket</th><th style='width:40px;'></th></tr></thead><tbody>";
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
 					let owner_display = item.responsible || "";
@@ -621,12 +627,19 @@ function render_checklist(frm, template) {
 						if (emp && emp.employee_name) owner_display = emp.employee_name + "(" + emp.name + ")";
 					}
 					let action_display = item.action_item || "<span style='color:#8a93a5;'>Click to add details&hellip;</span>";
-					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.responsible || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
+					let ticket_display = "";
+					if (item.sahayog_ticket) {
+						let tlink = frappe.utils.get_form_link
+							? frappe.utils.get_form_link("Sahayog Ticket", item.sahayog_ticket)
+							: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
+						ticket_display = "<a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a>";
+					}
+					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.responsible || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td>" + ticket_display + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
 			action_html += "<tr class='action-row-add' title='Click to add'><td>" + action_count + "</td>";
-			action_html += "<td colspan='6' style='color:#8a93a5;text-align:center;'>+ Click to add action item</td>";
+			action_html += "<td colspan='7' style='color:#8a93a5;text-align:center;'>+ Click to add action item</td>";
 			action_html += "<td style='text-align:center;'></td>";
 			action_html += "</tr>";
 			action_html += "</tbody></table>";
@@ -896,7 +909,7 @@ function render_checklist(frm, template) {
 			});
 
 			frm.fields_dict.checklist.$wrapper.off("click.bvr-edit").on("click.bvr-edit", ".action-row-edit", function (e) {
-				if ($(e.target).closest(".employee-search-wrapper, .bvr-btn-remove").length) {
+				if ($(e.target).closest(".employee-search-wrapper, .bvr-btn-remove, a").length) {
 					return;
 				}
 				let idx = parseInt($(this).attr("data-idx"), 10);
