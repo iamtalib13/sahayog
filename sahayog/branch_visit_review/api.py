@@ -16,7 +16,7 @@ def get_template_items(template):
     return frappe.get_all(
         "Branch Visit Template Item",
         filters={"parent": template},
-        fields=["category", "parameter_name", "response_type", "is_mandatory"],
+        fields=["category", "parameter_name", "response_type", "is_mandatory", "for"],
         order_by="idx asc",
         limit_page_length=0,
     )

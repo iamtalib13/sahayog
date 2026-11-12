@@ -482,64 +482,86 @@ function render_checklist(frm, template) {
 				callback: function (r) {
 					let all_items = r.message || [];
 					let checklist_html = "";
+					let branch_checklist_html = "";
+
+					let show_branch_tab_flag = (frm.doc.branch_is === "Existing" && frm.doc.visited_by);
+
+					function build_checklist_section(items_subset) {
+						let html = "";
+						if (!items_subset || items_subset.length === 0) return html;
+						let grouped = {};
+						items_subset.forEach(function (row) {
+							let cat = row.category || "Uncategorized";
+							if (!grouped[cat]) grouped[cat] = [];
+							grouped[cat].push(row);
+						});
+						let sr = 1;
+						Object.keys(grouped).forEach(function (cat) {
+							let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
+							html += "<div class='category-header'><h5>" + cat + "</h5><button class='bvr-btn-add add-category-row' data-category='" + safe_cat + "' title='Add new row'>+</button></div>";
+							html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
+							grouped[cat].forEach(function (row) {
+								let i = row._idx;
+								let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
+								let saved_val = saved ? saved.response : "";
+								let response_html = "";
+								if (row.response_type === "Rating (1 to 5)") {
+									response_html = '<span class="rating-stars" data-parameter="' + i + '">';
+									for (let s = 1; s <= 5; s++) {
+										let color = (saved_val && s <= parseInt(saved_val)) ? "gold" : "gray";
+										response_html += '<span class="star" data-value="' + s + '" style="cursor:pointer;font-size:20px;color:' + color + ';">&#9733;</span>';
+									}
+									response_html += '</span>';
+								} else if (row.response_type === "Yes / No") {
+									let yes_checked = saved_val === "Yes" ? "checked" : "";
+									let no_checked = saved_val === "No" ? "checked" : "";
+									response_html = '<span class="yesno-group" data-parameter="' + i + '">';
+									response_html += '<label style="margin-right:10px;"><input type="radio" name="yesno_' + i + '" value="Yes" ' + yes_checked + '> Yes</label>';
+									response_html += '<label><input type="radio" name="yesno_' + i + '" value="No" ' + no_checked + '> No</label>';
+									response_html += '</span>';
+								} else if (row.response_type === "Multiple Select") {
+									let ms_opts = ["Good", "Excellent", "Average", "Needs Improvement"];
+									response_html = '<select class="form-control multiple-select-input" data-parameter="' + i + '">';
+									response_html += '<option value="">Select Option</option>';
+									ms_opts.forEach(function (opt) {
+										let selected = (saved_val && saved_val.toLowerCase() === opt.toLowerCase()) ? "selected" : "";
+										response_html += '<option value="' + opt + '" ' + selected + '>' + opt + '</option>';
+									});
+									response_html += '</select>';
+								} else {
+									response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
+								}
+								let saved_review = saved ? (saved.review || saved.observation || "") : "";
+								let review_cell_html = "";
+								if (saved_review) {
+									review_cell_html = '<input type="text" class="form-control review-input" data-parameter="' + i + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">';
+								} else {
+									review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + i + '" title="Add review">+</button>';
+								}
+								html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
+								sr++;
+							});
+							html += "</tbody></table>";
+						});
+						return html;
+					}
 
 			if (all_items.length > 0) {
-				let grouped = {};
-				all_items.forEach(function (row, i) {
-					let cat = row.category || "Uncategorized";
-					if (!grouped[cat]) grouped[cat] = [];
-					row._idx = i;
-					grouped[cat].push(row);
+				all_items.forEach(function (row, i) { row._idx = i; });
+
+				let visitor_items = [];
+				let branch_items = [];
+				all_items.forEach(function (row) {
+					let f = (row.for || "").toString().trim().toLowerCase();
+					if (show_branch_tab_flag && f.indexOf("branch") !== -1) {
+						branch_items.push(row);
+					} else {
+						visitor_items.push(row);
+					}
 				});
 
-				let sr = 1;
-				Object.keys(grouped).forEach(function (cat) {
-					let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
-					checklist_html += "<div class='category-header'><h5>" + cat + "</h5><button class='bvr-btn-add add-category-row' data-category='" + safe_cat + "' title='Add new row'>+</button></div>";
-					checklist_html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
-					grouped[cat].forEach(function (row) {
-						let i = row._idx;
-						let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
-						let saved_val = saved ? saved.response : "";
-						let response_html = "";
-						if (row.response_type === "Rating (1 to 5)") {
-							response_html = '<span class="rating-stars" data-parameter="' + i + '">';
-							for (let s = 1; s <= 5; s++) {
-								let color = (saved_val && s <= parseInt(saved_val)) ? "gold" : "gray";
-								response_html += '<span class="star" data-value="' + s + '" style="cursor:pointer;font-size:20px;color:' + color + ';">&#9733;</span>';
-							}
-							response_html += '</span>';
-						} else if (row.response_type === "Yes / No") {
-							let yes_checked = saved_val === "Yes" ? "checked" : "";
-							let no_checked = saved_val === "No" ? "checked" : "";
-							response_html = '<span class="yesno-group" data-parameter="' + i + '">';
-							response_html += '<label style="margin-right:10px;"><input type="radio" name="yesno_' + i + '" value="Yes" ' + yes_checked + '> Yes</label>';
-							response_html += '<label><input type="radio" name="yesno_' + i + '" value="No" ' + no_checked + '> No</label>';
-							response_html += '</span>';
-						} else if (row.response_type === "Multiple Select") {
-							let ms_opts = ["Good", "Excellent", "Average", "Needs Improvement"];
-							response_html = '<select class="form-control multiple-select-input" data-parameter="' + i + '">';
-							response_html += '<option value="">Select Option</option>';
-							ms_opts.forEach(function (opt) {
-								let selected = (saved_val && saved_val.toLowerCase() === opt.toLowerCase()) ? "selected" : "";
-								response_html += '<option value="' + opt + '" ' + selected + '>' + opt + '</option>';
-							});
-							response_html += '</select>';
-						} else {
-							response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
-						}
-						let saved_review = saved ? (saved.review || saved.observation || "") : "";
-						let review_cell_html = "";
-						if (saved_review) {
-							review_cell_html = '<input type="text" class="form-control review-input" data-parameter="' + i + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">';
-						} else {
-							review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + i + '" title="Add review">+</button>';
-						}
-						checklist_html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
-						sr++;
-					});
-					checklist_html += "</tbody></table>";
-				});
+				checklist_html = build_checklist_section(visitor_items);
+				branch_checklist_html = build_checklist_section(branch_items);
 
 				if (frm.doc.responses && frm.doc.responses.length > 0) {
 					let custom_items = [];
@@ -548,6 +570,8 @@ function render_checklist(frm, template) {
 						if (!exists) custom_items.push(resp);
 					});
 					if (custom_items.length > 0) {
+						// append additional/custom items to visitor checklist
+						let sr = visitor_items.length + 1;
 						checklist_html += "<div class='category-header'><h5>Additional Items</h5></div>";
 						checklist_html += "<table><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
 						custom_items.forEach(function (resp) {
@@ -639,9 +663,8 @@ function render_checklist(frm, template) {
 			};
 
 			let review_tab_label = "Review Checklist";
-			let show_branch_tab = false;
-			if (frm.doc.branch_is === "Existing" && frm.doc.visited_by) {
-				show_branch_tab = true;
+			let show_branch_tab = (frm.doc.branch_is === "Existing" && frm.doc.visited_by);
+			if (show_branch_tab) {
 				review_tab_label = "Visiter checklist";
 			}
 
@@ -655,7 +678,7 @@ function render_checklist(frm, template) {
 			tabs_html += "</ul>" + overall_html + "</div>";
 			tabs_html += "<div class='tab-content-review' style='display:" + (active_tab === "review" ? "block" : "none") + ";'>" + checklist_html + "</div>";
 			if (show_branch_tab) {
-				tabs_html += "<div class='tab-content-branch' style='display:none;'><div style='padding:12px;color:#6c7680;'>Branch Checklist</div></div>";
+				tabs_html += "<div class='tab-content-branch' style='display:none;'>" + (branch_checklist_html || "<div style='padding:12px;color:#6c7680;'>No items</div>") + "</div>";
 			}
 			tabs_html += "<div class='tab-content-action' style='display:" + (active_tab === "action" ? "block" : "none") + ";'>" + action_html + "</div>";
 			tabs_html += "<div class='tab-content-leadership' style='display:" + (active_tab === "leadership" ? "block" : "none") + ";'>" + leadership_html + "</div></div>";
