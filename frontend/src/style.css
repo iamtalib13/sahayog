@@ -1,0 +1,19 @@
+@import 'frappe-ui/style.css';
+
+html,
+body,
+#app {
+  min-height: 100%;
+}
+
+html {
+  background-color: #f8fafc;
+}
+
+body {
+  margin: 0;
+  background-color: #f8fafc;
+  color: #172b4d;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
