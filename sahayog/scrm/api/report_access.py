@@ -230,6 +230,7 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
             l.custom_verification_status,
             COALESCE(lp.product, '-') as product_code,
             COALESCE(lp.product_name, '-') as product_name,
+            COALESCE(lp.group_name, '-') as product_group,
             COALESCE(lp.product_amount, 0) as amount,
             b.branch,
             b.district,
@@ -913,6 +914,7 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             IFNULL(l.source, ''),
             IFNULL(lp.product, ''),
             IFNULL(lp.product_name, ''),
+            IFNULL(lp.group_name, ''),
             IFNULL(lp.product_amount, 0),
             IFNULL(l.custom_employee_name, ''),
             IFNULL(l.custom_employee_id, ''),
@@ -939,7 +941,7 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
 
     headers = [
         "Lead ID", "Status", "Lead Name", "Contact", "Source",
-        "Product Code", "Product Name", "Amount",
+        "Product Code", "Product Name", "Product Group", "Amount",
         "Employee Name", "Employee ID", "Designation",
         "SOL ID", "Branch", "District", "Region", "Zone",
         "Created On", "Last Modified", "Lead Age", "Owner Email", "Employee Status",
@@ -1201,7 +1203,7 @@ def download_fast_lead_report(from_date, to_date, filters=None):
     matching_rows = []
     headers = [
         "Lead ID", "Status", "Lead Name", "Contact", "Source",
-        "Product Code", "Product Name", "Amount",
+        "Product Code", "Product Name", "Product Group", "Amount",
         "Employee Name", "Employee ID", "Designation",
         "SOL ID", "Branch", "District", "Region", "Zone",
         "Created On", "Last Modified", "Lead Age", "Owner Email", "Employee Status",
@@ -1326,6 +1328,7 @@ def download_fast_lead_report(from_date, to_date, filters=None):
                 r.get("source") or "",
                 r.get("product_code") or "",
                 r.get("product_name") or "",
+                r.get("product_group") or "-",
                 r.get("amount") or 0,
                 r.get("employee_name") or "",
                 r.get("employee_id") or "",
