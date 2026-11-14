@@ -48,6 +48,9 @@ def get_operation_lead_report(from_date=None, to_date=None):
                 "creation",
                 "custom_lead_audit_status",
                 "custom_calling_source",
+                "custom_remark_lead",
+                "custom_remark_follow_up",
+                "custom_remark_converted",
                 "custom_remark_not_interested"
             ],
             filters=lead_filters,
@@ -130,6 +133,19 @@ def get_operation_lead_report(from_date=None, to_date=None):
             for product in lead_products:
                 total_amount += float(product["amount"] or 0)
             
+            # Determine live status remark
+            current_status = getattr(lead, 'status', '')
+            if current_status == "Lead":
+                live_remark = getattr(lead, 'custom_remark_lead', '')
+            elif current_status == "Follow Up":
+                live_remark = getattr(lead, 'custom_remark_follow_up', '')
+            elif current_status == "Converted":
+                live_remark = getattr(lead, 'custom_remark_converted', '')
+            elif current_status == "Not Interested":
+                live_remark = getattr(lead, 'custom_remark_not_interested', '')
+            else:
+                live_remark = getattr(lead, 'custom_remark_lead', '') or getattr(lead, 'custom_remark_not_interested', '')
+
             detailed_leads.append({
                 "name": lead.name,
                 "lead_name": getattr(lead, 'lead_name', ''),
@@ -139,7 +155,7 @@ def get_operation_lead_report(from_date=None, to_date=None):
                 "lead_audit_status": getattr(lead, 'custom_lead_audit_status', ''),
                 "source": getattr(lead, 'source', ''),
                 "calling_source": getattr(lead, 'custom_calling_source', ''),
-                "remark": getattr(lead, 'custom_remark_not_interested', ''),
+                "remark": live_remark or '',
                 "lead_owner": getattr(lead, 'lead_owner', ''),
                 "owner": getattr(lead, 'owner', ''),
                 "creation": getattr(lead, 'creation', ''),
