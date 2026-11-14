@@ -530,7 +530,7 @@ frappe.ui.form.on("Lead Product", {
   }
 });
 
-// Show BM Lead Verification section only to users with manager access
+// Show BM Lead Verification section only to authorized BM verifiers
 function toggleBMVerificationSection(frm) {
   const checkAccessAndToggle = (can_verify) => {
     frm.toggle_display("custom_verification_section", can_verify);
@@ -538,30 +538,23 @@ function toggleBMVerificationSection(frm) {
     frm.set_df_property("custom_verification_remarks", "read_only", can_verify ? 0 : 1);
   };
 
+  // Initially hide until permission check succeeds
+  checkAccessAndToggle(false);
+
   const user_roles = frappe.user_roles || [];
   const is_admin = frappe.session.user === "Administrator";
-  const is_manager_role =
+  const is_allowed_role =
     is_admin ||
     user_roles.includes("System Manager") ||
     user_roles.includes("BM Lead Verifier") ||
-    user_roles.includes("Branch Manager") ||
-    user_roles.includes("Operations Support Manager") ||
-    user_roles.includes("Sales Manager");
+    user_roles.includes("Branch Manager");
 
-  if (is_manager_role) {
+  if (is_allowed_role) {
     checkAccessAndToggle(true);
     return;
   }
 
-  // Check designation via user boot or API call
-  const designation = (frappe.boot && frappe.boot.user && frappe.boot.user.designation) || "";
-  const desig_lower = designation.toLowerCase();
-  if (desig_lower.includes("manager") || desig_lower.includes("bm")) {
-    checkAccessAndToggle(true);
-    return;
-  }
-
-  // Fallback to backend verification helper
+  // Strict designation check via backend permission helper
   frappe.call({
     method: "sahayog.permissions.has_bm_verification_permission",
     callback: function (r) {
