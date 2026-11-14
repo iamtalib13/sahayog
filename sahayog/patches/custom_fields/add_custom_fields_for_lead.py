@@ -84,8 +84,7 @@ def execute():
                 "fieldname": "custom_remark_not_interested",
                 "fieldtype": "Small Text",
                 "insert_after": "status",
-                "depends_on": "eval:doc.status == 'Not Interested'",
-                "mandatory_depends_on": "eval:doc.status == 'Not Interested'",
+                "reqd": 1,
             },
             {
                 "label": "Is Operation Lead",
