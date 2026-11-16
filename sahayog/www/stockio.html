@@ -1459,10 +1459,10 @@
         </div>
         
         <!-- Standard input for Data fields -->
-        <input v-else type="text" class="form-input" v-model="assetActionData[field.fieldname]" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" :placeholder="'Enter ' + field.label" />
+        <input v-else type="text" class="form-input" v-model="assetActionData[field.fieldname]" :readonly="field.readonly" :style="field.readonly ? 'width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 4px; background: #f8fafc; color: #475569;' : 'width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;'" :placeholder="'Enter ' + field.label" />
       </div>
       <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
-        <button class="btn-cancel" @click="showAssetActionModal = false" style="padding: 10px 20px; border-radius: 6px;">Cancel</button>
+        <button class="btn-cancel" @click="showAssetActionModal = false; _bulkSubmitQueue = []" style="padding: 10px 20px; border-radius: 6px;">Cancel</button>
         <button class="btn-create" @click="submitAssetAction" style="padding: 10px 20px; border-radius: 6px;">Submit</button>
       </div>
     </div>
@@ -9335,6 +9335,22 @@
                 v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
                 class="btn-create-inline"
                 style="
+                  background: linear-gradient(135deg, #10b981, #059669) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+                  margin-right: 8px;
+                  font-weight: 700;
+                "
+                @click="bulkSubmitSelectedAssets()"
+              >
+                <i class="fas fa-paper-plane"></i>
+                <span>Submit ([[ selectedRows.length ]])</span>
+              </button>
+              <button
+                v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="
                   background: linear-gradient(135deg, #f87171, #dc2626) !important;
                   border: none !important;
                   color: #ffffff !important;
@@ -16988,6 +17004,23 @@
           },
         );
       },
+      bulkSubmitSelectedAssets() {
+        const selected = this.rows.filter((r) => this.selectedRows.includes(r.name));
+        const draftRows = selected.filter((r) => r.docstatus === 0 || r.status === "Draft");
+        if (draftRows.length === 0) {
+          frappe.show_alert({ message: "No draft assets selected to submit.", indicator: "orange" });
+          return;
+        }
+        this._bulkSubmitQueue = draftRows.map((r) => r.name);
+        this._openNextBulkSubmitAsset();
+      },
+      _openNextBulkSubmitAsset() {
+        if (!this._bulkSubmitQueue || this._bulkSubmitQueue.length === 0) return;
+        const nextName = this._bulkSubmitQueue[0];
+        const row = this.rows.find((r) => r.name === nextName) || { name: nextName, docstatus: 0 };
+        this.detailRecord = row;
+        this.assignCustodian(row);
+      },
       async bulkDeleteAssets() {
         this.showConfirm(
           "Bulk Delete Assets",
@@ -18363,8 +18396,9 @@
       
       assignCustodian(doc) {
           console.log("Debug: Assign clicked for", doc.name);
-          this.assetActionTitle = 'Assign Asset';
+          this.assetActionTitle = 'Submit Asset';
           this.assetActionFields = [
+              {label: 'Asset Code', fieldname: 'asset_name', fieldtype: 'Data', readonly: true},
               {label: 'Serial No', fieldname: 'serial_no', fieldtype: 'Data'},
               {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee', optional: true},
               {label: 'Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
@@ -18429,13 +18463,14 @@
       
       async submitAssetAction() {
           try {
+              const submittedName = this.assetActionData.asset_name;
               // Update serial_no if provided
               if (this.assetActionData.serial_no && this.assetActionData.serial_no.trim()) {
                   await frappe.call({
                       method: 'frappe.client.set_value',
                       args: {
                           doctype: 'Asset',
-                          name: this.assetActionData.asset_name,
+                          name: submittedName,
                           fieldname: 'serial_no',
                           value: this.assetActionData.serial_no.trim()
                       }
@@ -18448,6 +18483,14 @@
               frappe.show_alert({message: 'Asset updated successfully', indicator: 'green'});
               this.showAssetActionModal = false;
               await this.fetchData("Asset");
+              if (this._bulkSubmitQueue && this._bulkSubmitQueue.length) {
+                this._bulkSubmitQueue = this._bulkSubmitQueue.filter((n) => n !== submittedName);
+                if (this._bulkSubmitQueue.length) {
+                  setTimeout(() => this._openNextBulkSubmitAsset(), 150);
+                } else {
+                  this.selectedRows = [];
+                }
+              }
           } catch (e) {
               frappe.msgprint('Error: ' + (e.message || e));
           }
