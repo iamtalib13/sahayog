@@ -1468,6 +1468,60 @@
     </div>
   </div>
 
+  <!-- Bulk Asset Submit Modal -->
+  <div v-if="showBulkAssetSubmitModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99999; display: flex; align-items: center; justify-content: center;">
+    <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 760px; max-width: 95vw; max-height: 85vh; overflow: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin-top: 0;">Submit Selected Assets ([[ bulkAssetSubmitRows.length ]])</h3>
+      <div class="table-responsive" style="margin-top: 12px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="background: #f8fafc; text-align: left;">
+              <th style="padding: 10px; border-bottom: 1px solid #e2e8f0;">Asset</th>
+              <th style="padding: 10px; border-bottom: 1px solid #e2e8f0;">Serial No</th>
+              <th style="padding: 10px; border-bottom: 1px solid #e2e8f0;">Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, idx) in bulkAssetSubmitRows" :key="row.asset_name" style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 10px; font-weight: 600; color: #334155;">[[ row.asset_name ]]</td>
+              <td style="padding: 10px;">
+                <input type="text" class="form-input" v-model="row.serial_no" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px;" placeholder="Serial No" />
+              </td>
+              <td style="padding: 10px; position: relative;">
+                <div class="searchable-select-wrapper" style="width: 100%;">
+                  <input
+                    type="text"
+                    class="form-input"
+                    v-model="row.location_display"
+                    @focus="focusedField = 'bulk_loc_' + idx"
+                    @blur="setTimeout(() => focusedField = null, 200)"
+                    style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px;"
+                    placeholder="Search Location"
+                  />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'bulk_loc_' + idx" style="position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; max-height: 180px; overflow-y: auto; z-index: 1000;">
+                    <div
+                      v-for="opt in getBulkLocationOptions(row)"
+                      :key="opt.name"
+                      class="searchable-select-option"
+                      style="padding: 8px; cursor: pointer;"
+                      @mousedown="row.location = opt.sol_id || opt.name; row.location_display = (opt.branch || opt.name) + ' (' + (opt.sol_id || opt.name) + ')'; focusedField = null;"
+                    >
+                      [[ opt.branch || opt.name ]] ([[ opt.sol_id || opt.name ]])
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-cancel" @click="showBulkAssetSubmitModal = false" style="padding: 10px 20px; border-radius: 6px;">Cancel</button>
+        <button class="btn-create" @click="submitBulkAssetSubmit()" :disabled="loading" style="padding: 10px 20px; border-radius: 6px;">Submit All</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Email Preview Popup -->
   <div v-if="showEmailPopup" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); z-index: 99999; display: flex; align-items: center; justify-content: center; padding: 10px;">
     <div class="email-popup-card" style="background: var(--bg-surface); border-radius: 12px; width: 600px; max-width: 95vw; max-height: 90vh; display: flex; flex-direction: column; box-shadow: var(--shadow-xl); border: 1px solid var(--border-color); overflow: hidden;">
@@ -14451,6 +14505,8 @@
       serialNoChildFields: ["Serial No", "MAC Address", "Make", "Model", "Processor", "RAM", "Storage", "OS", "Windows Key", "Office Key", "Warranty Start", "Warranty End"],
       showAssetActions: false,
       showAssetActionModal: false,
+      showBulkAssetSubmitModal: false,
+      bulkAssetSubmitRows: [],
       serialMode: 'individual',
       itemWiseData: null,
       assetActionTitle: '',
@@ -17011,15 +17067,71 @@
           frappe.show_alert({ message: "No draft assets selected to submit.", indicator: "orange" });
           return;
         }
-        this._bulkSubmitQueue = draftRows.map((r) => r.name);
-        this._openNextBulkSubmitAsset();
+        this.bulkAssetSubmitRows = draftRows.map((r) => ({
+          asset_name: r.name,
+          serial_no: r.serial_no || "",
+          location: r.location || "",
+          location_display: r.location ? (this.getBranchNameFromLocation ? this.getBranchNameFromLocation(r.location) : r.location) : "",
+          custodian: r.custodian || "",
+        }));
+        this.showBulkAssetSubmitModal = true;
       },
-      _openNextBulkSubmitAsset() {
-        if (!this._bulkSubmitQueue || this._bulkSubmitQueue.length === 0) return;
-        const nextName = this._bulkSubmitQueue[0];
-        const row = this.rows.find((r) => r.name === nextName) || { name: nextName, docstatus: 0 };
-        this.detailRecord = row;
-        this.assignCustodian(row);
+      getBulkLocationOptions(row) {
+        const search = (row.location_display || "").toLowerCase();
+        const list = this.sahayog_branches || [];
+        if (!search) return list.slice(0, 50);
+        return list.filter((b) =>
+          (b.branch || b.name || "").toLowerCase().includes(search) ||
+          (b.sol_id || b.name || "").toLowerCase().includes(search) ||
+          (b.name || "").toLowerCase().includes(search)
+        ).slice(0, 50);
+      },
+      async submitBulkAssetSubmit() {
+        if (!this.bulkAssetSubmitRows || this.bulkAssetSubmitRows.length === 0) return;
+        this.loading = true;
+        let success = 0;
+        const failed = [];
+        try {
+          for (const row of this.bulkAssetSubmitRows) {
+            try {
+              if (row.serial_no && row.serial_no.trim()) {
+                await frappe.call({
+                  method: 'frappe.client.set_value',
+                  args: {
+                    doctype: 'Asset',
+                    name: row.asset_name,
+                    fieldname: 'serial_no',
+                    value: row.serial_no.trim()
+                  }
+                });
+              }
+              await frappe.call({
+                method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
+                args: {
+                  action: 'assign',
+                  asset_name: row.asset_name,
+                  custodian: row.custodian || null,
+                  location: row.location || null
+                }
+              });
+              success++;
+            } catch (e) {
+              console.error('Bulk submit failed for', row.asset_name, e);
+              failed.push(row.asset_name);
+            }
+          }
+          this.showBulkAssetSubmitModal = false;
+          this.bulkAssetSubmitRows = [];
+          this.selectedRows = [];
+          await this.fetchData("Asset");
+          if (failed.length) {
+            frappe.msgprint(`Submitted ${success} asset(s). Failed: ${failed.join(', ')}`);
+          } else {
+            frappe.show_alert({ message: `${success} asset(s) submitted successfully`, indicator: 'green' });
+          }
+        } finally {
+          this.loading = false;
+        }
       },
       async bulkDeleteAssets() {
         this.showConfirm(
@@ -18476,21 +18588,13 @@
                       }
                   });
               }
-              const response = await frappe.call({
+              await frappe.call({
                   method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
                   args: this.assetActionData
               });
               frappe.show_alert({message: 'Asset updated successfully', indicator: 'green'});
               this.showAssetActionModal = false;
               await this.fetchData("Asset");
-              if (this._bulkSubmitQueue && this._bulkSubmitQueue.length) {
-                this._bulkSubmitQueue = this._bulkSubmitQueue.filter((n) => n !== submittedName);
-                if (this._bulkSubmitQueue.length) {
-                  setTimeout(() => this._openNextBulkSubmitAsset(), 150);
-                } else {
-                  this.selectedRows = [];
-                }
-              }
           } catch (e) {
               frappe.msgprint('Error: ' + (e.message || e));
           }
