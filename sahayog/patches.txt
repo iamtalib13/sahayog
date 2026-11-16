@@ -72,3 +72,4 @@ sahayog.patches.set_asset_status_options
 sahayog.patches.create_permanent_audit_log_table
 sahayog.patches.update_disciplinary_case_letter_head
 sahayog.patches.link_loan_applications_to_loan_requests
+sahayog.patches.custom_fields.add_custom_fields_for_lead
