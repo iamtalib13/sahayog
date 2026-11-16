@@ -2367,6 +2367,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.selected[key].push(val);
       }
       this.fetchVisibleBranches();
+      this.fetchEmployeePerformance();
     },
     getDisplayText(key) {
       let selectedItems = this.selected[key] || [];
@@ -2410,6 +2411,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             from_date: this.employee_from_date,
             to_date: this.employee_to_date,
             sol_ids: JSON.stringify(this.getActiveSolIds()),
+            zone: JSON.stringify(this.selected.zone || []),
+            region: JSON.stringify(this.selected.region || []),
+            product: JSON.stringify(this.selected.product || []),
+            source: JSON.stringify(this.selected.source || []),
           },
         });
         this.employee_performance_data = res.message || [];
