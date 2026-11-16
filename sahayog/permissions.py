@@ -6,7 +6,7 @@ def has_lead_permission(doc, ptype, user):
 
     user_roles = frappe.get_roles(user)
 
-    if "Administrator" in user_roles or "Sales Manager" in user_roles or "System Manager" in user_roles:
+    if "Administrator" in user_roles or "Sales Manager" in user_roles or "System Manager" in user_roles or "Operations Support Manager" in user_roles:
         return True
 
     if "Branch Manager" in user_roles:
