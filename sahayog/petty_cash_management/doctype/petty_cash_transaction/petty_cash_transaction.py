@@ -1395,6 +1395,7 @@ class PettyCashTransaction(Document):
             1,
             update_modified=False,
         )
+        frappe.db.commit()
 
         frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
         frappe.response['filecontent'] = final_txt
@@ -2392,7 +2393,7 @@ def download_consolidated_txt_api(transaction_date=None):
         filters={
             "finacle_tran_date": selected_date,
             "approval_status": "Verified",
-            "exclude_from_ttum": ["!=", 1]
+            "exclude_from_ttum": ["in", [0, None, "0"]]
         },
         pluck="name",
         order_by="creation ASC"
@@ -2524,7 +2525,7 @@ def download_consolidated_excel_api(transaction_date=None):
         filters={
             "finacle_tran_date": selected_date,
             "approval_status": "Verified",
-            "exclude_from_ttum": ["!=", 1]
+            "exclude_from_ttum": ["in", [0, None, "0"]]
         },
         pluck="name",
         order_by="creation ASC"
