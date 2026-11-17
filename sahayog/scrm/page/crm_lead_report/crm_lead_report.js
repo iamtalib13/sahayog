@@ -58,7 +58,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         #crm-app { padding: 8px 12px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .crm-layout-container { display: flex; gap: 14px; align-items: flex-start; min-height: calc(100vh - 120px); }
         .crm-sidebar {
-            width: 250px; min-width: 250px; background: #ffffff;
+            width: 280px; min-width: 280px; background: #ffffff;
             border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.03); position: sticky; top: 12px;
             max-height: calc(100vh - 140px); overflow-y: auto; transition: all 0.25s ease;
@@ -73,8 +73,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .crm-filter-group { margin-bottom: 14px; }
         .crm-filter-label { font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.3px; }
         .crm-sidebar-select, .crm-sidebar-input {
-            width: 100%; height: 32px; font-size: 12px; border: 1px solid #cbd5e1;
-            border-radius: 6px; padding: 0 8px; background: #ffffff; color: #0f172a;
+            width: 100%; height: 32px; font-size: 11.5px; border: 1px solid #cbd5e1;
+            border-radius: 6px; padding: 0 6px; background: #ffffff; color: #0f172a;
         }
         .crm-sidebar-select:focus, .crm-sidebar-input:focus { border-color: #3b82f6; outline: none; }
         .crm-main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -852,13 +852,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     </div>
 
                     <div class="crm-filter-group">
-                        <label class="crm-filter-label">From Date</label>
-                        <input type="date" v-model="employee_from_date" @change="onDateChange" class="crm-sidebar-input">
-                    </div>
-
-                    <div class="crm-filter-group">
-                        <label class="crm-filter-label">To Date</label>
-                        <input type="date" v-model="employee_to_date" @change="onDateChange" class="crm-sidebar-input">
+                        <div class="d-flex" style="gap: 8px;">
+                            <div style="flex: 1;">
+                                <label class="crm-filter-label">From Date</label>
+                                <input type="date" v-model="employee_from_date" @change="onDateChange" class="crm-sidebar-input">
+                            </div>
+                            <div style="flex: 1;">
+                                <label class="crm-filter-label">To Date</label>
+                                <input type="date" v-model="employee_to_date" @change="onDateChange" class="crm-sidebar-input">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="crm-filter-group">
@@ -1132,6 +1135,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                           </div>
                       </div>
                       
+                      <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                          <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer;" @click="toggleSelectAll(active_popup)">
+                              <input type="checkbox" :checked="isAllSelected(active_popup)" style="cursor: pointer; width: 14px; height: 14px; accent-color: #05a15d;">
+                              <span style="font-size: 11.5px; font-weight: 600; color: #374151;">{{ isAllSelected(active_popup) ? 'Unselect All' : 'Select All' }}</span>
+                          </div>
+                          <span class="text-muted" style="font-size: 11px;">{{ (selected[active_popup] || []).length }} of {{ (filter_data[active_popup] || []).length }} selected</span>
+                      </div>
+
                       <div style="max-height: 300px; overflow-y: auto;">
                           <div v-if="active_popup === 'zone' || active_popup === 'region'" class="mini-chip-list">
                               <div v-for="opt in getFilteredOptions(active_popup)" 
@@ -1142,13 +1153,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                           </div>
 
                           <div v-else>
-                               <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-                                   <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer;" @click="toggleSelectAll(active_popup)">
-                                       <input type="checkbox" :checked="isAllSelected(active_popup)" style="cursor: pointer; width: 14px; height: 14px; accent-color: #05a15d;">
-                                       <span style="font-size: 11.5px; font-weight: 600; color: #374151;">{{ isAllSelected(active_popup) ? 'Unselect All' : 'Select All' }}</span>
-                                   </div>
-                                   <span class="text-muted" style="font-size: 11px;">{{ (selected[active_popup] || []).length }} of {{ (filter_data[active_popup] || []).length }} selected</span>
-                               </div>
                                <input type="text" v-model="search_query[active_popup]" placeholder="Search..." class="form-control form-control-sm mb-2">
                               
                               <div class="dropdown-item" 
@@ -2504,7 +2508,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         },
       });
       this.visible_branches = res.message || [];
-      this.updateCapsuleUI();
+      
+      // Sync branch options with visible branches so both PAN and non-PAN users get full branch list in filter
+      if (this.visible_branches.length) {
+        this.filter_data.sol_id = this.visible_branches.map((b) => ({
+          value: String(b.sol_id),
+          label: `${b.sol_id} - ${b.branch || ""}`
+        }));
+      }
+
+      $("#crm-branch-capsules").remove();
     },
     updateCapsuleUI() {
       $("#crm-branch-capsules").remove();
