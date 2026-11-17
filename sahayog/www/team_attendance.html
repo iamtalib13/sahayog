@@ -2403,12 +2403,14 @@
                         </div>
                         <div>
                           <label>Branch Name</label
-                          ><input
-                            type="text"
+                          ><select
                             name="branch"
                             id="new_emp_branch_name"
                             class="member-select"
-                          />
+                            onchange="handleBranchDropdownChange(this.value)"
+                          >
+                            <option value="">Select Branch</option>
+                          </select>
                         </div>
                         <div>
                           <label>Zone</label
@@ -2432,12 +2434,13 @@
                         </div>
                         <div>
                           <label>District</label
-                          ><input
-                            type="text"
+                          ><select
                             name="district_name"
                             id="new_emp_district"
                             class="member-select"
-                          />
+                          >
+                            <option value="">Select District</option>
+                          </select>
                         </div>
                         <div>
                           <label>Business Unit</label
@@ -4288,6 +4291,8 @@
         const empTypeSel = document.getElementById("new_emp_employment_type");
         const zoneSel = document.getElementById("new_emp_zone");
         const regionSel = document.getElementById("new_emp_region");
+        const branchSel = document.getElementById("new_emp_branch_name");
+        const districtSel = document.getElementById("new_emp_district");
         if (!window._empList) {
           window._empList = await callAPI(
             "get_employees_for_reporting",
@@ -4378,6 +4383,20 @@
           window._solIdList = (branches || [])
             .map((b) => b.name)
             .filter(Boolean);
+          if (branchSel && branchSel.options.length <= 1) {
+            _fillUniqueSelect(
+              branchSel,
+              (branches || []).map((b) => ({
+                name: b.branch || b.name,
+                value: b.name,
+              })),
+            );
+          }
+        }
+
+        if (districtSel && districtSel.options.length <= 1) {
+          const districts = await callAPI("get_districts", {}, "employee");
+          _fillUniqueSelect(districtSel, districts);
         }
 
         if (zoneSel && zoneSel.options.length <= 1) {
@@ -4673,7 +4692,11 @@
         btn.disabled = true;
         btn.textContent = "Creating...";
 
-        data.branch = document.getElementById("new_emp_branch_name").value;
+        const branchSel = document.getElementById("new_emp_branch_name");
+        data.branch =
+          branchSel && branchSel.value
+            ? branchSel.selectedOptions[0].textContent.trim()
+            : "";
         data.sol_id = document.getElementById("new_emp_sol_id").value;
         data.custom_medical_deduction = 100;
 
@@ -4693,6 +4716,15 @@
         }
       }
 
+      function handleBranchDropdownChange(sol_id) {
+        if (!sol_id) return;
+        const hidden = document.getElementById("new_emp_sol_id");
+        const input = document.getElementById("new_emp_sol_id_input");
+        if (hidden) hidden.value = sol_id;
+        if (input) input.value = sol_id;
+        handleBranchCodeChange(sol_id);
+      }
+
       async function handleBranchCodeChange(sol_id) {
         if (!sol_id) return;
 
@@ -4703,9 +4735,7 @@
           "employee",
         );
         if (details) {
-          if (details.branch)
-            document.getElementById("new_emp_branch_name").value =
-              details.branch;
+          document.getElementById("new_emp_branch_name").value = sol_id;
           const setSel = (id, val) => {
             const sel = document.getElementById(id);
             if (!sel || !val) return;
@@ -4713,9 +4743,7 @@
           };
           setSel("new_emp_zone", details.zone);
           setSel("new_emp_region", details.region);
-          if (details.district)
-            document.getElementById("new_emp_district").value =
-              details.district;
+          setSel("new_emp_district", details.district);
           if (details.state)
             document.getElementById("new_emp_state").value = details.state;
         }
@@ -7347,8 +7375,11 @@
                   <label style="font-size:11px;color:var(--muted);">Branch Name
                     <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled from Branch Code</span>
                   </label>
-                  <input name="branch" id="edit_branch_name" value="${e.branch || ""}" class="member-select"
-                    style="padding:6px 10px;font-size:12px;margin-top:2px;">
+                  <select name="branch" id="edit_branch_name" class="member-select"
+                    style="padding:6px 10px;font-size:12px;margin-top:2px;"
+                    onchange="editBranchDropdownChanged(this.value)">
+                    <option value="">Select Branch</option>
+                  </select>
                 </div>
                 <div>
                   <label style="font-size:11px;color:var(--muted);">Branch Code (SOL ID)</label>
@@ -7378,8 +7409,10 @@
                   <label style="font-size:11px;color:var(--muted);">District
                     <span style="font-size:9px;background:#f1f5f9;color:#94a3b8;padding:1px 5px;border-radius:4px;margin-left:4px;">Auto-filled</span>
                   </label>
-                  <input name="custom_district" id="edit_district" value="${e.custom_district || ""}" class="member-select"
+                  <select name="custom_district" id="edit_district" class="member-select"
                     style="padding:6px 10px;font-size:12px;margin-top:2px;">
+                    <option value="">Select District</option>
+                  </select>
                 </div>
                 <div><label style="font-size:11px;color:var(--muted);">Shift</label>${asyncSel("default_shift", e.default_shift, "edit_shift")}</div>
                 <div><label style="font-size:11px;color:var(--muted);">Business Unit</label>${asyncSel("custom_division", e.custom_division, "edit_business_unit")}</div>
@@ -7498,6 +7531,13 @@
         if (el) el.value = full;
       }
 
+      function editBranchDropdownChanged(sol_id) {
+        if (!sol_id) return;
+        const solSel = document.getElementById("edit_sol_id");
+        if (solSel) solSel.value = sol_id;
+        editProfileBranchChanged(sol_id);
+      }
+
       // Auto-fetch Zone/Region/District from branch on SOL ID change
       async function editProfileBranchChanged(sol_id) {
         if (!sol_id) return;
@@ -7510,12 +7550,11 @@
           const z = document.getElementById("edit_zone");
           const r = document.getElementById("edit_region");
           const d = document.getElementById("edit_district");
+          const b = document.getElementById("edit_branch_name");
           if (z) _selectByKey(z, details.zone || "");
           if (r) _selectByKey(r, details.region || "");
-          if (d) d.value = details.district || "";
-          // Also update branch name (read-only field with id="edit_branch_name")
-          const b = document.getElementById("edit_branch_name");
-          if (b && details.branch) b.value = details.branch;
+          if (d) _selectByKey(d, details.district || "");
+          if (b) b.value = sol_id;
         }
       }
 
@@ -7629,7 +7668,7 @@
           if (!matched && currentVal) _selectByKey(sel, currentVal);
         };
 
-        const [depts, desigs, empTypes, shifts, divisions, branches, zones, regions] =
+        const [depts, desigs, empTypes, shifts, divisions, branches, zones, regions, districts] =
           await Promise.all([
             callAPI("get_departments", {}, "employee"),
             callAPI("get_designations", {}, "employee"),
@@ -7639,6 +7678,7 @@
             callAPI("get_sahayog_branches", {}, "employee"),
             callAPI("get_zones", {}, "employee"),
             callAPI("get_regions", {}, "employee"),
+            callAPI("get_districts", {}, "employee"),
           ]);
 
         if (depts) _fill("edit_department", e.department, depts);
@@ -7648,6 +7688,13 @@
         if (shifts) _fill("edit_shift", e.default_shift, shifts);
         if (zones) _fill("edit_zone", e.custom_zone, zones);
         if (regions) _fill("edit_region", e.custom_region, regions);
+        if (branches)
+          _fill(
+            "edit_branch_name",
+            e.sahayog_branch,
+            branches.map((b) => ({ name: b.branch || b.name, value: b.name })),
+          );
+        if (districts) _fill("edit_district", e.custom_district, districts);
         if (true)
           _fill("edit_business_unit", e.custom_division, [
             "Retail Branch Banking",
@@ -7724,6 +7771,14 @@
         if (z) data.custom_zone = z.value;
         if (r) data.custom_region = r.value;
         if (d) data.custom_district = d.value;
+
+        // Branch dropdown holds SOL ID as value; save the branch name instead
+        const bSel = document.getElementById("edit_branch_name");
+        if (bSel && bSel.value) {
+          data.branch = bSel.selectedOptions[0].textContent.trim();
+        } else if (bSel) {
+          delete data.branch;
+        }
 
         // Reporting manager comes from the hidden <input name="reports_to">
         // set by the searchable-select (already captured via FormData).
