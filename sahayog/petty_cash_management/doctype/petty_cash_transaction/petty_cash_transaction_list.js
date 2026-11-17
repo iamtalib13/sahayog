@@ -32,9 +32,9 @@ frappe.listview_settings['Petty Cash Transaction'] = {
             frappe.user.has_role('HO Petty Cash Manager') ||
             frappe.user.has_role('HO Petty Cash Verifier')
         ) {
-            listview.page.add_inner_button(__('Excel Report'), function () {
-                ask_date_and_download('excel');
-            }, __('Download Files'));
+            // listview.page.add_inner_button(__('Excel Report'), function () {
+            //     ask_date_and_download('excel');
+            // }, __('Download Files'));
 
             listview.page.add_inner_button(__('TXT File (Finacle)'), function () {
                 ask_date_and_download('txt');
