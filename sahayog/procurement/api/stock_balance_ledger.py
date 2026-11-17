@@ -475,10 +475,15 @@ def get_serial_no_list(limit=20, start=0, search_text=None):
 
     total_count = frappe.db.sql(f"SELECT COUNT(*) FROM `tabSerial No` sn {where_clause}", values)[0][0]
 
+    config_count_sql = (
+        "(SELECT COUNT(*) FROM `tabSahayog Serial Configuration` WHERE parent = sn.name) as config_count"
+        if frappe.db.table_exists("Sahayog Serial Configuration")
+        else "0 as config_count"
+    )
     data = frappe.db.sql(f"""
         SELECT
             sn.*,
-            (SELECT COUNT(*) FROM `tabSahayog Serial Configuration` WHERE parent = sn.name) as config_count
+            {config_count_sql}
         FROM `tabSerial No` sn
         {where_clause}
         ORDER BY sn.creation DESC
@@ -506,10 +511,15 @@ def get_serial_no_list(limit=20, start=0, search_text=None):
 
     total_count = frappe.db.sql(f"SELECT COUNT(*) FROM `tabSerial No` sn {where_clause}", values)[0][0]
 
+    config_count_sql = (
+        "(SELECT COUNT(*) FROM `tabSahayog Serial Configuration` WHERE parent = sn.name) as config_count"
+        if frappe.db.table_exists("Sahayog Serial Configuration")
+        else "0 as config_count"
+    )
     data = frappe.db.sql(f"""
         SELECT
             sn.*,
-            (SELECT COUNT(*) FROM `tabSahayog Serial Configuration` WHERE parent = sn.name) as config_count
+            {config_count_sql}
         FROM `tabSerial No` sn
         {where_clause}
         ORDER BY sn.creation DESC
@@ -1180,10 +1190,18 @@ def get_portal_master_data():
     
     available_serial_nos = frappe.get_all("Serial No", filters=serial_no_filters, fields=["name", "item_code"])
 
+    sahayog_branches = frappe.get_all("Sahayog Branch", fields=["name", "branch", "sol_id"])
+    if not sahayog_branches:
+        # Fallback to Location records so location dropdowns work
+        location_names = [l.name for l in frappe.get_all("Location")]
+        sahayog_branches = [
+            {"name": name, "branch": name, "sol_id": name} for name in location_names
+        ]
+
     return {
         "employees": frappe.get_all("Employee", fields=["name", "employee_name", "user_id", "employee_number", "designation", "department", "branch", "cell_number", "company_email", "custom_division"]),
         "warehouses": [w.name for w in frappe.get_all("Warehouse", filters={"disabled": 0})],
-        "sahayog_branches": frappe.get_all("Sahayog Branch", fields=["name", "branch", "sol_id"]),
+        "sahayog_branches": sahayog_branches,
         "wh_dept_map": frappe.get_all("Default Warehouse", filters={"parent": "Sahayog Settings", "parenttype": "Sahayog Settings"}, fields=["inventory_type", "warehouse", "dfault", "user_id"]),
         "emr_names": [r.name for r in frappe.get_all("Employee Material Request", order_by="creation desc", limit=500)],
         "purchase_receipt_names": [r.name for r in frappe.get_all("Purchase Receipt", order_by="creation desc", limit=500)],
