@@ -167,56 +167,34 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
             regions_pref = {norm(x) for x in p.get("region", [])}
             sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
 
-    # Standardize UI filters
-    # If a filter is explicitly passed from UI as an empty list (i.e. all items unselected),
-    # the user explicitly wanted NO records for that filter. We flag explicit empty filters.
-    explicit_empty = False
-
-    if "product" in ui_filters:
+    # Standardize UI filters:
+    # If a filter is non-empty, filter by it.
+    # If a filter is empty ([]) / not selected, DO NOT restrict (SHOW ALL).
+    if ui_filters.get("product"):
         ui_prods = {norm(x) for x in ui_filters.get("product", []) if x}
-        if ui_filters.get("product") is not None and len(ui_filters.get("product", [])) == 0 and len(ui_prods) == 0 and has_pref:
-            pass # Product left as All if not selected
-        elif ui_prods:
+        if ui_prods:
             products_pref = products_pref.intersection(ui_prods) if products_pref else ui_prods
-        elif "product" in ui_filters and isinstance(ui_filters["product"], list) and len(ui_filters["product"]) == 0:
-            products_pref = set()
 
-    if "source" in ui_filters:
+    if ui_filters.get("source"):
         ui_sources = {norm(x) for x in ui_filters.get("source", []) if x}
         if ui_sources:
             sources_pref = sources_pref.intersection(ui_sources) if sources_pref else ui_sources
 
-    if "zone" in ui_filters:
+    if ui_filters.get("zone"):
         ui_zones = {norm(x) for x in ui_filters.get("zone", []) if x}
         if ui_zones:
             zones_pref = zones_pref.intersection(ui_zones) if zones_pref else ui_zones
-        elif isinstance(ui_filters["zone"], list) and len(ui_filters["zone"]) == 0:
-            # User unselected all zones!
-            zones_pref = set()
-            explicit_empty = True
 
-    if "region" in ui_filters:
+    if ui_filters.get("region"):
         ui_regions = {norm(x) for x in ui_filters.get("region", []) if x}
         if ui_regions:
             regions_pref = regions_pref.intersection(ui_regions) if (regions_pref and not is_all_regions) else ui_regions
-        elif isinstance(ui_filters["region"], list) and len(ui_filters["region"]) == 0:
-            # User unselected all regions!
-            regions_pref = set()
-            explicit_empty = True
 
-    if "sol_id" in ui_filters:
+    if ui_filters.get("sol_id"):
         raw_sols = ui_filters.get("sol_id", [])
         ui_sols = {str(x.get("value") if isinstance(x, dict) else x) for x in raw_sols if x}
         if ui_sols:
             sol_ids_pref = sol_ids_pref.intersection(ui_sols) if sol_ids_pref else ui_sols
-        elif isinstance(raw_sols, list) and len(raw_sols) == 0:
-            # User unselected all branches!
-            sol_ids_pref = set()
-            explicit_empty = True
-
-    # If any mandatory structural filter was explicitly unselected to 0, return 0 records
-    if explicit_empty:
-        return [], {}, {}, {}
 
     # ---------- Build Query Conditions ----------
     conditions = [
@@ -1282,29 +1260,29 @@ def download_fast_lead_report(from_date, to_date, filters=None):
 
             if ui_filters.get("product"):
                 ui_prods = {norm(x) for x in ui_filters.get("product", []) if x}
-                products_pref = products_pref.intersection(ui_prods) if products_pref else ui_prods
+                if ui_prods:
+                    products_pref = products_pref.intersection(ui_prods) if products_pref else ui_prods
+
             if ui_filters.get("source"):
                 ui_sources = {norm(x) for x in ui_filters.get("source", []) if x}
-                sources_pref = sources_pref.intersection(ui_sources) if sources_pref else ui_sources
-            if "zone" in ui_filters:
+                if ui_sources:
+                    sources_pref = sources_pref.intersection(ui_sources) if sources_pref else ui_sources
+
+            if ui_filters.get("zone"):
                 ui_zones = {norm(x) for x in ui_filters.get("zone", []) if x}
                 if ui_zones:
                     zones_pref = zones_pref.intersection(ui_zones) if zones_pref else ui_zones
-                elif isinstance(ui_filters["zone"], list) and len(ui_filters["zone"]) == 0:
-                    zones_pref = {"__NO_MATCH__"}
-            if "region" in ui_filters:
+
+            if ui_filters.get("region"):
                 ui_regions = {norm(x) for x in ui_filters.get("region", []) if x}
                 if ui_regions:
                     regions_pref = regions_pref.intersection(ui_regions) if (regions_pref and not is_all_regions) else ui_regions
-                elif isinstance(ui_filters["region"], list) and len(ui_filters["region"]) == 0:
-                    regions_pref = {"__NO_MATCH__"}
-            if "sol_id" in ui_filters:
+
+            if ui_filters.get("sol_id"):
                 raw_sols = ui_filters.get("sol_id", [])
                 ui_sols = {str(x.get("value") if isinstance(x, dict) else x) for x in raw_sols if x}
                 if ui_sols:
                     sol_ids_pref = sol_ids_pref.intersection(ui_sols) if sol_ids_pref else ui_sols
-                elif isinstance(raw_sols, list) and len(raw_sols) == 0:
-                    sol_ids_pref = {"__NO_MATCH__"}
 
             def parse_csv_date(date_str):
                 if not date_str:
