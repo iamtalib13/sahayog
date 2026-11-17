@@ -1403,9 +1403,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.show_export_menu = false;
       let from_date = this.employee_from_date;
       let to_date = this.employee_to_date;
-      let filters_str = encodeURIComponent(JSON.stringify(this.selected));
-      let download_url = `/api/method/sahayog.scrm.api.report_access.download_fast_lead_report?from_date=${from_date}&to_date=${to_date}&filters=${filters_str}`;
-      window.open(download_url, "_blank");
+      
+      // Use Frappe's standard open_url_post to prevent HTTP 414 / Bad Request (Request Line is too large)
+      open_url_post("/api/method/sahayog.scrm.api.report_access.download_fast_lead_report", {
+        from_date: from_date,
+        to_date: to_date,
+        filters: JSON.stringify(this.selected)
+      });
     },
 
     openTodaysLeadReport() {
