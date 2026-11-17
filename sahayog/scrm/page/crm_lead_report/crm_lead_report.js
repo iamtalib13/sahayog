@@ -1132,6 +1132,14 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                           </div>
                       </div>
                       
+                      <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                          <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer;" @click="toggleSelectAll(active_popup)">
+                              <input type="checkbox" :checked="isAllSelected(active_popup)" style="cursor: pointer; width: 14px; height: 14px; accent-color: #05a15d;">
+                              <span style="font-size: 11.5px; font-weight: 600; color: #374151;">{{ isAllSelected(active_popup) ? 'Unselect All' : 'Select All' }}</span>
+                          </div>
+                          <span class="text-muted" style="font-size: 11px;">{{ (selected[active_popup] || []).length }} of {{ (filter_data[active_popup] || []).length }} selected</span>
+                      </div>
+
                       <div style="max-height: 300px; overflow-y: auto;">
                           <div v-if="active_popup === 'zone' || active_popup === 'region'" class="mini-chip-list">
                               <div v-for="opt in getFilteredOptions(active_popup)" 
@@ -1142,13 +1150,6 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                           </div>
 
                           <div v-else>
-                               <div class="d-flex justify-content-between align-items-center mb-2 px-1">
-                                   <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer;" @click="toggleSelectAll(active_popup)">
-                                       <input type="checkbox" :checked="isAllSelected(active_popup)" style="cursor: pointer; width: 14px; height: 14px; accent-color: #05a15d;">
-                                       <span style="font-size: 11.5px; font-weight: 600; color: #374151;">{{ isAllSelected(active_popup) ? 'Unselect All' : 'Select All' }}</span>
-                                   </div>
-                                   <span class="text-muted" style="font-size: 11px;">{{ (selected[active_popup] || []).length }} of {{ (filter_data[active_popup] || []).length }} selected</span>
-                               </div>
                                <input type="text" v-model="search_query[active_popup]" placeholder="Search..." class="form-control form-control-sm mb-2">
                               
                               <div class="dropdown-item" 
