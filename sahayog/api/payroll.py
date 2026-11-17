@@ -186,7 +186,8 @@ def _compute_register_values(payroll, emp):
         arrears_days = flt(prev_lop) - flt(lop_actual)
     # HR per-day rate = monthly / calendar days of payroll month
     per_day = monthly / _month_days(payroll.payroll_month)
-    gross = monthly - round(per_day * lop_days, 2) + round(per_day * arrears_days, 2)
+    gross = round(monthly - round(per_day * lop_days, 2)
+                  + round(per_day * arrears_days, 2), 2)
 
     medical = flt(emp.get("custom_medical_deduction", 0))
     # Staff Loan EMI comes only from the open Staff Loan register
@@ -239,7 +240,7 @@ def _values_match(a, b):
     """Loose compare for snapshot values (numbers by amount, rest as text)."""
     if isinstance(a, (int, float)) or isinstance(b, (int, float)):
         try:
-            return flt(a) == flt(b)
+            return round(flt(a), 2) == round(flt(b), 2)
         except (TypeError, ValueError):
             pass
     return (a or "") == (b or "")
