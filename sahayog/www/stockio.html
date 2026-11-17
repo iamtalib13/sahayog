@@ -6733,9 +6733,18 @@
                   <!-- Card 3: Linked Serial No Detail -->
                   <div v-if="linkedSerialRecord" style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible;">
                     <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                      <div style="display: flex; align-items: center; gap: 10px;">
+                      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                         <i class="fas fa-barcode" style="color: #369696;"></i>
-                        <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Serial No Detail: [[ linkedSerialRecord.name ]]</span>
+                        <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Serial No Detail:</span>
+                        <input
+                          v-if="linkedSerialEditing"
+                          type="text"
+                          class="form-input"
+                          v-model="linkedSerialRecord._newName"
+                          style="padding: 4px 8px !important; height: 30px; min-width: 220px; font-size: 0.8rem; font-weight: 700;"
+                          title="Edit Serial No name (will rename existing Serial No and update linked records)"
+                        />
+                        <span v-else style="font-weight: 800; font-size: 0.75rem; color: var(--text-main);">[[ linkedSerialRecord.name ]]</span>
                       </div>
                       <div style="display: flex; gap: 8px; align-items: center;">
                         <!-- Save / Cancel for inline edit -->
@@ -6751,7 +6760,7 @@
                           v-if="linkedSerialEditing"
                           class="btn-view-toggle"
                           style="padding: 4px 8px !important; font-size: 0.75rem !important; color: #ef4444;"
-                          @click="linkedSerialEditing = false"
+                          @click="linkedSerialRecord._newName = linkedSerialRecord.name; linkedSerialEditing = false"
                         >
                           Cancel
                         </button>
@@ -20706,6 +20715,8 @@
             if (!this.linkedSerialRecord.configuration_table) {
               this.linkedSerialRecord.configuration_table = [];
             }
+            this.linkedSerialRecord._originalName = res.message.name;
+            this.linkedSerialRecord._newName = res.message.name;
             this.linkedSerialEditing = editMode;
           }
         } catch (e) {
@@ -20737,24 +20748,72 @@
           if (this.linkedSerialRecord.configuration_table) {
             this.linkedSerialRecord.configuration_table = this.linkedSerialRecord.configuration_table.filter(r => r.config_type);
           }
-          const res = await frappe.call({
-            method: "frappe.client.save",
-            args: {
-              doc: this.linkedSerialRecord,
-            },
-          });
-          if (res.message) {
-            this.linkedSerialRecord = res.message;
-            this.linkedSerialEditing = false;
-            frappe.show_alert({
-              message: "Serial No updated successfully",
-              indicator: "green",
-            });
+
+          const oldName = this.linkedSerialRecord._originalName || this.linkedSerialRecord.name;
+          const newName = (this.linkedSerialRecord._newName || this.linkedSerialRecord.name || "").trim();
+          if (!newName) {
+            throw new Error("Serial No name is required");
           }
+
+          // Save configuration/field changes on the existing Serial No first
+          const docToSave = JSON.parse(JSON.stringify(this.linkedSerialRecord));
+          delete docToSave._originalName;
+          delete docToSave._newName;
+          docToSave.name = oldName;
+          const saveRes = await frappe.call({
+            method: "frappe.client.save",
+            args: { doc: docToSave },
+          });
+          let savedDoc = saveRes.message || docToSave;
+
+          // Rename if requested (updates existing Serial No and linked records)
+          let finalName = oldName;
+          if (newName !== oldName) {
+            const renameRes = await frappe.call({
+              method: "frappe.client.rename_doc",
+              args: {
+                doctype: "Serial No",
+                old_name: oldName,
+                new_name: newName,
+                merge: 0,
+              },
+            });
+            finalName = renameRes.message || newName;
+
+            // Update current detail record / lists that reference this serial no
+            if (this.detailRecord && this.detailRecord.serial_no === oldName) {
+              this.detailRecord.serial_no = finalName;
+            }
+            if (this.rows && this.rows.length) {
+              this.rows.forEach((r) => {
+                if (r.serial_no === oldName) r.serial_no = finalName;
+                if (r.name === oldName && this.activeItem === "Serial No") r.name = finalName;
+              });
+            }
+          }
+
+          // Reload the (possibly renamed) Serial No
+          const getRes = await frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Serial No", name: finalName },
+          });
+          this.linkedSerialRecord = getRes.message || savedDoc;
+          if (!this.linkedSerialRecord.configuration_table) {
+            this.linkedSerialRecord.configuration_table = [];
+          }
+          this.linkedSerialRecord._originalName = this.linkedSerialRecord.name;
+          this.linkedSerialRecord._newName = this.linkedSerialRecord.name;
+          this.linkedSerialEditing = false;
+
+          frappe.show_alert({
+            message: newName !== oldName ? "Serial No renamed and updated successfully" : "Serial No updated successfully",
+            indicator: "green",
+          });
         } catch (e) {
           console.error("Failed to save linked Serial No:", e);
+          const msg = (e && (e.message || e._server_messages || e.exc)) || "unknown error";
           frappe.show_alert({
-            message: "Error updating Serial No: " + (e.message || e.exc || "unknown error"),
+            message: "Error updating Serial No: " + msg,
             indicator: "red",
           });
         } finally {
