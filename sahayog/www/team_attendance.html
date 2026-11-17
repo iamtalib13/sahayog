@@ -9031,6 +9031,8 @@
           data.payroll_run && data.payroll_run.status === "Generated";
         const canMarkPaid =
           data.payroll_run && data.payroll_run.status === "Submitted";
+        const canRefresh =
+          data.payroll_run && data.payroll_run.status === "Generated";
         const canEdit =
           data.payroll_run &&
           (data.payroll_run.status === "Generated" ||
@@ -9065,6 +9067,14 @@
                   ? `
                 <button class="btn-in" onclick="markPayrollPaid('${data.payroll_run.name}', '${month}')" 
                   style="padding:8px 16px; font-size:12px; font-weight:700; white-space:nowrap; background:#8b5cf6; border:none; color:#fff;">💰 Mark as Paid</button>
+              `
+                  : ""
+              }
+              ${
+                canRefresh
+                  ? `
+                <button class="btn-clear" onclick="refreshPayroll('${data.payroll_run.name}', '${month}')"
+                  style="padding:8px 16px; font-size:12px; font-weight:600; white-space:nowrap;">🔄 Refresh Payroll</button>
               `
                   : ""
               }
@@ -9139,7 +9149,13 @@
             <table style="width:100%; border-collapse:collapse; font-size:12px;">
               <thead style="background:#f8fafc;">
                 <tr style="text-align:left; font-size:11px; text-transform:uppercase; color:var(--muted);">
-                  <th style="padding:12px;">Employee</th>
+                  <th style="padding:8px 12px; min-width:170px;">
+                    <div>Employee</div>
+                    <input id="payrollEmpSearch" type="text" placeholder="🔍 Name / code"
+                      oninput="filterPayrollEmployees(this.value)"
+                      style="margin-top:6px; width:100%; box-sizing:border-box; padding:5px 8px; border:1.5px solid var(--border); border-radius:6px; font-size:11px; font-weight:500; color:#111; text-transform:none;" />
+                    <div id="payrollEmpSearchInfo" style="font-size:10px; color:var(--muted); font-weight:500; text-transform:none; margin-top:3px;"></div>
+                  </th>
                   <th style="padding:12px;">Branch</th>
                   <th style="padding:12px; text-align:right;">Present</th>
                   <th style="padding:12px; text-align:right;">LOP</th>
@@ -9158,7 +9174,7 @@
                 ${data.data
                   .map(
                     (row) => `
-                  <tr style="border-bottom:1px solid #f1f5f9;">
+                  <tr class="payroll-row" data-search="${((row.employee_name || "") + " " + (row.employee || "")).toLowerCase()}" style="border-bottom:1px solid #f1f5f9;">
                     <td style="padding:12px;">
                       <div style="font-weight:600; color:var(--brand);">${row.employee_name}</div>
                       <div style="font-size:10px; color:var(--muted);">${row.employee}</div>
@@ -9186,6 +9202,23 @@
             </table>
           </div>
         `;
+      }
+
+      function filterPayrollEmployees(q) {
+        const term = (q || "").trim().toLowerCase();
+        const rows = document.querySelectorAll(
+          "#hrDashboardContent .payroll-row",
+        );
+        let shown = 0;
+        rows.forEach((tr) => {
+          const match =
+            !term || (tr.getAttribute("data-search") || "").includes(term);
+          tr.style.display = match ? "" : "none";
+          if (match) shown++;
+        });
+        const info = document.getElementById("payrollEmpSearchInfo");
+        if (info)
+          info.textContent = term ? `${shown} of ${rows.length} shown` : "";
       }
 
       function showConfirmDialog(
@@ -9602,6 +9635,33 @@
           showToast(`✅ ${genRes.message}`);
           loadPayrollDashboard();
         }
+      }
+
+      async function refreshPayroll(payrollRunId, month) {
+        if (
+          !(await showConfirmDialog(
+            `Refresh payroll for ${month}?\n\n` +
+              `New employees will be added, employees who left will be removed, ` +
+              `and attendance/loan values will be updated.\n` +
+              `Values edited by HR will stay unchanged.`,
+          ))
+        )
+          return;
+        showToast("Refreshing payroll...");
+        let res = null;
+        try {
+          res = await callAPI(
+            "refresh_payroll",
+            { payroll_run_id: payrollRunId },
+            "payroll",
+          );
+        } catch (e) {
+          showToast(String(e));
+          return;
+        }
+        if (!res || !res.success) return;
+        showToast(`✅ ${res.message}`);
+        loadPayrollDashboard();
       }
 
       async function viewSalarySlip(employee, month) {
