@@ -9701,7 +9701,7 @@
               ${numField("other_deduction", "Other Deduction", r.other_deduction)}
 
               <div style="margin-bottom:20px;">
-                <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Reason (for Other Deduction) <span style="color:#dc2626;">*</span></label>
+                <label style="font-size:12px; font-weight:600; color:var(--muted); display:block; margin-bottom:4px;">Reason (for Other Deduction)</label>
                 <textarea id="edit_other_reason" class="member-select" rows="2" placeholder="e.g., Penalty, advance recovery, etc.">${r.other_deduction_reason || ""}</textarea>
               </div>
 
@@ -9723,11 +9723,6 @@
         const reason = document
           .getElementById("edit_other_reason")
           .value.trim();
-
-        if (other > 0 && !reason) {
-          showToast("Please provide reason for deduction");
-          return;
-        }
 
         const btn = document.getElementById("btnSaveDeduction");
         btn.disabled = true;
