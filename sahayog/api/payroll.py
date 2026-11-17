@@ -80,7 +80,7 @@ def _attendance_counts(employee, start, end):
         (employee, start, end), as_dict=True,
     )
     counts = {r.status: r.c for r in rows}
-    present = flt(counts.get("Present", 0)) + 0.5 * flt(counts.get("Half Day", 0))
+    present = flt(counts.get("Present", 0)) + 0.5 * flt(counts.get("Half Day", 0)) + flt(counts.get("On Leave", 0))
     lop = flt(counts.get("Absent", 0))
     return present, lop
 
@@ -127,7 +127,7 @@ def _eligible_employees(payroll):
     Active all + Left whose last working date falls in/after the cycle
     (backdated resigned staff are excluded automatically).
     """
-    cycle_start, _cycle_end = _payroll_attendance_cycle(payroll.payroll_month)
+    cycle_start, cycle_end = _payroll_attendance_cycle(payroll.payroll_month)
 
     base = {"custom_is_support_staff": 1}
     if payroll.branch_filter:
@@ -147,7 +147,14 @@ def _eligible_employees(payroll):
         fields=emp_fields,
     )
     seen = {e.name for e in employees}
-    employees += [e for e in left_staff if e.name not in seen]
+    # Active staff who haven't joined yet (DOJ after cycle end) are not eligible
+    out = []
+    for e in employees:
+        if e.get("date_of_joining") and getdate(e.date_of_joining) > cycle_end:
+            continue
+        out.append(e)
+    employees = out
+    employees += [e for e in left_staff if e.name not in {x.name for x in employees}]
     return employees
 
 
@@ -169,6 +176,15 @@ def _compute_register_values(payroll, emp):
     unmarked = _unmarked_days(emp.name, cycle_start, cycle_end,
                               emp.get("date_of_joining"), emp.get("relieving_date"))
     lop_days += unmarked
+    # Days outside the service window within the cycle (before joining /
+    # after relieving) count as LOP — matches the resigned/new-joinee
+    # handling in the salary sheet (Present + LOP = cycle days).
+    doj = getdate(emp.get("date_of_joining")) if emp.get("date_of_joining") else None
+    lwd = getdate(emp.get("relieving_date")) if emp.get("relieving_date") else None
+    if doj and doj > cycle_start:
+        lop_days += (doj - cycle_start).days
+    if lwd and lwd < cycle_end:
+        lop_days += (cycle_end - lwd).days
     # Arrear auto-adjustment: salary is processed before the cycle's
     # tail (26th–31st) finalizes, so days paid in advance are settled
     # here. Diff of prev paid LOP vs prev actual LOP → +/− days.
@@ -184,10 +200,19 @@ def _compute_register_values(payroll, emp):
         lop_actual += _unmarked_days(emp.name, prev_start, prev_end,
                                      emp.get("date_of_joining"), emp.get("relieving_date"))
         arrears_days = flt(prev_lop) - flt(lop_actual)
-    # HR per-day rate = monthly / calendar days of payroll month
-    per_day = monthly / _month_days(payroll.payroll_month)
+    # HR per-day rate = monthly / days in the attendance cycle (26th→25th)
+    # so that Present days reconcile with Gross salary.
+    cycle_days = (cycle_end - cycle_start).days + 1
+    per_day = monthly / cycle_days if cycle_days else monthly
     gross = round(monthly - round(per_day * lop_days, 2)
                   + round(per_day * arrears_days, 2), 2)
+
+    # Present (paid) days = cycle days - LOP days. This matches the
+    # attendance report for completed cycles (P + half-day + approved leave
+    # + holiday + weekly off) and counts future days as paid in advance.
+    present_days = cycle_days - lop_days
+    if present_days < 0:
+        present_days = 0
 
     medical = flt(emp.get("custom_medical_deduction", 0))
     # Staff Loan EMI comes only from the open Staff Loan register
@@ -748,7 +773,9 @@ def upload_salary_sheet(payroll_month, rows):
             # Recompute pro-rata gross from monthly/LOP/arrears, then save (recalcs totals).
             # Direct gross_salary in the sheet always wins (HR override).
             if "gross_salary" not in changed and ("monthly_gross" in changed or "arrears_days" in changed):
-                per_day = flt(reg.monthly_gross) / _month_days(payroll_month)
+                _cs, _ce = _payroll_attendance_cycle(payroll_month)
+                _cycle_days = (_ce - _cs).days + 1
+                per_day = flt(reg.monthly_gross) / _cycle_days
                 reg.gross_salary = (flt(reg.monthly_gross)
                                     - round(per_day * flt(reg.lop_days), 2)
                                     + round(per_day * flt(reg.arrears_days), 2))
