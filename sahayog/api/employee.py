@@ -1208,7 +1208,19 @@ def get_shifts():
 
 @frappe.whitelist()
 def get_sahayog_branches():
-    return frappe.get_all("Sahayog Branch", fields=["name"], order_by="name")
+    return frappe.get_all("Sahayog Branch", fields=["name", "branch"], order_by="branch")
+
+
+@frappe.whitelist()
+def get_districts():
+    names = {d.upper(): d for d in frappe.get_all("District", pluck="name") if d and d.strip()}
+    for (d,) in frappe.db.sql(
+        "SELECT DISTINCT district FROM `tabSahayog Branch` "
+        "WHERE district IS NOT NULL AND TRIM(district) != ''"
+    ):
+        if d and d.strip():
+            names.setdefault(d.strip().upper(), d.strip())
+    return [{"name": names[k], "value": names[k]} for k in sorted(names)]
 
 @frappe.whitelist()
 def get_employment_types():
