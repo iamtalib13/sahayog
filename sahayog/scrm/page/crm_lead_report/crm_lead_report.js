@@ -58,7 +58,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         #crm-app { padding: 8px 12px; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         .crm-layout-container { display: flex; gap: 14px; align-items: flex-start; min-height: calc(100vh - 120px); }
         .crm-sidebar {
-            width: 250px; min-width: 250px; background: #ffffff;
+            width: 280px; min-width: 280px; background: #ffffff;
             border: 1px solid #e2e8f0; border-radius: 10px; padding: 14px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.03); position: sticky; top: 12px;
             max-height: calc(100vh - 140px); overflow-y: auto; transition: all 0.25s ease;
@@ -73,8 +73,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .crm-filter-group { margin-bottom: 14px; }
         .crm-filter-label { font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 5px; display: block; text-transform: uppercase; letter-spacing: 0.3px; }
         .crm-sidebar-select, .crm-sidebar-input {
-            width: 100%; height: 32px; font-size: 12px; border: 1px solid #cbd5e1;
-            border-radius: 6px; padding: 0 8px; background: #ffffff; color: #0f172a;
+            width: 100%; height: 32px; font-size: 11.5px; border: 1px solid #cbd5e1;
+            border-radius: 6px; padding: 0 6px; background: #ffffff; color: #0f172a;
         }
         .crm-sidebar-select:focus, .crm-sidebar-input:focus { border-color: #3b82f6; outline: none; }
         .crm-main-area { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -852,13 +852,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     </div>
 
                     <div class="crm-filter-group">
-                        <label class="crm-filter-label">From Date</label>
-                        <input type="date" v-model="employee_from_date" @change="onDateChange" class="crm-sidebar-input">
-                    </div>
-
-                    <div class="crm-filter-group">
-                        <label class="crm-filter-label">To Date</label>
-                        <input type="date" v-model="employee_to_date" @change="onDateChange" class="crm-sidebar-input">
+                        <div class="d-flex" style="gap: 8px;">
+                            <div style="flex: 1;">
+                                <label class="crm-filter-label">From Date</label>
+                                <input type="date" v-model="employee_from_date" @change="onDateChange" class="crm-sidebar-input">
+                            </div>
+                            <div style="flex: 1;">
+                                <label class="crm-filter-label">To Date</label>
+                                <input type="date" v-model="employee_to_date" @change="onDateChange" class="crm-sidebar-input">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="crm-filter-group">
