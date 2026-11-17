@@ -9,6 +9,7 @@
  "field_order": [
   "employee",
   "employee_name",
+  "loan_category",
   "column_break_loan",
   "status",
   "loan_amount",
@@ -36,6 +37,16 @@
    "in_list_view": 1,
    "label": "Employee Name",
    "read_only": 1
+  },
+  {
+   "default": "Staff Loan",
+   "fieldname": "loan_category",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "in_standard_filter": 1,
+   "label": "Loan Category",
+   "options": "Staff Loan\nSalary Advance\nVehicle Loan\nHome Loan\nPersonal Loan",
+   "reqd": 1
   },
   {
    "fieldname": "column_break_loan",
