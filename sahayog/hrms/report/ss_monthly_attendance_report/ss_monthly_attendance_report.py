@@ -196,8 +196,37 @@ def execute(filters=None):
     od_keys = {f"{c.employee}|{c.attendance_date}" for c in corrections}
 
     # ---- Fetch Holiday Lists ----
-    # Collect unique holiday lists
-    hl_names = list(set(e.holiday_list for e in employees if e.holiday_list))
+    # Batch-fetch state from Sahayog Branch (used for holiday-list fallback)
+    branch_codes = list(set(e.sahayog_branch for e in employees if e.sahayog_branch))
+    branch_state_map = {}
+    if branch_codes:
+        for b in frappe.db.sql("SELECT name, state FROM `tabSahayog Branch` WHERE name IN %(bcs)s",
+                                {"bcs": branch_codes}, as_dict=True):
+            branch_state_map[b.name] = b.state or ""
+
+    # Check if Employee table has a custom_state column
+    _emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
+    has_emp_state = "custom_state" in _emp_cols
+
+    # Employee's own Holiday List, else fall back to branch state's list for the year
+    all_hl = frappe.get_all("Holiday List", pluck="name")
+    hl_by_state = {}
+    for hl_name in all_hl:
+        parts = hl_name.split(" - ")
+        if len(parts) >= 2:
+            hl_by_state[(parts[0].strip().upper(), parts[-1].strip())] = hl_name
+    fallback_hl = "Standard Company Holidays" if "Standard Company Holidays" in all_hl else None
+    hl_year = str(to_date.year)
+
+    emp_holiday_lists = {}
+    for e in employees:
+        hl = e.holiday_list
+        if not hl:
+            state = (branch_state_map.get(e.sahayog_branch, "") or (e.custom_state if has_emp_state else "") or "").strip()
+            hl = hl_by_state.get((state.upper(), hl_year)) or fallback_hl
+        if hl:
+            emp_holiday_lists[e.name] = hl
+    hl_names = list(set(emp_holiday_lists.values()))
     holiday_dates = set()
     weekly_off_dates = set()
     holidays = []
@@ -214,11 +243,6 @@ def execute(filters=None):
                 weekly_off_dates.add(h.holiday_date)
             else:
                 holiday_dates.add(h.holiday_date)
-
-    # Build employee-wise holiday/weekly-off lookup per date
-    # For simplicity: if date is in any holiday list, treat as holiday/weekly off
-    # More precise: check employee's own holiday list
-    emp_holiday_lists = {e.name: e.holiday_list for e in employees if e.holiday_list}
 
     # Build per-employee holiday/weekly-off sets
     emp_holiday_map = {}
@@ -241,18 +265,6 @@ def execute(filters=None):
             global_wo.add(h.holiday_date)
         else:
             global_holidays.add(h.holiday_date)
-
-    # Batch-fetch state from Sahayog Branch
-    branch_codes = list(set(e.sahayog_branch for e in employees if e.sahayog_branch))
-    branch_state_map = {}
-    if branch_codes:
-        for b in frappe.db.sql("SELECT name, state FROM `tabSahayog Branch` WHERE name IN %(bcs)s",
-                                {"bcs": branch_codes}, as_dict=True):
-            branch_state_map[b.name] = b.state or ""
-
-    # Check if Employee table has a custom_state column
-    _emp_cols = {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")}
-    has_emp_state = "custom_state" in _emp_cols
 
     # ---- Build Data Rows ----
     data = []
@@ -283,6 +295,7 @@ def execute(filters=None):
             if lwd and d > lwd:
                 row[d.strftime("%d_%m_%Y")] = ""
                 continue
+            total_days += 1
             key = f"{emp.name}|{d}"
             att = att_map.get(key)
 
@@ -304,9 +317,11 @@ def execute(filters=None):
                         total_present += 1
                     elif att.status == "Half Day":
                         total_present += 0.5
+                    elif att.status == "On Leave":
+                        # Approved leave is paid → count as present
+                        total_present += 1
                     elif att.status == "Absent":
                         total_absent += 1
-                total_days += 1
             else:
                 if is_hol:
                     code = "H"

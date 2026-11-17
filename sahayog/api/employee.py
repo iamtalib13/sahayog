@@ -1151,13 +1151,56 @@ def get_departments():
 def get_divisions():
     return frappe.get_all("Division", fields=["name"], order_by="name")
 
+def _zone_region_key(name, kind):
+    import re
+    s = (name or "").strip().upper()
+    if kind == "region":
+        if s == "HO" or "HEAD" in s:
+            return "HEADOFFICE"
+        m = re.search(r"REGION\s*-?\s*(\d+)", s)
+        if m:
+            return "REGION-" + m.group(1)
+    else:
+        m = re.search(r"ZONE\s*-?\s*(\d+)", s)
+        if m:
+            return "ZONE-" + m.group(1)
+    return re.sub(r"[^A-Z0-9]", "", s)
+
+
+def _dedupe_zone_region(doctype, kind):
+    """Return one entry per normalized zone/region, with canonical display name."""
+    records = frappe.get_all(doctype, fields=["name"], order_by="name")
+    groups = {}
+    for r in records:
+        groups.setdefault(_zone_region_key(r.name, kind), []).append(r.name)
+
+    result = []
+    for key, names in groups.items():
+        if key == "HEADOFFICE":
+            display = "Head Office"
+        elif key.startswith("ZONE-"):
+            display = "Zone -" + key.split("-", 1)[1]
+        elif key.startswith("REGION-"):
+            display = "Region-" + key.split("-", 1)[1]
+        else:
+            display = names[0]
+        value = next(
+            (n for n in names if n.strip().upper() == display.strip().upper()),
+            names[0],
+        )
+        result.append({"name": display, "value": value})
+
+    result.sort(key=lambda x: x["name"])
+    return result
+
+
 @frappe.whitelist()
 def get_zones():
-    return frappe.get_all("Zone", fields=["name"], order_by="name")
+    return _dedupe_zone_region("Zone", "zone")
 
 @frappe.whitelist()
 def get_regions():
-    return frappe.get_all("Region", fields=["name"], order_by="name")
+    return _dedupe_zone_region("Region", "region")
 
 @frappe.whitelist()
 def get_shifts():
@@ -1165,7 +1208,19 @@ def get_shifts():
 
 @frappe.whitelist()
 def get_sahayog_branches():
-    return frappe.get_all("Sahayog Branch", fields=["name"], order_by="name")
+    return frappe.get_all("Sahayog Branch", fields=["name", "branch"], order_by="branch")
+
+
+@frappe.whitelist()
+def get_districts():
+    names = {d.upper(): d for d in frappe.get_all("District", pluck="name") if d and d.strip()}
+    for (d,) in frappe.db.sql(
+        "SELECT DISTINCT district FROM `tabSahayog Branch` "
+        "WHERE district IS NOT NULL AND TRIM(district) != ''"
+    ):
+        if d and d.strip():
+            names.setdefault(d.strip().upper(), d.strip())
+    return [{"name": names[k], "value": names[k]} for k in sorted(names)]
 
 @frappe.whitelist()
 def get_employment_types():

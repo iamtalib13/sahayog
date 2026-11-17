@@ -21,8 +21,3 @@ class SalaryRegister(Document):
 		)
 
 		self.net_salary = flt(self.gross_salary) - flt(self.total_deductions)
-	
-	def before_save(self):
-		# Validate other deduction has reason if amount > 0
-		if flt(self.other_deduction) > 0 and not self.other_deduction_reason:
-			frappe.throw("Please provide reason for Other Deduction")
