@@ -200,6 +200,20 @@ def _parse_csv(file_content):
     return [row for row in reader]
 
 
+def _normalize_location(value):
+    """Normalize location input. Extract code inside parentheses e.g. 'LANJI (1152)' -> '1152'."""
+    if value is None:
+        return None
+    val = str(value).strip()
+    if not val:
+        return None
+    import re
+    m = re.search(r"\(([^()]+)\)\s*$", val)
+    if m:
+        return m.group(1).strip() or val
+    return val
+
+
 @frappe.whitelist()
 def get_serial_config_types():
     """Get config_type options from Sahayog Serial Configuration child doctype."""
@@ -285,7 +299,7 @@ def bulk_insert_assets(file_url):
                 "serial_no": row.get("serial_no", "").strip() or None,
                 "zone": row.get("Zone", "").strip() or None,
                 "state": row.get("State", "").strip() or None,
-                "location": row.get("Location", "").strip() or None,
+                "location": _normalize_location(row.get("Location", "")),
                 "division": row.get("Division", "").strip() or None,
                 "gross_purchase_amount": row.get("gross_purchase_amount", "").strip() or None,
                 "available_for_use_date": row.get("available_for_use_date", "").strip() or None,
@@ -382,6 +396,8 @@ def bulk_update_assets_from_file(file_url):
             for csv_col, db_field in field_map.items():
                 val = row.get(csv_col, "").strip()
                 if val:
+                    if csv_col == "Location":
+                        val = _normalize_location(val)
                     update_fields[db_field] = val
 
             if update_fields:

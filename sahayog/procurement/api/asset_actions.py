@@ -88,33 +88,37 @@ def apply_asset_action(asset_name, action, custodian=None, location=None):
         asset.custodian = ""
 
     asset.status = target_status
-    asset.workflow_state = target_status
+    has_workflow_state = asset.meta.has_field("workflow_state")
+    if has_workflow_state:
+        asset.workflow_state = target_status
 
     if asset.docstatus == 0:
         asset.save(ignore_permissions=True)
         if action == "assign":
             asset.submit()
             # Standard submit() calls set_status(), we must force our custom status again
-            asset.db_set({
-                "status": target_status,
-                "workflow_state": target_status
-            })
+            db_values = {"status": target_status}
+            if has_workflow_state:
+                db_values["workflow_state"] = target_status
+            asset.db_set(db_values)
     else:
         # For already submitted assets, use db_set to bypass standard status calculation
-        asset.db_set({
+        db_values = {
             "status": target_status,
-            "workflow_state": target_status,
             "custodian": asset.custodian,
             "location": asset.location,
-            "branch_name": asset.branch_name
-        })
+            "branch_name": asset.branch_name,
+        }
+        if has_workflow_state:
+            db_values["workflow_state"] = target_status
+        asset.db_set(db_values)
 
     asset.reload()
     return {
         "name": asset.name,
         "docstatus": asset.docstatus,
         "status": asset.status,
-        "workflow_state": asset.workflow_state,
+        "workflow_state": getattr(asset, "workflow_state", None),
         "custodian": asset.custodian,
         "location": asset.location,
         "branch_name": getattr(asset, "branch_name", None),

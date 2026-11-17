@@ -1459,11 +1459,65 @@
         </div>
         
         <!-- Standard input for Data fields -->
-        <input v-else type="text" class="form-input" v-model="assetActionData[field.fieldname]" style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" :placeholder="'Enter ' + field.label" />
+        <input v-else type="text" class="form-input" v-model="assetActionData[field.fieldname]" :readonly="field.readonly" :style="field.readonly ? 'width: 100%; padding: 10px; border: 1px solid #e5e7eb; border-radius: 4px; background: #f8fafc; color: #475569;' : 'width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;'" :placeholder="'Enter ' + field.label" />
       </div>
       <div style="margin-top: 24px; display: flex; justify-content: flex-end; gap: 10px;">
-        <button class="btn-cancel" @click="showAssetActionModal = false" style="padding: 10px 20px; border-radius: 6px;">Cancel</button>
+        <button class="btn-cancel" @click="showAssetActionModal = false; _bulkSubmitQueue = []" style="padding: 10px 20px; border-radius: 6px;">Cancel</button>
         <button class="btn-create" @click="submitAssetAction" style="padding: 10px 20px; border-radius: 6px;">Submit</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Asset Submit Modal -->
+  <div v-if="showBulkAssetSubmitModal" class="modal-overlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 99999; display: flex; align-items: center; justify-content: center;">
+    <div class="modal-card" style="background: white; padding: 24px; border-radius: 12px; width: 760px; max-width: 95vw; max-height: 85vh; overflow: auto; box-shadow: 0 10px 25px rgba(0,0,0,0.2);">
+      <h3 style="margin-top: 0;">Submit Selected Assets ([[ bulkAssetSubmitRows.length ]])</h3>
+      <div class="table-responsive" style="margin-top: 12px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+          <thead>
+            <tr style="background: #f8fafc; text-align: left;">
+              <th style="padding: 10px; border-bottom: 1px solid #e2e8f0;">Asset</th>
+              <th style="padding: 10px; border-bottom: 1px solid #e2e8f0;">Serial No</th>
+              <th style="padding: 10px; border-bottom: 1px solid #e2e8f0;">Location</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="(row, idx) in bulkAssetSubmitRows" :key="row.asset_name" style="border-bottom: 1px solid #f1f5f9;">
+              <td style="padding: 10px; font-weight: 600; color: #334155;">[[ row.asset_name ]]</td>
+              <td style="padding: 10px;">
+                <input type="text" class="form-input" v-model="row.serial_no" style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px;" placeholder="Serial No" />
+              </td>
+              <td style="padding: 10px; position: relative;">
+                <div class="searchable-select-wrapper" style="width: 100%;">
+                  <input
+                    type="text"
+                    class="form-input"
+                    v-model="row.location_display"
+                    @focus="focusedField = 'bulk_loc_' + idx"
+                    @blur="setTimeout(() => focusedField = null, 200)"
+                    style="width: 100%; padding: 8px 10px; border: 1px solid #d1d5db; border-radius: 6px;"
+                    placeholder="Search Location"
+                  />
+                  <div class="searchable-select-dropdown" v-if="focusedField === 'bulk_loc_' + idx" style="position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ccc; max-height: 180px; overflow-y: auto; z-index: 1000;">
+                    <div
+                      v-for="opt in getBulkLocationOptions(row)"
+                      :key="opt.name"
+                      class="searchable-select-option"
+                      style="padding: 8px; cursor: pointer;"
+                      @mousedown="row.location = opt.sol_id || opt.name; row.location_display = (opt.branch || opt.name) + ' (' + (opt.sol_id || opt.name) + ')'; focusedField = null;"
+                    >
+                      [[ opt.branch || opt.name ]] ([[ opt.sol_id || opt.name ]])
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top: 20px; display: flex; justify-content: flex-end; gap: 10px;">
+        <button class="btn-cancel" @click="showBulkAssetSubmitModal = false" style="padding: 10px 20px; border-radius: 6px;">Cancel</button>
+        <button class="btn-create" @click="submitBulkAssetSubmit()" :disabled="loading" style="padding: 10px 20px; border-radius: 6px;">Submit All</button>
       </div>
     </div>
   </div>
@@ -6679,9 +6733,18 @@
                   <!-- Card 3: Linked Serial No Detail -->
                   <div v-if="linkedSerialRecord" style="background: var(--bg-card); border-radius: 12px; border: 1px solid var(--border-color); overflow: visible;">
                     <div style="padding: 12px 20px; border-bottom: 1px solid var(--border-color); background: rgba(100, 116, 139, 0.02); display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                      <div style="display: flex; align-items: center; gap: 10px;">
+                      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                         <i class="fas fa-barcode" style="color: #369696;"></i>
-                        <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Serial No Detail: [[ linkedSerialRecord.name ]]</span>
+                        <span style="font-weight: 800; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);">Serial No Detail:</span>
+                        <input
+                          v-if="linkedSerialEditing"
+                          type="text"
+                          class="form-input"
+                          v-model="linkedSerialRecord._newName"
+                          style="padding: 4px 8px !important; height: 30px; min-width: 220px; font-size: 0.8rem; font-weight: 700;"
+                          title="Edit Serial No name (will rename existing Serial No and update linked records)"
+                        />
+                        <span v-else style="font-weight: 800; font-size: 0.75rem; color: var(--text-main);">[[ linkedSerialRecord.name ]]</span>
                       </div>
                       <div style="display: flex; gap: 8px; align-items: center;">
                         <!-- Save / Cancel for inline edit -->
@@ -6697,7 +6760,7 @@
                           v-if="linkedSerialEditing"
                           class="btn-view-toggle"
                           style="padding: 4px 8px !important; font-size: 0.75rem !important; color: #ef4444;"
-                          @click="linkedSerialEditing = false"
+                          @click="linkedSerialRecord._newName = linkedSerialRecord.name; linkedSerialEditing = false"
                         >
                           Cancel
                         </button>
@@ -9335,6 +9398,22 @@
                 v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
                 class="btn-create-inline"
                 style="
+                  background: linear-gradient(135deg, #10b981, #059669) !important;
+                  border: none !important;
+                  color: #ffffff !important;
+                  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+                  margin-right: 8px;
+                  font-weight: 700;
+                "
+                @click="bulkSubmitSelectedAssets()"
+              >
+                <i class="fas fa-paper-plane"></i>
+                <span>Submit ([[ selectedRows.length ]])</span>
+              </button>
+              <button
+                v-if="activeItem === 'Asset Master' && selectedRows.length > 0"
+                class="btn-create-inline"
+                style="
                   background: linear-gradient(135deg, #f87171, #dc2626) !important;
                   border: none !important;
                   color: #ffffff !important;
@@ -9761,11 +9840,41 @@
     <div class="profile-modal" style="max-width: 900px;">
       <div class="profile-modal-header">
         <h3>Bulk Insert Assets</h3>
-        <button class="profile-close" @click="showBulkAssetInsertModal = false; bulkInsertPreview = null; bulkInsertFileName = ''">&times;</button>
+        <button class="profile-close" @click="showBulkAssetInsertModal = false; bulkInsertPreview = null; bulkInsertResult = null; bulkInsertFileName = ''; bulkInsertFileUrl = ''">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 24px; max-height: 70vh; overflow-y: auto;">
+        <!-- Result Section (failed inserts) -->
+        <div v-if="bulkInsertResult && bulkInsertResult.failedDetails && bulkInsertResult.failedDetails.length" style="margin-bottom: 16px;">
+          <div style="padding: 12px 14px; border: 1px solid #fecaca; background: #fef2f2; border-radius: 8px; margin-bottom: 12px;">
+            <div style="font-weight: 700; color: #991b1b;">[[ bulkInsertResult.inserted ]] inserted, [[ bulkInsertResult.failed ]] failed</div>
+            <div style="font-size: 0.85rem; color: #7f1d1d; margin-top: 4px;">The following assets were not created. You can download them as CSV, fix, and retry.</div>
+          </div>
+          <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; max-height: 260px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+              <thead>
+                <tr style="background: var(--bg-secondary);">
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color);">Asset / Row</th>
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color);">Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(f, idx) in bulkInsertResult.failedDetails" :key="idx" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: 8px 10px; color: var(--text-main); font-weight: 600;">[[ f.key ]]</td>
+                  <td style="padding: 8px 10px; color: #b91c1c;">[[ f.error ]]</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button @click="bulkInsertResult = null; bulkInsertPreview = null; bulkInsertFileName = ''; bulkInsertFileUrl = ''" style="padding: 10px 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-main);">Close</button>
+            <button @click="downloadFailedBulkInsertCSV()" style="padding: 10px 20px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fas fa-download"></i>
+              <span>Download Failed CSV</span>
+            </button>
+          </div>
+        </div>
         <!-- Upload Section (shown when no preview) -->
-        <div v-if="!bulkInsertPreview" style="text-align: center; padding: 40px 20px 20px;">
+        <div v-if="!bulkInsertPreview && !bulkInsertResult" style="text-align: center; padding: 40px 20px 20px;">
           <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
             <i class="fas fa-cloud-upload-alt" style="color: white; font-size: 1.5rem;"></i>
           </div>
@@ -9778,7 +9887,7 @@
           </label>
         </div>
         <!-- Preview Section (shown after file is parsed) -->
-        <div v-if="bulkInsertPreview">
+        <div v-if="bulkInsertPreview && !bulkInsertResult">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <div>
               <p style="color: var(--text-main); font-weight: 600; font-size: 0.95rem;">[[ bulkInsertFileName ]]</p>
@@ -14435,6 +14544,8 @@
       serialNoChildFields: ["Serial No", "MAC Address", "Make", "Model", "Processor", "RAM", "Storage", "OS", "Windows Key", "Office Key", "Warranty Start", "Warranty End"],
       showAssetActions: false,
       showAssetActionModal: false,
+      showBulkAssetSubmitModal: false,
+      bulkAssetSubmitRows: [],
       serialMode: 'individual',
       itemWiseData: null,
       assetActionTitle: '',
@@ -14626,6 +14737,7 @@
       bulkInsertFileName: "",
       bulkInsertFileUrl: "",
       bulkInsertCreating: false,
+      bulkInsertResult: null,
       showBulkAssetUpdateModal: false,
 
       async getSerialWarehouseMap() {
@@ -16988,6 +17100,79 @@
           },
         );
       },
+      bulkSubmitSelectedAssets() {
+        const selected = this.rows.filter((r) => this.selectedRows.includes(r.name));
+        const draftRows = selected.filter((r) => r.docstatus === 0 || r.status === "Draft");
+        if (draftRows.length === 0) {
+          frappe.show_alert({ message: "No draft assets selected to submit.", indicator: "orange" });
+          return;
+        }
+        this.bulkAssetSubmitRows = draftRows.map((r) => ({
+          asset_name: r.name,
+          serial_no: r.serial_no || "",
+          location: r.location || "",
+          location_display: r.location ? (this.getBranchNameFromLocation ? this.getBranchNameFromLocation(r.location) : r.location) : "",
+          custodian: r.custodian || "",
+        }));
+        this.showBulkAssetSubmitModal = true;
+      },
+      getBulkLocationOptions(row) {
+        const search = (row.location_display || "").toLowerCase();
+        const list = this.sahayog_branches || [];
+        if (!search) return list.slice(0, 50);
+        return list.filter((b) =>
+          (b.branch || b.name || "").toLowerCase().includes(search) ||
+          (b.sol_id || b.name || "").toLowerCase().includes(search) ||
+          (b.name || "").toLowerCase().includes(search)
+        ).slice(0, 50);
+      },
+      async submitBulkAssetSubmit() {
+        if (!this.bulkAssetSubmitRows || this.bulkAssetSubmitRows.length === 0) return;
+        this.loading = true;
+        let success = 0;
+        const failed = [];
+        try {
+          for (const row of this.bulkAssetSubmitRows) {
+            try {
+              if (row.serial_no && row.serial_no.trim()) {
+                await frappe.call({
+                  method: 'frappe.client.set_value',
+                  args: {
+                    doctype: 'Asset',
+                    name: row.asset_name,
+                    fieldname: 'serial_no',
+                    value: row.serial_no.trim()
+                  }
+                });
+              }
+              await frappe.call({
+                method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
+                args: {
+                  action: 'assign',
+                  asset_name: row.asset_name,
+                  custodian: row.custodian || null,
+                  location: row.location || null
+                }
+              });
+              success++;
+            } catch (e) {
+              console.error('Bulk submit failed for', row.asset_name, e);
+              failed.push(row.asset_name);
+            }
+          }
+          this.showBulkAssetSubmitModal = false;
+          this.bulkAssetSubmitRows = [];
+          this.selectedRows = [];
+          await this.fetchData("Asset");
+          if (failed.length) {
+            frappe.msgprint(`Submitted ${success} asset(s). Failed: ${failed.join(', ')}`);
+          } else {
+            frappe.show_alert({ message: `${success} asset(s) submitted successfully`, indicator: 'green' });
+          }
+        } finally {
+          this.loading = false;
+        }
+      },
       async bulkDeleteAssets() {
         this.showConfirm(
           "Bulk Delete Assets",
@@ -17125,23 +17310,64 @@
             method: "sahayog.procurement.api.asset_bulk_actions.bulk_insert_assets",
             args: { file_url: this.bulkInsertFileUrl },
           });
-          const result = res.message;
-          let msg = `${result.inserted} asset(s) inserted successfully`;
-          if (result.failed && result.failed.length > 0) {
-            msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+          const result = res.message || {};
+          result.errors = result.errors || {};
+          result.failed = result.failed || [];
+          if (result.failed.length > 0) {
+            const previewRows = (this.bulkInsertPreview && this.bulkInsertPreview.rows) ? this.bulkInsertPreview.rows : [];
+            const failedDetails = result.failed.map((key) => {
+              let row = null;
+              if (typeof key === 'string' && key.startsWith('Row ')) {
+                const idx = parseInt(key.replace('Row ', ''), 10) - 1;
+                if (!isNaN(idx) && previewRows[idx]) row = previewRows[idx];
+              } else {
+                row = previewRows.find(r => (r.name || '').toString().trim() === key) || null;
+              }
+              return { key, error: result.errors[key] || 'Failed', row };
+            });
+            this.bulkInsertResult = {
+              inserted: result.inserted || 0,
+              failed: result.failed.length,
+              failedDetails,
+            };
+            frappe.show_alert(`${result.inserted || 0} inserted, ${result.failed.length} failed`, 8);
+            await this.fetchData("Asset");
+          } else {
+            frappe.show_alert(`${result.inserted || 0} asset(s) inserted successfully`, 5);
+            this.showBulkAssetInsertModal = false;
+            this.bulkInsertPreview = null;
+            this.bulkInsertResult = null;
+            this.bulkInsertFileName = "";
+            this.bulkInsertFileUrl = "";
+            await this.fetchData("Asset");
           }
-          frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
-          this.showBulkAssetInsertModal = false;
-          this.bulkInsertPreview = null;
-          this.bulkInsertFileName = "";
-          this.bulkInsertFileUrl = "";
-          await this.fetchData("Asset");
         } catch (e) {
           console.error("Bulk insert assets error:", e);
           frappe.msgprint("Bulk insert failed: " + (e.message || "Unknown error"));
         } finally {
           this.bulkInsertCreating = false;
         }
+      },
+      downloadFailedBulkInsertCSV() {
+        if (!this.bulkInsertResult || !this.bulkInsertResult.failedDetails) return;
+        const rows = this.bulkInsertResult.failedDetails.map(d => d.row || { name: d.key });
+        const keys = Array.from(new Set(rows.flatMap(r => Object.keys(r || {})).concat(['Error'])));
+        const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+        const lines = [keys.join(',')];
+        this.bulkInsertResult.failedDetails.forEach((d) => {
+          const r = d.row || { name: d.key };
+          const vals = keys.map(k => k === 'Error' ? esc(d.error) : esc(r[k]));
+          lines.push(vals.join(','));
+        });
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'failed_bulk_assets.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       },
       async handleBulkAssetUpdateFile(event) {
         const file = event.target.files[0];
@@ -18363,8 +18589,9 @@
       
       assignCustodian(doc) {
           console.log("Debug: Assign clicked for", doc.name);
-          this.assetActionTitle = 'Assign Asset';
+          this.assetActionTitle = 'Submit Asset';
           this.assetActionFields = [
+              {label: 'Asset Code', fieldname: 'asset_name', fieldtype: 'Data', readonly: true},
               {label: 'Serial No', fieldname: 'serial_no', fieldtype: 'Data'},
               {label: 'Custodian', fieldname: 'custodian', fieldtype: 'Link', options: 'Employee', optional: true},
               {label: 'Branch / Location', fieldname: 'location', fieldtype: 'Link', options: 'Sahayog Branch'}
@@ -18429,19 +18656,20 @@
       
       async submitAssetAction() {
           try {
+              const submittedName = this.assetActionData.asset_name;
               // Update serial_no if provided
               if (this.assetActionData.serial_no && this.assetActionData.serial_no.trim()) {
                   await frappe.call({
                       method: 'frappe.client.set_value',
                       args: {
                           doctype: 'Asset',
-                          name: this.assetActionData.asset_name,
+                          name: submittedName,
                           fieldname: 'serial_no',
                           value: this.assetActionData.serial_no.trim()
                       }
                   });
               }
-              const response = await frappe.call({
+              await frappe.call({
                   method: 'sahayog.procurement.api.asset_actions.apply_asset_action',
                   args: this.assetActionData
               });
@@ -20559,6 +20787,8 @@
             if (!this.linkedSerialRecord.configuration_table) {
               this.linkedSerialRecord.configuration_table = [];
             }
+            this.linkedSerialRecord._originalName = res.message.name;
+            this.linkedSerialRecord._newName = res.message.name;
             this.linkedSerialEditing = editMode;
           }
         } catch (e) {
@@ -20590,24 +20820,84 @@
           if (this.linkedSerialRecord.configuration_table) {
             this.linkedSerialRecord.configuration_table = this.linkedSerialRecord.configuration_table.filter(r => r.config_type);
           }
-          const res = await frappe.call({
-            method: "frappe.client.save",
-            args: {
-              doc: this.linkedSerialRecord,
-            },
-          });
-          if (res.message) {
-            this.linkedSerialRecord = res.message;
-            this.linkedSerialEditing = false;
-            frappe.show_alert({
-              message: "Serial No updated successfully",
-              indicator: "green",
-            });
+
+          const oldName = this.linkedSerialRecord._originalName || this.linkedSerialRecord.name;
+          const newName = (this.linkedSerialRecord._newName || this.linkedSerialRecord.name || "").trim();
+          if (!newName) {
+            throw new Error("Serial No name is required");
           }
+
+          // Save configuration/field changes on the existing Serial No first
+          const docToSave = JSON.parse(JSON.stringify(this.linkedSerialRecord));
+          delete docToSave._originalName;
+          delete docToSave._newName;
+          docToSave.name = oldName;
+          const saveRes = await frappe.call({
+            method: "frappe.client.save",
+            args: { doc: docToSave },
+          });
+          let savedDoc = saveRes.message || docToSave;
+
+          // Rename if requested (updates existing Serial No and linked records)
+          let finalName = oldName;
+          let renamed = false;
+          if (newName !== oldName) {
+            const renameRes = await frappe.call({
+              method: "frappe.client.rename_doc",
+              args: {
+                doctype: "Serial No",
+                old_name: oldName,
+                new_name: newName,
+                merge: 0,
+              },
+            });
+            finalName = (renameRes && renameRes.message) ? renameRes.message : newName;
+            renamed = true;
+
+            // Update current detail record / lists that reference this serial no
+            if (this.detailRecord && this.detailRecord.serial_no === oldName) {
+              this.detailRecord.serial_no = finalName;
+            }
+            if (this.rows && this.rows.length) {
+              this.rows.forEach((r) => {
+                if (r.serial_no === oldName) r.serial_no = finalName;
+                if (r.name === oldName && this.activeItem === "Serial No") r.name = finalName;
+              });
+            }
+          }
+
+          // Reload the (possibly renamed) Serial No (best effort, suppress not-found popup)
+          let reloaded = null;
+          try {
+            const getRes = await new Promise((resolve, reject) => {
+              frappe.call({
+                method: "frappe.client.get",
+                args: { doctype: "Serial No", name: finalName },
+                callback: (r) => resolve(r),
+                error: (r) => reject(r),
+              });
+            });
+            reloaded = getRes && getRes.message ? getRes.message : null;
+          } catch (reloadErr) {
+            console.warn("Serial No saved/renamed but reload failed:", reloadErr);
+          }
+          this.linkedSerialRecord = reloaded || { ...savedDoc, name: finalName };
+          if (!this.linkedSerialRecord.configuration_table) {
+            this.linkedSerialRecord.configuration_table = [];
+          }
+          this.linkedSerialRecord._originalName = this.linkedSerialRecord.name || finalName;
+          this.linkedSerialRecord._newName = this.linkedSerialRecord.name || finalName;
+          this.linkedSerialEditing = false;
+
+          frappe.show_alert({
+            message: renamed ? "Serial No renamed and updated successfully" : "Serial No updated successfully",
+            indicator: "green",
+          });
         } catch (e) {
           console.error("Failed to save linked Serial No:", e);
+          const msg = (e && (e.message || e._server_messages || e.exc)) || "unknown error";
           frappe.show_alert({
-            message: "Error updating Serial No: " + (e.message || e.exc || "unknown error"),
+            message: "Error updating Serial No: " + msg,
             indicator: "red",
           });
         } finally {
