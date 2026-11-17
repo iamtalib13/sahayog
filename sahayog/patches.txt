@@ -72,4 +72,11 @@ sahayog.patches.set_asset_status_options
 sahayog.patches.create_permanent_audit_log_table
 sahayog.patches.update_disciplinary_case_letter_head
 sahayog.patches.link_loan_applications_to_loan_requests
+sahayog.patches.travel.remove_legacy_travel_request
+sahayog.patches.travel.seed_purpose_of_travel
+sahayog.patches.travel.create_travel_request_custom_fields
+sahayog.patches.travel.ignore_user_permissions_on_travel_links
+sahayog.patches.travel.create_travel_request_workflow
+sahayog.patches.travel.setup_travel_request_permissions
+sahayog.patches.travel.hide_travel_request_fields
 sahayog.patches.custom_fields.add_custom_fields_for_lead

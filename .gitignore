@@ -59,3 +59,11 @@ build/
 coverage/
 *.lcov
 .nyc_output
+
+# Built by the frontend
+sahayog/public/frontend
+sahayog/www/travel.html
+
+# The frontend keeps its source in src/lib; the `lib/` rule above is for build artifacts
+!frontend/src/lib/
+!frontend/src/lib/**

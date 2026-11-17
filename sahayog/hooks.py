@@ -24,6 +24,7 @@ website_route_rules = [
     {"from_route": "/me", "to_route": "me"},
     {"from_route": "/insights", "to_route": "sahayog_insights"},
     {"from_route": "/insights/<path:app_path>", "to_route": "sahayog_insights"},
+    {"from_route": "/travel/<path:app_path>", "to_route": "travel"},
 ]
 
 # Includes in <head>
@@ -72,6 +73,7 @@ doctype_js = {
     "Asset": "public/js/asset_custom.js",
     "Employee": "public/js/employee.js",
     "User": "public/js/user_custom.js",
+    "Travel Request": "public/js/travel_request.js",
 }
 doctype_list_js = {
     "Purchase Receipt": "public/js/purchase_receipt_list.js",
@@ -284,6 +286,11 @@ override_doctype_class = {
 doc_events = {
     "Employee Checkin": {
         "validate": "sahayog.doc_events.employee_checkin.clear_offshift",
+    },
+    "Travel Request": {
+        "before_insert": "sahayog.travel.travel_request.before_insert",
+        "validate": "sahayog.travel.travel_request.validate",
+        "on_update": "sahayog.travel.travel_request.on_update",
     },
     "Employee": {
         "autoname": "sahayog.override.employee_naming.set_name_by_naming_series_override",
@@ -669,7 +676,7 @@ pdf_generator = "sahayog.utils.chrome_pdf.generate"
 fixtures = [
     # Workflow Fixtures - Employee Material Request
     {"dt": "Workflow", "filters": [
-        ["name", "in", ["Employee Material Request", "Asset state"]]]},
+        ["name", "in", ["Employee Material Request", "Asset state", "Travel Request Workflow"]]]},
     # Disciplinary case Workflow
     {
         "dt": "Workflow",
@@ -699,7 +706,10 @@ fixtures = [
                     "Assigned",
                     "In Repair",
                     "Scrapped",
-                    "Available"
+                    "Available",
+                    "Pending Reporting Manager",
+                    "Pending F&A Approval",
+                    "Pending COO Approval"
                 ]
             ]
         ]

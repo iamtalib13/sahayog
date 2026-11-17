@@ -1,5 +1,10 @@
 {
   "dependencies": {
     "frappe-charts": "^1.6.2"
+  },
+  "scripts": {
+    "postinstall": "cd frontend && npm install",
+    "dev": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build"
   }
 }
