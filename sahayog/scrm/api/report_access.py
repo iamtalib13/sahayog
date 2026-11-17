@@ -716,7 +716,7 @@ def get_fast_lead_report_info():
     import datetime
     user = frappe.session.user
     roles = frappe.get_roles(user)
-    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+    is_admin = "System Manager" in roles or user == "Administrator"
 
     info = get_report_info()
     site_private_path = os.path.abspath(frappe.get_site_path("private", "files"))
@@ -813,7 +813,7 @@ def trigger_fast_lead_report_job(force_rebuild=False):
     import shutil
     user = frappe.session.user
     roles = frappe.get_roles(user)
-    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+    is_admin = "System Manager" in roles or user == "Administrator"
 
     if not is_admin:
         frappe.throw("Only Administrators can trigger master lead report generation.")
@@ -884,7 +884,7 @@ def generate_fast_lead_report(force_rebuild=False, triggered_by=None):
         user = frappe.session.user
 
     roles = frappe.get_roles(user)
-    is_admin = "System Manager" in roles or "MIS Admin" in roles or user == "Administrator"
+    is_admin = "System Manager" in roles or user == "Administrator"
 
     if isinstance(force_rebuild, str):
         force_rebuild = force_rebuild.lower() in ["true", "1", "yes"]
