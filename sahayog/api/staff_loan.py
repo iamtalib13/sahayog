@@ -9,6 +9,15 @@ from frappe import _
 from frappe.utils import flt, getdate
 
 
+_LOAN_CATEGORIES = (
+    "Staff Loan",
+    "Salary Advance",
+    "Vehicle Loan",
+    "Home Loan",
+    "Personal Loan",
+)
+
+
 def _check_hr():
     roles = frappe.get_roles(frappe.session.user)
     if not any(r in roles for r in ["HR Manager", "Administrator"]):
@@ -16,7 +25,8 @@ def _check_hr():
 
 
 @frappe.whitelist()
-def create_staff_loan(employee, loan_amount, emi_amount, disbursed_date=None, remarks=None):
+def create_staff_loan(employee, loan_amount, emi_amount, disbursed_date=None, remarks=None,
+                      loan_category=None):
     """Create a loan entry (balance starts = full loan amount)."""
     _check_hr()
     if not frappe.db.exists("Employee", employee):
@@ -26,10 +36,14 @@ def create_staff_loan(employee, loan_amount, emi_amount, disbursed_date=None, re
     loan_amount, emi_amount = flt(loan_amount), flt(emi_amount)
     if loan_amount <= 0 or emi_amount <= 0:
         frappe.throw(_("Loan amount and EMI must be greater than zero"))
+    loan_category = (loan_category or "Staff Loan").strip()
+    if loan_category not in _LOAN_CATEGORIES:
+        frappe.throw(_("Invalid loan category: {0}").format(loan_category))
 
     loan = frappe.get_doc({
         "doctype": "Staff Loan",
         "employee": employee,
+        "loan_category": loan_category,
         "loan_amount": loan_amount,
         "emi_amount": emi_amount,
         "disbursed_date": getdate(disbursed_date) if disbursed_date else None,
@@ -43,7 +57,7 @@ def create_staff_loan(employee, loan_amount, emi_amount, disbursed_date=None, re
 
 
 @frappe.whitelist()
-def get_staff_loans(employee=None, status=None):
+def get_staff_loans(employee=None, status=None, loan_category=None, search=None):
     """Loan register list (Desk + portal use)."""
     roles = frappe.get_roles(frappe.session.user)
     if not any(r in roles for r in ["HR Manager", "HR User", "Administrator"]):
@@ -53,11 +67,30 @@ def get_staff_loans(employee=None, status=None):
         filters["employee"] = employee
     if status:
         filters["status"] = status
-    return frappe.get_all(
-        "Staff Loan", filters=filters,
-        fields=["name", "employee", "employee_name", "loan_amount", "emi_amount",
+    if loan_category:
+        if loan_category == "Staff Loan":
+            # legacy rows created before categories existed are Staff Loans
+            filters["loan_category"] = ["in", ["Staff Loan", "", None]]
+        else:
+            filters["loan_category"] = loan_category
+    search = (search or "").strip()
+    or_filters = None
+    if search:
+        like = f"%{search}%"
+        or_filters = [
+            ["employee", "like", like],
+            ["employee_name", "like", like],
+            ["name", "like", like],
+        ]
+    rows = frappe.get_all(
+        "Staff Loan", filters=filters, or_filters=or_filters,
+        fields=["name", "employee", "employee_name", "loan_category",
+                "loan_amount", "emi_amount",
                 "disbursed_date", "balance_amount", "status", "last_paid_month"],
         order_by="creation desc")
+    for row in rows:
+        row.loan_category = row.loan_category or "Staff Loan"
+    return rows
 
 
 @frappe.whitelist()
