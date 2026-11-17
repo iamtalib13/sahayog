@@ -211,6 +211,17 @@
   if (el) el.innerText = text || "-";
 }
 
+function zoneRegionLabel(val, kind) {
+  const s = String(val || "").trim();
+  if (!s) return "";
+  const u = s.toUpperCase().replace(/\s+/g, " ");
+  if (u === "HO" || u.includes("HEAD OFFICE") || u.includes("HEADOFFICE"))
+    return "Head Office";
+  const m = u.match(/(?:ZONE|REGION)\s*-?\s*(\d+)/);
+  if (m) return u.startsWith("ZONE") ? "Zone -" + m[1] : "Region-" + m[1];
+  return s;
+}
+
 fetch('/api/method/sahayog.api.employee.get_logged_in_employee')
   .then(response => response.json())
   .then(data => {
@@ -225,8 +236,8 @@ fetch('/api/method/sahayog.api.employee.get_logged_in_employee')
     setText("reports-to", emp.reports_to || "N/A");
     setText("designation", emp.designation);
     setText("branch", emp.branch);
-    setText("zone", emp.custom_zone);
-    setText("region", emp.custom_region);
+    setText("zone", zoneRegionLabel(emp.custom_zone, "zone"));
+    setText("region", zoneRegionLabel(emp.custom_region, "region"));
     setText("division", emp.custom_division);
 
     // New fields
