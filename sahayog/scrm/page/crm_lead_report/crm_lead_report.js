@@ -1142,6 +1142,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                           </div>
 
                           <div v-else>
+                               <div class="d-flex justify-content-between align-items-center mb-2 px-1">
+                                   <div class="d-flex align-items-center" style="gap: 6px; cursor: pointer;" @click="toggleSelectAll(active_popup)">
+                                       <input type="checkbox" :checked="isAllSelected(active_popup)" style="cursor: pointer; width: 14px; height: 14px; accent-color: #05a15d;">
+                                       <span style="font-size: 11.5px; font-weight: 600; color: #374151;">{{ isAllSelected(active_popup) ? 'Unselect All' : 'Select All' }}</span>
+                                   </div>
+                                   <span class="text-muted" style="font-size: 11px;">{{ (selected[active_popup] || []).length }} of {{ (filter_data[active_popup] || []).length }} selected</span>
+                               </div>
                                <input type="text" v-model="search_query[active_popup]" placeholder="Search..." class="form-control form-control-sm mb-2">
                               
                               <div class="dropdown-item" 
@@ -2353,6 +2360,21 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.search_query[key] = "";
       }
     },
+    isAllSelected(key) {
+      if (!this.selected || !this.selected[key] || !this.filter_data || !this.filter_data[key]) return false;
+      const total = this.filter_data[key].length;
+      return total > 0 && this.selected[key].length >= total;
+    },
+    toggleSelectAll(key) {
+      if (!this.selected || !this.filter_data || !this.filter_data[key]) return;
+      if (this.isAllSelected(key)) {
+        this.selected[key] = [];
+      } else {
+        this.selected[key] = this.filter_data[key].map((o) => o.value || o);
+      }
+      this.fetchVisibleBranches();
+      this.fetchEmployeePerformance();
+    },
     isSelected(key, val) {
       if (!this.selected || !this.selected[key]) return false;
       // .some use karo taaki == se compare ho sake (Number vs String)
@@ -2367,6 +2389,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         this.selected[key].push(val);
       }
       this.fetchVisibleBranches();
+      this.fetchEmployeePerformance();
     },
     getDisplayText(key) {
       let selectedItems = this.selected[key] || [];
@@ -2410,6 +2433,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             from_date: this.employee_from_date,
             to_date: this.employee_to_date,
             sol_ids: JSON.stringify(this.getActiveSolIds()),
+            zone: JSON.stringify(this.selected.zone || []),
+            region: JSON.stringify(this.selected.region || []),
+            product: JSON.stringify(this.selected.product || []),
+            source: JSON.stringify(this.selected.source || []),
           },
         });
         this.employee_performance_data = res.message || [];

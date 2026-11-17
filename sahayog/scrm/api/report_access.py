@@ -1,5 +1,6 @@
 import os
 import csv
+import json
 import frappe
 from frappe.utils import now_datetime, getdate, date_diff, format_date
 
@@ -84,9 +85,15 @@ def get_user_report_preference_record(user):
         
         # Pre-fetch SOL ID labels
         sol_ids = [str(d.sol_id) for d in doc.sol_id if d.sol_id]
-        branches = frappe.get_all("Sahayog Branch", filters={"sol_id": ["in", sol_ids]}, fields=["sol_id", "branch"])
-        branch_map = {str(b.sol_id): b.branch for b in branches}
-        
+        if not sol_ids and (doc.get("all_regions") or user == "Administrator"):
+            branches = frappe.get_all("Sahayog Branch", fields=["sol_id", "branch"], order_by="sol_id asc")
+            branch_map = {str(b.sol_id): b.branch for b in branches}
+            sol_id_options = [{"value": str(b.sol_id), "label": f"{b.sol_id} - {b.branch}"} for b in branches]
+        else:
+            branches = frappe.get_all("Sahayog Branch", filters={"sol_id": ["in", sol_ids]}, fields=["sol_id", "branch"])
+            branch_map = {str(b.sol_id): b.branch for b in branches}
+            sol_id_options = [{"value": s, "label": f"{s} - {branch_map.get(s, 'Unknown')}"} for s in sol_ids]
+
         # Pre-fetch Product labels
         product_codes = [d.product for d in doc.product]
         products = frappe.get_all("Product", filters={"name": ["in", product_codes]}, fields=["name", "product_name"])
@@ -94,11 +101,12 @@ def get_user_report_preference_record(user):
 
         result.append({
             "user": doc.user,
+            "all_regions": bool(doc.get("all_regions")),
             "product": [{"value": p, "label": f"{p} - {product_map.get(p, 'Unknown')}"} for p in product_codes],
             "source": [d.source for d in doc.source],
             "zone": [d.zone for d in doc.zone],
             "region": [d.region for d in doc.region],
-            "sol_id": [{"value": s, "label": f"{s} - {branch_map.get(s, 'Unknown')}"} for s in sol_ids],
+            "sol_id": sol_id_options,
         })
     return result
 
@@ -160,19 +168,55 @@ def get_base_filtered_leads(from_date, to_date, user, ui_filters=None):
             sol_ids_pref = {str(x.get("value")) for x in p.get("sol_id", [])}
 
     # Standardize UI filters
+    # If a filter is explicitly passed from UI as an empty list (i.e. all items unselected),
+    # the user explicitly wanted NO records for that filter. We flag explicit empty filters.
+    explicit_empty = False
+
     if "product" in ui_filters:
-        products_pref = {norm(x) for x in ui_filters.get("product", [])}
+        ui_prods = {norm(x) for x in ui_filters.get("product", []) if x}
+        if ui_filters.get("product") is not None and len(ui_filters.get("product", [])) == 0 and len(ui_prods) == 0 and has_pref:
+            pass # Product left as All if not selected
+        elif ui_prods:
+            products_pref = products_pref.intersection(ui_prods) if products_pref else ui_prods
+        elif "product" in ui_filters and isinstance(ui_filters["product"], list) and len(ui_filters["product"]) == 0:
+            products_pref = set()
+
     if "source" in ui_filters:
-        sources_pref = {norm(x) for x in ui_filters.get("source", [])}
+        ui_sources = {norm(x) for x in ui_filters.get("source", []) if x}
+        if ui_sources:
+            sources_pref = sources_pref.intersection(ui_sources) if sources_pref else ui_sources
+
     if "zone" in ui_filters:
-        ui_zones = {norm(x) for x in ui_filters.get("zone", [])}
-        zones_pref = zones_pref.intersection(ui_zones) if ui_zones else set()
+        ui_zones = {norm(x) for x in ui_filters.get("zone", []) if x}
+        if ui_zones:
+            zones_pref = zones_pref.intersection(ui_zones) if zones_pref else ui_zones
+        elif isinstance(ui_filters["zone"], list) and len(ui_filters["zone"]) == 0:
+            # User unselected all zones!
+            zones_pref = set()
+            explicit_empty = True
+
     if "region" in ui_filters:
-        ui_regions = {norm(x) for x in ui_filters.get("region", [])}
-        regions_pref = regions_pref.intersection(ui_regions) if ui_regions else set()
+        ui_regions = {norm(x) for x in ui_filters.get("region", []) if x}
+        if ui_regions:
+            regions_pref = regions_pref.intersection(ui_regions) if (regions_pref and not is_all_regions) else ui_regions
+        elif isinstance(ui_filters["region"], list) and len(ui_filters["region"]) == 0:
+            # User unselected all regions!
+            regions_pref = set()
+            explicit_empty = True
+
     if "sol_id" in ui_filters:
-        ui_sols = {str(x) for x in ui_filters.get("sol_id", [])}
-        sol_ids_pref = sol_ids_pref.intersection(ui_sols) if ui_sols else set()
+        raw_sols = ui_filters.get("sol_id", [])
+        ui_sols = {str(x.get("value") if isinstance(x, dict) else x) for x in raw_sols if x}
+        if ui_sols:
+            sol_ids_pref = sol_ids_pref.intersection(ui_sols) if sol_ids_pref else ui_sols
+        elif isinstance(raw_sols, list) and len(raw_sols) == 0:
+            # User unselected all branches!
+            sol_ids_pref = set()
+            explicit_empty = True
+
+    # If any mandatory structural filter was explicitly unselected to 0, return 0 records
+    if explicit_empty:
+        return [], {}, {}, {}
 
     # ---------- Build Query Conditions ----------
     conditions = [
@@ -313,19 +357,29 @@ def validate_date_range(from_date, to_date):
     return f, t
 
 @frappe.whitelist()
-def get_employee_performance_data(from_date, to_date, sol_ids=None):
+def get_employee_performance_data(from_date, to_date, sol_ids=None, zone=None, region=None, product=None, source=None):
     try:
         user = frappe.session.user
         active_sol_ids = frappe.parse_json(sol_ids) if sol_ids else None
+        active_zones = frappe.parse_json(zone) if zone else None
+        active_regions = frappe.parse_json(region) if region else None
+        active_prods = frappe.parse_json(product) if product else None
+        active_sources = frappe.parse_json(source) if source else None
+
+        ui_filters = {}
+        if active_sol_ids: ui_filters["sol_id"] = active_sol_ids
+        if active_zones: ui_filters["zone"] = active_zones
+        if active_regions: ui_filters["region"] = active_regions
+        if active_prods: ui_filters["product"] = active_prods
+        if active_sources: ui_filters["source"] = active_sources
 
         # Redis cache check (120s TTL)
-        sol_ids_key = ",".join(sorted(active_sol_ids)) if active_sol_ids else ""
-        _cache_key = f"emp_perf:{user}:{from_date}:{to_date}:{sol_ids_key}"
+        filters_str = json.dumps(ui_filters, sort_keys=True)
+        _cache_key = f"emp_perf:{user}:{from_date}:{to_date}:{frappe.generate_hash(filters_str, length=10)}"
         _cached = frappe.cache().get_value(_cache_key)
         if _cached is not None:
             return _cached
 
-        ui_filters = {"sol_id": active_sol_ids} if active_sol_ids else {}
         final_leads, _, _, _ = get_base_filtered_leads(from_date, to_date, user, ui_filters)
 
         employee_stats = {}
@@ -1227,18 +1281,30 @@ def download_fast_lead_report(from_date, to_date, filters=None):
                     sol_ids_pref = {str(x.get("value") if isinstance(x, dict) else x) for x in p.get("sol_id", []) if x}
 
             if ui_filters.get("product"):
-                products_pref = {norm(x) for x in ui_filters.get("product", []) if x}
+                ui_prods = {norm(x) for x in ui_filters.get("product", []) if x}
+                products_pref = products_pref.intersection(ui_prods) if products_pref else ui_prods
             if ui_filters.get("source"):
-                sources_pref = {norm(x) for x in ui_filters.get("source", []) if x}
-            if ui_filters.get("zone"):
+                ui_sources = {norm(x) for x in ui_filters.get("source", []) if x}
+                sources_pref = sources_pref.intersection(ui_sources) if sources_pref else ui_sources
+            if "zone" in ui_filters:
                 ui_zones = {norm(x) for x in ui_filters.get("zone", []) if x}
-                zones_pref = zones_pref.intersection(ui_zones) if zones_pref else ui_zones
-            if ui_filters.get("region"):
+                if ui_zones:
+                    zones_pref = zones_pref.intersection(ui_zones) if zones_pref else ui_zones
+                elif isinstance(ui_filters["zone"], list) and len(ui_filters["zone"]) == 0:
+                    zones_pref = {"__NO_MATCH__"}
+            if "region" in ui_filters:
                 ui_regions = {norm(x) for x in ui_filters.get("region", []) if x}
-                regions_pref = regions_pref.intersection(ui_regions) if regions_pref else ui_regions
-            if ui_filters.get("sol_id"):
-                ui_sols = {str(x.get("value") if isinstance(x, dict) else x) for x in ui_filters.get("sol_id", []) if x}
-                sol_ids_pref = sol_ids_pref.intersection(ui_sols) if sol_ids_pref else ui_sols
+                if ui_regions:
+                    regions_pref = regions_pref.intersection(ui_regions) if (regions_pref and not is_all_regions) else ui_regions
+                elif isinstance(ui_filters["region"], list) and len(ui_filters["region"]) == 0:
+                    regions_pref = {"__NO_MATCH__"}
+            if "sol_id" in ui_filters:
+                raw_sols = ui_filters.get("sol_id", [])
+                ui_sols = {str(x.get("value") if isinstance(x, dict) else x) for x in raw_sols if x}
+                if ui_sols:
+                    sol_ids_pref = sol_ids_pref.intersection(ui_sols) if sol_ids_pref else ui_sols
+                elif isinstance(raw_sols, list) and len(raw_sols) == 0:
+                    sol_ids_pref = {"__NO_MATCH__"}
 
             def parse_csv_date(date_str):
                 if not date_str:
