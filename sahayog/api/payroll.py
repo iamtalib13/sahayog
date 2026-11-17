@@ -738,7 +738,7 @@ def upload_salary_sheet(payroll_month, rows):
     if run.status not in ("Draft", "Generated"):
         frappe.throw(_("Payroll is {0} and locked. Changes need an authorized adjustment.").format(run.status))
 
-    PAYHEADS = ("monthly_gross", "gross_salary", "medical_deduction", "staff_loan_emi",
+    PAYHEADS = ("present_days", "lop_days", "monthly_gross", "gross_salary", "medical_deduction", "staff_loan_emi",
                 "vehicle_deduction", "salary_advance", "vl_loan",
                 "other_deduction", "arrears_days")
     results = {"updated": 0, "failed": 0, "errors": [], "rows": []}
@@ -762,17 +762,28 @@ def upload_salary_sheet(payroll_month, rows):
             changed = []
             for head in PAYHEADS:
                 if row.get(head) not in (None, ""):
-                    reg.set(head, flt(row.get(head)))
-                    changed.append(head)
-            if row.get("other_reason") not in (None, ""):
+                    new_val = flt(row.get(head))
+                    if not _values_match(reg.get(head), new_val):
+                        reg.set(head, new_val)
+                        changed.append(head)
+            if row.get("other_reason") not in (None, "") and row.get("other_reason") != (reg.other_deduction_reason or ""):
                 reg.other_deduction_reason = row.get("other_reason")
                 changed.append("other_deduction_reason")
             if not changed:
                 results["rows"].append({"row": i, "employee_code": code, "status": "Skipped (No Changes)"})
                 continue
+            # If only Present edited, derive LOP (Present + LOP = cycle days)
+            if "present_days" in changed and "lop_days" not in changed:
+                _cs, _ce = _payroll_attendance_cycle(payroll_month)
+                reg.lop_days = max(0, (_ce - _cs).days + 1 - flt(reg.present_days))
+                changed.append("lop_days")
+            if "lop_days" in changed and "present_days" not in changed:
+                _cs, _ce = _payroll_attendance_cycle(payroll_month)
+                reg.present_days = max(0, (_ce - _cs).days + 1 - flt(reg.lop_days))
+                changed.append("present_days")
             # Recompute pro-rata gross from monthly/LOP/arrears, then save (recalcs totals).
             # Direct gross_salary in the sheet always wins (HR override).
-            if "gross_salary" not in changed and ("monthly_gross" in changed or "arrears_days" in changed):
+            if "gross_salary" not in changed and ("monthly_gross" in changed or "lop_days" in changed or "arrears_days" in changed):
                 _cs, _ce = _payroll_attendance_cycle(payroll_month)
                 _cycle_days = (_ce - _cs).days + 1
                 per_day = flt(reg.monthly_gross) / _cycle_days
@@ -803,7 +814,8 @@ def upload_salary_sheet(payroll_month, rows):
 
 
 PT_TEMPLATE_COLUMNS = [
-    "employee_code", "monthly_gross", "gross_salary", "medical_deduction", "staff_loan_emi",
+    "employee_code", "present_days", "lop_days", "monthly_gross", "gross_salary",
+    "medical_deduction", "staff_loan_emi",
     "vehicle_deduction", "salary_advance", "vl_loan",
     "other_deduction", "other_reason", "arrears_days",
 ]
