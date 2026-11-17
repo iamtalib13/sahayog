@@ -220,11 +220,11 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
 
         // Add Download Report button in Form View (optional)
-        if (!frm.is_new()) {
-            frm.add_custom_button(__('Download as Excel'), function () {
-                download_current_record(frm);
-            }, __('Reports'));
-        }
+        // if (!frm.is_new()) {
+        //     frm.add_custom_button(__('Download as Excel'), function () {
+        //         download_current_record(frm);
+        //     }, __('Reports'));
+        // }
 
 
         // Define the fields you want to check
