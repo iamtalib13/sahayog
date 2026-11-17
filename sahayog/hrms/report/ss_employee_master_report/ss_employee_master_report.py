@@ -14,6 +14,7 @@ def execute(filters=None):
         {"label": "Department",           "fieldname": "department",             "fieldtype": "Data", "width": 140},
         {"label": "Designation",          "fieldname": "designation",            "fieldtype": "Data", "width": 140},
         {"label": "Employment Type",      "fieldname": "employment_type",        "fieldtype": "Data", "width": 130},
+        {"label": "Monthly Gross Salary", "fieldname": "ctc",                    "fieldtype": "Currency", "width": 140},
         {"label": "Business Unit",        "fieldname": "custom_division",        "fieldtype": "Data", "width": 130},
         {"label": "State",                "fieldname": "state",                  "fieldtype": "Data", "width": 110},
         {"label": "Zone",                 "fieldname": "custom_zone",            "fieldtype": "Data", "width": 100},
@@ -93,7 +94,7 @@ def execute(filters=None):
         SELECT
             e.employee_number, e.employee_name, e.gender, e.date_of_birth, e.date_of_joining,
             e.final_confirmation_date, e.department, e.designation,
-            e.employment_type, e.custom_division,
+            e.employment_type, e.custom_division, e.ctc,
             sb.state,
             e.custom_zone, e.custom_region, e.custom_district,
             e.branch, e.sahayog_branch, e.sol_id,
