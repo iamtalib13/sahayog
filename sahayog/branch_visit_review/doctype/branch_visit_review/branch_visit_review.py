@@ -152,3 +152,75 @@ class BranchVisitReview(Document):
 
 	def is_branch_head_user(self) -> bool:
 		return can_sign_branch_head(self.branch)
+
+	def on_update(self):
+		self.create_sahayog_tickets_for_actions()
+
+	def create_sahayog_tickets_for_actions(self):
+		if not frappe.db.exists("DocType", "Sahayog Ticket"):
+			return
+		if not self.action_items:
+			return
+
+		for row in self.action_items:
+			if not row.action_item or row.sahayog_ticket:
+				continue
+			if not row.responsible:
+				continue
+
+			try:
+				employee = self._resolve_employee(row.responsible)
+				if not employee:
+					continue
+
+				ticket_name = self._make_sahayog_ticket(row, employee)
+				if ticket_name:
+					frappe.db.set_value(row.doctype, row.name, "sahayog_ticket", ticket_name)
+					row.sahayog_ticket = ticket_name
+			except Exception:
+				frappe.log_error(
+					title="Sahayog Ticket creation failed for Branch Visit Review action item",
+					message=frappe.get_traceback(),
+				)
+
+	def _resolve_employee(self, responsible):
+		if frappe.db.exists("Employee", responsible):
+			return responsible
+		# try to extract id if stored as "Name (EMP-001)"
+		if "(" in responsible and responsible.endswith(")"):
+			candidate = responsible.rsplit("(", 1)[-1][:-1].strip()
+			if candidate and frappe.db.exists("Employee", candidate):
+				return candidate
+		return frappe.db.get_value("Employee", {"employee_name": responsible}, "name")
+
+	def _make_sahayog_ticket(self, row, employee):
+		session_employee = frappe.db.get_value(
+			"Employee", {"user_id": frappe.session.user}, "name"
+		)
+		responsible_user = frappe.db.get_value("Employee", employee, "user_id")
+
+		dept_name = "Admin"
+		ticket_type = "Branch Visit Review Queary"
+
+		desc = row.action_item or ""
+		desc += f"<br><br><b>Source:</b> Branch Visit Review {self.name}"
+		if self.branch:
+			desc += f"<br><b>Branch:</b> {self.branch}"
+
+		priority_map = {"High": "High", "Medium": "Medium", "Low": "Normal"}
+		priority = priority_map.get((row.priority or "").strip(), "Normal")
+
+		ticket = frappe.get_doc(
+			{
+				"doctype": "Sahayog Ticket",
+				"employee_id": session_employee,
+				"assigned_to": responsible_user or None,
+				"dept_name": dept_name,
+				"ticket_type": ticket_type,
+				"description": desc,
+				"priority": priority,
+				"status": "Open",
+			}
+		)
+		ticket.insert(ignore_permissions=True)
+		return ticket.name

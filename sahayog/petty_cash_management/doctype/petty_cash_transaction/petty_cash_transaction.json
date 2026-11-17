@@ -35,6 +35,7 @@
   "finacle_tran_id",
   "finacle_tran_date",
   "finacle_tran_particular",
+  "exclude_from_ttum",
   "expense_items_section",
   "items",
   "approval_section",
@@ -42,7 +43,6 @@
   "posted_to_finacle",
   "finacle_transaction_id",
   "remarks",
-  "exclude_from_ttum",
   "amended_from",
   "column_break_limits",
   "wallet_effect_applied",
@@ -152,10 +152,12 @@
   },
   {
    "default": "0",
+   "depends_on": "eval: !frappe.user_roles.includes('Branch User')",
    "description": "Exclude this transaction from bulk TTUM (TXT) downloads.",
    "fieldname": "exclude_from_ttum",
    "fieldtype": "Check",
-   "label": "Exclude from TTUM"
+   "label": "Exclude from TTUM",
+   "read_only": 1
   },
   {
    "fieldname": "amended_from",
@@ -334,7 +336,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-05 15:07:42.196858",
+ "modified": "2026-11-16 17:22:21.827643",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",

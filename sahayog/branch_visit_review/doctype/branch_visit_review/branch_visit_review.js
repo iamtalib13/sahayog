@@ -1,6 +1,38 @@
 // Copyright (c) 2026, Developer Team and contributors
 // For license information, please see license.txt
 
+function log_matching_branch_visit_template(frm) {
+	if (!frm.doc.visited_by) return;
+
+	frappe.db.get_value("Employee", frm.doc.visited_by, "department").then((r) => {
+		const dept = r && r.message && r.message.department;
+		if (!dept) return;
+
+		const filters = { department: dept };
+		if (frm.doc.branch_is === "Existing") {
+			filters.for_new = 0;
+		} else if (frm.doc.branch_is === "New") {
+			filters.for_new = 1;
+		}
+
+		frappe.db.get_list("Branch Visit Template", {
+			fields: ["name", "for_new"],
+			filters,
+			limit_page_length: 1,
+		}).then((res) => {
+			const match = res && res[0];
+			if (match) {
+				frm.set_value("template", match.name);
+				if (frm.doc.template === match.name) {
+					render_checklist(frm, frm.doc.template);
+				}
+			} else if (frm.doc.template) {
+				render_checklist(frm, frm.doc.template);
+			}
+		});
+	});
+}
+
 frappe.ui.form.on("Branch Visit Review", {
 	refresh(frm) {
 		if (frappe.session.user !== "Administrator") {
@@ -105,6 +137,13 @@ frappe.ui.form.on("Branch Visit Review", {
 	visited_by(frm) {
 		// set_visit_details_access(frm);
 		set_visitor_signoff_access(frm);
+		log_matching_branch_visit_template(frm);
+	},
+	branch_is(frm) {
+		log_matching_branch_visit_template(frm);
+		if (frm.doc.template) {
+			render_checklist(frm, frm.doc.template);
+		}
 	},
 	overall_assessment(frm) {
 		update_overall_badge(frm);
@@ -331,6 +370,12 @@ function open_action_item_dialog(frm, idx, item) {
 	modal_html += "<div class='bvr-modal-field'><label>Status</label><select class='form-control bvr-modal-input' data-field='status'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select></div>";
 	modal_html += "</div>";
 	modal_html += "<div class='bvr-modal-field'><label>Resolution Notes</label><textarea class='form-control bvr-modal-input' data-field='resolution_notes' rows='3' placeholder='Enter notes'>" + bvr_escape(item.resolution_notes) + "</textarea></div>";
+	if (item.sahayog_ticket) {
+		let tlink = frappe.utils.get_form_link
+			? frappe.utils.get_form_link("Sahayog Ticket", item.sahayog_ticket)
+			: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
+		modal_html += "<div class='bvr-modal-field'><label>Sahayog Ticket</label><div><a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a></div></div>";
+	}
 	modal_html += "</div>";
 	modal_html += "<div class='bvr-modal-footer'><button class='bvr-modal-btn bvr-modal-btn-cancel' type='button'>Cancel</button><button class='bvr-modal-btn bvr-modal-btn-save' type='button'>Save</button></div>";
 	modal_html += "</div></div>";
@@ -443,64 +488,105 @@ function render_checklist(frm, template) {
 				callback: function (r) {
 					let all_items = r.message || [];
 					let checklist_html = "";
+					let branch_checklist_html = "";
+
+					let show_branch_tab_flag = (frm.doc.branch_is === "Existing" && frm.doc.visited_by);
+
+					function build_checklist_section(items_subset, is_branch_tab) {
+						let html = "";
+						if (!items_subset || items_subset.length === 0) return html;
+						let grouped = {};
+						items_subset.forEach(function (row) {
+							let cat = row.category || "Uncategorized";
+							if (!grouped[cat]) grouped[cat] = [];
+							grouped[cat].push(row);
+						});
+						let sr = 1;
+						Object.keys(grouped).forEach(function (cat) {
+							let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
+							html += "<div class='category-header'><h5>" + cat + "</h5><button class='bvr-btn-add add-category-row' data-category='" + safe_cat + "' title='Add new row'>+</button></div>";
+							let thead = "<thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th>";
+							if (is_branch_tab) {
+								thead += "<th style='width:100px;'>QTY</th><th style='width:140px;'>Condition</th>";
+							}
+							thead += "<th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead>";
+							html += "<table class='category-table' data-category='" + safe_cat + "'>" + thead + "<tbody>";
+							grouped[cat].forEach(function (row) {
+								let i = row._idx;
+								let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
+								let saved_val = saved ? saved.response : "";
+								let response_html = "";
+								if (row.response_type === "Rating (1 to 5)") {
+									response_html = '<span class="rating-stars" data-parameter="' + i + '">';
+									for (let s = 1; s <= 5; s++) {
+										let color = (saved_val && s <= parseInt(saved_val)) ? "gold" : "gray";
+										response_html += '<span class="star" data-value="' + s + '" style="cursor:pointer;font-size:20px;color:' + color + ';">&#9733;</span>';
+									}
+									response_html += '</span>';
+								} else if (row.response_type === "Yes / No") {
+									let yes_checked = saved_val === "Yes" ? "checked" : "";
+									let no_checked = saved_val === "No" ? "checked" : "";
+									response_html = '<span class="yesno-group" data-parameter="' + i + '">';
+									response_html += '<label style="margin-right:10px;"><input type="radio" name="yesno_' + i + '" value="Yes" ' + yes_checked + '> Yes</label>';
+									response_html += '<label><input type="radio" name="yesno_' + i + '" value="No" ' + no_checked + '> No</label>';
+									response_html += '</span>';
+								} else if (row.response_type === "Multiple Select") {
+									let ms_opts = ["Good", "Excellent", "Average", "Needs Improvement"];
+									response_html = '<select class="form-control multiple-select-input" data-parameter="' + i + '">';
+									response_html += '<option value="">Select Option</option>';
+									ms_opts.forEach(function (opt) {
+										let selected = (saved_val && saved_val.toLowerCase() === opt.toLowerCase()) ? "selected" : "";
+										response_html += '<option value="' + opt + '" ' + selected + '>' + opt + '</option>';
+									});
+									response_html += '</select>';
+								} else {
+									response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
+								}
+								let saved_review = saved ? (saved.review || saved.observation || "") : "";
+								let review_cell_html = "";
+								if (saved_review) {
+									review_cell_html = '<input type="text" class="form-control review-input" data-parameter="' + i + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">';
+								} else {
+									review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + i + '" title="Add review">+</button>';
+								}
+								html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td>";
+								if (is_branch_tab) {
+									let saved_qty = saved ? (saved.qty || "") : "";
+									let saved_cond = saved ? (saved.condition || "") : "";
+									let cond_opts = ["", "Best", "Better", "Good", "Average"];
+									let cond_html = '<select class="form-control branch-condition-select" data-parameter="' + i + '">';
+									cond_html += '<option value="">Select</option>';
+									["Best", "Better", "Good", "Average"].forEach(function (opt) {
+										cond_html += '<option value="' + opt + '"' + (saved_cond === opt ? " selected" : "") + ">" + opt + "</option>";
+									});
+									cond_html += "</select>";
+									html += "<td><input type='number' class='form-control branch-qty-input' data-parameter='" + i + "' placeholder='QTY' min='0' step='1' value='" + bvr_escape(saved_qty) + "'></td>";
+									html += "<td>" + cond_html + "</td>";
+								}
+								html += "<td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
+								sr++;
+							});
+							html += "</tbody></table>";
+						});
+						return html;
+					}
 
 			if (all_items.length > 0) {
-				let grouped = {};
-				all_items.forEach(function (row, i) {
-					let cat = row.category || "Uncategorized";
-					if (!grouped[cat]) grouped[cat] = [];
-					row._idx = i;
-					grouped[cat].push(row);
+				all_items.forEach(function (row, i) { row._idx = i; });
+
+				let visitor_items = [];
+				let branch_items = [];
+				all_items.forEach(function (row) {
+					let f = (row.for || "").toString().trim().toLowerCase();
+					if (show_branch_tab_flag && f.indexOf("branch") !== -1) {
+						branch_items.push(row);
+					} else {
+						visitor_items.push(row);
+					}
 				});
 
-				let sr = 1;
-				Object.keys(grouped).forEach(function (cat) {
-					let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
-					checklist_html += "<div class='category-header'><h5>" + cat + "</h5><button class='bvr-btn-add add-category-row' data-category='" + safe_cat + "' title='Add new row'>+</button></div>";
-					checklist_html += "<table class='category-table' data-category='" + safe_cat + "'><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
-					grouped[cat].forEach(function (row) {
-						let i = row._idx;
-						let saved = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === row.parameter_name; }) : null;
-						let saved_val = saved ? saved.response : "";
-						let response_html = "";
-						if (row.response_type === "Rating (1 to 5)") {
-							response_html = '<span class="rating-stars" data-parameter="' + i + '">';
-							for (let s = 1; s <= 5; s++) {
-								let color = (saved_val && s <= parseInt(saved_val)) ? "gold" : "gray";
-								response_html += '<span class="star" data-value="' + s + '" style="cursor:pointer;font-size:20px;color:' + color + ';">&#9733;</span>';
-							}
-							response_html += '</span>';
-						} else if (row.response_type === "Yes / No") {
-							let yes_checked = saved_val === "Yes" ? "checked" : "";
-							let no_checked = saved_val === "No" ? "checked" : "";
-							response_html = '<span class="yesno-group" data-parameter="' + i + '">';
-							response_html += '<label style="margin-right:10px;"><input type="radio" name="yesno_' + i + '" value="Yes" ' + yes_checked + '> Yes</label>';
-							response_html += '<label><input type="radio" name="yesno_' + i + '" value="No" ' + no_checked + '> No</label>';
-							response_html += '</span>';
-						} else if (row.response_type === "Multiple Select") {
-							let ms_opts = ["Good", "Excellent", "Average", "Needs Improvement"];
-							response_html = '<select class="form-control multiple-select-input" data-parameter="' + i + '">';
-							response_html += '<option value="">Select Option</option>';
-							ms_opts.forEach(function (opt) {
-								let selected = (saved_val && saved_val.toLowerCase() === opt.toLowerCase()) ? "selected" : "";
-								response_html += '<option value="' + opt + '" ' + selected + '>' + opt + '</option>';
-							});
-							response_html += '</select>';
-						} else {
-							response_html = '<input type="text" class="form-control observation-input" data-parameter="' + i + '" placeholder="Enter the text" value="' + (saved_val || "") + '">';
-						}
-						let saved_review = saved ? (saved.review || saved.observation || "") : "";
-						let review_cell_html = "";
-						if (saved_review) {
-							review_cell_html = '<input type="text" class="form-control review-input" data-parameter="' + i + '" placeholder="Enter review" value="' + bvr_escape(saved_review) + '">';
-						} else {
-							review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + i + '" title="Add review">+</button>';
-						}
-						checklist_html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
-						sr++;
-					});
-					checklist_html += "</tbody></table>";
-				});
+				checklist_html = build_checklist_section(visitor_items, false);
+				branch_checklist_html = build_checklist_section(branch_items, true);
 
 				if (frm.doc.responses && frm.doc.responses.length > 0) {
 					let custom_items = [];
@@ -509,6 +595,8 @@ function render_checklist(frm, template) {
 						if (!exists) custom_items.push(resp);
 					});
 					if (custom_items.length > 0) {
+						// append additional/custom items to visitor checklist
+						let sr = visitor_items.length + 1;
 						checklist_html += "<div class='category-header'><h5>Additional Items</h5></div>";
 						checklist_html += "<table><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
 						custom_items.forEach(function (resp) {
@@ -530,7 +618,7 @@ function render_checklist(frm, template) {
 				}
 			}
 
-			let action_html = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th><th style='width:130px;'>Target Date</th><th style='width:110px;'>Status</th><th>Resolution Notes</th><th style='width:40px;'></th></tr></thead><tbody>";
+			let action_html = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th><th style='width:130px;'>Target Date</th><th style='width:110px;'>Status</th><th>Resolution Notes</th><th style='width:140px;'>Ticket</th><th style='width:40px;'></th></tr></thead><tbody>";
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
 					let owner_display = item.responsible || "";
@@ -539,12 +627,19 @@ function render_checklist(frm, template) {
 						if (emp && emp.employee_name) owner_display = emp.employee_name + "(" + emp.name + ")";
 					}
 					let action_display = item.action_item || "<span style='color:#8a93a5;'>Click to add details&hellip;</span>";
-					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.responsible || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
+					let ticket_display = "";
+					if (item.sahayog_ticket) {
+						let tlink = frappe.utils.get_form_link
+							? frappe.utils.get_form_link("Sahayog Ticket", item.sahayog_ticket)
+							: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
+						ticket_display = "<a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a>";
+					}
+					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.responsible || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td>" + ticket_display + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
 			action_html += "<tr class='action-row-add' title='Click to add'><td>" + action_count + "</td>";
-			action_html += "<td colspan='6' style='color:#8a93a5;text-align:center;'>+ Click to add action item</td>";
+			action_html += "<td colspan='7' style='color:#8a93a5;text-align:center;'>+ Click to add action item</td>";
 			action_html += "<td style='text-align:center;'></td>";
 			action_html += "</tr>";
 			action_html += "</tbody></table>";
@@ -599,16 +694,40 @@ function render_checklist(frm, template) {
 				leadership: active_tab === "leadership" ? "active" : "",
 			};
 
+			let review_tab_label = "Review Checklist";
+			let show_branch_tab = (frm.doc.branch_is === "Existing" && frm.doc.visited_by);
+			if (show_branch_tab) {
+				review_tab_label = "Visiter checklist";
+			}
+
 			let tabs_html = "<div class='bvr-tabs'><div class='bvr-tab-bar'><ul class='nav nav-tabs'>";
-			tabs_html += "<li class='" + li_active.review + "'><a class='tab-review' style='cursor:pointer;'>Review Checklist</a></li>";
+			tabs_html += "<li class='" + li_active.review + "'><a class='tab-review' style='cursor:pointer;'>" + review_tab_label + "</a></li>";
+			if (show_branch_tab) {
+				tabs_html += "<li><a class='tab-branch' style='cursor:pointer;'>Branch Checklist</a></li>";
+			}
 			tabs_html += "<li class='" + li_active.action + "'><a class='tab-action' style='cursor:pointer;'>Action Items</a></li>";
 			tabs_html += "<li class='" + li_active.leadership + "'><a class='tab-leadership' style='cursor:pointer;'>Leadership Assessment</a></li>";
 			tabs_html += "</ul>" + overall_html + "</div>";
 			tabs_html += "<div class='tab-content-review' style='display:" + (active_tab === "review" ? "block" : "none") + ";'>" + checklist_html + "</div>";
+			if (show_branch_tab) {
+				tabs_html += "<div class='tab-content-branch' style='display:none;'>" + (branch_checklist_html || "<div style='padding:12px;color:#6c7680;'>No items</div>") + "</div>";
+			}
 			tabs_html += "<div class='tab-content-action' style='display:" + (active_tab === "action" ? "block" : "none") + ";'>" + action_html + "</div>";
 			tabs_html += "<div class='tab-content-leadership' style='display:" + (active_tab === "leadership" ? "block" : "none") + ";'>" + leadership_html + "</div></div>";
 
 			frm.fields_dict.checklist.$wrapper.html(tabs_html);
+
+			if (show_branch_tab) {
+				// verify visited_by has department; if not, revert to default
+				frappe.db.get_value("Employee", frm.doc.visited_by, "department").then((d) => {
+					const has_dept = d && d.message && d.message.department;
+					if (!has_dept) {
+						frm.fields_dict.checklist.$wrapper.find(".tab-branch").parent().remove();
+						frm.fields_dict.checklist.$wrapper.find(".tab-content-branch").remove();
+						frm.fields_dict.checklist.$wrapper.find(".tab-review").text("Review Checklist");
+					}
+				});
+			}
 
 			let style = `<style>
 				.bvr-tabs .bvr-tab-bar { display: flex; align-items: center; justify-content: space-between; width: 100%; box-sizing: border-box; border-bottom: 2px solid #e2e8f0; margin-bottom: 16px; background: #f8f9fb; border-radius: 8px 8px 0 0; padding: 4px 8px 0 4px; }
@@ -707,6 +826,7 @@ function render_checklist(frm, template) {
 
 			let tab_map = {
 				".tab-review": ".tab-content-review",
+				".tab-branch": ".tab-content-branch",
 				".tab-action": ".tab-content-action",
 				".tab-leadership": ".tab-content-leadership",
 			};
@@ -789,7 +909,7 @@ function render_checklist(frm, template) {
 			});
 
 			frm.fields_dict.checklist.$wrapper.off("click.bvr-edit").on("click.bvr-edit", ".action-row-edit", function (e) {
-				if ($(e.target).closest(".employee-search-wrapper, .bvr-btn-remove").length) {
+				if ($(e.target).closest(".employee-search-wrapper, .bvr-btn-remove, a").length) {
 					return;
 				}
 				let idx = parseInt($(this).attr("data-idx"), 10);
@@ -926,6 +1046,49 @@ function render_checklist(frm, template) {
 						category: item.category,
 						parameter_name: item.parameter_name,
 						response: val,
+					});
+				}
+				frm.refresh_field("responses");
+			});
+
+			frm.fields_dict.checklist.$wrapper.off("blur.bvr-qty", ".branch-qty-input").on("blur.bvr-qty", ".branch-qty-input", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				if (val !== "") {
+					val = parseInt(val, 10);
+					if (isNaN(val) || val < 0) val = 0;
+					$this.val(val);
+				}
+				let item = template_items[param_idx];
+				if (!item) return;
+				let existing = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; }) : null;
+				if (existing) {
+					existing.qty = val;
+				} else {
+					frm.add_child("responses", {
+						category: item.category,
+						parameter_name: item.parameter_name,
+						qty: val,
+					});
+				}
+				frm.refresh_field("responses");
+			});
+
+			frm.fields_dict.checklist.$wrapper.off("change.bvr-cond", ".branch-condition-select").on("change.bvr-cond", ".branch-condition-select", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				let item = template_items[param_idx];
+				if (!item) return;
+				let existing = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === item.parameter_name; }) : null;
+				if (existing) {
+					existing.condition = val;
+				} else {
+					frm.add_child("responses", {
+						category: item.category,
+						parameter_name: item.parameter_name,
+						condition: val,
 					});
 				}
 				frm.refresh_field("responses");

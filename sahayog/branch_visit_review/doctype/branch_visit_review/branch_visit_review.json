@@ -13,6 +13,7 @@
   "district",
   "region",
   "zone",
+  "branch_is",
   "column_break_visit",
   "visit_date",
   "visited_by",
@@ -233,12 +234,18 @@
   {
    "fieldname": "column_break_ciyp",
    "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "branch_is",
+   "fieldtype": "Select",
+   "label": "Branch is",
+   "options": "Existing\nNew"
   }
  ],
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-10-08 15:52:41.798812",
+ "modified": "2026-11-12 11:40:05.315400",
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
  "name": "Branch Visit Review",

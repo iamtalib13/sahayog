@@ -13,6 +13,7 @@ frappe.ui.form.on("Lead", {
       addAssignButton(frm); // ✅ Only show when form is not new
       customizeButtons(frm);
       addAppointmentButton(frm);
+      addRemarksHistoryButton(frm);
       setIntro(frm); // Display assigned employee details
     }
 
@@ -530,7 +531,82 @@ frappe.ui.form.on("Lead Product", {
   }
 });
 
-// Show BM Lead Verification section only to users with manager access
+// Add Remarks History button for Admin and Operations Support Manager
+function addRemarksHistoryButton(frm) {
+  const user_roles = frappe.user_roles || [];
+  const is_admin = frappe.session.user === "Administrator";
+  const can_view_history =
+    is_admin ||
+    user_roles.includes("System Manager") ||
+    user_roles.includes("Operations Support Manager");
+
+  if (!can_view_history) return;
+
+  frm.add_custom_button(__("Remarks History"), function () {
+    const d = new frappe.ui.Dialog({
+      title: __("Remarks History - {0}", [frm.doc.name]),
+      size: "large",
+      fields: [
+        {
+          fieldtype: "HTML",
+          fieldname: "remarks_html",
+        },
+      ],
+      primary_action_label: __("Close"),
+      primary_action: () => d.hide(),
+    });
+
+    const remarks_data = [
+      { status: "Lead", label: __("Lead Remark"), value: frm.doc.custom_remark_lead, color: "#2563eb", bg: "#eff6ff" },
+      { status: "Follow Up", label: __("Follow Up Remark"), value: frm.doc.custom_remark_follow_up, color: "#d97706", bg: "#fffbeb" },
+      { status: "Converted", label: __("Converted Remark"), value: frm.doc.custom_remark_converted, color: "#16a34a", bg: "#f0fdf4" },
+      { status: "Not Interested", label: __("Not Interested Remark"), value: frm.doc.custom_remark_not_interested, color: "#dc2626", bg: "#fef2f2" },
+    ];
+
+    let html = `
+      <div style="display: flex; flex-direction: column; gap: 12px; padding: 4px;">
+        <div style="font-size: 13px; color: #6b7280; margin-bottom: 4px;">
+          Current Status: <b style="color: #111827;">${frm.doc.status || "-"}</b>
+        </div>
+    `;
+
+    remarks_data.forEach((item) => {
+      const has_val = Boolean(item.value && item.value.trim());
+      const val_escaped = has_val ? frappe.utils.escape_html(item.value) : "<i>No remark recorded</i>";
+
+      html += `
+        <div style="border: 1px solid #e5e7eb; border-left: 4px solid ${item.color}; border-radius: 6px; padding: 12px 14px; background: ${item.bg};">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <span style="font-weight: 700; font-size: 13px; color: ${item.color};">${item.label}</span>
+            ${
+              has_val
+                ? `<button class="btn btn-xs btn-default copy-remark-btn" data-text="${frappe.utils.escape_html(item.value)}" style="padding: 2px 8px; font-size: 11px;">
+                     📋 Copy
+                   </button>`
+                : ""
+            }
+          </div>
+          <div style="font-size: 13px; color: ${has_val ? "#1f2937" : "#9ca3af"}; white-space: pre-wrap; line-height: 1.5;">${val_escaped}</div>
+        </div>
+      `;
+    });
+
+    html += `</div>`;
+
+    d.fields_dict.remarks_html.$wrapper.html(html);
+
+    d.fields_dict.remarks_html.$wrapper.find(".copy-remark-btn").on("click", function () {
+      const text = $(this).attr("data-text");
+      navigator.clipboard.writeText(text).then(() => {
+        frappe.show_alert({ message: __("Remark copied to clipboard!"), indicator: "green" });
+      });
+    });
+
+    d.show();
+  });
+}
+
+// Show BM Lead Verification section only to authorized BM verifiers
 function toggleBMVerificationSection(frm) {
   const checkAccessAndToggle = (can_verify) => {
     frm.toggle_display("custom_verification_section", can_verify);
@@ -538,30 +614,23 @@ function toggleBMVerificationSection(frm) {
     frm.set_df_property("custom_verification_remarks", "read_only", can_verify ? 0 : 1);
   };
 
+  // Initially hide until permission check succeeds
+  checkAccessAndToggle(false);
+
   const user_roles = frappe.user_roles || [];
   const is_admin = frappe.session.user === "Administrator";
-  const is_manager_role =
+  const is_allowed_role =
     is_admin ||
     user_roles.includes("System Manager") ||
     user_roles.includes("BM Lead Verifier") ||
-    user_roles.includes("Branch Manager") ||
-    user_roles.includes("Operations Support Manager") ||
-    user_roles.includes("Sales Manager");
+    user_roles.includes("Branch Manager");
 
-  if (is_manager_role) {
+  if (is_allowed_role) {
     checkAccessAndToggle(true);
     return;
   }
 
-  // Check designation via user boot or API call
-  const designation = (frappe.boot && frappe.boot.user && frappe.boot.user.designation) || "";
-  const desig_lower = designation.toLowerCase();
-  if (desig_lower.includes("manager") || desig_lower.includes("bm")) {
-    checkAccessAndToggle(true);
-    return;
-  }
-
-  // Fallback to backend verification helper
+  // Strict designation check via backend permission helper
   frappe.call({
     method: "sahayog.permissions.has_bm_verification_permission",
     callback: function (r) {
