@@ -9259,6 +9259,8 @@
 
       const SALARY_UPLOAD_COLUMNS = [
         "employee_code",
+        "present_days",
+        "lop_days",
         "monthly_gross",
         "gross_salary",
         "medical_deduction",
@@ -9852,10 +9854,12 @@
 
             <div style="text-align:center; margin-bottom:16px; padding:12px; background:#f8fafc; border-radius:10px;">
               <div style="font-size:15px; font-weight:700; color:var(--brand);">${r.employee_name}</div>
-              <div style="font-size:11px; color:var(--muted); margin-top:4px;">Present: ${r.present_days ?? "-"} • LOP: ${r.lop_days ?? "-"} (auto from attendance, not editable)</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:4px;">Present &amp; LOP are editable; Gross/Net recalculate on save.</div>
             </div>
 
             <form id="editDeductionForm" onsubmit="event.preventDefault(); saveOtherDeduction('${registerId}', '${employee}', '${month}');">
+              ${numField("present_days", "Present Days", r.present_days, "0")}
+              ${numField("lop_days", "LOP / Absent Days", r.lop_days, "0")}
               ${numField("monthly_gross", "Monthly Gross Salary", r.monthly_gross)}
               ${numField("gross_salary", "Gross Salary (direct override)", r.gross_salary)}
               ${numField("arrears_days", "Arrears Days (+/-)", r.arrears_days, "-31")}
@@ -9903,6 +9907,8 @@
               rows: [
                 {
                   employee_code: employee,
+                  present_days: val("present_days"),
+                  lop_days: val("lop_days"),
                   monthly_gross: val("monthly_gross"),
                   gross_salary: val("gross_salary"),
                   arrears_days: val("arrears_days"),
