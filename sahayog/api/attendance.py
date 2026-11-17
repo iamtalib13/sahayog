@@ -832,9 +832,23 @@ def _get_employee_holiday_dates(employee, from_date, to_date):
     """Return dict {date: description} of holidays for an employee within date range."""
     holiday_list = frappe.db.get_value("Employee", employee, "holiday_list")
     if not holiday_list:
-        company = frappe.db.get_value("Employee", employee, "company")
-        if company:
-            holiday_list = frappe.db.get_value("Company", company, "default_holiday_list")
+        # State-based fallback (matches attendance report behaviour): support
+        # staff usually have no holiday_list assigned, so derive it from the
+        # branch's state. Falls back to "Standard Company Holidays".
+        branch = frappe.db.get_value("Employee", employee, "sahayog_branch")
+        state = ""
+        if branch and frappe.db.exists("Sahayog Branch", branch):
+            state = (frappe.db.get_value("Sahayog Branch", branch, "state") or "").strip()
+        year = str(to_date.year)
+        all_lists = frappe.get_all("Holiday List", pluck="name")
+        hl_by_state = {}
+        for hl_name in all_lists:
+            parts = hl_name.split(" - ")
+            if len(parts) >= 2:
+                hl_by_state[(parts[0].strip().upper(), parts[-1].strip())] = hl_name
+        holiday_list = hl_by_state.get((state.upper(), year)) if state else None
+        if not holiday_list and "Standard Company Holidays" in all_lists:
+            holiday_list = "Standard Company Holidays"
     if not holiday_list:
         return {}
 
