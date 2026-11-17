@@ -38,7 +38,8 @@
   "section_banking",
   "bank_name",
   "column_break_bank",
-  "bank_account_no"
+  "bank_account_no",
+  "system_values"
  ],
  "fields": [
   {
@@ -243,6 +244,15 @@
    "fieldtype": "Data",
    "label": "Bank Account Number",
    "read_only": 1
+  },
+  {
+   "fieldname": "system_values",
+   "fieldtype": "JSON",
+   "hidden": 1,
+   "label": "System Values",
+   "no_copy": 1,
+   "read_only": 1,
+   "description": "Last system-generated values (snapshot). Used by payroll refresh to detect HR manual edits."
   }
  ],
  "index_web_pages_for_search": 1,
