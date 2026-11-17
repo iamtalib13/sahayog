@@ -9161,7 +9161,6 @@
                   <th style="padding:12px; text-align:right;">Present</th>
                   <th style="padding:12px; text-align:right;">LOP</th>
                   <th style="padding:12px; text-align:right;">Arrears</th>
-                  <th style="padding:12px; text-align:right;">Unmarked</th>
                   <th style="padding:12px; text-align:right;">Monthly Gross</th>
                   <th style="padding:12px; text-align:right;">Gross Salary</th>
                   <th style="padding:12px; text-align:right;">Medical</th>
@@ -9184,7 +9183,6 @@
                     <td style="padding:12px; text-align:right;">${row.present_days ?? "-"}</td>
                     <td style="padding:12px; text-align:right;">${row.lop_days ?? "-"}</td>
                     <td style="padding:12px; text-align:right;">${row.arrears_days ?? "-"}</td>
-                    <td style="padding:12px; text-align:right; ${(row.unmarked_days || 0) > 0 ? "color:#d97706; font-weight:700;" : ""}">${row.unmarked_days ?? "-"}</td>
                     <td style="padding:12px; text-align:right; color:var(--muted);">₹${Number(row.monthly_gross).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:right; font-weight:600;">₹${Number(row.gross_salary).toLocaleString("en-IN")}</td>
                     <td style="padding:12px; text-align:right; color:#dc2626;">₹${Number(row.medical_deduction).toLocaleString("en-IN")}</td>
