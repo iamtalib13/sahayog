@@ -2504,6 +2504,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         },
       });
       this.visible_branches = res.message || [];
+      
+      // Sync branch options with visible branches so both PAN and non-PAN users get full branch list in filter
+      if (this.visible_branches.length) {
+        this.filter_data.sol_id = this.visible_branches.map((b) => ({
+          value: String(b.sol_id),
+          label: `${b.sol_id} - ${b.branch || ""}`
+        }));
+      }
+
       this.updateCapsuleUI();
     },
     updateCapsuleUI() {
