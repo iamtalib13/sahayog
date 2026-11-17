@@ -20768,6 +20768,7 @@
 
           // Rename if requested (updates existing Serial No and linked records)
           let finalName = oldName;
+          let renamed = false;
           if (newName !== oldName) {
             const renameRes = await frappe.call({
               method: "frappe.client.rename_doc",
@@ -20778,7 +20779,8 @@
                 merge: 0,
               },
             });
-            finalName = renameRes.message || newName;
+            finalName = (renameRes && renameRes.message) ? renameRes.message : newName;
+            renamed = true;
 
             // Update current detail record / lists that reference this serial no
             if (this.detailRecord && this.detailRecord.serial_no === oldName) {
@@ -20792,21 +20794,31 @@
             }
           }
 
-          // Reload the (possibly renamed) Serial No
-          const getRes = await frappe.call({
-            method: "frappe.client.get",
-            args: { doctype: "Serial No", name: finalName },
-          });
-          this.linkedSerialRecord = getRes.message || savedDoc;
+          // Reload the (possibly renamed) Serial No (best effort, suppress not-found popup)
+          let reloaded = null;
+          try {
+            const getRes = await new Promise((resolve, reject) => {
+              frappe.call({
+                method: "frappe.client.get",
+                args: { doctype: "Serial No", name: finalName },
+                callback: (r) => resolve(r),
+                error: (r) => reject(r),
+              });
+            });
+            reloaded = getRes && getRes.message ? getRes.message : null;
+          } catch (reloadErr) {
+            console.warn("Serial No saved/renamed but reload failed:", reloadErr);
+          }
+          this.linkedSerialRecord = reloaded || { ...savedDoc, name: finalName };
           if (!this.linkedSerialRecord.configuration_table) {
             this.linkedSerialRecord.configuration_table = [];
           }
-          this.linkedSerialRecord._originalName = this.linkedSerialRecord.name;
-          this.linkedSerialRecord._newName = this.linkedSerialRecord.name;
+          this.linkedSerialRecord._originalName = this.linkedSerialRecord.name || finalName;
+          this.linkedSerialRecord._newName = this.linkedSerialRecord.name || finalName;
           this.linkedSerialEditing = false;
 
           frappe.show_alert({
-            message: newName !== oldName ? "Serial No renamed and updated successfully" : "Serial No updated successfully",
+            message: renamed ? "Serial No renamed and updated successfully" : "Serial No updated successfully",
             indicator: "green",
           });
         } catch (e) {
