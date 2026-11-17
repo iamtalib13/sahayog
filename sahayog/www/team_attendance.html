@@ -4391,19 +4391,58 @@
         }
       }
 
+      function _zoneRegionKey(v) {
+        const s = String(v || "").trim().toUpperCase().replace(/\s+/g, " ");
+        if (s === "HO" || s.includes("HEAD OFFICE") || s.includes("HEADOFFICE"))
+          return "HEADOFFICE";
+        let m = s.match(/(?:ZONE|REGION)\s*-?\s*(\d+)/);
+        if (m) return (s.startsWith("ZONE") ? "ZONE-" : "REGION-") + m[1];
+        return s.replace(/[^A-Z0-9]/g, "");
+      }
+
+      function _selectByKey(sel, val) {
+        if (!sel || !val) return;
+        const key = _zoneRegionKey(val);
+        for (const opt of sel.options) {
+          if (
+            _zoneRegionKey(opt.value) === key ||
+            _zoneRegionKey(opt.textContent) === key
+          ) {
+            sel.value = opt.value;
+            return;
+          }
+        }
+        const opt = document.createElement("option");
+        opt.value = val;
+        opt.textContent = val;
+        sel.appendChild(opt);
+        sel.value = val;
+      }
+
+      function _displayZoneRegion(val, kind) {
+        const s = String(val || "").trim();
+        if (!s) return "";
+        const key = _zoneRegionKey(s);
+        if (key === "HEADOFFICE") return "Head Office";
+        const m = key.match(/^(ZONE|REGION)-(\d+)$/);
+        if (m) return m[1] === "ZONE" ? "Zone -" + m[2] : "Region-" + m[2];
+        return s;
+      }
+
       function _fillUniqueSelect(sel, items) {
         if (!sel) return;
         while (sel.options.length > 1) sel.remove(1);
         const seen = new Set();
         (items || []).forEach((it) => {
-          const val = it && it.name;
+          const val = it && (it.value || it.name);
+          const label = it && (it.name || it.value || val);
           if (!val) return;
-          const key = String(val).trim().toUpperCase();
+          const key = _zoneRegionKey(val);
           if (seen.has(key)) return;
           seen.add(key);
           const opt = document.createElement("option");
           opt.value = val;
-          opt.textContent = val;
+          opt.textContent = label;
           sel.appendChild(opt);
         });
       }
@@ -4670,13 +4709,7 @@
           const setSel = (id, val) => {
             const sel = document.getElementById(id);
             if (!sel || !val) return;
-            if (![...sel.options].some((o) => o.value === val)) {
-              const opt = document.createElement("option");
-              opt.value = val;
-              opt.textContent = val;
-              sel.appendChild(opt);
-            }
-            sel.value = val;
+            _selectByKey(sel, val);
           };
           setSel("new_emp_zone", details.zone);
           setSel("new_emp_region", details.region);
@@ -7216,7 +7249,7 @@
           </div>
           <div class="dash-section"><div class="dash-sec-title">Employment Details</div>
             ${row("Date of Joining", fmt(e.date_of_joining))} ${row("Date of Confirmation", fmt(e.final_confirmation_date))} ${row("Employment Type", e.employment_type)} ${row("Shift", e.default_shift)} ${row("Business Unit", e.custom_division)}
-            ${row("Branch", e.branch)} ${row("Branch Code", e.sahayog_branch)} ${row("Zone", e.custom_zone)} ${row("Region", e.custom_region)} ${row("District", e.custom_district)}
+            ${row("Branch", e.branch)} ${row("Branch Code", e.sahayog_branch)} ${row("Zone", _displayZoneRegion(e.custom_zone, "zone"))} ${row("Region", _displayZoneRegion(e.custom_region, "region"))} ${row("District", e.custom_district)}
             ${row("Reporting Manager", e.reports_to_name || e.reports_to)}
             ${e.status === "Left" ? row("Resignation Date", fmt(e.resignation_letter_date)) : ""}
             ${e.status === "Left" ? row("Relieving Date", fmt(e.relieving_date)) : ""}
@@ -7477,8 +7510,8 @@
           const z = document.getElementById("edit_zone");
           const r = document.getElementById("edit_region");
           const d = document.getElementById("edit_district");
-          if (z) z.value = details.zone || "";
-          if (r) r.value = details.region || "";
+          if (z) _selectByKey(z, details.zone || "");
+          if (r) _selectByKey(r, details.region || "");
           if (d) d.value = details.district || "";
           // Also update branch name (read-only field with id="edit_branch_name")
           const b = document.getElementById("edit_branch_name");
@@ -7580,14 +7613,20 @@
           const sel = document.getElementById(id);
           if (!sel) return;
           sel.innerHTML = `<option value="">-- Select --</option>`;
+          let matched = false;
           items.forEach((item) => {
-            const v = item[labelKey] || item;
+            const v = item.value || item[labelKey] || item;
+            const label = item.name || item[labelKey] || item;
             const opt = document.createElement("option");
             opt.value = v;
-            opt.textContent = v;
-            if (v === currentVal) opt.selected = true;
+            opt.textContent = label;
+            if (v === currentVal) {
+              opt.selected = true;
+              matched = true;
+            }
             sel.appendChild(opt);
           });
+          if (!matched && currentVal) _selectByKey(sel, currentVal);
         };
 
         const [depts, desigs, empTypes, shifts, divisions, branches, zones, regions] =
