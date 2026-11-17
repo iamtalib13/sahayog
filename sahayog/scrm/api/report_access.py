@@ -1086,9 +1086,9 @@ def _execute_lead_report_generation(force_rebuild, site_private_path, triggered_
             "lead_id": first_row[0],
             "status": first_row[1],
             "lead_name": first_row[2],
-            "sol_id": first_row[11],
-            "branch": first_row[12],
-            "created_on": first_row[16],
+            "sol_id": first_row[12],
+            "branch": first_row[13],
+            "created_on": first_row[17],
         }
 
     # Save updated info metadata
@@ -1334,11 +1334,11 @@ def download_fast_lead_report(from_date, to_date, filters=None):
                         return csv_header.index(name)
                     return default_idx
 
-                idx_created_on = get_col_idx("Created On", 16)
-                idx_lead_owner = get_col_idx("Owner Email", 19)
-                idx_sol_id = get_col_idx("SOL ID", 11)
-                idx_zone = get_col_idx("Zone", 15)
-                idx_region = get_col_idx("Region", 14)
+                idx_created_on = get_col_idx("Created On", 17)
+                idx_lead_owner = get_col_idx("Owner Email", 20)
+                idx_sol_id = get_col_idx("SOL ID", 12)
+                idx_zone = get_col_idx("Zone", 16)
+                idx_region = get_col_idx("Region", 15)
                 idx_prod = get_col_idx("Product Code", 5)
                 idx_source = get_col_idx("Source", 4)
 
