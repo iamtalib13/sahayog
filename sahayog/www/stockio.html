@@ -9840,11 +9840,41 @@
     <div class="profile-modal" style="max-width: 900px;">
       <div class="profile-modal-header">
         <h3>Bulk Insert Assets</h3>
-        <button class="profile-close" @click="showBulkAssetInsertModal = false; bulkInsertPreview = null; bulkInsertFileName = ''">&times;</button>
+        <button class="profile-close" @click="showBulkAssetInsertModal = false; bulkInsertPreview = null; bulkInsertResult = null; bulkInsertFileName = ''; bulkInsertFileUrl = ''">&times;</button>
       </div>
       <div class="profile-modal-body" style="padding: 24px; max-height: 70vh; overflow-y: auto;">
+        <!-- Result Section (failed inserts) -->
+        <div v-if="bulkInsertResult && bulkInsertResult.failedDetails && bulkInsertResult.failedDetails.length" style="margin-bottom: 16px;">
+          <div style="padding: 12px 14px; border: 1px solid #fecaca; background: #fef2f2; border-radius: 8px; margin-bottom: 12px;">
+            <div style="font-weight: 700; color: #991b1b;">[[ bulkInsertResult.inserted ]] inserted, [[ bulkInsertResult.failed ]] failed</div>
+            <div style="font-size: 0.85rem; color: #7f1d1d; margin-top: 4px;">The following assets were not created. You can download them as CSV, fix, and retry.</div>
+          </div>
+          <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: 8px; margin-bottom: 12px; max-height: 260px;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+              <thead>
+                <tr style="background: var(--bg-secondary);">
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color);">Asset / Row</th>
+                  <th style="padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--border-color);">Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(f, idx) in bulkInsertResult.failedDetails" :key="idx" style="border-bottom: 1px solid var(--border-color);">
+                  <td style="padding: 8px 10px; color: var(--text-main); font-weight: 600;">[[ f.key ]]</td>
+                  <td style="padding: 8px 10px; color: #b91c1c;">[[ f.error ]]</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: flex-end;">
+            <button @click="bulkInsertResult = null; bulkInsertPreview = null; bulkInsertFileName = ''; bulkInsertFileUrl = ''" style="padding: 10px 20px; background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; cursor: pointer; font-weight: 600; color: var(--text-main);">Close</button>
+            <button @click="downloadFailedBulkInsertCSV()" style="padding: 10px 20px; background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fas fa-download"></i>
+              <span>Download Failed CSV</span>
+            </button>
+          </div>
+        </div>
         <!-- Upload Section (shown when no preview) -->
-        <div v-if="!bulkInsertPreview" style="text-align: center; padding: 40px 20px 20px;">
+        <div v-if="!bulkInsertPreview && !bulkInsertResult" style="text-align: center; padding: 40px 20px 20px;">
           <div style="width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #10b981, #059669); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px;">
             <i class="fas fa-cloud-upload-alt" style="color: white; font-size: 1.5rem;"></i>
           </div>
@@ -9857,7 +9887,7 @@
           </label>
         </div>
         <!-- Preview Section (shown after file is parsed) -->
-        <div v-if="bulkInsertPreview">
+        <div v-if="bulkInsertPreview && !bulkInsertResult">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
             <div>
               <p style="color: var(--text-main); font-weight: 600; font-size: 0.95rem;">[[ bulkInsertFileName ]]</p>
@@ -14707,6 +14737,7 @@
       bulkInsertFileName: "",
       bulkInsertFileUrl: "",
       bulkInsertCreating: false,
+      bulkInsertResult: null,
       showBulkAssetUpdateModal: false,
 
       async getSerialWarehouseMap() {
@@ -17279,23 +17310,64 @@
             method: "sahayog.procurement.api.asset_bulk_actions.bulk_insert_assets",
             args: { file_url: this.bulkInsertFileUrl },
           });
-          const result = res.message;
-          let msg = `${result.inserted} asset(s) inserted successfully`;
-          if (result.failed && result.failed.length > 0) {
-            msg += `. ${result.failed.length} failed: ${result.failed.join(", ")}`;
+          const result = res.message || {};
+          result.errors = result.errors || {};
+          result.failed = result.failed || [];
+          if (result.failed.length > 0) {
+            const previewRows = (this.bulkInsertPreview && this.bulkInsertPreview.rows) ? this.bulkInsertPreview.rows : [];
+            const failedDetails = result.failed.map((key) => {
+              let row = null;
+              if (typeof key === 'string' && key.startsWith('Row ')) {
+                const idx = parseInt(key.replace('Row ', ''), 10) - 1;
+                if (!isNaN(idx) && previewRows[idx]) row = previewRows[idx];
+              } else {
+                row = previewRows.find(r => (r.name || '').toString().trim() === key) || null;
+              }
+              return { key, error: result.errors[key] || 'Failed', row };
+            });
+            this.bulkInsertResult = {
+              inserted: result.inserted || 0,
+              failed: result.failed.length,
+              failedDetails,
+            };
+            frappe.show_alert(`${result.inserted || 0} inserted, ${result.failed.length} failed`, 8);
+            await this.fetchData("Asset");
+          } else {
+            frappe.show_alert(`${result.inserted || 0} asset(s) inserted successfully`, 5);
+            this.showBulkAssetInsertModal = false;
+            this.bulkInsertPreview = null;
+            this.bulkInsertResult = null;
+            this.bulkInsertFileName = "";
+            this.bulkInsertFileUrl = "";
+            await this.fetchData("Asset");
           }
-          frappe.show_alert(msg, result.failed && result.failed.length > 0 ? 8 : 5);
-          this.showBulkAssetInsertModal = false;
-          this.bulkInsertPreview = null;
-          this.bulkInsertFileName = "";
-          this.bulkInsertFileUrl = "";
-          await this.fetchData("Asset");
         } catch (e) {
           console.error("Bulk insert assets error:", e);
           frappe.msgprint("Bulk insert failed: " + (e.message || "Unknown error"));
         } finally {
           this.bulkInsertCreating = false;
         }
+      },
+      downloadFailedBulkInsertCSV() {
+        if (!this.bulkInsertResult || !this.bulkInsertResult.failedDetails) return;
+        const rows = this.bulkInsertResult.failedDetails.map(d => d.row || { name: d.key });
+        const keys = Array.from(new Set(rows.flatMap(r => Object.keys(r || {})).concat(['Error'])));
+        const esc = (v) => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+        const lines = [keys.join(',')];
+        this.bulkInsertResult.failedDetails.forEach((d) => {
+          const r = d.row || { name: d.key };
+          const vals = keys.map(k => k === 'Error' ? esc(d.error) : esc(r[k]));
+          lines.push(vals.join(','));
+        });
+        const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'failed_bulk_assets.csv';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
       },
       async handleBulkAssetUpdateFile(event) {
         const file = event.target.files[0];
