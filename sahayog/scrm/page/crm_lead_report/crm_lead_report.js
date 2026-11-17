@@ -2513,7 +2513,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         }));
       }
 
-      this.updateCapsuleUI();
+      $("#crm-branch-capsules").remove();
     },
     updateCapsuleUI() {
       $("#crm-branch-capsules").remove();
