@@ -382,7 +382,7 @@ function open_action_item_dialog(frm, idx, item) {
 		let tlink = frappe.utils.get_form_link
 			? frappe.utils.get_form_link("Sahayog Ticket", item.sahayog_ticket)
 			: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
-		modal_html += " <span style='font-weight:normal; font-size:12px; margin-left:12px;'>Sahayog Ticket: " + bvr_escape(item.sahayog_ticket) + " (<a href='" + tlink + "' target='_blank'>view</a>)</span>";
+		modal_html += " <span style='font-weight:normal; font-size:12px; margin-left:12px;'>Sahayog Ticket: " + bvr_escape(item.sahayog_ticket) + " <a href='" + tlink + "' target='_blank' style='display:inline-block; margin-left:4px; padding:2px 8px; background:#5e64ff; color:#fff; border-radius:4px; text-decoration:none; font-size:11px; font-weight:600;'>view</a></span>";
 	}
 	modal_html += "</h5><button class='bvr-modal-close' title='Close' type='button'>&times;</button></div>";
 	modal_html += "<div class='bvr-modal-body'>";
