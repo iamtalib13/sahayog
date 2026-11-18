@@ -85,7 +85,7 @@ frappe.listview_settings['Petty Cash Transaction'] = {
 
         function download_bulk_ttum_txt(listview) {
             frappe.call({
-                method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_bulk_ttum_txt_api',
+                method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_bulk_ttum_txt_api_new',
                 freeze: true,
                 freeze_message: __('Checking and Generating Bulk TTUM...'),
                 callback: function (r) {

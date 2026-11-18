@@ -1643,7 +1643,6 @@ class PettyCashTransaction(Document):
     #                     )
     #                 )
 
-
     def validate_payment_mode_details(self):
         """
         Beneficiary details are mandatory when an expense row is paid by Transfer.
@@ -2523,7 +2522,7 @@ def download_consolidated_txt_api(transaction_date=None):
 
 
 @frappe.whitelist()
-def download_bulk_ttum_txt_api():
+def download_bulk_ttum_txt_api_new():
     """Generates a Consolidated TTUM Text file for verified transactions matching cutoff & exclusion criteria."""
     from frappe.utils import nowdate, getdate
 
@@ -2535,9 +2534,11 @@ def download_bulk_ttum_txt_api():
             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
         )
 
-    ttum_download_date = frappe.db.get_single_value("Sahayog Settings", "ttum_download_date")
+    ttum_download_date = frappe.db.get_single_value(
+        "Sahayog Settings", "ttum_download_date")
     if not ttum_download_date:
-        frappe.throw("Please configure TTUM Download Date in Sahayog Settings.")
+        frappe.throw(
+            "Please configure TTUM Download Date in Sahayog Settings.")
 
     filters = [
         ["Petty Cash Transaction", "approval_status", "=", "Verified"],
@@ -2667,7 +2668,6 @@ def download_bulk_ttum_txt_api():
         "filecontent": final_txt,
         "count": len(processed_txns)
     }
-
 
 
 @frappe.whitelist()
