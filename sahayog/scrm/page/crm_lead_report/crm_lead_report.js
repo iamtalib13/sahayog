@@ -991,10 +991,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         <label class="crm-filter-label">Zone & Region</label>
                         <div class="d-flex" style="gap: 6px;">
                             <button class="btn btn-xs btn-default w-100 font-weight-bold" @click="active_popup = 'zone'">
-                                Zone ({{ selected.zone.length }})
+                                Zone
                             </button>
                             <button class="btn btn-xs btn-default w-100 font-weight-bold" @click="active_popup = 'region'">
-                                Region ({{ selected.region.length }})
+                                Region
                             </button>
                         </div>
                     </div>
@@ -1002,7 +1002,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Branch (SOL ID)</label>
                         <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'sol_id'">
-                            <span class="text-truncate">{{ selected.sol_id.length ? selected.sol_id.length + ' Selected' : 'All Branches' }}</span>
+                            <span class="text-truncate">Branch</span>
                             <span class="text-muted" style="font-size: 10px;">›</span>
                         </button>
                     </div>
@@ -1010,7 +1010,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Product</label>
                         <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'product'">
-                            <span class="text-truncate">{{ selected.product.length ? selected.product.length + ' Selected' : 'All Products' }}</span>
+                            <span class="text-truncate">Product</span>
                             <span class="text-muted" style="font-size: 10px;">›</span>
                         </button>
                     </div>
@@ -1018,7 +1018,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Source</label>
                         <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'source'">
-                            <span class="text-truncate">{{ selected.source.length ? selected.source.length + ' Selected' : 'All Sources' }}</span>
+                            <span class="text-truncate">Source</span>
                             <span class="text-muted" style="font-size: 10px;">›</span>
                         </button>
                     </div>
