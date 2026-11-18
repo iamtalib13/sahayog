@@ -168,6 +168,12 @@ class BranchVisitReview(Document):
 			if not row.responsible:
 				continue
 
+			if not row.tat:
+				base_date = frappe.utils.getdate(self.creation) if self.creation else frappe.utils.getdate()
+				row.tat = frappe.utils.add_days(base_date, 15)
+				if row.name:
+					frappe.db.set_value(row.doctype, row.name, "tat", row.tat, update_modified=False)
+
 			try:
 				employee = self._resolve_employee(row.responsible)
 				if not employee:
@@ -194,6 +200,8 @@ class BranchVisitReview(Document):
 		return frappe.db.get_value("Employee", {"employee_name": responsible}, "name")
 
 	def _make_sahayog_ticket(self, row, employee):
+		from frappe.utils import add_days, getdate
+
 		session_employee = frappe.db.get_value(
 			"Employee", {"user_id": frappe.session.user}, "name"
 		)
@@ -210,6 +218,9 @@ class BranchVisitReview(Document):
 		priority_map = {"High": "High", "Medium": "Medium", "Low": "Normal"}
 		priority = priority_map.get((row.priority or "").strip(), "Normal")
 
+		base_date = getdate(self.creation) if self.creation else getdate()
+		tat_date = row.tat or add_days(base_date, 15)
+
 		ticket = frappe.get_doc(
 			{
 				"doctype": "Sahayog Ticket",
@@ -220,7 +231,10 @@ class BranchVisitReview(Document):
 				"description": desc,
 				"priority": priority,
 				"status": "Open",
+				"tat": tat_date,
 			}
 		)
 		ticket.insert(ignore_permissions=True)
+		if frappe.db.has_column("Sahayog Ticket", "tat"):
+			frappe.db.set_value("Sahayog Ticket", ticket.name, "tat", tat_date, update_modified=False)
 		return ticket.name
