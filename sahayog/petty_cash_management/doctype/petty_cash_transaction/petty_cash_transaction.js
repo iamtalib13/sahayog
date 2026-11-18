@@ -373,7 +373,7 @@ frappe.ui.form.on('Petty Cash Transaction', {
                 }, __("Download Files"));
 
                 // TXT Button
-                frm.add_custom_button(__('TXT File (Finacle)'), function () {
+                frm.add_custom_button(__('Individual TTUM TXT File (Finacle)'), function () {
                     window.open(
                         frappe.request.url +
                         '?cmd=sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_txt_api' + // <--- Updated Name
