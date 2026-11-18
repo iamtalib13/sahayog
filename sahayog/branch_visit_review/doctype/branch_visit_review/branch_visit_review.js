@@ -377,7 +377,14 @@ function open_action_item_dialog(frm, idx, item) {
 	let modal_html = "";
 	modal_html += "<div class='bvr-modal-overlay'>";
 	modal_html += "<div class='bvr-modal'>";
-	modal_html += "<div class='bvr-modal-header'><h5>" + (is_add ? "Add Action Item" : "Edit Action Item") + "</h5><button class='bvr-modal-close' title='Close' type='button'>&times;</button></div>";
+	modal_html += "<div class='bvr-modal-header'><h5>" + (is_add ? "Add Action Item" : "Edit Action Item");
+	if (item.sahayog_ticket) {
+		let tlink = frappe.utils.get_form_link
+			? frappe.utils.get_form_link("Sahayog Ticket", item.sahayog_ticket)
+			: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
+		modal_html += " <span style='font-weight:normal; font-size:12px; margin-left:12px;'>Sahayog Ticket: " + bvr_escape(item.sahayog_ticket) + " (<a href='" + tlink + "' target='_blank'>view</a>)</span>";
+	}
+	modal_html += "</h5><button class='bvr-modal-close' title='Close' type='button'>&times;</button></div>";
 	modal_html += "<div class='bvr-modal-body'>";
 	modal_html += "<div class='bvr-modal-field'><label>Action Item <span class='bvr-req'>*</span></label><input type='text' class='form-control bvr-modal-input' data-field='action_item' placeholder='Enter action item' value=\"" + bvr_escape(item.action_item) + "\"></div>";
 	modal_html += "<div class='bvr-modal-grid' style='grid-template-columns: repeat(4, 1fr);'>";
@@ -391,12 +398,6 @@ function open_action_item_dialog(frm, idx, item) {
 	modal_html += "<div class='bvr-modal-field'><label>Status</label><select class='form-control bvr-modal-input' data-field='status'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select></div>";
 	modal_html += "</div>";
 	modal_html += "<div class='bvr-modal-field'><label>Resolution Notes</label><textarea class='form-control bvr-modal-input' data-field='resolution_notes' rows='3' placeholder='Enter notes'>" + bvr_escape(item.resolution_notes) + "</textarea></div>";
-	if (item.sahayog_ticket) {
-		let tlink = frappe.utils.get_form_link
-			? frappe.utils.get_form_link("Sahayog Ticket", item.sahayog_ticket)
-			: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
-		modal_html += "<div class='bvr-modal-field'><label>Sahayog Ticket</label><div><a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a></div></div>";
-	}
 	if (is_admin_template) {
 		let today = frappe.datetime.get_today();
 		let stage_dates = [tat_value, tat2_value, tat3_value, tat4_value];
