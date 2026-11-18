@@ -826,12 +826,41 @@ function get_approval_status_color(status) {
 
 
 
+function can_view_ttum_status_badge() {
+    return (
+        frappe.session.user === 'Administrator' ||
+        frappe.user.has_role('System Manager') ||
+        frappe.user.has_role('HO Petty Cash Approver') ||
+        frappe.user.has_role('HO Petty Cash Auditor') ||
+        frappe.user.has_role('HO Petty Cash Checker') ||
+        frappe.user.has_role('HO Petty Cash Manager') ||
+        frappe.user.has_role('HO Petty Cash Verifier')
+    );
+}
+
 function set_custom_business_status(frm) {
     const status = frm.doc.approval_status || 'Draft';
     const color = get_approval_status_color(status);
 
     frm.page.clear_indicator();
     frm.page.set_indicator(__(status), color);
+
+    frm.page.wrapper.find('.ttum-status-badge').remove();
+    if (can_view_ttum_status_badge() && frm.doc.approval_status === 'Verified' && frm.doc.finacle_tran_date) {
+        let badge_text = '';
+        let badge_color = '';
+
+        if (frm.doc.bulk_ttum_downloaded || frm.doc.exclude_from_ttum) {
+            badge_text = __('TTUM Downloaded');
+            badge_color = 'green';
+        } else {
+            badge_text = __('Verified But TTUM Not Downloaded');
+            badge_color = 'orange';
+        }
+
+        const badge_html = $(`<span class="indicator-pill no-indicator-dot whitespace-nowrap ${badge_color} ttum-status-badge ml-2"><span>${badge_text}</span></span>`);
+        frm.page.indicator.after(badge_html);
+    }
 }
 
 function check_branch_wallet_status(frm) {

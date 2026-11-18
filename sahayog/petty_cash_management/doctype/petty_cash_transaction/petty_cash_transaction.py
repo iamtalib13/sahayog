@@ -2523,6 +2523,154 @@ def download_consolidated_txt_api(transaction_date=None):
 
 
 @frappe.whitelist()
+def download_bulk_ttum_txt_api():
+    """Generates a Consolidated TTUM Text file for verified transactions matching cutoff & exclusion criteria."""
+    from frappe.utils import nowdate, getdate
+
+    user_roles = frappe.get_roles()
+    if frappe.session.user != "Administrator" and not set(
+        ["HO Petty Cash Manager", "HO Petty Cash Verifier"]
+    ).intersection(user_roles):
+        frappe.throw(
+            "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
+        )
+
+    ttum_download_date = frappe.db.get_single_value("Sahayog Settings", "ttum_download_date")
+    if not ttum_download_date:
+        frappe.throw("Please configure TTUM Download Date in Sahayog Settings.")
+
+    filters = [
+        ["Petty Cash Transaction", "approval_status", "=", "Verified"],
+        ["Petty Cash Transaction", "finacle_tran_date", "is", "set"],
+        ["Petty Cash Transaction", "bulk_ttum_downloaded", "in", [0, None, "0"]],
+        ["Petty Cash Transaction", "exclude_from_ttum", "in", [0, None, "0"]],
+        ["Petty Cash Transaction", "transaction_date", ">=", ttum_download_date]
+    ]
+
+    transactions = frappe.get_all(
+        "Petty Cash Transaction",
+        filters=filters,
+        pluck="name",
+        order_by="creation ASC"
+    )
+
+    if not transactions:
+        return {
+            "status": "no_data",
+            "message": "No verified transactions found matching criteria for TTUM download."
+        }
+
+    content = []
+    processed_txns = []
+
+    for txn_name in transactions:
+        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+
+        date_obj = getdate(doc.transaction_date)
+        ttum_date = date_obj.strftime("%b%y").upper()
+
+        if doc.branch_type == "Zonal":
+            currency_str = "INR1000"
+        else:
+            currency_str = f"INR{doc.branch}"
+
+        narrative_suffix = (
+            doc.custom_ttum_remarks
+            if doc.custom_ttum_remarks
+            else f"{ttum_date} {doc.name}"
+        )
+
+        total_debit = 0.0
+
+        for row in doc.items:
+            if not row.finacle_gl_code:
+                frappe.throw(
+                    f"Row #{row.idx} in {doc.name} is missing Finacle GL Code"
+                )
+
+            amount_str = "{:.2f}".format(row.amount)
+            total_debit += row.amount
+
+            raw_desc = row.description if row.description else narrative_suffix
+            debit_description = raw_desc[:30]
+
+            padding_count = 17 - len(amount_str)
+            if padding_count < 10:
+                padding_count = 10
+            space_str = " " * padding_count
+
+            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debit_description}"
+            content.append(line)
+
+        wallet_gl = frappe.db.get_value(
+            "Branch Petty Cash Account",
+            {"branch": doc.branch},
+            "gl_sub_code"
+        )
+        if not wallet_gl:
+            frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
+
+        total_amount_str = "{:.2f}".format(total_debit)
+        padding_count = 17 - len(total_amount_str)
+        if padding_count < 10:
+            padding_count = 10
+        space_str = " " * padding_count
+
+        credit_description = narrative_suffix[:30].ljust(30)
+        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{credit_description}"
+
+        if doc.branch_type == "Zonal":
+            entity_id = str(doc.entity_id or "").strip()
+            entity_type = str(doc.entity_type or "").strip()
+
+            if entity_id:
+                extra_spaces_after_desc = " " * 852
+
+                if len(entity_id) == 4:
+                    entity_id_padding = " " * 12
+                elif len(entity_id) == 5:
+                    entity_id_padding = " " * 11
+                else:
+                    entity_id_padding = ""
+
+                entity_type_padding = " " * 5
+
+                credit_line = (
+                    f"{credit_line}"
+                    f"{extra_spaces_after_desc}"
+                    f"{entity_id}"
+                    f"{entity_id_padding}"
+                    f"{entity_type}"
+                    f"{entity_type_padding}"
+                )
+
+        content.append(credit_line)
+        processed_txns.append(txn_name)
+
+    # Mark all included transactions as bulk_ttum_downloaded
+    for txn_name in processed_txns:
+        frappe.db.set_value(
+            "Petty Cash Transaction",
+            txn_name,
+            "bulk_ttum_downloaded",
+            1,
+            update_modified=False
+        )
+    frappe.db.commit()
+
+    final_txt = "\n".join(content)
+    today_str = nowdate()
+
+    return {
+        "status": "success",
+        "filename": f"Bulk_TTUM_{today_str}.txt",
+        "filecontent": final_txt,
+        "count": len(processed_txns)
+    }
+
+
+
+@frappe.whitelist()
 def download_consolidated_excel_api(transaction_date=None):
     """Generates a Consolidated CSV/Excel report for all Verified transactions of the selected date."""
     from frappe.utils import nowdate, getdate
