@@ -10,6 +10,9 @@
   "responsible",
   "priority",
   "tat",
+  "stage_2_tat",
+  "stage_3_tat",
+  "stage_4_tat",
   "status",
   "resolution_notes",
   "proof",
@@ -45,6 +48,24 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Target Date (TAT)"
+  },
+  {
+   "columns": 1,
+   "fieldname": "stage_2_tat",
+   "fieldtype": "Date",
+   "label": "Stage 2 TAT"
+  },
+  {
+   "columns": 1,
+   "fieldname": "stage_3_tat",
+   "fieldtype": "Date",
+   "label": "Stage 3 TAT"
+  },
+  {
+   "columns": 1,
+   "fieldname": "stage_4_tat",
+   "fieldtype": "Date",
+   "label": "Stage 4 TAT"
   },
   {
    "columns": 1,

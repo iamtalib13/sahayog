@@ -14,10 +14,14 @@ class BranchVisitActionItem(Document):
 		from frappe.types import DF
 
 		action_item: DF.Data | None
-		responsible: DF.Data | None
 		priority: DF.Literal["", "High", "Medium", "Low"]
 		proof: DF.Attach | None
 		resolution_notes: DF.Data | None
+		responsible: DF.Data | None
+		sahayog_ticket: DF.Link | None
+		stage_2_tat: DF.Date | None
+		stage_3_tat: DF.Date | None
+		stage_4_tat: DF.Date | None
 		status: DF.Literal["Open", "In Progress", "Resolved"]
 		tat: DF.Date | None
 

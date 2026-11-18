@@ -352,24 +352,73 @@ function open_action_item_dialog(frm, idx, item) {
 		return html;
 	};
 
+	let is_admin_template = !!frm._bvr_is_admin_template;
+	let base_default = (frm.doc.creation || "").toString().split(" ")[0] || frappe.datetime.get_today();
+	let default_tat = frappe.datetime.add_days(base_default, 15);
+	let fmt_disp = function (val) {
+		let d = val || "";
+		if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+			let p = d.split("-");
+			return p[2] + "/" + p[1] + "/" + p[0];
+		}
+		return d;
+	};
+	let tat_value = item.tat || "";
+	if (is_add && !tat_value) tat_value = default_tat;
+	let tat2_value = item.stage_2_tat || "";
+	let tat3_value = item.stage_3_tat || "";
+	let tat4_value = item.stage_4_tat || "";
+	if (is_admin_template && is_add) {
+		if (!tat2_value) tat2_value = frappe.datetime.add_days(tat_value, 4);
+		if (!tat3_value) tat3_value = frappe.datetime.add_days(tat2_value, 4);
+		if (!tat4_value) tat4_value = frappe.datetime.add_days(tat3_value, 4);
+	}
+
 	let modal_html = "";
 	modal_html += "<div class='bvr-modal-overlay'>";
 	modal_html += "<div class='bvr-modal'>";
-	modal_html += "<div class='bvr-modal-header'><h5>" + (is_add ? "Add Action Item" : "Edit Action Item") + "</h5><button class='bvr-modal-close' title='Close' type='button'>&times;</button></div>";
-	modal_html += "<div class='bvr-modal-body'>";
-	modal_html += "<div class='bvr-modal-field'><label>Action Item <span class='bvr-req'>*</span></label><input type='text' class='form-control bvr-modal-input' data-field='action_item' placeholder='Enter action item' value=\"" + bvr_escape(item.action_item) + "\"></div>";
-	modal_html += "<div class='bvr-modal-field'><label>Responsible</label><div class='employee-search-wrapper bvr-modal-emp' data-value='" + bvr_escape(item.responsible) + "'><input type='text' class='form-control bvr-modal-input employee-search-input' placeholder='Search employee' autocomplete='off' value=''><div class='employee-dropdown' style='display:none;'></div></div></div>";
-	modal_html += "<div class='bvr-modal-grid'>";
-	modal_html += "<div class='bvr-modal-field'><label>Priority</label><select class='form-control bvr-modal-input' data-field='priority'>" + select_options(["High", "Medium", "Low"], item.priority || "Medium") + "</select></div>";
-	modal_html += "<div class='bvr-modal-field'><label>Target Date (TAT)</label><input type='date' class='form-control bvr-modal-input' data-field='tat' value='" + bvr_escape(item.tat) + "'></div>";
-	modal_html += "<div class='bvr-modal-field'><label>Status</label><select class='form-control bvr-modal-input' data-field='status'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select></div>";
-	modal_html += "</div>";
-	modal_html += "<div class='bvr-modal-field'><label>Resolution Notes</label><textarea class='form-control bvr-modal-input' data-field='resolution_notes' rows='3' placeholder='Enter notes'>" + bvr_escape(item.resolution_notes) + "</textarea></div>";
+	modal_html += "<div class='bvr-modal-header'><h5>" + (is_add ? "Add Action Item" : "Edit Action Item");
 	if (item.sahayog_ticket) {
 		let tlink = frappe.utils.get_form_link
 			? frappe.utils.get_form_link("Sahayog Ticket", item.sahayog_ticket)
 			: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
-		modal_html += "<div class='bvr-modal-field'><label>Sahayog Ticket</label><div><a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a></div></div>";
+		modal_html += " <span style='font-weight:normal; font-size:12px; margin-left:12px;'>Sahayog Ticket: " + bvr_escape(item.sahayog_ticket) + " <a href='" + tlink + "' target='_blank' style='display:inline-block; margin-left:4px; padding:2px 8px; background:#5e64ff; color:#fff; border-radius:4px; text-decoration:none; font-size:11px; font-weight:600;'>view</a></span>";
+	}
+	modal_html += "</h5><button class='bvr-modal-close' title='Close' type='button'>&times;</button></div>";
+	modal_html += "<div class='bvr-modal-body'>";
+	modal_html += "<div class='bvr-modal-field'><label>Action Item <span class='bvr-req'>*</span></label><input type='text' class='form-control bvr-modal-input' data-field='action_item' placeholder='Enter action item' value=\"" + bvr_escape(item.action_item) + "\"></div>";
+	modal_html += "<div class='bvr-modal-grid' style='grid-template-columns: repeat(4, 1fr);'>";
+	modal_html += "<div class='bvr-modal-field'><label>Responsible</label><div class='employee-search-wrapper bvr-modal-emp' data-value='" + bvr_escape(item.responsible) + "'><input type='text' class='form-control bvr-modal-input employee-search-input' placeholder='Search employee' autocomplete='off' value=''><div class='employee-dropdown' style='display:none;'></div></div></div>";
+	modal_html += "<div class='bvr-modal-field'><label>Priority</label><select class='form-control bvr-modal-input' data-field='priority'>" + select_options(["High", "Medium", "Low"], item.priority || "Medium") + "</select></div>";
+	if (is_admin_template) {
+		modal_html += "<div class='bvr-modal-field'><label>Stage I Admin (Current Stage)</label><input type='text' class='form-control bvr-modal-input' data-field='tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat_value)) + "'></div>";
+	} else {
+		modal_html += "<div class='bvr-modal-field'><label>Target Date (TAT)</label><input type='text' class='form-control bvr-modal-input' data-field='tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat_value)) + "'></div>";
+	}
+	modal_html += "<div class='bvr-modal-field'><label>Status</label><select class='form-control bvr-modal-input' data-field='status'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select></div>";
+	modal_html += "</div>";
+	modal_html += "<div class='bvr-modal-field'><label>Resolution Notes</label><textarea class='form-control bvr-modal-input' data-field='resolution_notes' rows='3' placeholder='Enter notes'>" + bvr_escape(item.resolution_notes) + "</textarea></div>";
+	if (is_admin_template) {
+		let today = frappe.datetime.get_today();
+		let stage_dates = [tat_value, tat2_value, tat3_value, tat4_value];
+		let active_idx = 0;
+		for (let i = 0; i < stage_dates.length; i++) {
+			let d = stage_dates[i];
+			if (d && d < today) {
+				active_idx = Math.min(i + 1, stage_dates.length - 1);
+			} else {
+				active_idx = i;
+				break;
+			}
+		}
+		let scls = function (i) { return i === active_idx ? " bvr-stage-active" : ""; };
+		modal_html += "<div class='bvr-modal-field'><label>All Stages</label><div class='bvr-modal-grid' style='margin-top:6px; grid-template-columns: repeat(5, 1fr);'>";
+		modal_html += "<div class='bvr-modal-field'><label>Created On</label><div class='form-control bvr-ticket-created-on' style='background:#f8f9fb;'>-</div></div>";
+		modal_html += "<div class='bvr-modal-field" + scls(0) + "'><label>Stage I Admin</label><div class='form-control' style='background:#f8f9fb;'>" + bvr_escape(fmt_disp(tat_value)) + "</div></div>";
+		modal_html += "<div class='bvr-modal-field" + scls(1) + "'><label>Stage 2 Manoj Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_2_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat2_value)) + "'></div>";
+		modal_html += "<div class='bvr-modal-field" + scls(2) + "'><label>Stage 3 CBO Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_3_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat3_value)) + "'></div>";
+		modal_html += "<div class='bvr-modal-field" + scls(3) + "'><label>Stage - 4 CMD Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_4_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat4_value)) + "'></div>";
+		modal_html += "</div></div>";
 	}
 	modal_html += "</div>";
 	modal_html += "<div class='bvr-modal-footer'><button class='bvr-modal-btn bvr-modal-btn-cancel' type='button'>Cancel</button><button class='bvr-modal-btn bvr-modal-btn-save' type='button'>Save</button></div>";
@@ -378,6 +427,19 @@ function open_action_item_dialog(frm, idx, item) {
 	$("body").append(modal_html);
 
 	let $overlay = $(".bvr-modal-overlay");
+	if (is_admin_template && item.sahayog_ticket) {
+		frappe.db.get_value("Sahayog Ticket", item.sahayog_ticket, "creation").then((r) => {
+			let c = r && r.message && r.message.creation;
+			if (c) {
+				let d = (c || "").toString().split(" ")[0];
+				if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+					let p = d.split("-");
+					d = p[2] + "/" + p[1] + "/" + p[0];
+				}
+				$overlay.find(".bvr-ticket-created-on").text(d);
+			}
+		});
+	}
 	let close_modal = function () {
 		$overlay.remove();
 		$(document).off("keydown.bvr-modal");
@@ -444,15 +506,27 @@ function open_action_item_dialog(frm, idx, item) {
 			$overlay.find("[data-field='action_item']").focus();
 			return;
 		}
+		let parse_tat = function (v) {
+			let s = (v || "").trim();
+			let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+			if (m) return m[3] + "-" + ("0" + m[2]).slice(-2) + "-" + ("0" + m[1]).slice(-2);
+			return s;
+		};
+		let is_admin_template = !!frm._bvr_is_admin_template;
 		let row_values = {
 			action_item: action_item,
 			responsible: $emp_wrapper.data("value") || "",
 			priority: $overlay.find("[data-field='priority']").val() || "Medium",
-			tat: $overlay.find("[data-field='tat']").val() || "",
+			tat: parse_tat($overlay.find("[data-field='tat']").val() || ""),
 			status: $overlay.find("[data-field='status']").val() || "Open",
 			resolution_notes: $overlay.find("[data-field='resolution_notes']").val() || "",
 		};
 		if (is_add) {
+			if (is_admin_template) {
+				row_values.stage_2_tat = parse_tat($overlay.find("[data-field='stage_2_tat']").val() || "");
+				row_values.stage_3_tat = parse_tat($overlay.find("[data-field='stage_3_tat']").val() || "");
+				row_values.stage_4_tat = parse_tat($overlay.find("[data-field='stage_4_tat']").val() || "");
+			}
 			frm.add_child("action_items", row_values);
 		} else {
 			Object.keys(row_values).forEach(function (key) {
@@ -460,8 +534,11 @@ function open_action_item_dialog(frm, idx, item) {
 			});
 		}
 		frm.refresh_field("action_items");
+		frm.dirty();
 		close_modal();
-		render_checklist(frm, frm.doc.template);
+		if (frm.doc.template) {
+			render_checklist(frm, frm.doc.template);
+		}
 	});
 
 	$overlay.find("[data-field='action_item']").focus();
@@ -480,8 +557,12 @@ function render_checklist(frm, template) {
 			frappe.call({
 				method: "sahayog.branch_visit_review.api.get_template_items",
 				args: { template: template },
-				callback: function (r) {
+				callback: async function (r) {
 					let all_items = r.message || [];
+					let tpl_meta = await frappe.db.get_value("Branch Visit Template", template, "department");
+					let tpl_dept = tpl_meta && tpl_meta.message && tpl_meta.message.department;
+					let is_admin_template = (tpl_dept === "Administration" || tpl_dept === "Admin");
+					frm._bvr_is_admin_template = is_admin_template;
 					let checklist_html = "";
 					let branch_checklist_html = "";
 
@@ -617,7 +698,23 @@ function render_checklist(frm, template) {
 				}
 			}
 
-			let action_html = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th><th style='width:130px;'>Target Date</th><th style='width:110px;'>Status</th><th>Resolution Notes</th><th style='width:140px;'>Ticket</th><th style='width:40px;'></th></tr></thead><tbody>";
+			let format_tat = function (val) {
+				let d = val || "";
+				if (d && /^\d{4}-\d{2}-\d{2}$/.test(d)) {
+					let p = d.split("-");
+					return p[2] + "/" + p[1] + "/" + p[0];
+				}
+				return d;
+			};
+
+			let action_head = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th>";
+			if (is_admin_template) {
+				action_head += "<th style='width:130px;'>TAT Date</th>";
+			} else {
+				action_head += "<th style='width:130px;'>Target Date</th>";
+			}
+			action_head += "<th style='width:110px;'>Status</th><th>Resolution Notes</th><th style='width:140px;'>Ticket</th><th style='width:40px;'></th></tr></thead><tbody>";
+			let action_html = action_head;
 			if (frm.doc.action_items && frm.doc.action_items.length > 0) {
 				frm.doc.action_items.forEach(function (item, i) {
 					let owner_display = item.responsible || "";
@@ -633,12 +730,31 @@ function render_checklist(frm, template) {
 							: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
 						ticket_display = "<a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a>";
 					}
-					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.responsible || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td><td>" + (item.tat || "") + "</td><td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td>" + ticket_display + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
+					let tat_cell = item.tat || "";
+					if (is_admin_template) {
+						let today = frappe.datetime.get_today();
+						let stage_dates = [item.tat, item.stage_2_tat, item.stage_3_tat, item.stage_4_tat];
+						let active_idx = 0;
+						for (let si = 0; si < stage_dates.length; si++) {
+							let d = stage_dates[si];
+							if (d && d < today) {
+								active_idx = Math.min(si + 1, stage_dates.length - 1);
+							} else {
+								active_idx = si;
+								break;
+							}
+						}
+						tat_cell = stage_dates[active_idx] || "";
+					}
+					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.responsible || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td>";
+					action_html += "<td>" + bvr_escape(format_tat(tat_cell)) + "</td>";
+					action_html += "<td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td>" + ticket_display + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
+			let add_colspan = 7;
 			action_html += "<tr class='action-row-add' title='Click to add'><td>" + action_count + "</td>";
-			action_html += "<td colspan='7' style='color:#8a93a5;text-align:center;'>+ Click to add action item</td>";
+			action_html += "<td colspan='" + add_colspan + "' style='color:#8a93a5;text-align:center;'>+ Click to add action item</td>";
 			action_html += "<td style='text-align:center;'></td>";
 			action_html += "</tr>";
 			action_html += "</tbody></table>";
@@ -794,7 +910,7 @@ function render_checklist(frm, template) {
 				.bvr-tabs .ks-remove-btn:hover { background: #fdecea; color: #c0392b; }
 				.bvr-tabs .tab-content-review { padding: 4px 0; }
 				.bvr-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); z-index: 2000; display: flex; align-items: flex-start; justify-content: center; padding: 60px 16px 16px; }
-				.bvr-modal { background: #fff; border-radius: 12px; width: 560px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }
+				.bvr-modal { background: #fff; border-radius: 12px; width: 1300px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }
 				.bvr-modal-header { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #f0f2ff 0%, #e8ebff 100%); border-left: 4px solid #5e64ff; padding: 12px 16px; }
 				.bvr-modal-header h5 { margin: 0; font-size: 14px; font-weight: 700; color: #16181d; }
 				.bvr-modal-close { background: transparent; border: none; font-size: 22px; line-height: 1; color: #6c7680; cursor: pointer; padding: 0 4px; }
@@ -817,6 +933,8 @@ function render_checklist(frm, template) {
 				.bvr-modal-btn-cancel:hover { background: #f5f6ff; }
 				.bvr-modal-btn-save { background: #5e64ff; color: #fff; box-shadow: 0 2px 6px rgba(94,100,255,0.3); }
 				.bvr-modal-btn-save:hover { background: #4c53d0; }
+				.bvr-stage-active { border: 2px solid #5e64ff; border-radius: 8px; padding: 6px; animation: bvr-stage-blink 1s ease-in-out infinite; }
+				@keyframes bvr-stage-blink { 0%, 100% { box-shadow: 0 0 0 0 rgba(94,100,255,0.6); } 50% { box-shadow: 0 0 0 4px rgba(94,100,255,0.15); } }
 			</style>`;
 			frm.fields_dict.checklist.$wrapper.find("style").remove();
 			frm.fields_dict.checklist.$wrapper.prepend(style);
@@ -892,7 +1010,15 @@ function render_checklist(frm, template) {
 			});
 
 			frm.fields_dict.checklist.$wrapper.off("click.bvr-add").on("click.bvr-add", ".action-row-add, .add-action-row", function () {
-				frm.add_child("action_items", { priority: "Medium", status: "Open" });
+				let base = (frm.doc.creation || "").toString().split(" ")[0] || frappe.datetime.get_today();
+				let tat = frappe.datetime.add_days(base, 15);
+				let row_vals = { priority: "Medium", status: "Open", tat: tat };
+				if (is_admin_template) {
+					row_vals.stage_2_tat = frappe.datetime.add_days(tat, 4);
+					row_vals.stage_3_tat = frappe.datetime.add_days(row_vals.stage_2_tat, 4);
+					row_vals.stage_4_tat = frappe.datetime.add_days(row_vals.stage_3_tat, 4);
+				}
+				frm.add_child("action_items", row_vals);
 				frm.refresh_field("action_items");
 				render_checklist(frm, frm.doc.template);
 			});
