@@ -398,7 +398,7 @@ function open_action_item_dialog(frm, idx, item) {
 		modal_html += "<div class='bvr-modal-field'><label>Sahayog Ticket</label><div><a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a></div></div>";
 	}
 	if (is_admin_template) {
-		modal_html += "<div class='bvr-modal-field'><label>All Stages</label><div class='bvr-modal-grid' style='margin-top:6px;'>";
+		modal_html += "<div class='bvr-modal-field'><label>All Stages</label><div class='bvr-modal-grid' style='margin-top:6px; grid-template-columns: repeat(4, 1fr);'>";
 		modal_html += "<div class='bvr-modal-field'><label>Stage I Admin</label><div class='form-control' style='background:#f8f9fb;'>" + bvr_escape(fmt_disp(tat_value)) + "</div></div>";
 		modal_html += "<div class='bvr-modal-field'><label>Stage 2 Manoj Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_2_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat2_value)) + "'></div>";
 		modal_html += "<div class='bvr-modal-field'><label>Stage 3 CBO Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_3_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat3_value)) + "'></div>";
