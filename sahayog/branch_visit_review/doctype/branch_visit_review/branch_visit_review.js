@@ -485,7 +485,11 @@ function render_checklist(frm, template) {
 					let checklist_html = "";
 					let branch_checklist_html = "";
 
-					let show_branch_tab_flag = (frm.doc.branch_is === "Existing" && frm.doc.visited_by);
+					let has_branch_items = all_items.some(function (row) {
+						let f = (row.for || "").toString().trim().toLowerCase();
+						return f.indexOf("branch") !== -1;
+					});
+					let show_branch_tab_flag = (frm.doc.branch_is === "Existing" && (frm.doc.visited_by || has_branch_items));
 
 					function build_checklist_section(items_subset, is_branch_tab) {
 						let html = "";
@@ -690,7 +694,7 @@ function render_checklist(frm, template) {
 			};
 
 			let review_tab_label = "Review Checklist";
-			let show_branch_tab = (frm.doc.branch_is === "Existing" && frm.doc.visited_by);
+			let show_branch_tab = (frm.doc.branch_is === "Existing" && (frm.doc.visited_by || has_branch_items));
 			if (show_branch_tab) {
 				review_tab_label = "Visiter checklist";
 			}
@@ -712,7 +716,7 @@ function render_checklist(frm, template) {
 
 			frm.fields_dict.checklist.$wrapper.html(tabs_html);
 
-			if (show_branch_tab) {
+			if (show_branch_tab && frm.doc.visited_by) {
 				// verify visited_by has department; if not, revert to default
 				frappe.db.get_value("Employee", frm.doc.visited_by, "department").then((d) => {
 					const has_dept = d && d.message && d.message.department;
