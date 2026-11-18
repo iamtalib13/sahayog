@@ -292,14 +292,16 @@ class PettyCashTransaction(Document):
         for row in (self.items or []):
             if row.gst_available and not row.gst_no:
                 frappe.throw(
-                    _("Row #{0}: GST No. is required when GST Available is checked.").format(row.idx)
+                    _("Row #{0}: GST No. is required when GST Available is checked.").format(
+                        row.idx)
                 )
 
             if row.gst_no:
                 gst = str(row.gst_no).strip()
                 if len(gst) != 15 or not gst.isalnum():
                     frappe.throw(
-                        _("Row #{0}: GST No. must be exactly 15 alphanumeric characters.").format(row.idx)
+                        _("Row #{0}: GST No. must be exactly 15 alphanumeric characters.").format(
+                            row.idx)
                     )
 
         # Validate Payment Mode
@@ -508,7 +510,8 @@ class PettyCashTransaction(Document):
             )
 
             if checker_required:
-                self.db_set("amount_deducted", self.amount, update_modified=False)
+                self.db_set("amount_deducted", self.amount,
+                            update_modified=False)
                 self.db_set("approval_status", "Pending Checker",
                             update_modified=False)
             elif self.amount_exceeding_limit > 0:
@@ -868,11 +871,14 @@ class PettyCashTransaction(Document):
         else:
             self.apply_new_flow_pending_approval_deduction()
 
-        frappe.msgprint(
-            msg=_("Limit Exceedance Approved. Full amount approved."),
-            title=_("Message"),
-            indicator="blue"
-        )
+        # frappe.msgprint(
+        #     msg=_("Limit Exceedance Approved. Full amount approved."),
+        #     title=_("Message"),
+        #     indicator="blue"
+        # )
+
+        # Run verification process directly to auto-verify over-limit transactions
+        self.ho_verify_bill()
 
     @frappe.whitelist()
     def ho_approver_reject(self):
@@ -914,7 +920,8 @@ class PettyCashTransaction(Document):
         # document to the HO Approver's queue ("Pending Approval") so the HO
         # Petty Cash Approver can approve/reject the limit exceedance before
         # the HO Verifier moves the document to "Verified".
-        self.db_set("approval_status", "Pending Approval", update_modified=False)
+        self.db_set("approval_status", "Pending Approval",
+                    update_modified=False)
 
         frappe.msgprint(
             msg=_("Checker Approved. Status set to Pending Approval for HO Approver."),
@@ -983,12 +990,13 @@ class PettyCashTransaction(Document):
     def ho_verify_bill(self):
         user_roles = frappe.get_roles()
 
-        if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
+        if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
             frappe.throw(
                 _("Only HO Petty Cash Manager or Verifier can verify."))
 
         if self.approval_status not in ["Approved", "Checked"]:
-            frappe.throw(_("Document must be Approved/Checked before Verification."))
+            frappe.throw(
+                _("Document must be Approved/Checked before Verification."))
 
         # BEFORE moving to 'Verified': if the document reached here via the
         # Checker's path ("Checked"), route it through the HO Petty Cash
@@ -996,7 +1004,8 @@ class PettyCashTransaction(Document):
         # ho_approve_limit -> 'Pending Approval' -> 'Approved') before the
         # verifier/pay action can set the final status to 'Verified'.
         if self.approval_status == "Checked":
-            self.db_set("approval_status", "Pending Approval", update_modified=False)
+            self.db_set("approval_status", "Pending Approval",
+                        update_modified=False)
             frappe.msgprint(
                 msg=_("HO Petty Cash Approver approval required before verification."),
                 title=_("Pending Approval"),
@@ -2383,9 +2392,11 @@ def download_consolidated_txt_api(transaction_date=None):
             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
         )
 
-    selected_date = getdate(transaction_date) if transaction_date else getdate(nowdate())
+    selected_date = getdate(
+        transaction_date) if transaction_date else getdate(nowdate())
     if selected_date > getdate(nowdate()):
-        frappe.throw("You can only download TTUM for today or previous dates, not for future dates.")
+        frappe.throw(
+            "You can only download TTUM for today or previous dates, not for future dates.")
     selected_date = str(selected_date)
 
     transactions = frappe.get_all(
