@@ -30,6 +30,20 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     .prop("type", "text/css")
     .html(
       `
+        .crm-lead-report-page .layout-main-section-wrapper {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+        .crm-lead-report-page .layout-main-section {
+            max-width: 100% !important;
+            padding: 0 10px !important;
+        }
+        .crm-lead-report-page .container {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+        }
         .crm-lead-report-page .page-title {
             display: inline-block !important;
             vertical-align: middle !important;
@@ -100,6 +114,24 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .crm-capsule-box .crm-approx-icon {
             position: absolute; right: 6px; font-size: 11px; color: #94a3b8; pointer-events: none;
         }
+        .crm-sidebar-btn {
+            position: relative;
+            transition: all 0.15s ease;
+        }
+        .crm-sidebar-btn.filter-active {
+            border-color: #86efac !important;
+            background-color: #f0fdf4 !important;
+            color: #166534 !important;
+        }
+        .crm-active-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #3AF71C;
+            box-shadow: 0 0 4px #3AF71C;
+            flex-shrink: 0;
+        }
         .crm-btn-filter-pill {
             display: inline-flex; align-items: center; gap: 5px; height: 30px;
             padding: 0 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
@@ -109,12 +141,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .crm-btn-filter-pill.active { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .crm-table-container {
             background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow-x: auto; overflow-y: visible;
         }
-        .crm-list-table { width: 100%; border-collapse: collapse; margin: 0; font-size: 12.5px; }
+        .crm-list-table { width: 100%; min-width: 1000px; border-collapse: collapse; margin: 0; font-size: 12.5px; }
         .crm-list-table thead th {
             background: #f8fafc; color: #475569; font-weight: 600; font-size: 11px;
-            text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px;
+            text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 10px;
             border-bottom: 1px solid #e2e8f0; text-align: left; white-space: nowrap;
         }
         .crm-list-table tbody tr {
@@ -122,7 +154,116 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         }
         .crm-list-table tbody tr:hover { background-color: #f8fafc; }
         .crm-list-table tbody td {
-            padding: 10px 12px; vertical-align: middle; color: #1e293b;
+            padding: 9px 10px; vertical-align: middle; color: #1e293b; position: relative; white-space: nowrap;
+        }
+        /* Hover Details Popover */
+        .crm-hover-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .crm-hover-badge {
+            cursor: pointer;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+            padding: 2px 4px;
+        }
+        .crm-hover-badge:hover {
+            transform: scale(1.08);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .crm-hover-popover {
+            display: none;
+            position: absolute;
+            z-index: 999999;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 10px;
+            box-shadow: 0 14px 35px -5px rgba(0,0,0,0.22), 0 8px 12px -6px rgba(0,0,0,0.12);
+            min-width: 480px;
+            max-width: 580px;
+            padding: 14px 18px;
+            pointer-events: auto;
+            text-align: left;
+            white-space: normal;
+        }
+        /* Top Rows (first 3 rows) popup opens downwards so it never cuts off at screen top */
+        .crm-popover-down .crm-hover-popover {
+            top: 100%;
+            bottom: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 6px;
+        }
+        .crm-popover-down .crm-hover-popover::before {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            height: 10px;
+        }
+        .crm-popover-down .crm-hover-popover::after {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent transparent #ffffff transparent;
+        }
+
+        /* Default/Lower Rows popup opens upwards */
+        .crm-popover-up .crm-hover-popover {
+            bottom: 100%;
+            top: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 6px;
+        }
+        .crm-popover-up .crm-hover-popover::before {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            height: 10px;
+        }
+        .crm-popover-up .crm-hover-popover::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #ffffff transparent transparent transparent;
+        }
+
+        .crm-hover-container:hover .crm-hover-popover {
+            display: block;
+        }
+        .crm-hover-popover-header {
+            font-size: 12px;
+            font-weight: 700;
+            color: #0f172a;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .crm-hover-lead-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 7px 0;
+            border-bottom: 1px dashed #f1f5f9;
+            font-size: 12px;
+        }
+        .crm-hover-lead-item:last-child {
+            border-bottom: none;
         }
         .crm-soft-pill {
             display: inline-flex; align-items: center; padding: 2px 8px;
@@ -867,35 +1008,46 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Zone & Region</label>
                         <div class="d-flex" style="gap: 6px;">
-                            <button class="btn btn-xs btn-default w-100 font-weight-bold" @click="active_popup = 'zone'">
-                                Zone ({{ selected.zone.length }})
+                            <button :class="['btn btn-xs btn-default w-100 font-weight-bold crm-sidebar-btn d-flex align-items-center justify-content-center', isFilterActive('zone') ? 'filter-active' : '']" style="gap: 5px;" @click="active_popup = 'zone'">
+                                <span>Zone</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('zone')"></span>
                             </button>
-                            <button class="btn btn-xs btn-default w-100 font-weight-bold" @click="active_popup = 'region'">
-                                Region ({{ selected.region.length }})
+                            <button :class="['btn btn-xs btn-default w-100 font-weight-bold crm-sidebar-btn d-flex align-items-center justify-content-center', isFilterActive('region') ? 'filter-active' : '']" style="gap: 5px;" @click="active_popup = 'region'">
+                                <span>Region</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('region')"></span>
                             </button>
                         </div>
                     </div>
 
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Branch (SOL ID)</label>
-                        <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'sol_id'">
-                            <span class="text-truncate">{{ selected.sol_id.length ? selected.sol_id.length + ' Selected' : 'All Branches' }}</span>
+                        <button :class="['btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center crm-sidebar-btn', isFilterActive('sol_id') ? 'filter-active' : '']" @click="active_popup = 'sol_id'">
+                            <span class="d-flex align-items-center" style="gap: 6px;">
+                                <span class="text-truncate">Branch</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('sol_id')"></span>
+                            </span>
                             <span class="text-muted" style="font-size: 10px;">›</span>
                         </button>
                     </div>
 
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Product</label>
-                        <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'product'">
-                            <span class="text-truncate">{{ selected.product.length ? selected.product.length + ' Selected' : 'All Products' }}</span>
+                        <button :class="['btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center crm-sidebar-btn', isFilterActive('product') ? 'filter-active' : '']" @click="active_popup = 'product'">
+                            <span class="d-flex align-items-center" style="gap: 6px;">
+                                <span class="text-truncate">Product</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('product')"></span>
+                            </span>
                             <span class="text-muted" style="font-size: 10px;">›</span>
                         </button>
                     </div>
 
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Source</label>
-                        <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'source'">
-                            <span class="text-truncate">{{ selected.source.length ? selected.source.length + ' Selected' : 'All Sources' }}</span>
+                        <button :class="['btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center crm-sidebar-btn', isFilterActive('source') ? 'filter-active' : '']" @click="active_popup = 'source'">
+                            <span class="d-flex align-items-center" style="gap: 6px;">
+                                <span class="text-truncate">Source</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('source')"></span>
+                            </span>
                             <span class="text-muted" style="font-size: 10px;">›</span>
                         </button>
                     </div>
@@ -911,6 +1063,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         </div>
 
                         <div class="d-flex align-items-center" style="gap: 8px;">
+                            <button class="btn btn-xs btn-default border font-weight-bold" @click="showDSRRulesDialog" title="View DSR Rating & Qualification Rules">
+                                ℹ️ DSR Rules
+                            </button>
                             <button class="btn btn-xs btn-default border font-weight-bold" @click="goToLeadList">
                                 Lead List
                             </button>
@@ -1053,7 +1208,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="emp in paginatedEmployees" :key="emp.employee_id">
+                                <tr v-for="(emp, empIdx) in paginatedEmployees" :key="emp.employee_id">
                                     <td style="padding-left: 14px;">
                                         <input type="checkbox" :value="emp.employee_id" :checked="selected_row_ids.includes(emp.employee_id)" @change="toggleRowSelect(emp.employee_id)">
                                     </td>
@@ -1068,17 +1223,99 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                             <span class="crm-soft-pill blue" style="font-size:10px;">{{ emp.region || 'N/A' }}</span>
                                         </div>
                                     </td>
-                                    <td style="cursor: pointer;" @click="openBMVerificationDialog(emp)">
-                                        <span class="font-weight-bold text-primary">{{ emp.total_leads || 0 }}</span>
+                                    <td>
+                                        <div :class="['crm-hover-container', empIdx < 3 ? 'crm-popover-down' : 'crm-popover-up']">
+                                            <span class="font-weight-bold text-primary crm-hover-badge" @click="openBMVerificationDialog(emp)">
+                                                {{ emp.total_leads || 0 }}
+                                            </span>
+                                            <div class="crm-hover-popover" v-if="(emp.leads_preview || []).length > 0">
+                                                <div class="crm-hover-popover-header">
+                                                    <span>{{ emp.employee_name }} - Total Leads ({{ emp.total_leads }})</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 35</span>
+                                                </div>
+                                                <div style="max-height: 400px; overflow-y: auto;">
+                                                    <div v-for="lead in (emp.leads_preview || []).slice(0, 35)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                        <div>
+                                                            <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
+                                                        </div>
+                                                        <div style="text-align:right;">
+                                                            <span :class="['crm-soft-pill', lead.status === 'Converted' ? 'green' : (lead.status === 'Lead' ? 'blue' : (lead.status === 'Follow-up' ? 'yellow' : 'red'))]" style="font-size:9.5px;">{{ lead.status }}</span>
+                                                            <div style="font-size:10px; color:#059669; font-weight:600;">₹{{ (lead.amount || 0).toLocaleString('en-IN') }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="text-muted">{{ emp.total_followups || 0 }}</span>
+                                        <div :class="['crm-hover-container', empIdx < 3 ? 'crm-popover-down' : 'crm-popover-up']">
+                                            <span class="text-muted crm-hover-badge">{{ emp.total_followups || 0 }}</span>
+                                            <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Follow Up').length > 0">
+                                                <div class="crm-hover-popover-header">
+                                                    <span>{{ emp.employee_name }} - Follow-ups ({{ emp.total_followups }})</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 35</span>
+                                                </div>
+                                                <div style="max-height: 400px; overflow-y: auto;">
+                                                    <div v-for="lead in getEmployeeLeads(emp, 'Follow Up').slice(0, 35)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                        <div>
+                                                            <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
+                                                        </div>
+                                                        <div style="text-align:right;">
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.date }}</div>
+                                                            <div style="font-size:10px; color:#059669; font-weight:600;">₹{{ (lead.amount || 0).toLocaleString('en-IN') }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="text-muted">{{ emp.total_not_interested || 0 }}</span>
+                                        <div :class="['crm-hover-container', empIdx < 3 ? 'crm-popover-down' : 'crm-popover-up']">
+                                            <span class="text-muted crm-hover-badge">{{ emp.total_not_interested || 0 }}</span>
+                                            <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Not Interested').length > 0">
+                                                <div class="crm-hover-popover-header">
+                                                    <span>{{ emp.employee_name }} - Not Interested ({{ emp.total_not_interested }})</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 35</span>
+                                                </div>
+                                                <div style="max-height: 400px; overflow-y: auto;">
+                                                    <div v-for="lead in getEmployeeLeads(emp, 'Not Interested').slice(0, 35)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                        <div>
+                                                            <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
+                                                        </div>
+                                                        <div style="text-align:right;">
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.date }}</div>
+                                                            <div style="font-size:10px; color:#059669; font-weight:600;">₹{{ (lead.amount || 0).toLocaleString('en-IN') }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="crm-soft-pill green">{{ emp.total_converted || 0 }}</span>
+                                        <div :class="['crm-hover-container', empIdx < 3 ? 'crm-popover-down' : 'crm-popover-up']">
+                                            <span class="crm-soft-pill green crm-hover-badge">{{ emp.total_converted || 0 }}</span>
+                                            <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Converted').length > 0">
+                                                <div class="crm-hover-popover-header">
+                                                    <span>{{ emp.employee_name }} - Converted ({{ emp.total_converted }})</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 35</span>
+                                                </div>
+                                                <div style="max-height: 400px; overflow-y: auto;">
+                                                    <div v-for="lead in getEmployeeLeads(emp, 'Converted').slice(0, 35)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                        <div>
+                                                            <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
+                                                        </div>
+                                                        <div style="text-align:right;">
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.date }}</div>
+                                                            <div style="font-size:10px; color:#059669; font-weight:600;">₹{{ (lead.amount || 0).toLocaleString('en-IN') }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="font-weight-bold" style="color: #047857;">
@@ -1357,6 +1594,63 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       });
     },
 
+    showDSRRulesDialog() {
+      const d = new frappe.ui.Dialog({
+        title: __("Daily Sales Report (DSR) Rules"),
+        size: "small",
+        fields: [
+          {
+            fieldtype: "HTML",
+            fieldname: "dsr_rules_html",
+            options: `
+              <div style="font-family: inherit; font-size: 13px; color: #1e293b;">
+                <!-- Rating Criteria Section -->
+                <div style="margin-bottom: 16px;">
+                  <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 15px;">⭐</span> Rating Criteria
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; padding-left: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px; background: #f0fdf4; border-left: 3px solid #22c55e; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #22c55e; color: #fff; font-size: 10px; padding: 3px 6px;">Good</span>
+                      <span>At least <b>1 converted</b> lead.</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; background: #fffbeb; border-left: 3px solid #f59e0b; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #f59e0b; color: #fff; font-size: 10px; padding: 3px 6px;">Average</span>
+                      <span>At least <b>4 follow-ups</b> and none converted.</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; background: #fef2f2; border-left: 3px solid #ef4444; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #ef4444; color: #fff; font-size: 10px; padding: 3px 6px;">Bad</span>
+                      <span>Neither of the above criteria met.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Qualification Criteria Section -->
+                <div>
+                  <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 15px;">🎯</span> Qualification Criteria
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; padding-left: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px; background: #f0fdf4; border-left: 3px solid #16a34a; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #16a34a; color: #fff; font-size: 10px; padding: 3px 6px;">Qualified</span>
+                      <span>Total leads created <b>≥ 10</b>.</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; background: #fef2f2; border-left: 3px solid #dc2626; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #dc2626; color: #fff; font-size: 10px; padding: 3px 6px;">Disqualified</span>
+                      <span>Total leads created <b>&lt; 10</b>.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+          }
+        ],
+        primary_action_label: __("Close"),
+        primary_action: () => d.hide(),
+      });
+      d.show();
+    },
+
     openDownloadDialog() {
       let d = new frappe.ui.Dialog({
         title: __("Download & View Report Options"),
@@ -1537,6 +1831,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       const idx = this.selected_row_ids.indexOf(id);
       if (idx > -1) this.selected_row_ids.splice(idx, 1);
       else this.selected_row_ids.push(id);
+    },
+    isFilterActive(key) {
+      const sel = this.selected[key] || [];
+      return sel.length > 0;
     },
     resetAllFilters() {
       this.selected = { zone: [], region: [], sol_id: [], product: [], source: [] };
@@ -1748,6 +2046,20 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.fetchEmployeePerformance();
     },
 
+    getEmployeeLeads(emp, statusFilter = null) {
+      if (!emp || !emp.leads_preview) return [];
+      if (!statusFilter || statusFilter === 'All') return emp.leads_preview;
+      const cleanFilter = statusFilter.toLowerCase().replace(/[\s-_]/g, '');
+      return emp.leads_preview.filter(l => {
+        const leadStatus = (l.status || '').toLowerCase().replace(/[\s-_]/g, '');
+        return leadStatus === cleanFilter;
+      });
+    },
+    openLeadRecord(leadId) {
+      if (leadId) {
+        frappe.set_route('Form', 'Lead', leadId);
+      }
+    },
     // Is function ko methods section mein add/replace karein
     getEnhancedRating(emp) {
       // 1. Agar ek bhi lead convert hui hai
