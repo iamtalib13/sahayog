@@ -122,7 +122,74 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         }
         .crm-list-table tbody tr:hover { background-color: #f8fafc; }
         .crm-list-table tbody td {
-            padding: 10px 12px; vertical-align: middle; color: #1e293b;
+            padding: 10px 12px; vertical-align: middle; color: #1e293b; position: relative;
+        }
+        /* Hover Details Popover */
+        .crm-hover-container {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+        }
+        .crm-hover-badge {
+            cursor: pointer;
+            transition: transform 0.1s ease, box-shadow 0.1s ease;
+        }
+        .crm-hover-badge:hover {
+            transform: scale(1.08);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .crm-hover-popover {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1050;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15), 0 8px 10px -6px rgba(0,0,0,0.1);
+            min-width: 320px;
+            max-width: 420px;
+            padding: 10px 12px;
+            pointer-events: auto;
+            text-align: left;
+            white-space: normal;
+        }
+        .crm-hover-popover::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: #ffffff transparent transparent transparent;
+        }
+        .crm-hover-container:hover .crm-hover-popover {
+            display: block;
+        }
+        .crm-hover-popover-header {
+            font-size: 11px;
+            font-weight: 700;
+            color: #0f172a;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 6px;
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .crm-hover-lead-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 0;
+            border-bottom: 1px dashed #f1f5f9;
+            font-size: 11px;
+        }
+        .crm-hover-lead-item:last-child {
+            border-bottom: none;
         }
         .crm-soft-pill {
             display: inline-flex; align-items: center; padding: 2px 8px;
@@ -1071,17 +1138,99 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                             <span class="crm-soft-pill blue" style="font-size:10px;">{{ emp.region || 'N/A' }}</span>
                                         </div>
                                     </td>
-                                    <td style="cursor: pointer;" @click="openBMVerificationDialog(emp)">
-                                        <span class="font-weight-bold text-primary">{{ emp.total_leads || 0 }}</span>
+                                    <td>
+                                        <div class="crm-hover-container">
+                                            <span class="font-weight-bold text-primary crm-hover-badge" @click="openBMVerificationDialog(emp)">
+                                                {{ emp.total_leads || 0 }}
+                                            </span>
+                                            <div class="crm-hover-popover" v-if="(emp.leads_preview || []).length > 0">
+                                                <div class="crm-hover-popover-header">
+                                                    <span>{{ emp.employee_name }} - Total Leads ({{ emp.total_leads }})</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 10</span>
+                                                </div>
+                                                <div style="max-height: 220px; overflow-y: auto;">
+                                                    <div v-for="lead in (emp.leads_preview || []).slice(0, 10)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                        <div>
+                                                            <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
+                                                        </div>
+                                                        <div style="text-align:right;">
+                                                            <span :class="['crm-soft-pill', lead.status === 'Converted' ? 'green' : (lead.status === 'Lead' ? 'blue' : (lead.status === 'Follow-up' ? 'yellow' : 'red'))]" style="font-size:9.5px;">{{ lead.status }}</span>
+                                                            <div style="font-size:10px; color:#059669; font-weight:600;">₹{{ (lead.amount || 0).toLocaleString('en-IN') }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="text-muted">{{ emp.total_followups || 0 }}</span>
+                                        <div class="crm-hover-container">
+                                            <span class="text-muted crm-hover-badge">{{ emp.total_followups || 0 }}</span>
+                                            <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Follow-up').length > 0">
+                                                <div class="crm-hover-popover-header">
+                                                    <span>{{ emp.employee_name }} - Follow-ups ({{ emp.total_followups }})</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 10</span>
+                                                </div>
+                                                <div style="max-height: 220px; overflow-y: auto;">
+                                                    <div v-for="lead in getEmployeeLeads(emp, 'Follow-up').slice(0, 10)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                        <div>
+                                                            <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
+                                                        </div>
+                                                        <div style="text-align:right;">
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.date }}</div>
+                                                            <div style="font-size:10px; color:#059669; font-weight:600;">₹{{ (lead.amount || 0).toLocaleString('en-IN') }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="text-muted">{{ emp.total_not_interested || 0 }}</span>
+                                        <div class="crm-hover-container">
+                                            <span class="text-muted crm-hover-badge">{{ emp.total_not_interested || 0 }}</span>
+                                            <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Not Interested').length > 0">
+                                                <div class="crm-hover-popover-header">
+                                                    <span>{{ emp.employee_name }} - Not Interested ({{ emp.total_not_interested }})</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 10</span>
+                                                </div>
+                                                <div style="max-height: 220px; overflow-y: auto;">
+                                                    <div v-for="lead in getEmployeeLeads(emp, 'Not Interested').slice(0, 10)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                        <div>
+                                                            <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
+                                                        </div>
+                                                        <div style="text-align:right;">
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.date }}</div>
+                                                            <div style="font-size:10px; color:#059669; font-weight:600;">₹{{ (lead.amount || 0).toLocaleString('en-IN') }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
-                                        <span class="crm-soft-pill green">{{ emp.total_converted || 0 }}</span>
+                                        <div class="crm-hover-container">
+                                            <span class="crm-soft-pill green crm-hover-badge">{{ emp.total_converted || 0 }}</span>
+                                            <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Converted').length > 0">
+                                                <div class="crm-hover-popover-header">
+                                                    <span>{{ emp.employee_name }} - Converted ({{ emp.total_converted }})</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 10</span>
+                                                </div>
+                                                <div style="max-height: 220px; overflow-y: auto;">
+                                                    <div v-for="lead in getEmployeeLeads(emp, 'Converted').slice(0, 10)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                        <div>
+                                                            <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
+                                                        </div>
+                                                        <div style="text-align:right;">
+                                                            <div style="font-size:10px; color:#64748b;">{{ lead.date }}</div>
+                                                            <div style="font-size:10px; color:#059669; font-weight:600;">₹{{ (lead.amount || 0).toLocaleString('en-IN') }}</div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="font-weight-bold" style="color: #047857;">
@@ -1808,6 +1957,16 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       this.fetchEmployeePerformance();
     },
 
+    getEmployeeLeads(emp, statusFilter = null) {
+      if (!emp || !emp.leads_preview) return [];
+      if (!statusFilter || statusFilter === 'All') return emp.leads_preview;
+      return emp.leads_preview.filter(l => l.status === statusFilter);
+    },
+    openLeadRecord(leadId) {
+      if (leadId) {
+        frappe.set_route('Form', 'Lead', leadId);
+      }
+    },
     // Is function ko methods section mein add/replace karein
     getEnhancedRating(emp) {
       // 1. Agar ek bhi lead convert hui hai
