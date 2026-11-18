@@ -909,8 +909,14 @@ class PettyCashTransaction(Document):
     def ho_checker_approve(self):
         user_roles = frappe.get_roles()
 
-        if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
-            frappe.throw(_("Only HO Petty Cash Checker can approve."))
+        # if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
+        #     frappe.throw(_("Only HO Petty Cash Checker can approve."))
+
+        allowed_roles = {"HO Petty Cash Checker",
+                         "HO Petty Cash Manager", "System Manager"}
+        if not allowed_roles.intersection(user_roles) and frappe.session.user != "Administrator":
+            frappe.throw(
+                _("Only HO Petty Cash Checker or Manager can approve."))
 
         if self.docstatus != 1 or self.approval_status != "Pending Checker":
             frappe.throw(_("Document is not pending checker approval."))
@@ -933,8 +939,14 @@ class PettyCashTransaction(Document):
     def ho_checker_reject(self):
         user_roles = frappe.get_roles()
 
-        if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
-            frappe.throw(_("Only HO Petty Cash Checker can reject."))
+        # if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
+        #     frappe.throw(_("Only HO Petty Cash Checker can reject."))
+
+        allowed_roles = {"HO Petty Cash Checker",
+                         "HO Petty Cash Manager", "System Manager"}
+        if not allowed_roles.intersection(user_roles) and frappe.session.user != "Administrator":
+            frappe.throw(
+                _("Only HO Petty Cash Checker or Manager can reject."))
 
         if self.docstatus != 1 or self.approval_status != "Pending Checker":
             frappe.throw(_("Document is not pending checker approval."))

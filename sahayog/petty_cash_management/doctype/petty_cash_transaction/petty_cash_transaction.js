@@ -307,7 +307,8 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
         // SCENARIO: Pending Checker -> Checker can approve
         if (frm.doc.docstatus === 1 && frm.doc.approval_status === "Pending Checker") {
-            if (frappe.user.has_role('HO Petty Cash Checker') || frappe.session.user === 'Administrator') {
+            // if (frappe.user.has_role('HO Petty Cash Checker') || frappe.session.user === 'Administrator') {
+            if (frappe.user.has_role('HO Petty Cash Checker') || frappe.user.has_role('HO Petty Cash Manager') || frappe.user.has_role('System Manager') || frappe.session.user === 'Administrator') {
                 frm.add_custom_button(__('Approve (Checker)'), function () {
                     frappe.confirm('Approve this transaction?', () => {
                         frappe.call({
