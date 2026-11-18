@@ -32,6 +32,7 @@
   "daily_cash_expense_limit",
   "cash_limit_exempt_categories",
   "allowed_access_manager_designations",
+  "ttum_download_date",
   "pending_request_dashboard_tab",
   "pending_request_setting",
   "password_security_tab",
@@ -372,14 +373,18 @@
    "fieldname": "karza_base_url",
    "fieldtype": "Data",
    "label": "karza Base Url"
+  },
+  {
+   "fieldname": "ttum_download_date",
+   "fieldtype": "Date",
+   "label": "TTUM Download Date"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-10-12 12:58:17.340222",
- "modified": "2026-10-13 16:12:24.130854",
+ "modified": "2026-11-18 15:34:12.782907",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
