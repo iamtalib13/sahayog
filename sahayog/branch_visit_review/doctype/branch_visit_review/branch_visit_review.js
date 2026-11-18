@@ -352,6 +352,12 @@ function open_action_item_dialog(frm, idx, item) {
 		return html;
 	};
 
+	let tat_value = item.tat || "";
+	if (is_add && !tat_value) {
+		let base = (frm.doc.creation || "").toString().split(" ")[0] || frappe.datetime.get_today();
+		tat_value = frappe.datetime.add_days(base, 15);
+	}
+
 	let modal_html = "";
 	modal_html += "<div class='bvr-modal-overlay'>";
 	modal_html += "<div class='bvr-modal'>";
@@ -361,7 +367,7 @@ function open_action_item_dialog(frm, idx, item) {
 	modal_html += "<div class='bvr-modal-field'><label>Responsible</label><div class='employee-search-wrapper bvr-modal-emp' data-value='" + bvr_escape(item.responsible) + "'><input type='text' class='form-control bvr-modal-input employee-search-input' placeholder='Search employee' autocomplete='off' value=''><div class='employee-dropdown' style='display:none;'></div></div></div>";
 	modal_html += "<div class='bvr-modal-grid'>";
 	modal_html += "<div class='bvr-modal-field'><label>Priority</label><select class='form-control bvr-modal-input' data-field='priority'>" + select_options(["High", "Medium", "Low"], item.priority || "Medium") + "</select></div>";
-	modal_html += "<div class='bvr-modal-field'><label>Target Date (TAT)</label><input type='date' class='form-control bvr-modal-input' data-field='tat' value='" + bvr_escape(item.tat) + "'></div>";
+	modal_html += "<div class='bvr-modal-field'><label>Target Date (TAT)</label><input type='date' class='form-control bvr-modal-input' data-field='tat' value='" + bvr_escape(tat_value) + "'></div>";
 	modal_html += "<div class='bvr-modal-field'><label>Status</label><select class='form-control bvr-modal-input' data-field='status'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select></div>";
 	modal_html += "</div>";
 	modal_html += "<div class='bvr-modal-field'><label>Resolution Notes</label><textarea class='form-control bvr-modal-input' data-field='resolution_notes' rows='3' placeholder='Enter notes'>" + bvr_escape(item.resolution_notes) + "</textarea></div>";
@@ -892,7 +898,9 @@ function render_checklist(frm, template) {
 			});
 
 			frm.fields_dict.checklist.$wrapper.off("click.bvr-add").on("click.bvr-add", ".action-row-add, .add-action-row", function () {
-				frm.add_child("action_items", { priority: "Medium", status: "Open" });
+				let base = (frm.doc.creation || "").toString().split(" ")[0] || frappe.datetime.get_today();
+				let tat = frappe.datetime.add_days(base, 15);
+				frm.add_child("action_items", { priority: "Medium", status: "Open", tat: tat });
 				frm.refresh_field("action_items");
 				render_checklist(frm, frm.doc.template);
 			});
