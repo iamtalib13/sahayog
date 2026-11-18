@@ -411,7 +411,8 @@ function open_action_item_dialog(frm, idx, item) {
 			}
 		}
 		let scls = function (i) { return i === active_idx ? " bvr-stage-active" : ""; };
-		modal_html += "<div class='bvr-modal-field'><label>All Stages</label><div class='bvr-modal-grid' style='margin-top:6px; grid-template-columns: repeat(4, 1fr);'>";
+		modal_html += "<div class='bvr-modal-field'><label>All Stages</label><div class='bvr-modal-grid' style='margin-top:6px; grid-template-columns: repeat(5, 1fr);'>";
+		modal_html += "<div class='bvr-modal-field'><label>Created On</label><div class='form-control bvr-ticket-created-on' style='background:#f8f9fb;'>-</div></div>";
 		modal_html += "<div class='bvr-modal-field" + scls(0) + "'><label>Stage I Admin</label><div class='form-control' style='background:#f8f9fb;'>" + bvr_escape(fmt_disp(tat_value)) + "</div></div>";
 		modal_html += "<div class='bvr-modal-field" + scls(1) + "'><label>Stage 2 Manoj Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_2_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat2_value)) + "'></div>";
 		modal_html += "<div class='bvr-modal-field" + scls(2) + "'><label>Stage 3 CBO Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_3_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat3_value)) + "'></div>";
@@ -425,6 +426,19 @@ function open_action_item_dialog(frm, idx, item) {
 	$("body").append(modal_html);
 
 	let $overlay = $(".bvr-modal-overlay");
+	if (is_admin_template && item.sahayog_ticket) {
+		frappe.db.get_value("Sahayog Ticket", item.sahayog_ticket, "creation").then((r) => {
+			let c = r && r.message && r.message.creation;
+			if (c) {
+				let d = (c || "").toString().split(" ")[0];
+				if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+					let p = d.split("-");
+					d = p[2] + "/" + p[1] + "/" + p[0];
+				}
+				$overlay.find(".bvr-ticket-created-on").text(d);
+			}
+		});
+	}
 	let close_modal = function () {
 		$overlay.remove();
 		$(document).off("keydown.bvr-modal");
