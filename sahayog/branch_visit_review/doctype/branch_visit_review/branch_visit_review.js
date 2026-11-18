@@ -867,7 +867,7 @@ function render_checklist(frm, template) {
 				.bvr-tabs .ks-remove-btn:hover { background: #fdecea; color: #c0392b; }
 				.bvr-tabs .tab-content-review { padding: 4px 0; }
 				.bvr-modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(15, 23, 42, 0.45); z-index: 2000; display: flex; align-items: flex-start; justify-content: center; padding: 60px 16px 16px; }
-				.bvr-modal { background: #fff; border-radius: 12px; width: 560px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }
+				.bvr-modal { background: #fff; border-radius: 12px; width: 1300px; max-width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,0.25); overflow: hidden; }
 				.bvr-modal-header { display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, #f0f2ff 0%, #e8ebff 100%); border-left: 4px solid #5e64ff; padding: 12px 16px; }
 				.bvr-modal-header h5 { margin: 0; font-size: 14px; font-weight: 700; color: #16181d; }
 				.bvr-modal-close { background: transparent; border: none; font-size: 22px; line-height: 1; color: #6c7680; cursor: pointer; padding: 0 4px; }
