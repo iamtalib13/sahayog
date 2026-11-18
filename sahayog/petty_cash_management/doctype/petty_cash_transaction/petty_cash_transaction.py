@@ -1408,12 +1408,15 @@ class PettyCashTransaction(Document):
 
         final_txt = "\n".join(content)
 
-        # Auto-exclude this record from future bulk TTUM downloads
+        # Auto-exclude this record from future bulk TTUM downloads and record download timestamp
+        from frappe.utils import now_datetime
         frappe.db.set_value(
             "Petty Cash Transaction",
             self.name,
-            "exclude_from_ttum",
-            1,
+            {
+                "exclude_from_ttum": 1,
+                "ttum_downloaded_date": now_datetime()
+            },
             update_modified=False,
         )
         frappe.db.commit()
