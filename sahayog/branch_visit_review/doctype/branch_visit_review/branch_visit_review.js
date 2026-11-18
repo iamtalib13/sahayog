@@ -369,9 +369,9 @@ function open_action_item_dialog(frm, idx, item) {
 	let tat3_value = item.stage_3_tat || "";
 	let tat4_value = item.stage_4_tat || "";
 	if (is_admin_template && is_add) {
-		if (!tat2_value) tat2_value = default_tat;
-		if (!tat3_value) tat3_value = default_tat;
-		if (!tat4_value) tat4_value = default_tat;
+		if (!tat2_value) tat2_value = frappe.datetime.add_days(tat_value, 4);
+		if (!tat3_value) tat3_value = frappe.datetime.add_days(tat2_value, 4);
+		if (!tat4_value) tat4_value = frappe.datetime.add_days(tat3_value, 4);
 	}
 
 	let modal_html = "";
@@ -967,9 +967,9 @@ function render_checklist(frm, template) {
 				let tat = frappe.datetime.add_days(base, 15);
 				let row_vals = { priority: "Medium", status: "Open", tat: tat };
 				if (is_admin_template) {
-					row_vals.stage_2_tat = tat;
-					row_vals.stage_3_tat = tat;
-					row_vals.stage_4_tat = tat;
+					row_vals.stage_2_tat = frappe.datetime.add_days(tat, 4);
+					row_vals.stage_3_tat = frappe.datetime.add_days(row_vals.stage_2_tat, 4);
+					row_vals.stage_4_tat = frappe.datetime.add_days(row_vals.stage_3_tat, 4);
 				}
 				frm.add_child("action_items", row_vals);
 				frm.refresh_field("action_items");
