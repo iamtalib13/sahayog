@@ -114,6 +114,24 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .crm-capsule-box .crm-approx-icon {
             position: absolute; right: 6px; font-size: 11px; color: #94a3b8; pointer-events: none;
         }
+        .crm-sidebar-btn {
+            position: relative;
+            transition: all 0.15s ease;
+        }
+        .crm-sidebar-btn.filter-active {
+            border-color: #86efac !important;
+            background-color: #f0fdf4 !important;
+            color: #166534 !important;
+        }
+        .crm-active-dot {
+            display: inline-block;
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #3AF71C;
+            box-shadow: 0 0 4px #3AF71C;
+            flex-shrink: 0;
+        }
         .crm-btn-filter-pill {
             display: inline-flex; align-items: center; gap: 5px; height: 30px;
             padding: 0 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
@@ -990,35 +1008,46 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Zone & Region</label>
                         <div class="d-flex" style="gap: 6px;">
-                            <button class="btn btn-xs btn-default w-100 font-weight-bold" @click="active_popup = 'zone'">
-                                Zone
+                            <button :class="['btn btn-xs btn-default w-100 font-weight-bold crm-sidebar-btn d-flex align-items-center justify-content-center', isFilterActive('zone') ? 'filter-active' : '']" style="gap: 5px;" @click="active_popup = 'zone'">
+                                <span>Zone</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('zone')"></span>
                             </button>
-                            <button class="btn btn-xs btn-default w-100 font-weight-bold" @click="active_popup = 'region'">
-                                Region
+                            <button :class="['btn btn-xs btn-default w-100 font-weight-bold crm-sidebar-btn d-flex align-items-center justify-content-center', isFilterActive('region') ? 'filter-active' : '']" style="gap: 5px;" @click="active_popup = 'region'">
+                                <span>Region</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('region')"></span>
                             </button>
                         </div>
                     </div>
 
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Branch (SOL ID)</label>
-                        <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'sol_id'">
-                            <span class="text-truncate">Branch</span>
+                        <button :class="['btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center crm-sidebar-btn', isFilterActive('sol_id') ? 'filter-active' : '']" @click="active_popup = 'sol_id'">
+                            <span class="d-flex align-items-center" style="gap: 6px;">
+                                <span class="text-truncate">Branch</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('sol_id')"></span>
+                            </span>
                             <span class="text-muted" style="font-size: 10px;">›</span>
                         </button>
                     </div>
 
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Product</label>
-                        <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'product'">
-                            <span class="text-truncate">Product</span>
+                        <button :class="['btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center crm-sidebar-btn', isFilterActive('product') ? 'filter-active' : '']" @click="active_popup = 'product'">
+                            <span class="d-flex align-items-center" style="gap: 6px;">
+                                <span class="text-truncate">Product</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('product')"></span>
+                            </span>
                             <span class="text-muted" style="font-size: 10px;">›</span>
                         </button>
                     </div>
 
                     <div class="crm-filter-group">
                         <label class="crm-filter-label">Source</label>
-                        <button class="btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center" @click="active_popup = 'source'">
-                            <span class="text-truncate">Source</span>
+                        <button :class="['btn btn-xs btn-default w-100 font-weight-bold text-left d-flex justify-content-between align-items-center crm-sidebar-btn', isFilterActive('source') ? 'filter-active' : '']" @click="active_popup = 'source'">
+                            <span class="d-flex align-items-center" style="gap: 6px;">
+                                <span class="text-truncate">Source</span>
+                                <span class="crm-active-dot" v-if="isFilterActive('source')"></span>
+                            </span>
                             <span class="text-muted" style="font-size: 10px;">›</span>
                         </button>
                     </div>
@@ -1802,6 +1831,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
       const idx = this.selected_row_ids.indexOf(id);
       if (idx > -1) this.selected_row_ids.splice(idx, 1);
       else this.selected_row_ids.push(id);
+    },
+    isFilterActive(key) {
+      const sel = this.selected[key] || [];
+      return sel.length > 0;
     },
     resetAllFilters() {
       this.selected = { zone: [], region: [], sol_id: [], product: [], source: [] };
