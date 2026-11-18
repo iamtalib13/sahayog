@@ -109,7 +109,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .crm-btn-filter-pill.active { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .crm-table-container {
             background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: visible;
         }
         .crm-list-table { width: 100%; border-collapse: collapse; margin: 0; font-size: 12.5px; }
         .crm-list-table thead th {
@@ -133,6 +133,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .crm-hover-badge {
             cursor: pointer;
             transition: transform 0.1s ease, box-shadow 0.1s ease;
+            padding: 2px 4px;
         }
         .crm-hover-badge:hover {
             transform: scale(1.08);
@@ -141,22 +142,62 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .crm-hover-popover {
             display: none;
             position: absolute;
-            bottom: calc(100% + 8px);
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1050;
+            z-index: 999999;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 10px;
-            box-shadow: 0 12px 28px -5px rgba(0,0,0,0.18), 0 8px 10px -6px rgba(0,0,0,0.1);
-            min-width: 440px;
-            max-width: 540px;
-            padding: 12px 16px;
+            box-shadow: 0 14px 35px -5px rgba(0,0,0,0.22), 0 8px 12px -6px rgba(0,0,0,0.12);
+            min-width: 480px;
+            max-width: 580px;
+            padding: 14px 18px;
             pointer-events: auto;
             text-align: left;
             white-space: normal;
         }
-        .crm-hover-popover::after {
+        /* Top Rows (first 3 rows) popup opens downwards so it never cuts off at screen top */
+        .crm-popover-down .crm-hover-popover {
+            top: 100%;
+            bottom: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-top: 6px;
+        }
+        .crm-popover-down .crm-hover-popover::before {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 0;
+            right: 0;
+            height: 10px;
+        }
+        .crm-popover-down .crm-hover-popover::after {
+            content: "";
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            margin-left: -6px;
+            border-width: 6px;
+            border-style: solid;
+            border-color: transparent transparent #ffffff transparent;
+        }
+
+        /* Default/Lower Rows popup opens upwards */
+        .crm-popover-up .crm-hover-popover {
+            bottom: 100%;
+            top: auto;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 6px;
+        }
+        .crm-popover-up .crm-hover-popover::before {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            height: 10px;
+        }
+        .crm-popover-up .crm-hover-popover::after {
             content: "";
             position: absolute;
             top: 100%;
@@ -166,6 +207,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             border-style: solid;
             border-color: #ffffff transparent transparent transparent;
         }
+
         .crm-hover-container:hover .crm-hover-popover {
             display: block;
         }
@@ -1123,7 +1165,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="emp in paginatedEmployees" :key="emp.employee_id">
+                                <tr v-for="(emp, empIdx) in paginatedEmployees" :key="emp.employee_id">
                                     <td style="padding-left: 14px;">
                                         <input type="checkbox" :value="emp.employee_id" :checked="selected_row_ids.includes(emp.employee_id)" @change="toggleRowSelect(emp.employee_id)">
                                     </td>
@@ -1139,17 +1181,17 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="crm-hover-container">
+                                        <div :class="['crm-hover-container', empIdx < 3 ? 'crm-popover-down' : 'crm-popover-up']">
                                             <span class="font-weight-bold text-primary crm-hover-badge" @click="openBMVerificationDialog(emp)">
                                                 {{ emp.total_leads || 0 }}
                                             </span>
                                             <div class="crm-hover-popover" v-if="(emp.leads_preview || []).length > 0">
                                                 <div class="crm-hover-popover-header">
                                                     <span>{{ emp.employee_name }} - Total Leads ({{ emp.total_leads }})</span>
-                                                    <span class="text-muted" style="font-size:10px;">Showing max 25</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 35</span>
                                                 </div>
-                                                <div style="max-height: 420px; overflow-y: auto;">
-                                                    <div v-for="lead in (emp.leads_preview || []).slice(0, 25)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                <div style="max-height: 400px; overflow-y: auto;">
+                                                    <div v-for="lead in (emp.leads_preview || []).slice(0, 35)" :key="lead.lead_id" class="crm-hover-lead-item">
                                                         <div>
                                                             <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
                                                             <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
@@ -1164,15 +1206,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="crm-hover-container">
+                                        <div :class="['crm-hover-container', empIdx < 3 ? 'crm-popover-down' : 'crm-popover-up']">
                                             <span class="text-muted crm-hover-badge">{{ emp.total_followups || 0 }}</span>
-                                            <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Follow-up').length > 0">
+                                            <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Follow Up').length > 0">
                                                 <div class="crm-hover-popover-header">
                                                     <span>{{ emp.employee_name }} - Follow-ups ({{ emp.total_followups }})</span>
-                                                    <span class="text-muted" style="font-size:10px;">Showing max 25</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 35</span>
                                                 </div>
-                                                <div style="max-height: 420px; overflow-y: auto;">
-                                                    <div v-for="lead in getEmployeeLeads(emp, 'Follow-up').slice(0, 25)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                <div style="max-height: 400px; overflow-y: auto;">
+                                                    <div v-for="lead in getEmployeeLeads(emp, 'Follow Up').slice(0, 35)" :key="lead.lead_id" class="crm-hover-lead-item">
                                                         <div>
                                                             <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
                                                             <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
@@ -1187,15 +1229,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="crm-hover-container">
+                                        <div :class="['crm-hover-container', empIdx < 3 ? 'crm-popover-down' : 'crm-popover-up']">
                                             <span class="text-muted crm-hover-badge">{{ emp.total_not_interested || 0 }}</span>
                                             <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Not Interested').length > 0">
                                                 <div class="crm-hover-popover-header">
                                                     <span>{{ emp.employee_name }} - Not Interested ({{ emp.total_not_interested }})</span>
-                                                    <span class="text-muted" style="font-size:10px;">Showing max 25</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 35</span>
                                                 </div>
-                                                <div style="max-height: 420px; overflow-y: auto;">
-                                                    <div v-for="lead in getEmployeeLeads(emp, 'Not Interested').slice(0, 25)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                <div style="max-height: 400px; overflow-y: auto;">
+                                                    <div v-for="lead in getEmployeeLeads(emp, 'Not Interested').slice(0, 35)" :key="lead.lead_id" class="crm-hover-lead-item">
                                                         <div>
                                                             <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
                                                             <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
@@ -1210,15 +1252,15 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                         </div>
                                     </td>
                                     <td>
-                                        <div class="crm-hover-container">
+                                        <div :class="['crm-hover-container', empIdx < 3 ? 'crm-popover-down' : 'crm-popover-up']">
                                             <span class="crm-soft-pill green crm-hover-badge">{{ emp.total_converted || 0 }}</span>
                                             <div class="crm-hover-popover" v-if="getEmployeeLeads(emp, 'Converted').length > 0">
                                                 <div class="crm-hover-popover-header">
                                                     <span>{{ emp.employee_name }} - Converted ({{ emp.total_converted }})</span>
-                                                    <span class="text-muted" style="font-size:10px;">Showing max 25</span>
+                                                    <span class="text-muted" style="font-size:10px;">Showing max 35</span>
                                                 </div>
-                                                <div style="max-height: 420px; overflow-y: auto;">
-                                                    <div v-for="lead in getEmployeeLeads(emp, 'Converted').slice(0, 25)" :key="lead.lead_id" class="crm-hover-lead-item">
+                                                <div style="max-height: 400px; overflow-y: auto;">
+                                                    <div v-for="lead in getEmployeeLeads(emp, 'Converted').slice(0, 35)" :key="lead.lead_id" class="crm-hover-lead-item">
                                                         <div>
                                                             <a href="javascript:void(0)" @click="openLeadRecord(lead.lead_id)" style="font-weight:600; color:#2563eb;">{{ lead.lead_id }}</a>
                                                             <div style="font-size:10px; color:#64748b;">{{ lead.customer || 'No Customer' }} • {{ lead.product }}</div>
@@ -1960,7 +2002,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     getEmployeeLeads(emp, statusFilter = null) {
       if (!emp || !emp.leads_preview) return [];
       if (!statusFilter || statusFilter === 'All') return emp.leads_preview;
-      return emp.leads_preview.filter(l => l.status === statusFilter);
+      const cleanFilter = statusFilter.toLowerCase().replace(/[\s-_]/g, '');
+      return emp.leads_preview.filter(l => {
+        const leadStatus = (l.status || '').toLowerCase().replace(/[\s-_]/g, '');
+        return leadStatus === cleanFilter;
+      });
     },
     openLeadRecord(leadId) {
       if (leadId) {
