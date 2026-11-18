@@ -2524,7 +2524,7 @@ def download_consolidated_txt_api(transaction_date=None):
 @frappe.whitelist()
 def download_bulk_ttum_txt_api_new():
     """Generates a Consolidated TTUM Text file for verified transactions matching cutoff & exclusion criteria."""
-    from frappe.utils import nowdate, getdate
+    from frappe.utils import nowdate, getdate, now_datetime
 
     user_roles = frappe.get_roles()
     if frappe.session.user != "Administrator" and not set(
@@ -2648,13 +2648,16 @@ def download_bulk_ttum_txt_api_new():
         content.append(credit_line)
         processed_txns.append(txn_name)
 
-    # Mark all included transactions as bulk_ttum_downloaded
+    # Mark all included transactions as bulk_ttum_downloaded and save download timestamp
+    current_timestamp = now_datetime()
     for txn_name in processed_txns:
         frappe.db.set_value(
             "Petty Cash Transaction",
             txn_name,
-            "bulk_ttum_downloaded",
-            1,
+            {
+                "bulk_ttum_downloaded": 1,
+                "ttum_downloaded_date": current_timestamp
+            },
             update_modified=False
         )
     frappe.db.commit()
