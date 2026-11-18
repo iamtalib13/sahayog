@@ -30,6 +30,20 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
     .prop("type", "text/css")
     .html(
       `
+        .crm-lead-report-page .layout-main-section-wrapper {
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+        .crm-lead-report-page .layout-main-section {
+            max-width: 100% !important;
+            padding: 0 10px !important;
+        }
+        .crm-lead-report-page .container {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding-left: 12px !important;
+            padding-right: 12px !important;
+        }
         .crm-lead-report-page .page-title {
             display: inline-block !important;
             vertical-align: middle !important;
@@ -109,12 +123,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         .crm-btn-filter-pill.active { background: #eff6ff; color: #1d4ed8; border-color: #bfdbfe; }
         .crm-table-container {
             background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow: visible;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.02); overflow-x: auto; overflow-y: visible;
         }
-        .crm-list-table { width: 100%; border-collapse: collapse; margin: 0; font-size: 12.5px; }
+        .crm-list-table { width: 100%; min-width: 1000px; border-collapse: collapse; margin: 0; font-size: 12.5px; }
         .crm-list-table thead th {
             background: #f8fafc; color: #475569; font-weight: 600; font-size: 11px;
-            text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 12px;
+            text-transform: uppercase; letter-spacing: 0.4px; padding: 10px 10px;
             border-bottom: 1px solid #e2e8f0; text-align: left; white-space: nowrap;
         }
         .crm-list-table tbody tr {
@@ -122,7 +136,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
         }
         .crm-list-table tbody tr:hover { background-color: #f8fafc; }
         .crm-list-table tbody td {
-            padding: 10px 12px; vertical-align: middle; color: #1e293b; position: relative;
+            padding: 9px 10px; vertical-align: middle; color: #1e293b; position: relative; white-space: nowrap;
         }
         /* Hover Details Popover */
         .crm-hover-container {
