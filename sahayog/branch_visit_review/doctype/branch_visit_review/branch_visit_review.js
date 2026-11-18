@@ -521,12 +521,12 @@ function open_action_item_dialog(frm, idx, item) {
 			status: $overlay.find("[data-field='status']").val() || "Open",
 			resolution_notes: $overlay.find("[data-field='resolution_notes']").val() || "",
 		};
-		if (is_admin_template) {
-			row_values.stage_2_tat = parse_tat($overlay.find("[data-field='stage_2_tat']").val() || "");
-			row_values.stage_3_tat = parse_tat($overlay.find("[data-field='stage_3_tat']").val() || "");
-			row_values.stage_4_tat = parse_tat($overlay.find("[data-field='stage_4_tat']").val() || "");
-		}
 		if (is_add) {
+			if (is_admin_template) {
+				row_values.stage_2_tat = parse_tat($overlay.find("[data-field='stage_2_tat']").val() || "");
+				row_values.stage_3_tat = parse_tat($overlay.find("[data-field='stage_3_tat']").val() || "");
+				row_values.stage_4_tat = parse_tat($overlay.find("[data-field='stage_4_tat']").val() || "");
+			}
 			frm.add_child("action_items", row_values);
 		} else {
 			Object.keys(row_values).forEach(function (key) {
@@ -534,8 +534,11 @@ function open_action_item_dialog(frm, idx, item) {
 			});
 		}
 		frm.refresh_field("action_items");
+		frm.dirty();
 		close_modal();
-		render_checklist(frm, frm.doc.template);
+		if (frm.doc.template) {
+			render_checklist(frm, frm.doc.template);
+		}
 	});
 
 	$overlay.find("[data-field='action_item']").focus();
