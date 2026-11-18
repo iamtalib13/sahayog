@@ -678,7 +678,7 @@ function render_checklist(frm, template) {
 
 			let action_head = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th>";
 			if (is_admin_template) {
-				action_head += "<th style='width:120px;'>Stage I Admin</th><th style='width:140px;'>Stage 2 Manoj Sir</th><th style='width:130px;'>Stage 3 CBO Sir</th><th style='width:140px;'>Stage - 4 CMD Sir</th>";
+				action_head += "<th style='width:130px;'>Stage I Admin</th>";
 			} else {
 				action_head += "<th style='width:130px;'>Target Date</th>";
 			}
@@ -700,16 +700,12 @@ function render_checklist(frm, template) {
 						ticket_display = "<a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a>";
 					}
 					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.responsible || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td>";
-					if (is_admin_template) {
-						action_html += "<td>" + bvr_escape(format_tat(item.tat)) + "</td><td>" + bvr_escape(format_tat(item.stage_2_tat)) + "</td><td>" + bvr_escape(format_tat(item.stage_3_tat)) + "</td><td>" + bvr_escape(format_tat(item.stage_4_tat)) + "</td>";
-					} else {
-						action_html += "<td>" + bvr_escape(format_tat(item.tat)) + "</td>";
-					}
+					action_html += "<td>" + bvr_escape(format_tat(item.tat)) + "</td>";
 					action_html += "<td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td>" + ticket_display + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
 				});
 			}
 			let action_count = (frm.doc.action_items ? frm.doc.action_items.length : 0) + 1;
-			let add_colspan = is_admin_template ? 10 : 7;
+			let add_colspan = 7;
 			action_html += "<tr class='action-row-add' title='Click to add'><td>" + action_count + "</td>";
 			action_html += "<td colspan='" + add_colspan + "' style='color:#8a93a5;text-align:center;'>+ Click to add action item</td>";
 			action_html += "<td style='text-align:center;'></td>";
