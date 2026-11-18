@@ -2,34 +2,29 @@
 // For license information, please see license.txt
 
 function log_matching_branch_visit_template(frm) {
-	if (!frm.doc.visited_by) return;
+	if (!frm.doc.branch_is) return;
 
-	frappe.db.get_value("Employee", frm.doc.visited_by, "department").then((r) => {
-		const dept = r && r.message && r.message.department;
-		if (!dept) return;
+	const filters = { department: "Administration" };
+	if (frm.doc.branch_is === "Existing") {
+		filters.for_new = 0;
+	} else if (frm.doc.branch_is === "New") {
+		filters.for_new = 1;
+	}
 
-		const filters = { department: dept };
-		if (frm.doc.branch_is === "Existing") {
-			filters.for_new = 0;
-		} else if (frm.doc.branch_is === "New") {
-			filters.for_new = 1;
-		}
-
-		frappe.db.get_list("Branch Visit Template", {
-			fields: ["name", "for_new"],
-			filters,
-			limit_page_length: 1,
-		}).then((res) => {
-			const match = res && res[0];
-			if (match) {
-				frm.set_value("template", match.name);
-				if (frm.doc.template === match.name) {
-					render_checklist(frm, frm.doc.template);
-				}
-			} else if (frm.doc.template) {
+	frappe.db.get_list("Branch Visit Template", {
+		fields: ["name", "for_new"],
+		filters,
+		limit_page_length: 1,
+	}).then((res) => {
+		const match = res && res[0];
+		if (match) {
+			frm.set_value("template", match.name);
+			if (frm.doc.template === match.name) {
 				render_checklist(frm, frm.doc.template);
 			}
-		});
+		} else if (frm.doc.template) {
+			render_checklist(frm, frm.doc.template);
+		}
 	});
 }
 
@@ -490,7 +485,11 @@ function render_checklist(frm, template) {
 					let checklist_html = "";
 					let branch_checklist_html = "";
 
-					let show_branch_tab_flag = (frm.doc.branch_is === "Existing" && frm.doc.visited_by);
+					let has_branch_items = all_items.some(function (row) {
+						let f = (row.for || "").toString().trim().toLowerCase();
+						return f.indexOf("branch") !== -1;
+					});
+					let show_branch_tab_flag = (frm.doc.branch_is === "Existing" && (frm.doc.visited_by || has_branch_items));
 
 					function build_checklist_section(items_subset, is_branch_tab) {
 						let html = "";
@@ -695,7 +694,7 @@ function render_checklist(frm, template) {
 			};
 
 			let review_tab_label = "Review Checklist";
-			let show_branch_tab = (frm.doc.branch_is === "Existing" && frm.doc.visited_by);
+			let show_branch_tab = (frm.doc.branch_is === "Existing" && (frm.doc.visited_by || has_branch_items));
 			if (show_branch_tab) {
 				review_tab_label = "Visiter checklist";
 			}
@@ -717,7 +716,7 @@ function render_checklist(frm, template) {
 
 			frm.fields_dict.checklist.$wrapper.html(tabs_html);
 
-			if (show_branch_tab) {
+			if (show_branch_tab && frm.doc.visited_by) {
 				// verify visited_by has department; if not, revert to default
 				frappe.db.get_value("Employee", frm.doc.visited_by, "department").then((d) => {
 					const has_dept = d && d.message && d.message.department;
