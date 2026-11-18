@@ -168,11 +168,23 @@ class BranchVisitReview(Document):
 			if not row.responsible:
 				continue
 
+			base_date = frappe.utils.getdate(self.creation) if self.creation else frappe.utils.getdate()
 			if not row.tat:
-				base_date = frappe.utils.getdate(self.creation) if self.creation else frappe.utils.getdate()
 				row.tat = frappe.utils.add_days(base_date, 15)
 				if row.name:
 					frappe.db.set_value(row.doctype, row.name, "tat", row.tat, update_modified=False)
+			if not getattr(row, "stage_2_tat", None) and row.tat:
+				row.stage_2_tat = frappe.utils.add_days(row.tat, 4)
+				if row.name and frappe.db.has_column(row.doctype, "stage_2_tat"):
+					frappe.db.set_value(row.doctype, row.name, "stage_2_tat", row.stage_2_tat, update_modified=False)
+			if not getattr(row, "stage_3_tat", None) and getattr(row, "stage_2_tat", None):
+				row.stage_3_tat = frappe.utils.add_days(row.stage_2_tat, 4)
+				if row.name and frappe.db.has_column(row.doctype, "stage_3_tat"):
+					frappe.db.set_value(row.doctype, row.name, "stage_3_tat", row.stage_3_tat, update_modified=False)
+			if not getattr(row, "stage_4_tat", None) and getattr(row, "stage_3_tat", None):
+				row.stage_4_tat = frappe.utils.add_days(row.stage_3_tat, 4)
+				if row.name and frappe.db.has_column(row.doctype, "stage_4_tat"):
+					frappe.db.set_value(row.doctype, row.name, "stage_4_tat", row.stage_4_tat, update_modified=False)
 
 			try:
 				employee = self._resolve_employee(row.responsible)
