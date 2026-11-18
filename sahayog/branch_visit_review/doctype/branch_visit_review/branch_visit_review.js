@@ -399,7 +399,7 @@ function open_action_item_dialog(frm, idx, item) {
 	}
 	if (is_admin_template) {
 		modal_html += "<div class='bvr-modal-field'><label>All Stages</label><div class='bvr-modal-grid' style='margin-top:6px; grid-template-columns: repeat(4, 1fr);'>";
-		modal_html += "<div class='bvr-modal-field'><label>Stage I Admin</label><div class='form-control' style='background:#f8f9fb;'>" + bvr_escape(fmt_disp(tat_value)) + "</div></div>";
+		modal_html += "<div class='bvr-modal-field bvr-stage-active'><label>Stage I Admin</label><div class='form-control' style='background:#f8f9fb;'>" + bvr_escape(fmt_disp(tat_value)) + "</div></div>";
 		modal_html += "<div class='bvr-modal-field'><label>Stage 2 Manoj Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_2_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat2_value)) + "'></div>";
 		modal_html += "<div class='bvr-modal-field'><label>Stage 3 CBO Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_3_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat3_value)) + "'></div>";
 		modal_html += "<div class='bvr-modal-field'><label>Stage - 4 CMD Sir</label><input type='text' class='form-control bvr-modal-input' data-field='stage_4_tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat4_value)) + "'></div>";
@@ -890,6 +890,8 @@ function render_checklist(frm, template) {
 				.bvr-modal-btn-cancel:hover { background: #f5f6ff; }
 				.bvr-modal-btn-save { background: #5e64ff; color: #fff; box-shadow: 0 2px 6px rgba(94,100,255,0.3); }
 				.bvr-modal-btn-save:hover { background: #4c53d0; }
+				.bvr-stage-active { border: 2px solid #5e64ff; border-radius: 8px; padding: 6px; animation: bvr-stage-blink 1s ease-in-out infinite; }
+				@keyframes bvr-stage-blink { 0%, 100% { box-shadow: 0 0 0 0 rgba(94,100,255,0.6); } 50% { box-shadow: 0 0 0 4px rgba(94,100,255,0.15); } }
 			</style>`;
 			frm.fields_dict.checklist.$wrapper.find("style").remove();
 			frm.fields_dict.checklist.$wrapper.prepend(style);
