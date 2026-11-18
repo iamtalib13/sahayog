@@ -709,7 +709,7 @@ function render_checklist(frm, template) {
 
 			let action_head = "<table class='action-items-table'><thead><tr><th style='width:40px;'>No.</th><th>Action Item</th><th>Responsible</th><th style='width:100px;'>Priority</th>";
 			if (is_admin_template) {
-				action_head += "<th style='width:130px;'>Stage I Admin</th>";
+				action_head += "<th style='width:130px;'>TAT Date</th>";
 			} else {
 				action_head += "<th style='width:130px;'>Target Date</th>";
 			}
@@ -730,8 +730,24 @@ function render_checklist(frm, template) {
 							: "/app/sahayog-ticket/" + encodeURIComponent(item.sahayog_ticket);
 						ticket_display = "<a href='" + tlink + "' target='_blank'>" + bvr_escape(item.sahayog_ticket) + "</a>";
 					}
+					let tat_cell = item.tat || "";
+					if (is_admin_template) {
+						let today = frappe.datetime.get_today();
+						let stage_dates = [item.tat, item.stage_2_tat, item.stage_3_tat, item.stage_4_tat];
+						let active_idx = 0;
+						for (let si = 0; si < stage_dates.length; si++) {
+							let d = stage_dates[si];
+							if (d && d < today) {
+								active_idx = Math.min(si + 1, stage_dates.length - 1);
+							} else {
+								active_idx = si;
+								break;
+							}
+						}
+						tat_cell = stage_dates[active_idx] || "";
+					}
 					action_html += "<tr class='action-row-edit' data-idx='" + i + "' title='Click to edit'><td>" + (i + 1) + "</td><td>" + action_display + "</td><td><div class='employee-search-wrapper' data-value='" + (item.responsible || "") + "'><input type='text' class='form-control employee-search-input' placeholder='Search employee' value='" + owner_display + "'><div class='employee-dropdown' style='display:none;'></div></div></td><td>" + (item.priority || "") + "</td>";
-					action_html += "<td>" + bvr_escape(format_tat(item.tat)) + "</td>";
+					action_html += "<td>" + bvr_escape(format_tat(tat_cell)) + "</td>";
 					action_html += "<td>" + (item.status || "") + "</td><td>" + (item.resolution_notes || "") + "</td><td>" + ticket_display + "</td><td style='text-align:center;'><button class='bvr-btn-remove remove-action-row' title='Remove row'>&times;</button></td></tr>";
 				});
 			}
