@@ -380,9 +380,9 @@ function open_action_item_dialog(frm, idx, item) {
 	modal_html += "<div class='bvr-modal-header'><h5>" + (is_add ? "Add Action Item" : "Edit Action Item") + "</h5><button class='bvr-modal-close' title='Close' type='button'>&times;</button></div>";
 	modal_html += "<div class='bvr-modal-body'>";
 	modal_html += "<div class='bvr-modal-field'><label>Action Item <span class='bvr-req'>*</span></label><input type='text' class='form-control bvr-modal-input' data-field='action_item' placeholder='Enter action item' value=\"" + bvr_escape(item.action_item) + "\"></div>";
-	modal_html += "<div class='bvr-modal-field'><label>Responsible</label><div class='employee-search-wrapper bvr-modal-emp' data-value='" + bvr_escape(item.responsible) + "'><input type='text' class='form-control bvr-modal-input employee-search-input' placeholder='Search employee' autocomplete='off' value=''><div class='employee-dropdown' style='display:none;'></div></div></div>";
-	modal_html += "<div class='bvr-modal-grid'>";
+	modal_html += "<div class='bvr-modal-grid' style='grid-template-columns: repeat(4, 1fr);'>";
 	modal_html += "<div class='bvr-modal-field'><label>Priority</label><select class='form-control bvr-modal-input' data-field='priority'>" + select_options(["High", "Medium", "Low"], item.priority || "Medium") + "</select></div>";
+	modal_html += "<div class='bvr-modal-field'><label>Responsible</label><div class='employee-search-wrapper bvr-modal-emp' data-value='" + bvr_escape(item.responsible) + "'><input type='text' class='form-control bvr-modal-input employee-search-input' placeholder='Search employee' autocomplete='off' value=''><div class='employee-dropdown' style='display:none;'></div></div></div>";
 	if (is_admin_template) {
 		modal_html += "<div class='bvr-modal-field'><label>Stage I Admin (Current Stage)</label><input type='text' class='form-control bvr-modal-input' data-field='tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat_value)) + "'></div>";
 	} else {
