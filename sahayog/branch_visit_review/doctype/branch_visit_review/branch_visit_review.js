@@ -357,6 +357,11 @@ function open_action_item_dialog(frm, idx, item) {
 		let base = (frm.doc.creation || "").toString().split(" ")[0] || frappe.datetime.get_today();
 		tat_value = frappe.datetime.add_days(base, 15);
 	}
+	let tat_display = tat_value || "";
+	if (tat_display && /^\d{4}-\d{2}-\d{2}$/.test(tat_display)) {
+		let p = tat_display.split("-");
+		tat_display = p[2] + "/" + p[1] + "/" + p[0];
+	}
 
 	let modal_html = "";
 	modal_html += "<div class='bvr-modal-overlay'>";
@@ -367,7 +372,7 @@ function open_action_item_dialog(frm, idx, item) {
 	modal_html += "<div class='bvr-modal-field'><label>Responsible</label><div class='employee-search-wrapper bvr-modal-emp' data-value='" + bvr_escape(item.responsible) + "'><input type='text' class='form-control bvr-modal-input employee-search-input' placeholder='Search employee' autocomplete='off' value=''><div class='employee-dropdown' style='display:none;'></div></div></div>";
 	modal_html += "<div class='bvr-modal-grid'>";
 	modal_html += "<div class='bvr-modal-field'><label>Priority</label><select class='form-control bvr-modal-input' data-field='priority'>" + select_options(["High", "Medium", "Low"], item.priority || "Medium") + "</select></div>";
-	modal_html += "<div class='bvr-modal-field'><label>Target Date (TAT)</label><input type='date' class='form-control bvr-modal-input' data-field='tat' value='" + bvr_escape(tat_value) + "'></div>";
+	modal_html += "<div class='bvr-modal-field'><label>Target Date (TAT)</label><input type='text' class='form-control bvr-modal-input' data-field='tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(tat_display) + "'></div>";
 	modal_html += "<div class='bvr-modal-field'><label>Status</label><select class='form-control bvr-modal-input' data-field='status'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select></div>";
 	modal_html += "</div>";
 	modal_html += "<div class='bvr-modal-field'><label>Resolution Notes</label><textarea class='form-control bvr-modal-input' data-field='resolution_notes' rows='3' placeholder='Enter notes'>" + bvr_escape(item.resolution_notes) + "</textarea></div>";
@@ -450,11 +455,17 @@ function open_action_item_dialog(frm, idx, item) {
 			$overlay.find("[data-field='action_item']").focus();
 			return;
 		}
+		let tat_input = ($overlay.find("[data-field='tat']").val() || "").trim();
+		let tat_value_save = tat_input;
+		let m = tat_input.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+		if (m) {
+			tat_value_save = m[3] + "-" + ("0" + m[2]).slice(-2) + "-" + ("0" + m[1]).slice(-2);
+		}
 		let row_values = {
 			action_item: action_item,
 			responsible: $emp_wrapper.data("value") || "",
 			priority: $overlay.find("[data-field='priority']").val() || "Medium",
-			tat: $overlay.find("[data-field='tat']").val() || "",
+			tat: tat_value_save || "",
 			status: $overlay.find("[data-field='status']").val() || "Open",
 			resolution_notes: $overlay.find("[data-field='resolution_notes']").val() || "",
 		};
