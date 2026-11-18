@@ -385,12 +385,25 @@ def get_employee_performance_data(from_date, to_date, sol_ids=None, zone=None, r
                     "followup_amount": 0,
                     "total_not_interested": 0,
                     "not_interested_amount": 0,
+                    "leads_preview": [],
                 }
 
             stat = employee_stats[emp_id]
             lead_amt = row.get("amount") or 0
             stat["total_leads"] += 1
             stat["total_leads_amount"] += lead_amt
+
+            # Store preview of leads for hover breakdown
+            cre_dt = row.get("creation")
+            date_str = str(cre_dt)[:10] if cre_dt else ""
+            stat["leads_preview"].append({
+                "lead_id": row.get("name") or "",
+                "customer": row.get("lead_name") or "",
+                "status": row.get("status") or "",
+                "product": row.get("product_name") or row.get("product_code") or "-",
+                "amount": lead_amt,
+                "date": date_str
+            })
 
             status = row.get("status")
             if status == "Converted":
