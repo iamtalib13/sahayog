@@ -2,34 +2,29 @@
 // For license information, please see license.txt
 
 function log_matching_branch_visit_template(frm) {
-	if (!frm.doc.visited_by) return;
+	if (!frm.doc.branch_is) return;
 
-	frappe.db.get_value("Employee", frm.doc.visited_by, "department").then((r) => {
-		const dept = r && r.message && r.message.department;
-		if (!dept) return;
+	const filters = { department: "Administration" };
+	if (frm.doc.branch_is === "Existing") {
+		filters.for_new = 0;
+	} else if (frm.doc.branch_is === "New") {
+		filters.for_new = 1;
+	}
 
-		const filters = { department: dept };
-		if (frm.doc.branch_is === "Existing") {
-			filters.for_new = 0;
-		} else if (frm.doc.branch_is === "New") {
-			filters.for_new = 1;
-		}
-
-		frappe.db.get_list("Branch Visit Template", {
-			fields: ["name", "for_new"],
-			filters,
-			limit_page_length: 1,
-		}).then((res) => {
-			const match = res && res[0];
-			if (match) {
-				frm.set_value("template", match.name);
-				if (frm.doc.template === match.name) {
-					render_checklist(frm, frm.doc.template);
-				}
-			} else if (frm.doc.template) {
+	frappe.db.get_list("Branch Visit Template", {
+		fields: ["name", "for_new"],
+		filters,
+		limit_page_length: 1,
+	}).then((res) => {
+		const match = res && res[0];
+		if (match) {
+			frm.set_value("template", match.name);
+			if (frm.doc.template === match.name) {
 				render_checklist(frm, frm.doc.template);
 			}
-		});
+		} else if (frm.doc.template) {
+			render_checklist(frm, frm.doc.template);
+		}
 	});
 }
 
