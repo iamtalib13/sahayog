@@ -911,6 +911,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         </div>
 
                         <div class="d-flex align-items-center" style="gap: 8px;">
+                            <button class="btn btn-xs btn-default border font-weight-bold" @click="showDSRRulesDialog" title="View DSR Rating & Qualification Rules">
+                                ℹ️ DSR Rules
+                            </button>
                             <button class="btn btn-xs btn-default border font-weight-bold" @click="goToLeadList">
                                 Lead List
                             </button>
@@ -1355,6 +1358,63 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           }
         }
       });
+    },
+
+    showDSRRulesDialog() {
+      const d = new frappe.ui.Dialog({
+        title: __("Daily Sales Report (DSR) Rules"),
+        size: "small",
+        fields: [
+          {
+            fieldtype: "HTML",
+            fieldname: "dsr_rules_html",
+            options: `
+              <div style="font-family: inherit; font-size: 13px; color: #1e293b;">
+                <!-- Rating Criteria Section -->
+                <div style="margin-bottom: 16px;">
+                  <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 15px;">⭐</span> Rating Criteria
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; padding-left: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px; background: #f0fdf4; border-left: 3px solid #22c55e; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #22c55e; color: #fff; font-size: 10px; padding: 3px 6px;">Good</span>
+                      <span>At least <b>1 converted</b> lead.</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; background: #fffbeb; border-left: 3px solid #f59e0b; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #f59e0b; color: #fff; font-size: 10px; padding: 3px 6px;">Average</span>
+                      <span>At least <b>4 follow-ups</b> and none converted.</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; background: #fef2f2; border-left: 3px solid #ef4444; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #ef4444; color: #fff; font-size: 10px; padding: 3px 6px;">Bad</span>
+                      <span>Neither of the above criteria met.</span>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Qualification Criteria Section -->
+                <div>
+                  <div style="font-weight: 700; font-size: 13px; color: #0f172a; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                    <span style="font-size: 15px;">🎯</span> Qualification Criteria
+                  </div>
+                  <div style="display: flex; flex-direction: column; gap: 6px; padding-left: 6px;">
+                    <div style="display: flex; align-items: center; gap: 8px; background: #f0fdf4; border-left: 3px solid #16a34a; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #16a34a; color: #fff; font-size: 10px; padding: 3px 6px;">Qualified</span>
+                      <span>Total leads created <b>≥ 10</b>.</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; background: #fef2f2; border-left: 3px solid #dc2626; padding: 6px 10px; border-radius: 4px;">
+                      <span class="badge" style="background: #dc2626; color: #fff; font-size: 10px; padding: 3px 6px;">Disqualified</span>
+                      <span>Total leads created <b>&lt; 10</b>.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            `
+          }
+        ],
+        primary_action_label: __("Close"),
+        primary_action: () => d.hide(),
+      });
+      d.show();
     },
 
     openDownloadDialog() {
