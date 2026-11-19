@@ -884,7 +884,8 @@ class PettyCashTransaction(Document):
     def ho_approver_reject(self):
         user_roles = frappe.get_roles()
 
-        if "HO Petty Cash Approver" not in user_roles and frappe.session.user != "Administrator":
+        # if "HO Petty Cash Approver" not in user_roles and frappe.session.user != "Administrator":
+        if not set(["HO Petty Cash Manager", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
             frappe.throw(_("Only HO Petty Cash Approver can reject."))
 
         if self.docstatus != 1 or self.approval_status != "Pending Approval":
@@ -1074,6 +1075,35 @@ class PettyCashTransaction(Document):
             msg=_("Bills Verified successfully."),
             title=_("Verification Complete"),
             indicator="green"
+        )
+
+    @frappe.whitelist()
+    def ho_verifier_reject(self):
+        user_roles = frappe.get_roles()
+
+        allowed_roles = {"HO Petty Cash Verifier",
+                         "HO Petty Cash Manager", "System Manager"}
+        if not allowed_roles.intersection(user_roles) and frappe.session.user != "Administrator":
+            frappe.throw(
+                _("Only HO Petty Cash Verifier or Manager can reject."))
+
+        if self.docstatus != 1 or self.approval_status not in ["Approved", "Checked"]:
+            frappe.throw(
+                _("Document must be in Approved or Checked status to reject."))
+
+        # Reverse the wallet deduction made during the submit/approval flow
+        if not self.is_legacy_unsettled_cash_flow_enabled():
+            self.apply_new_flow_terminal_credit("Rejected")
+        else:
+            wallet = self.get_branch_wallet_doc()
+            wallet.update_unsettled_cash(self.amount, "Withdrawal")
+
+        self.db_set("approval_status", "Rejected", update_modified=False)
+
+        frappe.msgprint(
+            msg=_("Verifier Rejected. Status set to Rejected."),
+            title=_("Message"),
+            indicator="red"
         )
 
     def has_permission(self, ptype="read", user=None):
@@ -2297,7 +2327,8 @@ def create_and_link_petty_cash_ttum(transaction_names, filecontent, filename, do
         download_date = now_datetime()
 
     user_id = frappe.session.user
-    employee_name = frappe.db.get_value("Employee", {"user_id": user_id}, "employee_name") or user_id
+    employee_name = frappe.db.get_value(
+        "Employee", {"user_id": user_id}, "employee_name") or user_id
 
     ttum_doc = frappe.get_doc({
         "doctype": "Petty Cash TTUM",

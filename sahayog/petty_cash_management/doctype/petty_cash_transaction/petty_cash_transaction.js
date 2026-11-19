@@ -346,6 +346,16 @@ frappe.ui.form.on('Petty Cash Transaction', {
                         callback: function () { frm.reload_doc(); }
                     });
                 }, "Actions");
+
+                frm.add_custom_button(__('Reject (Verifier)'), function () {
+                    frappe.confirm(__('Reject this expense?'), () => {
+                        frappe.call({
+                            doc: frm.doc,
+                            method: 'ho_verifier_reject',
+                            callback: function () { frm.reload_doc(); }
+                        });
+                    });
+                }, "Actions");
             } else {
                 console.log(">> User does not have permission for Verification");
             }
