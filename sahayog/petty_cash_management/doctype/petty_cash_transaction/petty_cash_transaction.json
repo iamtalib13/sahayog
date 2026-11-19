@@ -355,6 +355,7 @@
    "read_only": 1
   },
   {
+   "depends_on": "eval: !!doc.ttum_downloaded_date",
    "fieldname": "ttum_reference",
    "fieldtype": "Link",
    "label": "TTUM Reference",
@@ -398,7 +399,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-19 15:18:47.386509",
+ "modified": "2026-11-19 15:47:29.587463",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
