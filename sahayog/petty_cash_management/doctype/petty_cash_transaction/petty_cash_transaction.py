@@ -2423,12 +2423,23 @@ def get_workflow_stage_users(docname):
         emp = frappe.db.get_value(
             "Employee",
             {"user_id": user_id},
-            ["user_id", "employee_name"],
+            ["user_id", "first_name", "last_name"],
             as_dict=True
         )
         raw_uid = (emp.get("user_id") if emp else user_id) or ""
         short_uid = raw_uid.replace("@sahayog.com", "").strip()
-        full_name = (emp.get("employee_name") if emp else None) or fallback_name or short_uid
+        
+        full_name = None
+        if emp:
+            first_name = (emp.get("first_name") or "").strip()
+            last_name = (emp.get("last_name") or "").strip()
+            comb_name = f"{first_name} {last_name}".strip()
+            if comb_name:
+                full_name = comb_name
+
+        if not full_name:
+            full_name = fallback_name or short_uid
+
         return {
             "user_id": short_uid,
             "employee_name": full_name
