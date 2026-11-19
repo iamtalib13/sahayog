@@ -429,7 +429,7 @@ class PettyCashTransaction(Document):
                   AND child.expense_category = %s
                   AND parent.transaction_date BETWEEN %s AND %s
                   AND parent.docstatus = 1
-                  AND parent.approval_status != 'Verified'
+                  AND parent.approval_status NOT IN ('Verified', 'Rejected', 'Canceled')
                   AND parent.name != %s
             """
 
@@ -2085,7 +2085,7 @@ def get_category_limit_status(branch, category, transaction_date, docname=None):
           AND child.expense_category = %s
           AND parent.transaction_date BETWEEN %s AND %s
           AND parent.docstatus = 1
-          AND parent.approval_status != 'Verified'
+          AND parent.approval_status NOT IN ('Verified', 'Rejected', 'Canceled')
           AND parent.name != %s
     """
 
