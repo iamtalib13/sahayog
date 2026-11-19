@@ -30,6 +30,10 @@
   "ttum_downloaded_date",
   "ttum_reference",
   "download_ttum",
+  "checker_action_by",
+  "approver_action_by",
+  "verifier_action_by",
+  "rejected_by_stage",
   "column_break_dmoz",
   "amount_within_limit",
   "amount_exceeding_limit",
@@ -357,16 +361,44 @@
    "options": "Petty Cash TTUM"
   },
   {
+   "depends_on": "eval: !!doc.ttum_reference",
    "fieldname": "download_ttum",
    "fieldtype": "Button",
    "label": "Download TTUM"
+  },
+  {
+   "fieldname": "checker_action_by",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Checker",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approver_action_by",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Approver",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verifier_action_by",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Verifier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rejected_by_stage",
+   "fieldtype": "Data",
+   "label": "Rejected By Stage",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-19 12:18:08.817301",
+ "modified": "2026-11-19 15:18:47.386509",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
