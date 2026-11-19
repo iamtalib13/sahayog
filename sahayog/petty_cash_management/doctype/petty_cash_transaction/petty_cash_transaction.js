@@ -961,51 +961,163 @@ function render_petty_cash_stepper_intro(frm) {
         return;
     }
 
+    frappe.call({
+        method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.get_workflow_stage_users',
+        args: { docname: frm.doc.name },
+        callback: function (r) {
+            const users_info = r.message || {};
+            build_petty_cash_stepper(frm, status, users_info);
+        }
+    });
+}
+
+function build_petty_cash_stepper(frm, status, users_info) {
     const is_over_limit = flt(frm.doc.amount_exceeding_limit) > 0 || ['Pending Checker', 'Pending Approval'].includes(status);
+    const rejected_stage = users_info.rejected_by_stage;
 
-    // Branch User
-    const branch_state = { label: __('Branch User'), detail: __('Submitted'), status: 'completed' };
+    const format_user_badge = (user_obj) => {
+        if (!user_obj || !user_obj.user_id) return '';
+        const name_str = user_obj.employee_name ? ` • ${user_obj.employee_name}` : '';
+        return `<div class="pct-step-user"><span class="pct-uid">${user_obj.user_id}</span>${name_str}</div>`;
+    };
 
-    // Checker
+    const branch_state = {
+        label: __('Branch User'),
+        detail: __('Submitted'),
+        status: 'completed',
+        user: format_user_badge(users_info.branch_user)
+    };
+
     let checker_state = {};
-    // Approver
     let approver_state = {};
-    // Verifier
     let verifier_state = {};
-    // TTUM
     let ttum_state = {};
 
     if (!is_over_limit) {
-        // Within Limit
-        checker_state = { label: __('Checker'), detail: __('Skipped'), status: 'skipped' };
-        approver_state = { label: __('Approver'), detail: __('Skipped'), status: 'skipped' };
+        checker_state = { label: __('Checker'), detail: __('Skipped'), status: 'skipped', user: '' };
+        approver_state = { label: __('Approver'), detail: __('Skipped'), status: 'skipped', user: '' };
 
-        const is_verified = status === 'Verified' && frm.doc.finacle_tran_date;
-        if (is_verified) {
-            verifier_state = { label: __('Verifier'), detail: __('Verified'), status: 'completed' };
+        if (status === 'Rejected' && rejected_stage === 'Verifier') {
+            verifier_state = {
+                label: __('Verifier'),
+                detail: __('Rejected'),
+                status: 'rejected',
+                user: format_user_badge(users_info.verifier_user)
+            };
         } else {
-            verifier_state = { label: __('Verifier'), detail: __('Pending'), status: 'pending' };
+            const is_verified = status === 'Verified' && frm.doc.finacle_tran_date;
+            if (is_verified) {
+                verifier_state = {
+                    label: __('Verifier'),
+                    detail: __('Verified'),
+                    status: 'completed',
+                    user: format_user_badge(users_info.verifier_user)
+                };
+            } else {
+                verifier_state = {
+                    label: __('Verifier'),
+                    detail: __('Pending'),
+                    status: 'pending',
+                    user: format_user_badge(users_info.verifier_user)
+                };
+            }
         }
     } else {
-        // Over Limit
         if (status === 'Pending Checker') {
-            checker_state = { label: __('Checker'), detail: __('Pending'), status: 'pending' };
-            approver_state = { label: __('Approver'), detail: __('Waiting'), status: 'upcoming' };
+            checker_state = {
+                label: __('Checker'),
+                detail: __('Pending'),
+                status: 'pending',
+                user: format_user_badge(users_info.checker_user)
+            };
+            approver_state = { label: __('Approver'), detail: __('Waiting'), status: 'upcoming', user: '' };
         } else if (status === 'Pending Approval') {
-            checker_state = { label: __('Checker'), detail: __('Approved'), status: 'completed' };
-            approver_state = { label: __('Approver'), detail: __('Pending'), status: 'pending' };
+            checker_state = {
+                label: __('Checker'),
+                detail: __('Approved'),
+                status: 'completed',
+                user: format_user_badge(users_info.checker_user)
+            };
+            approver_state = {
+                label: __('Approver'),
+                detail: __('Pending'),
+                status: 'pending',
+                user: format_user_badge(users_info.approver_user)
+            };
         } else if (['Approved', 'Verified'].includes(status)) {
-            checker_state = { label: __('Checker'), detail: __('Approved'), status: 'completed' };
-            approver_state = { label: __('Approver'), detail: __('Approved'), status: 'completed' };
+            checker_state = {
+                label: __('Checker'),
+                detail: __('Approved'),
+                status: 'completed',
+                user: format_user_badge(users_info.checker_user)
+            };
+            approver_state = {
+                label: __('Approver'),
+                detail: __('Approved'),
+                status: 'completed',
+                user: format_user_badge(users_info.approver_user)
+            };
+        } else if (status === 'Rejected') {
+            if (rejected_stage === 'Checker') {
+                checker_state = {
+                    label: __('Checker'),
+                    detail: __('Rejected'),
+                    status: 'rejected',
+                    user: format_user_badge(users_info.checker_user)
+                };
+                approver_state = { label: __('Approver'), detail: __('Waiting'), status: 'upcoming', user: '' };
+            } else if (rejected_stage === 'Approver') {
+                checker_state = {
+                    label: __('Checker'),
+                    detail: __('Approved'),
+                    status: 'completed',
+                    user: format_user_badge(users_info.checker_user)
+                };
+                approver_state = {
+                    label: __('Approver'),
+                    detail: __('Rejected'),
+                    status: 'rejected',
+                    user: format_user_badge(users_info.approver_user)
+                };
+            } else if (rejected_stage === 'Verifier') {
+                checker_state = {
+                    label: __('Checker'),
+                    detail: __('Approved'),
+                    status: 'completed',
+                    user: format_user_badge(users_info.checker_user)
+                };
+                approver_state = {
+                    label: __('Approver'),
+                    detail: __('Approved'),
+                    status: 'completed',
+                    user: format_user_badge(users_info.approver_user)
+                };
+            } else {
+                checker_state = { label: __('Checker'), detail: status, status: 'upcoming', user: '' };
+                approver_state = { label: __('Approver'), detail: status, status: 'upcoming', user: '' };
+            }
         } else {
-            checker_state = { label: __('Checker'), detail: status, status: 'upcoming' };
-            approver_state = { label: __('Approver'), detail: status, status: 'upcoming' };
+            checker_state = { label: __('Checker'), detail: status, status: 'upcoming', user: '' };
+            approver_state = { label: __('Approver'), detail: status, status: 'upcoming', user: '' };
         }
 
-        verifier_state = { label: __('Verifier'), detail: __('Skipped (Direct Verified)'), status: 'skipped' };
+        if (status === 'Rejected' && rejected_stage === 'Verifier') {
+            verifier_state = {
+                label: __('Verifier'),
+                detail: __('Rejected'),
+                status: 'rejected',
+                user: format_user_badge(users_info.verifier_user)
+            };
+        } else {
+            verifier_state = {
+                label: __('Verifier'),
+                detail: __('Skipped (Direct Verified)'),
+                status: 'skipped',
+                user: format_user_badge(users_info.verifier_user)
+            };
+        }
     }
 
-    // TTUM Downloaded
     const has_ttum_date = Boolean(frm.doc.ttum_downloaded_date);
     if (has_ttum_date) {
         let type_label = __('Downloaded');
@@ -1014,9 +1126,19 @@ function render_petty_cash_stepper_intro(frm) {
         } else if (cint(frm.doc.bulk_ttum_downloaded)) {
             type_label = __('Bulk Downloaded');
         }
-        ttum_state = { label: __('TTUM'), detail: type_label, status: 'completed' };
+        ttum_state = {
+            label: __('TTUM'),
+            detail: type_label,
+            status: 'completed',
+            user: format_user_badge(users_info.ttum_user)
+        };
     } else {
-        ttum_state = { label: __('TTUM'), detail: __('Not Downloaded'), status: 'upcoming' };
+        ttum_state = {
+            label: __('TTUM'),
+            detail: __('Not Downloaded'),
+            status: 'upcoming',
+            user: ''
+        };
     }
 
     const stages = [branch_state, checker_state, approver_state, verifier_state, ttum_state];
@@ -1025,6 +1147,7 @@ function render_petty_cash_stepper_intro(frm) {
         if (st === 'completed') return '✓';
         if (st === 'pending') return '●';
         if (st === 'skipped') return '↷';
+        if (st === 'rejected') return '✕';
         return '○';
     };
 
@@ -1032,6 +1155,7 @@ function render_petty_cash_stepper_intro(frm) {
         if (st === 'completed') return 'pct-step-done';
         if (st === 'pending') return 'pct-step-active';
         if (st === 'skipped') return 'pct-step-skipped';
+        if (st === 'rejected') return 'pct-step-rejected';
         return 'pct-step-upcoming';
     };
 
@@ -1048,15 +1172,16 @@ function render_petty_cash_stepper_intro(frm) {
                 <div class="pct-timeline-content">
                     <div class="pct-step-title">${step.label}</div>
                     <div class="pct-step-desc">${step.detail}</div>
+                    ${step.user || ''}
                 </div>
-                ${!is_last ? `<div class="pct-timeline-connector"></div>` : ''}
+                ${!is_last ? '<div class="pct-timeline-connector"></div>' : ''}
             </div>
         `;
     }).join('');
 
-    const flow_type_badge = is_over_limit
-        ? `<span class="pct-badge-flow pct-badge-over">⚡ Over Limit Approval Flow</span>`
-        : `<span class="pct-badge-flow pct-badge-within">🛡️ Within Limit Verification Flow</span>`;
+    const flow_type_badge = is_over_limit 
+        ? '<span class="pct-badge-flow pct-badge-over">⚡ Over Limit Approval Flow</span>' 
+        : '<span class="pct-badge-flow pct-badge-within">🛡️ Within Limit Verification Flow</span>';
 
     const banner_html = `
         <style>
@@ -1064,10 +1189,6 @@ function render_petty_cash_stepper_intro(frm) {
                 0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.45); }
                 70% { box-shadow: 0 0 0 8px rgba(234, 88, 12, 0); }
                 100% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
-            }
-            @keyframes pctShimmer {
-                0% { background-position: -200% 0; }
-                100% { background-position: 200% 0; }
             }
             .pct-stepper-card {
                 padding: 12px 18px 14px 18px;
@@ -1103,17 +1224,17 @@ function render_petty_cash_stepper_intro(frm) {
             }
             .pct-stepper-flow {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 justify-content: space-between;
                 width: 100%;
                 overflow-x: auto;
             }
             .pct-timeline-step {
                 display: flex;
-                align-items: center;
+                align-items: flex-start;
                 position: relative;
                 flex: 1;
-                min-width: 130px;
+                min-width: 140px;
             }
             .pct-timeline-marker {
                 width: 28px;
@@ -1125,6 +1246,7 @@ function render_petty_cash_stepper_intro(frm) {
                 font-size: 12px;
                 font-weight: 700;
                 flex-shrink: 0;
+                margin-top: 2px;
                 transition: all 0.3s ease;
             }
             .pct-timeline-content {
@@ -1141,11 +1263,22 @@ function render_petty_cash_stepper_intro(frm) {
                 color: #64748b;
                 margin-top: 2px;
             }
+            .pct-step-user {
+                font-size: 10px;
+                color: #475569;
+                margin-top: 3px;
+                font-weight: 500;
+                word-break: break-word;
+            }
+            .pct-step-user .pct-uid {
+                font-weight: 700;
+                color: #0f172a;
+            }
             .pct-timeline-connector {
                 flex: 1;
                 height: 2px;
                 background: #e2e8f0;
-                margin: 0 10px;
+                margin: 14px 10px 0 10px;
                 min-width: 16px;
             }
             /* Step States */
@@ -1176,6 +1309,19 @@ function render_petty_cash_stepper_intro(frm) {
             .pct-step-active .pct-step-desc {
                 color: #ea580c;
                 font-weight: 600;
+            }
+            .pct-step-rejected .pct-timeline-marker {
+                background: #ef4444;
+                color: #ffffff;
+                box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+            }
+            .pct-step-rejected .pct-step-title {
+                color: #b91c1c;
+                font-weight: 700;
+            }
+            .pct-step-rejected .pct-step-desc {
+                color: #dc2626;
+                font-weight: 700;
             }
             .pct-step-skipped .pct-timeline-marker {
                 background: #94a3b8;

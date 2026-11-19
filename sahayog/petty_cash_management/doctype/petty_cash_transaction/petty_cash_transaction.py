@@ -865,6 +865,10 @@ class PettyCashTransaction(Document):
 
         self.db_set("amount_deducted", self.amount, update_modified=False)
         self.db_set("approval_status", "Approved", update_modified=False)
+        frappe.db.set_value("Petty Cash Transaction", self.name, {
+            "approver_action_by": frappe.session.user,
+            "rejected_by_stage": None
+        }, update_modified=False)
 
         if self.is_legacy_unsettled_cash_flow_enabled():
             self.update_wallet()
@@ -899,6 +903,10 @@ class PettyCashTransaction(Document):
             wallet.update_unsettled_cash(self.amount, "Withdrawal")
 
         self.db_set("approval_status", "Rejected", update_modified=False)
+        frappe.db.set_value("Petty Cash Transaction", self.name, {
+            "approver_action_by": frappe.session.user,
+            "rejected_by_stage": "Approver"
+        }, update_modified=False)
 
         frappe.msgprint(
             msg=_("Approver Rejected. Status set to Rejected."),
@@ -929,6 +937,10 @@ class PettyCashTransaction(Document):
         # the HO Verifier moves the document to "Verified".
         self.db_set("approval_status", "Pending Approval",
                     update_modified=False)
+        frappe.db.set_value("Petty Cash Transaction", self.name, {
+            "checker_action_by": frappe.session.user,
+            "rejected_by_stage": None
+        }, update_modified=False)
 
         frappe.msgprint(
             msg=_("Checker Approved. Status set to Pending Approval for HO Approver."),
@@ -960,6 +972,10 @@ class PettyCashTransaction(Document):
             wallet.update_unsettled_cash(self.amount, "Withdrawal")
 
         self.db_set("approval_status", "Rejected", update_modified=False)
+        frappe.db.set_value("Petty Cash Transaction", self.name, {
+            "checker_action_by": frappe.session.user,
+            "rejected_by_stage": "Checker"
+        }, update_modified=False)
 
         frappe.msgprint(
             msg=_("Checker Rejected. Status set to Rejected."),
@@ -1071,6 +1087,11 @@ class PettyCashTransaction(Document):
             self.db_set("finacle_tran_date", now_datetime(),
                         update_modified=False)
 
+        frappe.db.set_value("Petty Cash Transaction", self.name, {
+            "verifier_action_by": frappe.session.user,
+            "rejected_by_stage": None
+        }, update_modified=False)
+
         frappe.msgprint(
             msg=_("Bills Verified successfully."),
             title=_("Verification Complete"),
@@ -1099,6 +1120,10 @@ class PettyCashTransaction(Document):
             wallet.update_unsettled_cash(self.amount, "Withdrawal")
 
         self.db_set("approval_status", "Rejected", update_modified=False)
+        frappe.db.set_value("Petty Cash Transaction", self.name, {
+            "verifier_action_by": frappe.session.user,
+            "rejected_by_stage": "Verifier"
+        }, update_modified=False)
 
         frappe.msgprint(
             msg=_("Verifier Rejected. Status set to Rejected."),
@@ -2361,6 +2386,74 @@ def create_and_link_petty_cash_ttum(transaction_names, filecontent, filename, do
         )
 
     return ttum_doc
+
+
+@frappe.whitelist()
+def get_workflow_stage_users(docname):
+    if not docname:
+        return {}
+
+    doc_vals = frappe.db.get_value(
+        "Petty Cash Transaction",
+        docname,
+        [
+            "owner",
+            "checker_action_by",
+            "approver_action_by",
+            "verifier_action_by",
+            "approved_by",
+            "rejected_by_stage",
+            "ttum_reference"
+        ],
+        as_dict=True
+    ) or {}
+
+    ttum_vals = {}
+    if doc_vals.get("ttum_reference"):
+        ttum_vals = frappe.db.get_value(
+            "Petty Cash TTUM",
+            doc_vals["ttum_reference"],
+            ["ttum_download_user_id", "ttum_download_user_name"],
+            as_dict=True
+        ) or {}
+
+    def format_emp_info(user_id, fallback_name=None):
+        if not user_id:
+            return None
+        emp = frappe.db.get_value(
+            "Employee",
+            {"user_id": user_id},
+            ["user_id", "employee_name"],
+            as_dict=True
+        )
+        raw_uid = (emp.get("user_id") if emp else user_id) or ""
+        short_uid = raw_uid.replace("@sahayog.com", "").strip()
+        full_name = (emp.get("employee_name") if emp else None) or fallback_name or short_uid
+        return {
+            "user_id": short_uid,
+            "employee_name": full_name
+        }
+
+    branch_user = format_emp_info(doc_vals.get("owner"))
+    checker_user = format_emp_info(doc_vals.get("checker_action_by"))
+    approver_user = format_emp_info(doc_vals.get("approver_action_by"))
+    verifier_user = format_emp_info(doc_vals.get("verifier_action_by") or doc_vals.get("approved_by"))
+
+    ttum_user = None
+    if ttum_vals.get("ttum_download_user_id"):
+        ttum_user = format_emp_info(
+            ttum_vals["ttum_download_user_id"],
+            ttum_vals.get("ttum_download_user_name")
+        )
+
+    return {
+        "branch_user": branch_user,
+        "checker_user": checker_user,
+        "approver_user": approver_user,
+        "verifier_user": verifier_user,
+        "ttum_user": ttum_user,
+        "rejected_by_stage": doc_vals.get("rejected_by_stage")
+    }
 
 
 @frappe.whitelist()
