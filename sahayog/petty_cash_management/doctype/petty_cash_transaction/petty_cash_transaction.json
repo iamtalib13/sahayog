@@ -28,6 +28,8 @@
   "submission_attempted",
   "custom_ttum_remarks",
   "ttum_downloaded_date",
+  "ttum_reference",
+  "download_ttum",
   "column_break_dmoz",
   "amount_within_limit",
   "amount_exceeding_limit",
@@ -347,13 +349,24 @@
    "fieldtype": "Datetime",
    "label": "TTUM Downloaded On",
    "read_only": 1
+  },
+  {
+   "fieldname": "ttum_reference",
+   "fieldtype": "Link",
+   "label": "TTUM Reference",
+   "options": "Petty Cash TTUM"
+  },
+  {
+   "fieldname": "download_ttum",
+   "fieldtype": "Button",
+   "label": "Download TTUM"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-18 16:22:07.332950",
+ "modified": "2026-11-19 12:18:08.817301",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",
