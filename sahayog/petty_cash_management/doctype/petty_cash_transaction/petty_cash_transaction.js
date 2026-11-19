@@ -1166,13 +1166,17 @@ function build_petty_cash_stepper(frm, status, users_info) {
 
         return `
             <div class="pct-timeline-step ${badge_cls}">
-                <div class="pct-timeline-marker">
-                    <span class="pct-timeline-icon">${icon}</span>
-                </div>
-                <div class="pct-timeline-content">
-                    <div class="pct-step-title">${step.label}</div>
-                    <div class="pct-step-desc">${step.detail}</div>
-                    ${step.user || ''}
+                <div class="pct-step-body">
+                    <div class="pct-step-top">
+                        <div class="pct-timeline-marker">
+                            <span class="pct-timeline-icon">${icon}</span>
+                        </div>
+                        <div class="pct-timeline-content">
+                            <div class="pct-step-title">${step.label}</div>
+                            <div class="pct-step-desc">${step.detail}</div>
+                        </div>
+                    </div>
+                    ${step.user ? `<div class="pct-step-user-wrap">${step.user}</div>` : ''}
                 </div>
                 ${!is_last ? '<div class="pct-timeline-connector"></div>' : ''}
             </div>
@@ -1251,27 +1255,35 @@ function build_petty_cash_stepper(frm, status, users_info) {
                 align-items: flex-start;
                 position: relative;
                 flex: 1;
-                min-width: 140px;
+                min-width: 150px;
+            }
+            .pct-step-body {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+            }
+            .pct-step-top {
+                display: flex;
+                align-items: center;
             }
             .pct-timeline-marker {
-                width: 30px;
-                height: 30px;
+                width: 28px;
+                height: 28px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 13px;
+                font-size: 12px;
                 font-weight: 700;
                 flex-shrink: 0;
-                margin-top: 1px;
                 transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
             .pct-timeline-content {
-                margin-left: 10px;
-                line-height: 1.25;
+                margin-left: 8px;
+                line-height: 1.2;
             }
             .pct-step-title {
-                font-size: 12.5px;
+                font-size: 12px;
                 font-weight: 700;
                 color: #1e293b;
                 letter-spacing: -0.1px;
@@ -1282,21 +1294,23 @@ function build_petty_cash_stepper(frm, status, users_info) {
                 margin-top: 2px;
                 font-weight: 500;
             }
+            .pct-step-user-wrap {
+                width: 100%;
+                margin-top: 6px;
+                display: flex;
+                justify-content: center;
+            }
             .pct-step-user {
-                display: inline-flex;
-                align-items: center;
-                gap: 5px;
-                margin-top: 5px;
-                padding: 2px 7px;
+                width: 100%;
+                text-align: center;
+                padding: 3px 6px;
                 background: #f1f5f9;
                 border: 1px solid #e2e8f0;
                 border-radius: 6px;
                 font-size: 10px;
                 color: #475569;
-                max-width: 130px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
+                line-height: 1.3;
+                word-break: break-word;
             }
             .pct-step-user .pct-uid {
                 font-weight: 700;
@@ -1306,7 +1320,7 @@ function build_petty_cash_stepper(frm, status, users_info) {
                 flex: 1;
                 height: 2px;
                 background: #e2e8f0;
-                margin: 15px 12px 0 12px;
+                margin: 14px 10px 0 10px;
                 min-width: 16px;
                 border-radius: 2px;
                 transition: background 0.3s ease;
