@@ -1186,31 +1186,47 @@ function build_petty_cash_stepper(frm, status, users_info) {
     const banner_html = `
         <style>
             @keyframes pctPulse {
-                0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.45); }
-                70% { box-shadow: 0 0 0 8px rgba(234, 88, 12, 0); }
-                100% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
+                0% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5); transform: scale(1); }
+                50% { transform: scale(1.04); }
+                70% { box-shadow: 0 0 0 10px rgba(249, 115, 22, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); transform: scale(1); }
             }
             .pct-stepper-card {
-                padding: 12px 18px 14px 18px;
-                border-radius: 12px;
-                background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.95));
-                border: 1px solid rgba(226, 232, 240, 0.85);
-                box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
-                margin-bottom: 4px;
+                padding: 16px 20px;
+                border-radius: 14px;
+                background: linear-gradient(145deg, #ffffff, #f8fafc);
+                border: 1px solid #e2e8f0;
+                box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.06), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
+                margin-bottom: 8px;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             }
             .pct-stepper-header {
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                margin-bottom: 12px;
+                margin-bottom: 16px;
+                padding-bottom: 10px;
+                border-bottom: 1px solid #f1f5f9;
+            }
+            .pct-stepper-title {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                font-weight: 700;
+                font-size: 12px;
+                color: #334155;
+                text-transform: uppercase;
+                letter-spacing: 0.6px;
             }
             .pct-badge-flow {
                 font-size: 11px;
                 font-weight: 600;
-                padding: 3px 10px;
+                padding: 4px 12px;
                 border-radius: 20px;
                 letter-spacing: 0.3px;
-                text-transform: uppercase;
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
             }
             .pct-badge-within {
                 background: #eff6ff;
@@ -1228,6 +1244,7 @@ function build_petty_cash_stepper(frm, status, users_info) {
                 justify-content: space-between;
                 width: 100%;
                 overflow-x: auto;
+                padding: 4px 2px;
             }
             .pct-timeline-step {
                 display: flex;
@@ -1237,38 +1254,49 @@ function build_petty_cash_stepper(frm, status, users_info) {
                 min-width: 140px;
             }
             .pct-timeline-marker {
-                width: 28px;
-                height: 28px;
+                width: 30px;
+                height: 30px;
                 border-radius: 50%;
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                font-size: 12px;
+                font-size: 13px;
                 font-weight: 700;
                 flex-shrink: 0;
-                margin-top: 2px;
-                transition: all 0.3s ease;
+                margin-top: 1px;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             }
             .pct-timeline-content {
-                margin-left: 8px;
-                line-height: 1.2;
+                margin-left: 10px;
+                line-height: 1.25;
             }
             .pct-step-title {
-                font-size: 12px;
-                font-weight: 600;
+                font-size: 12.5px;
+                font-weight: 700;
                 color: #1e293b;
+                letter-spacing: -0.1px;
             }
             .pct-step-desc {
                 font-size: 11px;
                 color: #64748b;
                 margin-top: 2px;
+                font-weight: 500;
             }
             .pct-step-user {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                margin-top: 5px;
+                padding: 2px 7px;
+                background: #f1f5f9;
+                border: 1px solid #e2e8f0;
+                border-radius: 6px;
                 font-size: 10px;
                 color: #475569;
-                margin-top: 3px;
-                font-weight: 500;
-                word-break: break-word;
+                max-width: 130px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
             }
             .pct-step-user .pct-uid {
                 font-weight: 700;
@@ -1278,50 +1306,60 @@ function build_petty_cash_stepper(frm, status, users_info) {
                 flex: 1;
                 height: 2px;
                 background: #e2e8f0;
-                margin: 14px 10px 0 10px;
+                margin: 15px 12px 0 12px;
                 min-width: 16px;
+                border-radius: 2px;
+                transition: background 0.3s ease;
             }
             /* Step States */
             .pct-step-done .pct-timeline-marker {
-                background: #10b981;
+                background: linear-gradient(135deg, #10b981, #059669);
                 color: #ffffff;
-                box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+                box-shadow: 0 3px 8px rgba(16, 185, 129, 0.35);
             }
             .pct-step-done .pct-step-title {
-                color: #047857;
+                color: #065f46;
             }
             .pct-step-done .pct-step-desc {
                 color: #059669;
-                font-weight: 500;
+                font-weight: 600;
             }
             .pct-step-done .pct-timeline-connector {
                 background: #10b981;
             }
             .pct-step-active .pct-timeline-marker {
-                background: #f97316;
+                background: linear-gradient(135deg, #f97316, #ea580c);
                 color: #ffffff;
-                animation: pctPulse 1.8s infinite;
+                animation: pctPulse 2s infinite ease-in-out;
             }
             .pct-step-active .pct-step-title {
                 color: #c2410c;
-                font-weight: 700;
+                font-weight: 800;
             }
             .pct-step-active .pct-step-desc {
                 color: #ea580c;
-                font-weight: 600;
+                font-weight: 700;
+            }
+            .pct-step-active .pct-step-user {
+                background: #fff7ed;
+                border-color: #ffedd5;
             }
             .pct-step-rejected .pct-timeline-marker {
-                background: #ef4444;
+                background: linear-gradient(135deg, #ef4444, #dc2626);
                 color: #ffffff;
-                box-shadow: 0 2px 6px rgba(239, 68, 68, 0.35);
+                box-shadow: 0 3px 8px rgba(239, 68, 68, 0.35);
             }
             .pct-step-rejected .pct-step-title {
-                color: #b91c1c;
-                font-weight: 700;
+                color: #991b1b;
+                font-weight: 800;
             }
             .pct-step-rejected .pct-step-desc {
                 color: #dc2626;
                 font-weight: 700;
+            }
+            .pct-step-rejected .pct-step-user {
+                background: #fef2f2;
+                border-color: #fecaca;
             }
             .pct-step-skipped .pct-timeline-marker {
                 background: #94a3b8;
@@ -1335,9 +1373,9 @@ function build_petty_cash_stepper(frm, status, users_info) {
                 font-style: italic;
             }
             .pct-step-upcoming .pct-timeline-marker {
-                background: #f1f5f9;
-                color: #94a3b8;
-                border: 1px solid #cbd5e1;
+                background: #ffffff;
+                color: #cbd5e1;
+                border: 2px dashed #cbd5e1;
             }
             .pct-step-upcoming .pct-step-title {
                 color: #94a3b8;
