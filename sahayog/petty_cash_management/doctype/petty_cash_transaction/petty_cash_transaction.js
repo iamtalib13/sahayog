@@ -417,10 +417,12 @@ frappe.ui.form.on('Petty Cash Transaction', {
             frm.page.wrapper.find('button[data-label="Cancel"]').hide();
         }
         set_custom_business_status(frm);
+        render_petty_cash_stepper_intro(frm);
     },
 
     after_save: function (frm) {
         set_custom_business_status(frm);
+        render_petty_cash_stepper_intro(frm);
     },
 
 
@@ -935,4 +937,272 @@ function check_branch_wallet_status(frm) {
             }
         }
     });
+}
+
+function render_petty_cash_stepper_intro(frm) {
+    frm.set_intro('');
+    if (frm.dashboard && frm.dashboard.wrapper) {
+        frm.dashboard.wrapper.find('.pct-stepper-card').remove();
+    }
+
+    const status = frm.doc.approval_status || 'Draft';
+
+    if (status === 'Draft' || frm.is_new()) {
+        return;
+    }
+
+    const is_over_limit = flt(frm.doc.amount_exceeding_limit) > 0 || ['Pending Checker', 'Pending Approval'].includes(status);
+
+    // Branch User
+    const branch_state = { label: __('Branch User'), detail: __('Submitted'), status: 'completed' };
+
+    // Checker
+    let checker_state = {};
+    // Approver
+    let approver_state = {};
+    // Verifier
+    let verifier_state = {};
+    // TTUM
+    let ttum_state = {};
+
+    if (!is_over_limit) {
+        // Within Limit
+        checker_state = { label: __('Checker'), detail: __('Skipped'), status: 'skipped' };
+        approver_state = { label: __('Approver'), detail: __('Skipped'), status: 'skipped' };
+
+        const is_verified = status === 'Verified' && frm.doc.finacle_tran_date;
+        if (is_verified) {
+            verifier_state = { label: __('Verifier'), detail: __('Verified'), status: 'completed' };
+        } else {
+            verifier_state = { label: __('Verifier'), detail: __('Pending'), status: 'pending' };
+        }
+    } else {
+        // Over Limit
+        if (status === 'Pending Checker') {
+            checker_state = { label: __('Checker'), detail: __('Pending'), status: 'pending' };
+            approver_state = { label: __('Approver'), detail: __('Waiting'), status: 'upcoming' };
+        } else if (status === 'Pending Approval') {
+            checker_state = { label: __('Checker'), detail: __('Approved'), status: 'completed' };
+            approver_state = { label: __('Approver'), detail: __('Pending'), status: 'pending' };
+        } else if (['Approved', 'Verified'].includes(status)) {
+            checker_state = { label: __('Checker'), detail: __('Approved'), status: 'completed' };
+            approver_state = { label: __('Approver'), detail: __('Approved'), status: 'completed' };
+        } else {
+            checker_state = { label: __('Checker'), detail: status, status: 'upcoming' };
+            approver_state = { label: __('Approver'), detail: status, status: 'upcoming' };
+        }
+
+        verifier_state = { label: __('Verifier'), detail: __('Skipped (Direct Verified)'), status: 'skipped' };
+    }
+
+    // TTUM Downloaded
+    const has_ttum_date = Boolean(frm.doc.ttum_downloaded_date);
+    if (has_ttum_date) {
+        let type_label = __('Downloaded');
+        if (cint(frm.doc.exclude_from_ttum)) {
+            type_label = __('Individual Downloaded');
+        } else if (cint(frm.doc.bulk_ttum_downloaded)) {
+            type_label = __('Bulk Downloaded');
+        }
+        ttum_state = { label: __('TTUM'), detail: type_label, status: 'completed' };
+    } else {
+        ttum_state = { label: __('TTUM'), detail: __('Not Downloaded'), status: 'upcoming' };
+    }
+
+    const stages = [branch_state, checker_state, approver_state, verifier_state, ttum_state];
+
+    const get_icon = (st) => {
+        if (st === 'completed') return '✓';
+        if (st === 'pending') return '●';
+        if (st === 'skipped') return '↷';
+        return '○';
+    };
+
+    const get_badge_class = (st) => {
+        if (st === 'completed') return 'pct-step-done';
+        if (st === 'pending') return 'pct-step-active';
+        if (st === 'skipped') return 'pct-step-skipped';
+        return 'pct-step-upcoming';
+    };
+
+    let steps_html = stages.map((step, idx) => {
+        const is_last = idx === stages.length - 1;
+        const badge_cls = get_badge_class(step.status);
+        const icon = get_icon(step.status);
+
+        return `
+            <div class="pct-timeline-step ${badge_cls}">
+                <div class="pct-timeline-marker">
+                    <span class="pct-timeline-icon">${icon}</span>
+                </div>
+                <div class="pct-timeline-content">
+                    <div class="pct-step-title">${step.label}</div>
+                    <div class="pct-step-desc">${step.detail}</div>
+                </div>
+                ${!is_last ? `<div class="pct-timeline-connector"></div>` : ''}
+            </div>
+        `;
+    }).join('');
+
+    const flow_type_badge = is_over_limit
+        ? `<span class="pct-badge-flow pct-badge-over">⚡ Over Limit Approval Flow</span>`
+        : `<span class="pct-badge-flow pct-badge-within">🛡️ Within Limit Verification Flow</span>`;
+
+    const banner_html = `
+        <style>
+            @keyframes pctPulse {
+                0% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.45); }
+                70% { box-shadow: 0 0 0 8px rgba(234, 88, 12, 0); }
+                100% { box-shadow: 0 0 0 0 rgba(234, 88, 12, 0); }
+            }
+            @keyframes pctShimmer {
+                0% { background-position: -200% 0; }
+                100% { background-position: 200% 0; }
+            }
+            .pct-stepper-card {
+                padding: 12px 18px 14px 18px;
+                border-radius: 12px;
+                background: linear-gradient(135deg, rgba(248, 250, 252, 0.95), rgba(241, 245, 249, 0.95));
+                border: 1px solid rgba(226, 232, 240, 0.85);
+                box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+                margin-bottom: 4px;
+            }
+            .pct-stepper-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 12px;
+            }
+            .pct-badge-flow {
+                font-size: 11px;
+                font-weight: 600;
+                padding: 3px 10px;
+                border-radius: 20px;
+                letter-spacing: 0.3px;
+                text-transform: uppercase;
+            }
+            .pct-badge-within {
+                background: #eff6ff;
+                color: #1d4ed8;
+                border: 1px solid #bfdbfe;
+            }
+            .pct-badge-over {
+                background: #fff7ed;
+                color: #c2410c;
+                border: 1px solid #fed7aa;
+            }
+            .pct-stepper-flow {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: 100%;
+                overflow-x: auto;
+            }
+            .pct-timeline-step {
+                display: flex;
+                align-items: center;
+                position: relative;
+                flex: 1;
+                min-width: 130px;
+            }
+            .pct-timeline-marker {
+                width: 28px;
+                height: 28px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 12px;
+                font-weight: 700;
+                flex-shrink: 0;
+                transition: all 0.3s ease;
+            }
+            .pct-timeline-content {
+                margin-left: 8px;
+                line-height: 1.2;
+            }
+            .pct-step-title {
+                font-size: 12px;
+                font-weight: 600;
+                color: #1e293b;
+            }
+            .pct-step-desc {
+                font-size: 11px;
+                color: #64748b;
+                margin-top: 2px;
+            }
+            .pct-timeline-connector {
+                flex: 1;
+                height: 2px;
+                background: #e2e8f0;
+                margin: 0 10px;
+                min-width: 16px;
+            }
+            /* Step States */
+            .pct-step-done .pct-timeline-marker {
+                background: #10b981;
+                color: #ffffff;
+                box-shadow: 0 2px 6px rgba(16, 185, 129, 0.35);
+            }
+            .pct-step-done .pct-step-title {
+                color: #047857;
+            }
+            .pct-step-done .pct-step-desc {
+                color: #059669;
+                font-weight: 500;
+            }
+            .pct-step-done .pct-timeline-connector {
+                background: #10b981;
+            }
+            .pct-step-active .pct-timeline-marker {
+                background: #f97316;
+                color: #ffffff;
+                animation: pctPulse 1.8s infinite;
+            }
+            .pct-step-active .pct-step-title {
+                color: #c2410c;
+                font-weight: 700;
+            }
+            .pct-step-active .pct-step-desc {
+                color: #ea580c;
+                font-weight: 600;
+            }
+            .pct-step-skipped .pct-timeline-marker {
+                background: #94a3b8;
+                color: #ffffff;
+            }
+            .pct-step-skipped .pct-step-title {
+                color: #64748b;
+            }
+            .pct-step-skipped .pct-step-desc {
+                color: #94a3b8;
+                font-style: italic;
+            }
+            .pct-step-upcoming .pct-timeline-marker {
+                background: #f1f5f9;
+                color: #94a3b8;
+                border: 1px solid #cbd5e1;
+            }
+            .pct-step-upcoming .pct-step-title {
+                color: #94a3b8;
+            }
+            .pct-step-upcoming .pct-step-desc {
+                color: #cbd5e1;
+            }
+            .close-message {
+                display: none;
+            }
+        </style>
+        <div class="pct-stepper-card">
+            <div class="pct-stepper-header">
+                <span style="font-weight:700; font-size:12px; color:#334155; text-transform:uppercase; letter-spacing:0.5px;">Workflow Progress</span>
+                ${flow_type_badge}
+            </div>
+            <div class="pct-stepper-flow">
+                ${steps_html}
+            </div>
+        </div>
+    `;
+
+    frm.set_intro(banner_html, 'blue');
 }
