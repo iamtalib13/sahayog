@@ -575,6 +575,40 @@ frappe.ui.form.on('Petty Cash Transaction', {
         });
     },
 
+    download_ttum: function (frm) {
+        if (!frm.doc.ttum_reference) {
+            frappe.msgprint({
+                title: __('No TTUM Found'),
+                indicator: 'orange',
+                message: __('No TTUM Reference linked with this transaction yet.')
+            });
+            return;
+        }
+
+        frappe.call({
+            method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.get_ttum_file_url',
+            args: {
+                ttum_reference: frm.doc.ttum_reference
+            },
+            callback: function (r) {
+                if (r && r.message) {
+                    const download_link = document.createElement('a');
+                    download_link.href = r.message;
+                    download_link.download = r.message.split('/').pop();
+                    document.body.appendChild(download_link);
+                    download_link.click();
+                    document.body.removeChild(download_link);
+                } else {
+                    frappe.msgprint({
+                        title: __('Download Error'),
+                        indicator: 'red',
+                        message: __('Attached TTUM file not found.')
+                    });
+                }
+            }
+        });
+    },
+
 });
 
 // Child Table Logic

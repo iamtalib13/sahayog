@@ -1410,18 +1410,27 @@ class PettyCashTransaction(Document):
 
         # Auto-exclude this record from future bulk TTUM downloads and record download timestamp
         from frappe.utils import now_datetime
+        current_download_time = now_datetime()
         frappe.db.set_value(
             "Petty Cash Transaction",
             self.name,
             {
                 "exclude_from_ttum": 1,
-                "ttum_downloaded_date": now_datetime()
+                "ttum_downloaded_date": current_download_time
             },
             update_modified=False,
         )
+
+        filename = f"TTUM_{self.branch}_{self.name}.txt"
+        create_and_link_petty_cash_ttum(
+            transaction_names=[self.name],
+            filecontent=final_txt,
+            filename=filename,
+            download_date=current_download_time
+        )
         frappe.db.commit()
 
-        frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
+        frappe.response['filename'] = filename
         frappe.response['filecontent'] = final_txt
         frappe.response['type'] = 'download'
 
@@ -2282,6 +2291,59 @@ def download_transaction_report(filters=None):
     }
 
 
+def create_and_link_petty_cash_ttum(transaction_names, filecontent, filename, download_date=None):
+    from frappe.utils import now_datetime
+    if not download_date:
+        download_date = now_datetime()
+
+    user_id = frappe.session.user
+    employee_name = frappe.db.get_value("Employee", {"user_id": user_id}, "employee_name") or user_id
+
+    ttum_doc = frappe.get_doc({
+        "doctype": "Petty Cash TTUM",
+        "ttum_download_date": download_date,
+        "ttum_download_user_id": user_id,
+        "ttum_download_user_name": employee_name
+    })
+    ttum_doc.insert(ignore_permissions=True)
+
+    file_doc = frappe.get_doc({
+        "doctype": "File",
+        "file_name": filename,
+        "attached_to_doctype": "Petty Cash TTUM",
+        "attached_to_name": ttum_doc.name,
+        "attached_to_field": "ttum",
+        "content": filecontent,
+        "is_private": 0
+    })
+    file_doc.insert(ignore_permissions=True)
+
+    ttum_doc.db_set("ttum", file_doc.file_url, update_modified=False)
+
+    for txn_name in transaction_names:
+        frappe.db.set_value(
+            "Petty Cash Transaction",
+            txn_name,
+            "ttum_reference",
+            ttum_doc.name,
+            update_modified=False
+        )
+
+    return ttum_doc
+
+
+@frappe.whitelist()
+def get_ttum_file_url(ttum_reference):
+    if not ttum_reference:
+        frappe.throw("TTUM Reference is required")
+
+    file_url = frappe.db.get_value("Petty Cash TTUM", ttum_reference, "ttum")
+    if not file_url:
+        frappe.throw(f"No TTUM file found for reference {ttum_reference}")
+
+    return file_url
+
+
 @frappe.whitelist()
 def download_excel_api(name):   # <--- Renamed
     doc = frappe.get_doc("Petty Cash Transaction", name)
@@ -2663,14 +2725,22 @@ def download_bulk_ttum_txt_api_new():
             },
             update_modified=False
         )
-    frappe.db.commit()
 
     final_txt = "\n".join(content)
     today_str = nowdate()
+    bulk_filename = f"Bulk_TTUM_{today_str}.txt"
+
+    create_and_link_petty_cash_ttum(
+        transaction_names=processed_txns,
+        filecontent=final_txt,
+        filename=bulk_filename,
+        download_date=current_timestamp
+    )
+    frappe.db.commit()
 
     return {
         "status": "success",
-        "filename": f"Bulk_TTUM_{today_str}.txt",
+        "filename": bulk_filename,
         "filecontent": final_txt,
         "count": len(processed_txns)
     }
