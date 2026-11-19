@@ -1360,5 +1360,9 @@ function build_petty_cash_stepper(frm, status, users_info) {
         </div>
     `;
 
+    frm.set_intro('');
+    if (frm.dashboard && frm.dashboard.wrapper) {
+        frm.dashboard.wrapper.find('.form-message, .pct-stepper-card').remove();
+    }
     frm.set_intro(banner_html, 'blue');
 }
