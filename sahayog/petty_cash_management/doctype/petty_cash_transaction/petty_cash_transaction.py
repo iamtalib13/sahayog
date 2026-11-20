@@ -852,6 +852,45 @@ class PettyCashTransaction(Document):
             frappe.db.set_value("Branch Petty Cash Account", {
                                 "branch": self.branch}, "last_funded_on", self.transaction_date)
 
+    def claim_action(self, from_statuses, to_status, extra_fields=None, error_msg=None):
+        """
+        Validates the CURRENT status from the database (not the client copy)
+        and atomically moves it to the next status.
+        The row is locked (SELECT ... FOR UPDATE) until this request commits,
+        so when two users act on the same stage only ONE action can succeed.
+        """
+        fresh = frappe.db.get_value(
+            "Petty Cash Transaction", self.name,
+            ["approval_status", "docstatus"],
+            for_update=True, as_dict=True
+        )
+
+        if not fresh or fresh.docstatus != 1:
+            frappe.throw(_("Document must be submitted before this action."))
+
+        if fresh.approval_status not in from_statuses:
+            frappe.throw(error_msg or _(
+                "This transaction has already been processed by another user "
+                "(current status: {0}). Please refresh."
+            ).format(fresh.approval_status))
+
+        fields = {"approval_status": to_status}
+        if extra_fields:
+            fields.update(extra_fields)
+
+        frappe.db.set_value("Petty Cash Transaction", self.name, fields,
+                            update_modified=False)
+
+        for key, value in fields.items():
+            setattr(self, key, value)
+
+    def publish_status_change(self, status):
+        frappe.publish_realtime(
+            "petty_cash_status_changed",
+            {"name": self.name, "approval_status": status},
+            after_commit=True
+        )
+
     @frappe.whitelist()
     def ho_approve_limit(self):
         user_roles = frappe.get_roles()
@@ -860,15 +899,15 @@ class PettyCashTransaction(Document):
             frappe.throw(
                 _("Only HO Petty Cash Manager or Approver can approve."))
 
-        if self.docstatus != 1 or self.approval_status != "Pending Approval":
-            frappe.throw(_("Document is not pending approval."))
-
-        self.db_set("amount_deducted", self.amount, update_modified=False)
-        self.db_set("approval_status", "Approved", update_modified=False)
-        frappe.db.set_value("Petty Cash Transaction", self.name, {
-            "approver_action_by": frappe.session.user,
-            "rejected_by_stage": None
-        }, update_modified=False)
+        self.claim_action(
+            ["Pending Approval"], "Approved",
+            extra_fields={
+                "amount_deducted": self.amount,
+                "approver_action_by": frappe.session.user,
+                "rejected_by_stage": None
+            },
+            error_msg=_("Document is not pending approval.")
+        )
 
         if self.is_legacy_unsettled_cash_flow_enabled():
             self.update_wallet()
@@ -881,6 +920,8 @@ class PettyCashTransaction(Document):
         #     indicator="blue"
         # )
 
+        self.publish_status_change("Approved")
+
         # Run verification process directly to auto-verify over-limit transactions
         self.ho_verify_bill()
 
@@ -892,8 +933,14 @@ class PettyCashTransaction(Document):
         if not set(["HO Petty Cash Manager", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
             frappe.throw(_("Only HO Petty Cash Approver can reject."))
 
-        if self.docstatus != 1 or self.approval_status != "Pending Approval":
-            frappe.throw(_("Document is not pending approval."))
+        self.claim_action(
+            ["Pending Approval"], "Rejected",
+            extra_fields={
+                "approver_action_by": frappe.session.user,
+                "rejected_by_stage": "Approver"
+            },
+            error_msg=_("Document is not pending approval.")
+        )
 
         # Reverse the wallet deduction made during the submit/approval flow
         if not self.is_legacy_unsettled_cash_flow_enabled():
@@ -902,17 +949,13 @@ class PettyCashTransaction(Document):
             wallet = self.get_branch_wallet_doc()
             wallet.update_unsettled_cash(self.amount, "Withdrawal")
 
-        self.db_set("approval_status", "Rejected", update_modified=False)
-        frappe.db.set_value("Petty Cash Transaction", self.name, {
-            "approver_action_by": frappe.session.user,
-            "rejected_by_stage": "Approver"
-        }, update_modified=False)
-
         frappe.msgprint(
             msg=_("Approver Rejected. Status set to Rejected."),
             title=_("Message"),
             indicator="red"
         )
+
+        self.publish_status_change("Rejected")
 
     @frappe.whitelist()
     def ho_checker_approve(self):
@@ -927,26 +970,27 @@ class PettyCashTransaction(Document):
             frappe.throw(
                 _("Only HO Petty Cash Checker or Manager can approve."))
 
-        if self.docstatus != 1 or self.approval_status != "Pending Checker":
-            frappe.throw(_("Document is not pending checker approval."))
-
         # Amount already deducted on submit; checker only changes status.
         # After the checker approves a pending-checker transaction, route the
         # document to the HO Approver's queue ("Pending Approval") so the HO
         # Petty Cash Approver can approve/reject the limit exceedance before
         # the HO Verifier moves the document to "Verified".
-        self.db_set("approval_status", "Pending Approval",
-                    update_modified=False)
-        frappe.db.set_value("Petty Cash Transaction", self.name, {
-            "checker_action_by": frappe.session.user,
-            "rejected_by_stage": None
-        }, update_modified=False)
+        self.claim_action(
+            ["Pending Checker"], "Pending Approval",
+            extra_fields={
+                "checker_action_by": frappe.session.user,
+                "rejected_by_stage": None
+            },
+            error_msg=_("Document is not pending checker approval.")
+        )
 
         frappe.msgprint(
             msg=_("Checker Approved. Status set to Pending Approval for HO Approver."),
             title=_("Message"),
             indicator="blue"
         )
+
+        self.publish_status_change("Pending Approval")
 
     @frappe.whitelist()
     def ho_checker_reject(self):
@@ -961,8 +1005,14 @@ class PettyCashTransaction(Document):
             frappe.throw(
                 _("Only HO Petty Cash Checker or Manager can reject."))
 
-        if self.docstatus != 1 or self.approval_status != "Pending Checker":
-            frappe.throw(_("Document is not pending checker approval."))
+        self.claim_action(
+            ["Pending Checker"], "Rejected",
+            extra_fields={
+                "checker_action_by": frappe.session.user,
+                "rejected_by_stage": "Checker"
+            },
+            error_msg=_("Document is not pending checker approval.")
+        )
 
         # Reverse the wallet deduction made on submit
         if not self.is_legacy_unsettled_cash_flow_enabled():
@@ -971,17 +1021,13 @@ class PettyCashTransaction(Document):
             wallet = self.get_branch_wallet_doc()
             wallet.update_unsettled_cash(self.amount, "Withdrawal")
 
-        self.db_set("approval_status", "Rejected", update_modified=False)
-        frappe.db.set_value("Petty Cash Transaction", self.name, {
-            "checker_action_by": frappe.session.user,
-            "rejected_by_stage": "Checker"
-        }, update_modified=False)
-
         frappe.msgprint(
             msg=_("Checker Rejected. Status set to Rejected."),
             title=_("Message"),
             indicator="red"
         )
+
+        self.publish_status_change("Rejected")
 
     def apply_new_flow_pending_approval_deduction(self):
         if self.transaction_type != "Expense":
@@ -1023,40 +1069,69 @@ class PettyCashTransaction(Document):
             frappe.throw(
                 _("Only HO Petty Cash Manager or Verifier can verify."))
 
-        if self.approval_status not in ["Approved", "Checked"]:
-            frappe.throw(
-                _("Document must be Approved/Checked before Verification."))
+        # ALWAYS read the CURRENT status from the database (not the stale
+        # copy sent by the client) before performing any action.
+        fresh = frappe.db.get_value(
+            "Petty Cash Transaction", self.name,
+            ["approval_status", "docstatus"], as_dict=True)
+
+        if not fresh or fresh.docstatus != 1:
+            frappe.throw(_("Document must be submitted before Verification."))
 
         # BEFORE moving to 'Verified': if the document reached here via the
         # Checker's path ("Checked"), route it through the HO Petty Cash
         # Approver's approval first. The approver must approve (via
         # ho_approve_limit -> 'Pending Approval' -> 'Approved') before the
         # verifier/pay action can set the final status to 'Verified'.
-        if self.approval_status == "Checked":
-            self.db_set("approval_status", "Pending Approval",
-                        update_modified=False)
+        if fresh.approval_status == "Checked":
+            self.claim_action(["Checked"], "Pending Approval")
             frappe.msgprint(
                 msg=_("HO Petty Cash Approver approval required before verification."),
                 title=_("Pending Approval"),
                 indicator="orange"
             )
+            self.publish_status_change("Pending Approval")
             return
+
+        if fresh.approval_status not in ["Approved", "Checked"]:
+            frappe.throw(
+                _("Document must be Approved/Checked before Verification."))
+
+        previous_status = fresh.approval_status
 
         enable_integration = cint(
             frappe.db.get_single_value(
                 "Sahayog Settings", "enable_finacle_integration") or 0
         )
 
-        if enable_integration:
-            if not self.journal_entry_ref:
-                frappe.throw(_("Journal Entry Reference is missing."))
+        if enable_integration and not self.journal_entry_ref:
+            frappe.throw(_("Journal Entry Reference is missing."))
 
+        # Atomic claim BEFORE the Finacle transfer: only ONE user can move
+        # the document to "Verified", so the reimbursement can never run twice.
+        self.claim_action(
+            [previous_status], "Verified",
+            extra_fields={
+                "approved_by": frappe.session.user,
+                "verifier_action_by": frappe.session.user,
+                "rejected_by_stage": None
+            },
+            error_msg=_("Document must be Approved/Checked before Verification.")
+        )
+
+        if enable_integration:
             from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
 
             response = individual_finacle_fund_transfer_api(
                 self.journal_entry_ref)
 
             if response.get("status") != "SUCCESS":
+                # Roll back the claim so verification can be retried later
+                frappe.db.set_value(
+                    self.doctype, self.name, "approval_status",
+                    previous_status, update_modified=False
+                )
+                self.approval_status = previous_status
                 frappe.msgprint(
                     msg=_("Finacle Failed: {0}").format(
                         response.get("message")),
@@ -1070,27 +1145,17 @@ class PettyCashTransaction(Document):
                 self.name,
                 {
                     "finacle_tran_id": response.get("trn_id"),
-                    "finacle_tran_date": now_datetime(),
-                    "approved_by": frappe.session.user
+                    "finacle_tran_date": now_datetime()
                 },
                 update_modified=False
             )
-        else:
-            self.db_set("approved_by", frappe.session.user,
-                        update_modified=False)
 
-        if self.is_legacy_unsettled_cash_flow_enabled():
-            self.db_set("approval_status", "Verified", update_modified=False)
-        else:
+        if not self.is_legacy_unsettled_cash_flow_enabled():
             self.apply_new_flow_terminal_credit("Verified")
-            self.db_set("approval_status", "Verified", update_modified=False)
             self.db_set("finacle_tran_date", now_datetime(),
                         update_modified=False)
 
-        frappe.db.set_value("Petty Cash Transaction", self.name, {
-            "verifier_action_by": frappe.session.user,
-            "rejected_by_stage": None
-        }, update_modified=False)
+        self.publish_status_change("Verified")
 
         frappe.msgprint(
             msg=_("Bills Verified successfully."),
@@ -1108,9 +1173,14 @@ class PettyCashTransaction(Document):
             frappe.throw(
                 _("Only HO Petty Cash Verifier or Manager can reject."))
 
-        if self.docstatus != 1 or self.approval_status not in ["Approved", "Checked"]:
-            frappe.throw(
-                _("Document must be in Approved or Checked status to reject."))
+        self.claim_action(
+            ["Approved", "Checked"], "Rejected",
+            extra_fields={
+                "verifier_action_by": frappe.session.user,
+                "rejected_by_stage": "Verifier"
+            },
+            error_msg=_("Document must be in Approved or Checked status to reject.")
+        )
 
         # Reverse the wallet deduction made during the submit/approval flow
         if not self.is_legacy_unsettled_cash_flow_enabled():
@@ -1119,17 +1189,13 @@ class PettyCashTransaction(Document):
             wallet = self.get_branch_wallet_doc()
             wallet.update_unsettled_cash(self.amount, "Withdrawal")
 
-        self.db_set("approval_status", "Rejected", update_modified=False)
-        frappe.db.set_value("Petty Cash Transaction", self.name, {
-            "verifier_action_by": frappe.session.user,
-            "rejected_by_stage": "Verifier"
-        }, update_modified=False)
-
         frappe.msgprint(
             msg=_("Verifier Rejected. Status set to Rejected."),
             title=_("Message"),
             indicator="red"
         )
+
+        self.publish_status_change("Rejected")
 
     def has_permission(self, ptype="read", user=None):
         if not user:

@@ -209,6 +209,21 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
     refresh: function (frm) {
 
+        // Reflect status changes made by OTHER users without a manual refresh
+        frappe.realtime.off('petty_cash_status_changed');
+        frappe.realtime.on('petty_cash_status_changed', function (data) {
+            if (!frm.doc || !data || data.name !== frm.doc.name) return;
+            if (frm.is_dirty()) return;
+            var route = frappe.get_route();
+            if (route[0] !== 'Form' || route[1] !== 'Petty Cash Transaction'
+                || route[2] !== frm.doc.name) return;
+            frm.reload_doc();
+            frappe.show_alert({
+                message: __('Status changed to {0}', [data.approval_status]),
+                indicator: 'blue'
+            });
+        });
+
         // Toggle Unsettled Cash field based on settings
         frm.trigger('toggle_unsettled_cash_field');
         frm.set_df_property('custom_ttum_remarks', 'hidden', 1);
@@ -286,7 +301,8 @@ frappe.ui.form.on('Petty Cash Transaction', {
                         frappe.call({
                             doc: frm.doc,
                             method: 'ho_approve_limit',
-                            callback: function () { frm.reload_doc(); }
+                            callback: function () { frm.reload_doc(); },
+                            error: function () { frm.reload_doc(); }
                         });
                     });
                 }, "Actions"); // Should appear in 'Actions' button
@@ -296,7 +312,8 @@ frappe.ui.form.on('Petty Cash Transaction', {
                         frappe.call({
                             doc: frm.doc,
                             method: 'ho_approver_reject',
-                            callback: function () { frm.reload_doc(); }
+                            callback: function () { frm.reload_doc(); },
+                            error: function () { frm.reload_doc(); }
                         });
                     });
                 }, "Actions");
@@ -314,7 +331,8 @@ frappe.ui.form.on('Petty Cash Transaction', {
                         frappe.call({
                             doc: frm.doc,
                             method: 'ho_checker_approve',
-                            callback: function () { frm.reload_doc(); }
+                            callback: function () { frm.reload_doc(); },
+                            error: function () { frm.reload_doc(); }
                         });
                     });
                 }, "Actions");
@@ -324,7 +342,8 @@ frappe.ui.form.on('Petty Cash Transaction', {
                         frappe.call({
                             doc: frm.doc,
                             method: 'ho_checker_reject',
-                            callback: function () { frm.reload_doc(); }
+                            callback: function () { frm.reload_doc(); },
+                            error: function () { frm.reload_doc(); }
                         });
                     });
                 }, "Actions");
@@ -343,7 +362,8 @@ frappe.ui.form.on('Petty Cash Transaction', {
                     frappe.call({
                         doc: frm.doc,
                         method: 'ho_verify_bill',
-                        callback: function () { frm.reload_doc(); }
+                        callback: function () { frm.reload_doc(); },
+                        error: function () { frm.reload_doc(); }
                     });
                 }, "Actions");
 
@@ -352,7 +372,8 @@ frappe.ui.form.on('Petty Cash Transaction', {
                         frappe.call({
                             doc: frm.doc,
                             method: 'ho_verifier_reject',
-                            callback: function () { frm.reload_doc(); }
+                            callback: function () { frm.reload_doc(); },
+                            error: function () { frm.reload_doc(); }
                         });
                     });
                 }, "Actions");
