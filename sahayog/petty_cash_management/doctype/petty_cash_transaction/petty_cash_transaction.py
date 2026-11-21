@@ -1544,8 +1544,12 @@ class PettyCashTransaction(Document):
             },
             update_modified=False,
         )
-
-        filename = f"TTUM_{self.branch}_{self.name}.txt"
+        total_records = len(self.items) if self.items else 0
+        total_amount = sum(flt(item.amount)
+                           for item in self.items) if self.items else 0.0
+        current_date = now_datetime().strftime("%Y-%m-%d")
+        current_time = now_datetime().strftime("%H:%M:%S")
+        filename = f"Date_{current_date}_Time_{current_time}_Total_Records_{total_records}_Total_Amount{total_amount}.txt"
         create_and_link_petty_cash_ttum(
             transaction_names=[self.name],
             filecontent=final_txt,
@@ -1778,7 +1782,6 @@ class PettyCashTransaction(Document):
     #                         row.idx
     #                     )
     #                 )
-
 
     def validate_payment_mode_details(self):
         """
