@@ -416,6 +416,31 @@ def get_user_role_info():
     }
 
 
+@frappe.whitelist()
+def get_training_programs():
+    """Active Training Titles for the calendar's program dropdown.
+
+    Returns an empty list when no master records exist (or the DocType is not
+    installed yet) so the frontend can safely use its built-in default list.
+    """
+    try:
+        rows = frappe.get_all(
+            "Training Title",
+            filters={"enabled": 1},
+            fields=["training_title", "division"],
+            order_by="training_title asc",
+            limit_page_length=0,
+        )
+    except Exception:
+        return []
+
+    return [
+        {"name": r.training_title.strip(), "div": r.division or "other"}
+        for r in rows
+        if r.training_title and r.training_title.strip()
+    ]
+
+
 def _my_employee_id():
     """Employee id linked to the current user (None if not linked)."""
     return frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
