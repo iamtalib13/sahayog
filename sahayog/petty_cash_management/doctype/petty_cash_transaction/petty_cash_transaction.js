@@ -256,6 +256,11 @@ frappe.ui.form.on('Petty Cash Transaction', {
         frm.trigger('toggle_unsettled_cash_field');
         frm.set_df_property('custom_ttum_remarks', 'hidden', 1);
 
+        // Fetch Finacle integration status from Sahayog Settings
+        frappe.db.get_single_value('Sahayog Settings', 'enable_finacle_integration').then(function (val) {
+            frm.enable_finacle_integration = cint(val);
+        });
+
 
         // Set Description Max Length to 30
         set_description_maxlength(frm);
@@ -326,9 +331,14 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
                 frm.add_custom_button(__('Approve Limit Exceedance'), function () {
                     frappe.confirm('Approve extra expense?', () => {
+                        const is_finacle = cint(frm.enable_finacle_integration) === 1;
                         frappe.call({
                             doc: frm.doc,
                             method: 'ho_approve_limit',
+                            freeze: true,
+                            freeze_message: is_finacle
+                                ? __('Approving limit & synchronizing with Finacle. Please wait...')
+                                : __('Approving limit. Please wait...'),
                             callback: function () { frm.reload_doc(); },
                             error: function () { frm.reload_doc(); }
                         });
@@ -387,12 +397,31 @@ frappe.ui.form.on('Petty Cash Transaction', {
                 console.log(">> Adding 'Verify' Button");
 
                 frm.add_custom_button(__('Verify & Process'), function () {
-                    frappe.call({
-                        doc: frm.doc,
-                        method: 'ho_verify_bill',
-                        callback: function () { frm.reload_doc(); },
-                        error: function () { frm.reload_doc(); }
-                    });
+                    const do_verify = function (finacle_enabled) {
+                        const freeze_msg = finacle_enabled
+                            ? __('Verifying & synchronizing with Finacle. Please wait...')
+                            : __('Verifying transaction. Please wait...');
+
+                        frappe.call({
+                            doc: frm.doc,
+                            method: 'ho_verify_bill',
+                            freeze: true,
+                            freeze_message: freeze_msg,
+                            callback: function () { frm.reload_doc(); },
+                            error: function () { frm.reload_doc(); }
+                        });
+                    };
+
+                    if (frm.enable_finacle_integration !== undefined) {
+                        do_verify(cint(frm.enable_finacle_integration) === 1);
+                    } else {
+                        frappe.db.get_single_value('Sahayog Settings', 'enable_finacle_integration').then(function (val) {
+                            frm.enable_finacle_integration = cint(val);
+                            do_verify(cint(val) === 1);
+                        }).catch(function () {
+                            do_verify(true);
+                        });
+                    }
                 }, "Actions");
 
                 frm.add_custom_button(__('Reject (Verifier)'), function () {
