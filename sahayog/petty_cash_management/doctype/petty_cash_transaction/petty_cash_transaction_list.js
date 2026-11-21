@@ -14,10 +14,47 @@ function get_approval_status_color(status) {
     return color_map[status] || 'grey';
 }
 
+function can_view_ttum_status_badge() {
+    return (
+        frappe.session.user === 'Administrator' ||
+        frappe.user.has_role('System Manager') ||
+        frappe.user.has_role('HO Petty Cash Approver') ||
+        frappe.user.has_role('HO Petty Cash Auditor') ||
+        frappe.user.has_role('HO Petty Cash Checker') ||
+        frappe.user.has_role('HO Petty Cash Manager') ||
+        frappe.user.has_role('HO Petty Cash Verifier')
+    );
+}
+
 frappe.listview_settings['Petty Cash Transaction'] = {
+    add_fields: ["finacle_tran_date", "bulk_ttum_downloaded", "exclude_from_ttum"],
     get_indicator: function (doc) {
         const status = doc.approval_status || 'Draft';
         return [__(status), get_approval_status_color(status), `approval_status,=,${status}`];
+    },
+
+    formatters: {
+        approval_status: function (val, df, doc) {
+            let status = val || 'Draft';
+            let color = get_approval_status_color(status);
+            let html = `<span class="indicator-pill no-indicator-dot whitespace-nowrap ${color}"><span>${__(status)}</span></span>`;
+
+            if (can_view_ttum_status_badge() && doc.approval_status === 'Verified' && doc.finacle_tran_date) {
+                let badge_text = '';
+                let badge_color = '';
+
+                if (doc.bulk_ttum_downloaded || doc.exclude_from_ttum) {
+                    badge_text = __('TTUM Downloaded');
+                    badge_color = 'green';
+                } else {
+                    badge_text = __('Verified But TTUM Not Downloaded');
+                    badge_color = 'orange';
+                }
+
+                html += ` <span class="indicator-pill no-indicator-dot whitespace-nowrap ${badge_color}"><span>${badge_text}</span></span>`;
+            }
+            return html;
+        }
     },
 
 
@@ -26,6 +63,51 @@ frappe.listview_settings['Petty Cash Transaction'] = {
             // download_filtered_report_listview(listview);
             ask_date_range_and_download();
         });
+
+        // --- HOLD BRANCH TRANSACTION: Hide 'New' button + show sticky banner for branch users ---
+        const is_ho_user = frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator';
+        if (!is_ho_user) {
+            frappe.db.get_single_value('Sahayog Settings', 'hold_branch_transaction').then(function (held) {
+                if (cint(held)) {
+                    // Hide New button
+                    listview.page.btn_primary && listview.page.btn_primary.hide();
+                    listview.page.wrapper.find('.btn-primary[data-label="New"]').hide();
+
+                    // Floating sticky banner at top of list
+                    const banner_id = 'hold-branch-txn-banner';
+                    if (!$('#' + banner_id).length) {
+                        const $banner = $(`
+                            <div id="${banner_id}" style="
+                                position: sticky;
+                                top: 0;
+                                z-index: 1050;
+                                background: #fff1f0;
+                                border: 1.5px solid #ff4d4f;
+                                border-radius: 6px;
+                                padding: 10px 18px;
+                                margin: 10px 0 6px 0;
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                font-weight: 500;
+                                color: #a8071a;
+                                font-size: 13px;
+                                box-shadow: 0 2px 8px rgba(255,77,79,0.13);
+                            ">
+                                <span style="font-size:18px;">🚫</span>
+                                <span>${__('Branch transactions are currently on hold by Head Office. You are not allowed to create or submit transactions at this time.')}</span>
+                            </div>
+                        `);
+                        listview.page.main.prepend($banner);
+                    }
+                    frappe.show_alert({
+                        message: __('Branch transactions are currently on hold by Head Office.'),
+                        indicator: 'red'
+                    }, 8);
+                }
+            });
+        }
+        // --- END HOLD CHECK ---
 
         if (
             frappe.session.user === 'Administrator' ||
@@ -36,9 +118,64 @@ frappe.listview_settings['Petty Cash Transaction'] = {
             //     ask_date_and_download('excel');
             // }, __('Download Files'));
 
-            listview.page.add_inner_button(__('TXT File (Finacle)'), function () {
-                ask_date_and_download('txt');
+            listview.page.add_inner_button(__('Bulk TTUM TXT File (Finacle)'), function () {
+                frappe.confirm(
+                    __('Are you sure you want to download Bulk TTUM TXT File?'),
+                    function () {
+                        download_bulk_ttum_txt(listview);
+                    }
+                );
             }, __('Download Files'));
+        }
+
+        function download_bulk_ttum_txt(listview) {
+            frappe.call({
+                method: 'sahayog.petty_cash_management.doctype.petty_cash_transaction.petty_cash_transaction.download_bulk_ttum_txt_api_new',
+                freeze: true,
+                freeze_message: __('Checking and Generating Bulk TTUM...'),
+                callback: function (r) {
+                    if (r.message && r.message.status === 'success') {
+                        let filedata = r.message.filecontent;
+                        let filename = r.message.filename;
+
+                        let blob = new Blob(
+                            [filedata],
+                            { type: 'text/plain;charset=utf-8' }
+                        );
+
+                        let url = window.URL.createObjectURL(blob);
+                        let a = document.createElement('a');
+                        a.href = url;
+                        a.download = filename;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+
+                        frappe.show_alert({
+                            message: __('Bulk TTUM downloaded successfully! ({0} records)', [r.message.count || 0]),
+                            indicator: 'green'
+                        }, 5);
+
+                        if (listview) {
+                            listview.refresh();
+                        }
+                    } else if (r.message && r.message.status === 'no_data') {
+                        frappe.msgprint({
+                            title: __('No Data Available'),
+                            message: r.message.message,
+                            indicator: 'orange'
+                        });
+                    }
+                },
+                error: function (r) {
+                    frappe.show_alert({
+                        message: __('Failed to generate bulk TTUM. Please try again.'),
+                        indicator: 'red'
+                    }, 5);
+                    console.error('Bulk TTUM error:', r);
+                }
+            });
         }
 
         function ask_date_and_download(file_type) {

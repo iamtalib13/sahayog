@@ -27,6 +27,13 @@
   "journal_entry_ref",
   "submission_attempted",
   "custom_ttum_remarks",
+  "ttum_downloaded_date",
+  "ttum_reference",
+  "download_ttum",
+  "checker_action_by",
+  "approver_action_by",
+  "verifier_action_by",
+  "rejected_by_stage",
   "column_break_dmoz",
   "amount_within_limit",
   "amount_exceeding_limit",
@@ -36,6 +43,7 @@
   "finacle_tran_date",
   "finacle_tran_particular",
   "exclude_from_ttum",
+  "bulk_ttum_downloaded",
   "expense_items_section",
   "items",
   "approval_section",
@@ -152,7 +160,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval: !frappe.user_roles.includes('Branch User')",
+   "depends_on": "eval: !!doc.ttum_downloaded_date && (!frappe.user_roles.includes('Branch User') || frappe.session.user === 'Administrator')",
    "description": "Exclude this transaction from bulk TTUM (TXT) downloads.",
    "fieldname": "exclude_from_ttum",
    "fieldtype": "Check",
@@ -330,13 +338,70 @@
    "fieldname": "branch_zone",
    "fieldtype": "Data",
    "label": "Branch Zone"
+  },
+  {
+   "default": "0",
+   "depends_on": "eval: !!doc.ttum_downloaded_date && (!frappe.user_roles.includes('Branch User') || frappe.session.user === 'Administrator')",
+   "description": "Exclude this transaction from bulk TTUM (TXT) downloads.",
+   "fieldname": "bulk_ttum_downloaded",
+   "fieldtype": "Check",
+   "label": "Bulk TTUM Downloaded",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: !!doc.ttum_downloaded_date && (!frappe.user_roles.includes('Branch User') || frappe.session.user === 'Administrator')",
+   "fieldname": "ttum_downloaded_date",
+   "fieldtype": "Datetime",
+   "label": "TTUM Downloaded On",
+   "mandatory_depends_on": "eval: (!frappe.user_roles.includes('Branch User') || frappe.session.user === 'Administrator')",
+   "read_only": 1
+  },
+  {
+   "depends_on": "eval: !!doc.ttum_downloaded_date && (!frappe.user_roles.includes('Branch User') || frappe.session.user === 'Administrator')",
+   "fieldname": "ttum_reference",
+   "fieldtype": "Link",
+   "label": "TTUM Reference",
+   "options": "Petty Cash TTUM"
+  },
+  {
+   "depends_on": "eval: !!doc.ttum_reference && (!frappe.user_roles.includes('Branch User') || frappe.session.user === 'Administrator')",
+   "fieldname": "download_ttum",
+   "fieldtype": "Button",
+   "label": "Download TTUM"
+  },
+  {
+   "fieldname": "checker_action_by",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Checker",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approver_action_by",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Approver",
+   "read_only": 1
+  },
+  {
+   "fieldname": "verifier_action_by",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Verifier",
+   "read_only": 1
+  },
+  {
+   "fieldname": "rejected_by_stage",
+   "fieldtype": "Data",
+   "label": "Rejected By Stage",
+   "read_only": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-16 17:22:21.827643",
+ "modified": "2026-11-21 11:54:51.207377",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",

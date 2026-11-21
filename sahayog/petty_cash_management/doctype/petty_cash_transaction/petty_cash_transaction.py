@@ -36,12 +36,35 @@ from sahayog.petty_cash_management.permissions import get_user_allowed_branches
 
 class PettyCashTransaction(Document):
 
+    def _is_branch_user(self):
+        """Returns True if the current user is a branch-level user (not HO Manager/Admin)."""
+        ho_roles = {"HO Petty Cash Manager", "Administrator"}
+        user_roles = set(frappe.get_roles())
+        return frappe.session.user != "Administrator" and not ho_roles.intersection(user_roles)
+
+    def _check_hold_branch_transaction(self):
+        """Block branch users from creating/submitting when hold_branch_transaction is enabled."""
+        if not self._is_branch_user():
+            return  # HO Managers and Admin are never blocked
+
+        is_held = frappe.db.get_single_value(
+            "Sahayog Settings", "hold_branch_transaction")
+        if cint(is_held):
+            frappe.throw(
+                _("Branch transactions are currently on hold. "
+                  "Please contact Head Office to resume operations."),
+                title=_("Transaction Hold")
+            )
+
     def before_insert(self):
         if not self.transaction_date:
             self.transaction_date = nowdate()
 
         # Default Status
         self.approval_status = "Draft"
+
+        # Block branch users when hold is active
+        self._check_hold_branch_transaction()
 
         if "HO Petty Cash Manager" not in frappe.get_roles():
             self.transaction_type = "Expense"
@@ -292,14 +315,16 @@ class PettyCashTransaction(Document):
         for row in (self.items or []):
             if row.gst_available and not row.gst_no:
                 frappe.throw(
-                    _("Row #{0}: GST No. is required when GST Available is checked.").format(row.idx)
+                    _("Row #{0}: GST No. is required when GST Available is checked.").format(
+                        row.idx)
                 )
 
             if row.gst_no:
                 gst = str(row.gst_no).strip()
                 if len(gst) != 15 or not gst.isalnum():
                     frappe.throw(
-                        _("Row #{0}: GST No. must be exactly 15 alphanumeric characters.").format(row.idx)
+                        _("Row #{0}: GST No. must be exactly 15 alphanumeric characters.").format(
+                            row.idx)
                     )
 
         # Validate Payment Mode
@@ -427,7 +452,7 @@ class PettyCashTransaction(Document):
                   AND child.expense_category = %s
                   AND parent.transaction_date BETWEEN %s AND %s
                   AND parent.docstatus = 1
-                  AND parent.approval_status != 'Verified'
+                  AND parent.approval_status NOT IN ('Verified', 'Rejected', 'Canceled')
                   AND parent.name != %s
             """
 
@@ -479,6 +504,10 @@ class PettyCashTransaction(Document):
                 self.amount_exceeding_limit), alert=True)
 
     def on_submit(self):
+        # Block branch users from submitting when hold is active
+        if self.transaction_type == "Expense":
+            self._check_hold_branch_transaction()
+
         if self.transaction_type == "Expense":
             # 1. Validate Payment Mode
             self.validate_payment_mode_details()
@@ -508,7 +537,8 @@ class PettyCashTransaction(Document):
             )
 
             if checker_required:
-                self.db_set("amount_deducted", self.amount, update_modified=False)
+                self.db_set("amount_deducted", self.amount,
+                            update_modified=False)
                 self.db_set("approval_status", "Pending Checker",
                             update_modified=False)
             elif self.amount_exceeding_limit > 0:
@@ -535,6 +565,7 @@ class PettyCashTransaction(Document):
 
             if enable_integration:
                 self.createjournalentry()
+                # self.create_journal_entry()
 
             self.update_wallet()
 
@@ -849,6 +880,45 @@ class PettyCashTransaction(Document):
             frappe.db.set_value("Branch Petty Cash Account", {
                                 "branch": self.branch}, "last_funded_on", self.transaction_date)
 
+    def claim_action(self, from_statuses, to_status, extra_fields=None, error_msg=None):
+        """
+        Validates the CURRENT status from the database (not the client copy)
+        and atomically moves it to the next status.
+        The row is locked (SELECT ... FOR UPDATE) until this request commits,
+        so when two users act on the same stage only ONE action can succeed.
+        """
+        fresh = frappe.db.get_value(
+            "Petty Cash Transaction", self.name,
+            ["approval_status", "docstatus"],
+            for_update=True, as_dict=True
+        )
+
+        if not fresh or fresh.docstatus != 1:
+            frappe.throw(_("Document must be submitted before this action."))
+
+        if fresh.approval_status not in from_statuses:
+            frappe.throw(error_msg or _(
+                "This transaction has already been processed by another user "
+                "(current status: {0}). Please refresh."
+            ).format(fresh.approval_status))
+
+        fields = {"approval_status": to_status}
+        if extra_fields:
+            fields.update(extra_fields)
+
+        frappe.db.set_value("Petty Cash Transaction", self.name, fields,
+                            update_modified=False)
+
+        for key, value in fields.items():
+            setattr(self, key, value)
+
+    def publish_status_change(self, status):
+        frappe.publish_realtime(
+            "petty_cash_status_changed",
+            {"name": self.name, "approval_status": status},
+            after_commit=True
+        )
+
     @frappe.whitelist()
     def ho_approve_limit(self):
         user_roles = frappe.get_roles()
@@ -857,32 +927,48 @@ class PettyCashTransaction(Document):
             frappe.throw(
                 _("Only HO Petty Cash Manager or Approver can approve."))
 
-        if self.docstatus != 1 or self.approval_status != "Pending Approval":
-            frappe.throw(_("Document is not pending approval."))
-
-        self.db_set("amount_deducted", self.amount, update_modified=False)
-        self.db_set("approval_status", "Approved", update_modified=False)
+        self.claim_action(
+            ["Pending Approval"], "Approved",
+            extra_fields={
+                "amount_deducted": self.amount,
+                "approver_action_by": frappe.session.user,
+                "rejected_by_stage": None
+            },
+            error_msg=_("Document is not pending approval.")
+        )
 
         if self.is_legacy_unsettled_cash_flow_enabled():
             self.update_wallet()
         else:
             self.apply_new_flow_pending_approval_deduction()
 
-        frappe.msgprint(
-            msg=_("Limit Exceedance Approved. Full amount approved."),
-            title=_("Message"),
-            indicator="blue"
-        )
+        # frappe.msgprint(
+        #     msg=_("Limit Exceedance Approved. Full amount approved."),
+        #     title=_("Message"),
+        #     indicator="blue"
+        # )
+
+        self.publish_status_change("Approved")
+
+        # Run verification process directly to auto-verify over-limit transactions
+        self.ho_verify_bill()
 
     @frappe.whitelist()
     def ho_approver_reject(self):
         user_roles = frappe.get_roles()
 
-        if "HO Petty Cash Approver" not in user_roles and frappe.session.user != "Administrator":
+        # if "HO Petty Cash Approver" not in user_roles and frappe.session.user != "Administrator":
+        if not set(["HO Petty Cash Manager", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
             frappe.throw(_("Only HO Petty Cash Approver can reject."))
 
-        if self.docstatus != 1 or self.approval_status != "Pending Approval":
-            frappe.throw(_("Document is not pending approval."))
+        self.claim_action(
+            ["Pending Approval"], "Rejected",
+            extra_fields={
+                "approver_action_by": frappe.session.user,
+                "rejected_by_stage": "Approver"
+            },
+            error_msg=_("Document is not pending approval.")
+        )
 
         # Reverse the wallet deduction made during the submit/approval flow
         if not self.is_legacy_unsettled_cash_flow_enabled():
@@ -891,30 +977,40 @@ class PettyCashTransaction(Document):
             wallet = self.get_branch_wallet_doc()
             wallet.update_unsettled_cash(self.amount, "Withdrawal")
 
-        self.db_set("approval_status", "Rejected", update_modified=False)
-
         frappe.msgprint(
             msg=_("Approver Rejected. Status set to Rejected."),
             title=_("Message"),
             indicator="red"
         )
 
+        self.publish_status_change("Rejected")
+
     @frappe.whitelist()
     def ho_checker_approve(self):
         user_roles = frappe.get_roles()
 
-        if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
-            frappe.throw(_("Only HO Petty Cash Checker can approve."))
+        # if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
+        #     frappe.throw(_("Only HO Petty Cash Checker can approve."))
 
-        if self.docstatus != 1 or self.approval_status != "Pending Checker":
-            frappe.throw(_("Document is not pending checker approval."))
+        allowed_roles = {"HO Petty Cash Checker",
+                         "HO Petty Cash Manager", "System Manager"}
+        if not allowed_roles.intersection(user_roles) and frappe.session.user != "Administrator":
+            frappe.throw(
+                _("Only HO Petty Cash Checker or Manager can approve."))
 
         # Amount already deducted on submit; checker only changes status.
         # After the checker approves a pending-checker transaction, route the
         # document to the HO Approver's queue ("Pending Approval") so the HO
         # Petty Cash Approver can approve/reject the limit exceedance before
         # the HO Verifier moves the document to "Verified".
-        self.db_set("approval_status", "Pending Approval", update_modified=False)
+        self.claim_action(
+            ["Pending Checker"], "Pending Approval",
+            extra_fields={
+                "checker_action_by": frappe.session.user,
+                "rejected_by_stage": None
+            },
+            error_msg=_("Document is not pending checker approval.")
+        )
 
         frappe.msgprint(
             msg=_("Checker Approved. Status set to Pending Approval for HO Approver."),
@@ -922,15 +1018,29 @@ class PettyCashTransaction(Document):
             indicator="blue"
         )
 
+        self.publish_status_change("Pending Approval")
+
     @frappe.whitelist()
     def ho_checker_reject(self):
         user_roles = frappe.get_roles()
 
-        if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
-            frappe.throw(_("Only HO Petty Cash Checker can reject."))
+        # if "HO Petty Cash Checker" not in user_roles and frappe.session.user != "Administrator":
+        #     frappe.throw(_("Only HO Petty Cash Checker can reject."))
 
-        if self.docstatus != 1 or self.approval_status != "Pending Checker":
-            frappe.throw(_("Document is not pending checker approval."))
+        allowed_roles = {"HO Petty Cash Checker",
+                         "HO Petty Cash Manager", "System Manager"}
+        if not allowed_roles.intersection(user_roles) and frappe.session.user != "Administrator":
+            frappe.throw(
+                _("Only HO Petty Cash Checker or Manager can reject."))
+
+        self.claim_action(
+            ["Pending Checker"], "Rejected",
+            extra_fields={
+                "checker_action_by": frappe.session.user,
+                "rejected_by_stage": "Checker"
+            },
+            error_msg=_("Document is not pending checker approval.")
+        )
 
         # Reverse the wallet deduction made on submit
         if not self.is_legacy_unsettled_cash_flow_enabled():
@@ -939,13 +1049,13 @@ class PettyCashTransaction(Document):
             wallet = self.get_branch_wallet_doc()
             wallet.update_unsettled_cash(self.amount, "Withdrawal")
 
-        self.db_set("approval_status", "Rejected", update_modified=False)
-
         frappe.msgprint(
             msg=_("Checker Rejected. Status set to Rejected."),
             title=_("Message"),
             indicator="red"
         )
+
+        self.publish_status_change("Rejected")
 
     def apply_new_flow_pending_approval_deduction(self):
         if self.transaction_type != "Expense":
@@ -983,42 +1093,74 @@ class PettyCashTransaction(Document):
     def ho_verify_bill(self):
         user_roles = frappe.get_roles()
 
-        if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier"]).intersection(user_roles) and frappe.session.user != "Administrator":
+        if not set(["HO Petty Cash Manager", "HO Petty Cash Verifier", "HO Petty Cash Approver"]).intersection(user_roles) and frappe.session.user != "Administrator":
             frappe.throw(
                 _("Only HO Petty Cash Manager or Verifier can verify."))
 
-        if self.approval_status not in ["Approved", "Checked"]:
-            frappe.throw(_("Document must be Approved/Checked before Verification."))
+        # ALWAYS read the CURRENT status from the database (not the stale
+        # copy sent by the client) before performing any action.
+        fresh = frappe.db.get_value(
+            "Petty Cash Transaction", self.name,
+            ["approval_status", "docstatus"], as_dict=True)
+
+        if not fresh or fresh.docstatus != 1:
+            frappe.throw(_("Document must be submitted before Verification."))
 
         # BEFORE moving to 'Verified': if the document reached here via the
         # Checker's path ("Checked"), route it through the HO Petty Cash
         # Approver's approval first. The approver must approve (via
         # ho_approve_limit -> 'Pending Approval' -> 'Approved') before the
         # verifier/pay action can set the final status to 'Verified'.
-        if self.approval_status == "Checked":
-            self.db_set("approval_status", "Pending Approval", update_modified=False)
+        if fresh.approval_status == "Checked":
+            self.claim_action(["Checked"], "Pending Approval")
             frappe.msgprint(
                 msg=_("HO Petty Cash Approver approval required before verification."),
                 title=_("Pending Approval"),
                 indicator="orange"
             )
+            self.publish_status_change("Pending Approval")
             return
+
+        if fresh.approval_status not in ["Approved", "Checked"]:
+            frappe.throw(
+                _("Document must be Approved/Checked before Verification."))
+
+        previous_status = fresh.approval_status
 
         enable_integration = cint(
             frappe.db.get_single_value(
                 "Sahayog Settings", "enable_finacle_integration") or 0
         )
 
-        if enable_integration:
-            if not self.journal_entry_ref:
-                frappe.throw(_("Journal Entry Reference is missing."))
+        if enable_integration and not self.journal_entry_ref:
+            frappe.throw(_("Journal Entry Reference is missing."))
 
+        # Atomic claim BEFORE the Finacle transfer: only ONE user can move
+        # the document to "Verified", so the reimbursement can never run twice.
+        self.claim_action(
+            [previous_status], "Verified",
+            extra_fields={
+                "approved_by": frappe.session.user,
+                "verifier_action_by": frappe.session.user,
+                "rejected_by_stage": None
+            },
+            error_msg=_(
+                "Document must be Approved/Checked before Verification.")
+        )
+
+        if enable_integration:
             from sahayog.petty_cash_management.api.finacle_integration import individual_finacle_fund_transfer_api
 
             response = individual_finacle_fund_transfer_api(
                 self.journal_entry_ref)
 
             if response.get("status") != "SUCCESS":
+                # Roll back the claim so verification can be retried later
+                frappe.db.set_value(
+                    self.doctype, self.name, "approval_status",
+                    previous_status, update_modified=False
+                )
+                self.approval_status = previous_status
                 frappe.msgprint(
                     msg=_("Finacle Failed: {0}").format(
                         response.get("message")),
@@ -1032,28 +1174,58 @@ class PettyCashTransaction(Document):
                 self.name,
                 {
                     "finacle_tran_id": response.get("trn_id"),
-                    "finacle_tran_date": now_datetime(),
-                    "approved_by": frappe.session.user
+                    "finacle_tran_date": now_datetime()
                 },
                 update_modified=False
             )
-        else:
-            self.db_set("approved_by", frappe.session.user,
-                        update_modified=False)
 
-        if self.is_legacy_unsettled_cash_flow_enabled():
-            self.db_set("approval_status", "Verified", update_modified=False)
-        else:
+        if not self.is_legacy_unsettled_cash_flow_enabled():
             self.apply_new_flow_terminal_credit("Verified")
-            self.db_set("approval_status", "Verified", update_modified=False)
             self.db_set("finacle_tran_date", now_datetime(),
                         update_modified=False)
+
+        self.publish_status_change("Verified")
 
         frappe.msgprint(
             msg=_("Bills Verified successfully."),
             title=_("Verification Complete"),
             indicator="green"
         )
+
+    @frappe.whitelist()
+    def ho_verifier_reject(self):
+        user_roles = frappe.get_roles()
+
+        allowed_roles = {"HO Petty Cash Verifier",
+                         "HO Petty Cash Manager", "System Manager"}
+        if not allowed_roles.intersection(user_roles) and frappe.session.user != "Administrator":
+            frappe.throw(
+                _("Only HO Petty Cash Verifier or Manager can reject."))
+
+        self.claim_action(
+            ["Approved", "Checked"], "Rejected",
+            extra_fields={
+                "verifier_action_by": frappe.session.user,
+                "rejected_by_stage": "Verifier"
+            },
+            error_msg=_(
+                "Document must be in Approved or Checked status to reject.")
+        )
+
+        # Reverse the wallet deduction made during the submit/approval flow
+        if not self.is_legacy_unsettled_cash_flow_enabled():
+            self.apply_new_flow_terminal_credit("Rejected")
+        else:
+            wallet = self.get_branch_wallet_doc()
+            wallet.update_unsettled_cash(self.amount, "Withdrawal")
+
+        frappe.msgprint(
+            msg=_("Verifier Rejected. Status set to Rejected."),
+            title=_("Message"),
+            indicator="red"
+        )
+
+        self.publish_status_change("Rejected")
 
     def has_permission(self, ptype="read", user=None):
         if not user:
@@ -1387,17 +1559,33 @@ class PettyCashTransaction(Document):
 
         final_txt = "\n".join(content)
 
-        # Auto-exclude this record from future bulk TTUM downloads
+        # Auto-exclude this record from future bulk TTUM downloads and record download timestamp
+        from frappe.utils import now_datetime
+        current_download_time = now_datetime()
         frappe.db.set_value(
             "Petty Cash Transaction",
             self.name,
-            "exclude_from_ttum",
-            1,
+            {
+                "exclude_from_ttum": 1,
+                "ttum_downloaded_date": current_download_time
+            },
             update_modified=False,
+        )
+        total_records = len(self.items) if self.items else 0
+        total_amount = sum(flt(item.amount)
+                           for item in self.items) if self.items else 0.0
+        current_date = now_datetime().strftime("%Y-%m-%d")
+        current_time = now_datetime().strftime("%H:%M:%S")
+        filename = f"Date_{current_date}_Time_{current_time}_Total_Records_{total_records}_Total_Amount_{total_amount}.txt"
+        create_and_link_petty_cash_ttum(
+            transaction_names=[self.name],
+            filecontent=final_txt,
+            filename=filename,
+            download_date=current_download_time
         )
         frappe.db.commit()
 
-        frappe.response['filename'] = f"TTUM_{self.branch}_{self.name}.txt"
+        frappe.response['filename'] = filename
         frappe.response['filecontent'] = final_txt
         frappe.response['type'] = 'download'
 
@@ -1621,7 +1809,6 @@ class PettyCashTransaction(Document):
     #                         row.idx
     #                     )
     #                 )
-
 
     def validate_payment_mode_details(self):
         """
@@ -1998,7 +2185,7 @@ def get_category_limit_status(branch, category, transaction_date, docname=None):
           AND child.expense_category = %s
           AND parent.transaction_date BETWEEN %s AND %s
           AND parent.docstatus = 1
-          AND parent.approval_status != 'Verified'
+          AND parent.approval_status NOT IN ('Verified', 'Rejected', 'Canceled')
           AND parent.name != %s
     """
 
@@ -2259,6 +2446,144 @@ def download_transaction_report(filters=None):
     }
 
 
+def create_and_link_petty_cash_ttum(transaction_names, filecontent, filename, download_date=None):
+    from frappe.utils import now_datetime
+    if not download_date:
+        download_date = now_datetime()
+
+    user_id = frappe.session.user
+    employee_name = frappe.db.get_value(
+        "Employee", {"user_id": user_id}, "employee_name") or user_id
+
+    # Use the filename (without extension) as the document name
+    doc_name = filename.rsplit(".", 1)[0] if "." in filename else filename
+
+    ttum_doc = frappe.get_doc({
+        "doctype": "Petty Cash TTUM",
+        "name": doc_name,
+        "ttum_download_date": download_date,
+        "ttum_download_user_id": user_id,
+        "ttum_download_user_name": employee_name
+    })
+    ttum_doc.insert(ignore_permissions=True)
+
+    file_doc = frappe.get_doc({
+        "doctype": "File",
+        "file_name": filename,
+        "attached_to_doctype": "Petty Cash TTUM",
+        "attached_to_name": ttum_doc.name,
+        "attached_to_field": "ttum",
+        "content": filecontent,
+        "is_private": 0
+    })
+    file_doc.insert(ignore_permissions=True)
+
+    ttum_doc.db_set("ttum", file_doc.file_url, update_modified=False)
+
+    for txn_name in transaction_names:
+        frappe.db.set_value(
+            "Petty Cash Transaction",
+            txn_name,
+            "ttum_reference",
+            ttum_doc.name,
+            update_modified=False
+        )
+
+    return ttum_doc
+
+
+@frappe.whitelist()
+def get_workflow_stage_users(docname):
+    if not docname:
+        return {}
+
+    doc_vals = frappe.db.get_value(
+        "Petty Cash Transaction",
+        docname,
+        [
+            "owner",
+            "checker_action_by",
+            "approver_action_by",
+            "verifier_action_by",
+            "approved_by",
+            "rejected_by_stage",
+            "ttum_reference"
+        ],
+        as_dict=True
+    ) or {}
+
+    ttum_vals = {}
+    if doc_vals.get("ttum_reference"):
+        ttum_vals = frappe.db.get_value(
+            "Petty Cash TTUM",
+            doc_vals["ttum_reference"],
+            ["ttum_download_user_id", "ttum_download_user_name"],
+            as_dict=True
+        ) or {}
+
+    def format_emp_info(user_id, fallback_name=None):
+        if not user_id:
+            return None
+        emp = frappe.db.get_value(
+            "Employee",
+            {"user_id": user_id},
+            ["user_id", "first_name", "last_name"],
+            as_dict=True
+        )
+        raw_uid = (emp.get("user_id") if emp else user_id) or ""
+        short_uid = raw_uid.replace("@sahayog.com", "").strip()
+
+        full_name = None
+        if emp:
+            first_name = (emp.get("first_name") or "").strip()
+            last_name = (emp.get("last_name") or "").strip()
+            comb_name = f"{first_name} {last_name}".strip()
+            if comb_name:
+                full_name = comb_name
+
+        if not full_name:
+            full_name = fallback_name or short_uid
+
+        return {
+            "user_id": short_uid,
+            "employee_name": full_name
+        }
+
+    branch_user = format_emp_info(doc_vals.get("owner"))
+    checker_user = format_emp_info(doc_vals.get("checker_action_by"))
+    approver_user = format_emp_info(doc_vals.get("approver_action_by"))
+    verifier_user = format_emp_info(doc_vals.get(
+        "verifier_action_by") or doc_vals.get("approved_by"))
+
+    ttum_user = None
+    if ttum_vals.get("ttum_download_user_id"):
+        ttum_user = format_emp_info(
+            ttum_vals["ttum_download_user_id"],
+            ttum_vals.get("ttum_download_user_name")
+        )
+
+    return {
+        "branch_user": branch_user,
+        "checker_user": checker_user,
+        "approver_user": approver_user,
+        "verifier_user": verifier_user,
+        "ttum_user": ttum_user,
+        "rejected_by_stage": doc_vals.get("rejected_by_stage")
+    }
+
+
+@frappe.whitelist()
+def get_ttum_file_url(ttum_reference):
+    if not ttum_reference:
+        frappe.throw("TTUM Reference is required")
+
+    file_url = frappe.db.get_value("Petty Cash TTUM", ttum_reference, "ttum")
+    if not file_url:
+        frappe.throw(f"No TTUM file found for reference {ttum_reference}")
+
+    return file_url
+
+
 @frappe.whitelist()
 def download_excel_api(name):   # <--- Renamed
     doc = frappe.get_doc("Petty Cash Transaction", name)
@@ -2383,9 +2708,11 @@ def download_consolidated_txt_api(transaction_date=None):
             "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
         )
 
-    selected_date = getdate(transaction_date) if transaction_date else getdate(nowdate())
+    selected_date = getdate(
+        transaction_date) if transaction_date else getdate(nowdate())
     if selected_date > getdate(nowdate()):
-        frappe.throw("You can only download TTUM for today or previous dates, not for future dates.")
+        frappe.throw(
+            "You can only download TTUM for today or previous dates, not for future dates.")
     selected_date = str(selected_date)
 
     transactions = frappe.get_all(
@@ -2496,6 +2823,171 @@ def download_consolidated_txt_api(transaction_date=None):
         "status": "success",
         "filename": f"Consolidated_TTUM_{selected_date}.txt",
         "filecontent": final_txt
+    }
+
+
+@frappe.whitelist()
+def download_bulk_ttum_txt_api_new():
+    """Generates a Consolidated TTUM Text file for verified transactions matching cutoff & exclusion criteria."""
+    from frappe.utils import nowdate, getdate, now_datetime
+
+    user_roles = frappe.get_roles()
+    if frappe.session.user != "Administrator" and not set(
+        ["HO Petty Cash Manager", "HO Petty Cash Verifier"]
+    ).intersection(user_roles):
+        frappe.throw(
+            "Only HO Petty Cash Manager, Verifier, or Administrator can download consolidated files."
+        )
+
+    ttum_download_date = frappe.db.get_single_value(
+        "Sahayog Settings", "ttum_download_date")
+    if not ttum_download_date:
+        frappe.throw(
+            "Please configure TTUM Download Date in Sahayog Settings.")
+
+    filters = [
+        ["Petty Cash Transaction", "approval_status", "=", "Verified"],
+        ["Petty Cash Transaction", "finacle_tran_date", "is", "set"],
+        ["Petty Cash Transaction", "bulk_ttum_downloaded", "in", [0, None, "0"]],
+        ["Petty Cash Transaction", "exclude_from_ttum", "in", [0, None, "0"]],
+        ["Petty Cash Transaction", "transaction_date", ">=", ttum_download_date]
+    ]
+
+    transactions = frappe.get_all(
+        "Petty Cash Transaction",
+        filters=filters,
+        pluck="name",
+        order_by="creation ASC"
+    )
+
+    if not transactions:
+        return {
+            "status": "no_data",
+            "message": "No verified transactions found matching criteria for TTUM download."
+        }
+
+    content = []
+    processed_txns = []
+    txn_totals = {}
+
+    for txn_name in transactions:
+        doc = frappe.get_doc("Petty Cash Transaction", txn_name)
+
+        date_obj = getdate(doc.transaction_date)
+        ttum_date = date_obj.strftime("%b%y").upper()
+
+        if doc.branch_type == "Zonal":
+            currency_str = "INR1000"
+        else:
+            currency_str = f"INR{doc.branch}"
+
+        narrative_suffix = (
+            doc.custom_ttum_remarks
+            if doc.custom_ttum_remarks
+            else f"{ttum_date} {doc.name}"
+        )
+
+        total_debit = 0.0
+
+        for row in doc.items:
+            if not row.finacle_gl_code:
+                frappe.throw(
+                    f"Row #{row.idx} in {doc.name} is missing Finacle GL Code"
+                )
+
+            amount_str = "{:.2f}".format(row.amount)
+            total_debit += row.amount
+
+            raw_desc = row.description if row.description else narrative_suffix
+            debit_description = raw_desc[:30]
+
+            padding_count = 17 - len(amount_str)
+            if padding_count < 10:
+                padding_count = 10
+            space_str = " " * padding_count
+
+            line = f"{row.finacle_gl_code} {currency_str}    D{space_str}{amount_str}{debit_description}"
+            content.append(line)
+
+        wallet_gl = frappe.db.get_value(
+            "Branch Petty Cash Account",
+            {"branch": doc.branch},
+            "gl_sub_code"
+        )
+        if not wallet_gl:
+            frappe.throw(f"GL Sub Code not found for Branch {doc.branch}")
+
+        total_amount_str = "{:.2f}".format(total_debit)
+        padding_count = 17 - len(total_amount_str)
+        if padding_count < 10:
+            padding_count = 10
+        space_str = " " * padding_count
+
+        credit_description = narrative_suffix[:30].ljust(30)
+        credit_line = f"{wallet_gl} {currency_str}    C{space_str}{total_amount_str}{credit_description}"
+
+        if doc.branch_type == "Zonal":
+            entity_id = str(doc.entity_id or "").strip()
+            entity_type = str(doc.entity_type or "").strip()
+
+            if entity_id:
+                extra_spaces_after_desc = " " * 852
+
+                if len(entity_id) == 4:
+                    entity_id_padding = " " * 12
+                elif len(entity_id) == 5:
+                    entity_id_padding = " " * 11
+                else:
+                    entity_id_padding = ""
+
+                entity_type_padding = " " * 5
+
+                credit_line = (
+                    f"{credit_line}"
+                    f"{extra_spaces_after_desc}"
+                    f"{entity_id}"
+                    f"{entity_id_padding}"
+                    f"{entity_type}"
+                    f"{entity_type_padding}"
+                )
+
+        content.append(credit_line)
+        processed_txns.append(txn_name)
+        txn_totals[txn_name] = total_debit
+
+    # Mark all included transactions as bulk_ttum_downloaded and save download timestamp
+    current_timestamp = now_datetime()
+    for txn_name in processed_txns:
+        frappe.db.set_value(
+            "Petty Cash Transaction",
+            txn_name,
+            {
+                "bulk_ttum_downloaded": 1,
+                "ttum_downloaded_date": current_timestamp
+            },
+            update_modified=False
+        )
+
+    final_txt = "\n".join(content)
+    total_records = len(processed_txns) if processed_txns else 0
+    total_amount = flt(sum(txn_totals.values())) if txn_totals else 0.0
+    current_date = now_datetime().strftime("%Y-%m-%d")
+    current_time = now_datetime().strftime("%H:%M:%S")
+    bulk_filename = f"Date_{current_date}_Time_{current_time}_Total_Records_{total_records}_Total_Amount_{total_amount}.txt"
+
+    create_and_link_petty_cash_ttum(
+        transaction_names=processed_txns,
+        filecontent=final_txt,
+        filename=bulk_filename,
+        download_date=current_timestamp
+    )
+    frappe.db.commit()
+
+    return {
+        "status": "success",
+        "filename": bulk_filename,
+        "filecontent": final_txt,
+        "count": len(processed_txns)
     }
 
 
