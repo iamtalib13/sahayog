@@ -615,8 +615,7 @@ function cancel() {
       {{ error }}
     </div>
 
-    <div class="sticky bottom-0 z-10 -mx-4 mt-6 border-t border-[#E5EAF1] bg-[#F8FAFC]/95 px-4 py-4 backdrop-blur sm:mx-0 sm:px-0">
-      <div class="flex flex-wrap items-center justify-end gap-3">
+    <div class="mt-6 flex flex-wrap items-center justify-end gap-3">
       <button
         type="button"
         class="mr-auto text-[12px] font-medium leading-[15px] text-[#68778D] hover:text-[#172B4D]"
@@ -642,14 +641,14 @@ function cancel() {
         :disabled="saving"
         @click="save(true)"
       />
-      </div>
-      <p class="mt-3 text-right text-[10px] leading-[12px] text-[#68778D]">
-        Your request will be sent to your reporting manager for approval.
-      </p>
-
-      <p v-if="form.departure_date && parseDate(form.departure_date)" class="mt-1 text-right text-[10px] leading-[12px] text-[#8A97A8]">
-        Trip window: {{ formatLongRange(form.departure_date, form.return_date) }}
-      </p>
     </div>
+
+    <p class="mt-3 text-right text-[10px] leading-[12px] text-[#68778D]">
+      Your request will be sent to your reporting manager for approval.
+    </p>
+
+    <p v-if="form.departure_date && parseDate(form.departure_date)" class="mt-1 text-right text-[10px] leading-[12px] text-[#8A97A8]">
+      Trip window: {{ formatLongRange(form.departure_date, form.return_date) }}
+    </p>
   </div>
 </template>
