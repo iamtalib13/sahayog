@@ -13,40 +13,27 @@ withDefaults(
 )
 
 defineEmits<{ select: [row: TravelRequestRow] }>()
+
+const headClass =
+  'whitespace-nowrap px-[22px] py-[14px] text-[9px] font-semibold uppercase leading-[11px] tracking-[0.04em] text-[#68778D]'
 </script>
 
 <template>
   <div class="overflow-x-auto">
-    <table class="w-full border-collapse text-left" :class="showEmployee ? 'min-w-[880px]' : 'min-w-[720px]'">
+    <table
+      class="w-full border-collapse text-left"
+      :class="showEmployee ? 'min-w-[1000px]' : 'min-w-[900px]'"
+    >
       <thead>
         <tr class="bg-[#F8FAFC]">
-          <th class="whitespace-nowrap px-[22px] py-[14px] text-[9px] font-semibold uppercase leading-[11px] tracking-[0.04em] text-[#68778D]">
-            Request ID
-          </th>
-          <th
-            v-if="showEmployee"
-            class="whitespace-nowrap px-[22px] py-[14px] text-[9px] font-semibold uppercase leading-[11px] tracking-[0.04em] text-[#68778D]"
-          >
-            Employee
-          </th>
-          <th class="whitespace-nowrap px-[22px] py-[14px] text-[9px] font-semibold uppercase leading-[11px] tracking-[0.04em] text-[#68778D]">
-            Travel route
-          </th>
-          <th class="whitespace-nowrap px-[22px] py-[14px] text-[9px] font-semibold uppercase leading-[11px] tracking-[0.04em] text-[#68778D]">
-            Travel dates
-          </th>
-          <th
-            v-if="!showEmployee"
-            class="whitespace-nowrap px-[22px] py-[14px] text-[9px] font-semibold uppercase leading-[11px] tracking-[0.04em] text-[#68778D]"
-          >
-            Submitted
-          </th>
-          <th class="whitespace-nowrap px-[22px] py-[14px] text-[9px] font-semibold uppercase leading-[11px] tracking-[0.04em] text-[#68778D]">
-            Status
-          </th>
-          <th class="whitespace-nowrap px-[22px] py-[14px] text-[9px] font-semibold uppercase leading-[11px] tracking-[0.04em] text-[#68778D]">
-            Action
-          </th>
+          <th :class="headClass">Request ID</th>
+          <th v-if="showEmployee" :class="headClass">Employee</th>
+          <th :class="headClass">From–To</th>
+          <th :class="headClass">Travel date</th>
+          <th :class="headClass">Purpose</th>
+          <th v-if="!showEmployee" :class="headClass">Submitted</th>
+          <th :class="headClass">Status</th>
+          <th :class="headClass">Action</th>
         </tr>
       </thead>
       <tbody>
@@ -71,11 +58,8 @@ defineEmits<{ select: [row: TravelRequestRow] }>()
           </td>
 
           <td class="px-[22px] py-3">
-            <p class="text-[12px] font-medium leading-[15px] text-[#172B4D]">
+            <p class="whitespace-nowrap text-[12px] font-medium leading-[15px] text-[#172B4D]">
               {{ row.from_city || '—' }} → {{ row.to_city || '—' }}
-            </p>
-            <p class="mt-1 max-w-[220px] truncate text-[10px] leading-[12px] text-[#68778D]">
-              {{ row.purpose_of_travel || '—' }}
             </p>
           </td>
 
@@ -88,7 +72,19 @@ defineEmits<{ select: [row: TravelRequestRow] }>()
             </p>
           </td>
 
-          <td v-if="!showEmployee" class="whitespace-nowrap px-[22px] py-3 text-[12px] leading-[15px] text-[#68778D]">
+          <td class="px-[22px] py-3">
+            <p
+              class="max-w-[220px] truncate text-[12px] leading-[15px] text-[#172B4D]"
+              :title="row.purpose_of_travel || '—'"
+            >
+              {{ row.purpose_of_travel || '—' }}
+            </p>
+          </td>
+
+          <td
+            v-if="!showEmployee"
+            class="whitespace-nowrap px-[22px] py-3 text-[12px] leading-[15px] text-[#68778D]"
+          >
             {{ formatDate(row.creation) }}
           </td>
 
