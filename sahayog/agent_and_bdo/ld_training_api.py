@@ -416,6 +416,58 @@ def get_user_role_info():
     }
 
 
+@frappe.whitelist()
+def get_training_programs():
+    """Active Training Titles for the calendar's program dropdown.
+
+    Returns an empty list when no master records exist (or the DocType is not
+    installed yet) so the frontend can safely use its built-in default list.
+    """
+    try:
+        rows = frappe.get_all(
+            "Training Title",
+            filters={"enabled": 1},
+            fields=["training_title", "division"],
+            order_by="training_title asc",
+            limit_page_length=0,
+        )
+    except Exception:
+        return []
+
+    return [
+        {"name": r.training_title.strip(), "div": r.division or "other"}
+        for r in rows
+        if r.training_title and r.training_title.strip()
+    ]
+
+
+@frappe.whitelist()
+def add_training_title(title, division=None):
+    """Create a Training Title master record from the calendar dialog (admin only)."""
+    if not _is_admin():
+        frappe.throw(_("Only L&D Admin can add training titles."), frappe.PermissionError)
+
+    title = (title or "").strip()
+    if not title:
+        frappe.throw(_("Training title is required."))
+
+    if frappe.db.sql(
+        "SELECT name FROM `tabTraining Title` WHERE LOWER(training_title) = LOWER(%s) LIMIT 1",
+        (title,),
+    ):
+        frappe.throw(_("Training title already exists."))
+
+    doc = frappe.get_doc(
+        {
+            "doctype": "Training Title",
+            "training_title": title,
+            "division": division or "other",
+            "enabled": 1,
+        }
+    ).insert(ignore_permissions=True)
+    return {"name": doc.training_title, "div": doc.division}
+
+
 def _my_employee_id():
     """Employee id linked to the current user (None if not linked)."""
     return frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
