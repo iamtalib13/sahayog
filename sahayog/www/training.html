@@ -6954,6 +6954,33 @@
                     >
                       <option value="">Select program</option>
                     </select>
+                    <div
+                      class="fx-field"
+                      id="new-title-add-wrap"
+                      style="display: none; margin-top: 6px"
+                    >
+                      <div style="display: flex; gap: 6px">
+                        <input
+                          class="fx-input"
+                          id="new-title-name"
+                          placeholder="Enter new training title"
+                        />
+                        <button
+                          class="btn btn-primary btn-mini"
+                          id="new-title-add-btn"
+                          type="button"
+                        >
+                          Add
+                        </button>
+                        <button
+                          class="btn btn-default btn-mini"
+                          id="new-title-cancel-btn"
+                          type="button"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
                   </div>
                   <div class="fx-row2 tt-row">
                     <div class="fx-field">
@@ -7792,7 +7819,7 @@
         }
         /* Portal build stamp — bump on every release so testers can confirm
            which version they run (kills cached-JS confusion). */
-        var LD_BUILD = "2026-10-10ze";
+        var LD_BUILD = "2026-10-10zf";
         function setupRoleUI() {
           var r = role();
           var badge = document.getElementById("roleBadge");
@@ -10216,10 +10243,77 @@
             if (cur && !list.some(function (p) { return p.name === cur; })) {
               html += '<option value="' + esc(cur) + '" selected>' + esc(cur) + "</option>";
             }
+            /* L&D Admin can add a brand-new title from the bottom of this list. */
+            if (state.role === "ld_admin" && !sel.disabled) {
+              html += '<option value="__add_new__">+ Add new training title…</option>';
+            }
             sel.innerHTML = html;
             if (!cur) sel.value = "";
           });
         }
+
+        /* ---------- Inline "Add new training title" (L&D Admin only) ---------- */
+        function hideInlineTitleAdd() {
+          var wrap = document.getElementById("new-title-add-wrap");
+          if (wrap) wrap.style.display = "none";
+          var inp = document.getElementById("new-title-name");
+          if (inp) inp.value = "";
+        }
+        function addNewTrainingTitle() {
+          var inp = document.getElementById("new-title-name");
+          var title = inp ? inp.value.trim() : "";
+          if (!title) {
+            showToast("Enter a training title first.");
+            if (inp) inp.focus();
+            return;
+          }
+          api("add_training_title", { title: title })
+            .then(function (row) {
+              _programsPromise = null; // reload master so the new title is included
+              hideInlineTitleAdd();
+              var sel = document.getElementById("new-program");
+              if (sel) sel.value = "";
+              populateTrainingTitles("", row && row.name ? row.name : title);
+              showToast("Training title added.");
+            })
+            .catch(function (e) {
+              showToast("Could not add title: " + ((e && e.message) || e));
+            });
+        }
+        (function wireInlineTitleAdd() {
+          var sel = document.getElementById("new-program");
+          if (sel) {
+            sel.addEventListener("change", function () {
+              var wrap = document.getElementById("new-title-add-wrap");
+              var inp = document.getElementById("new-title-name");
+              if (sel.value === "__add_new__") {
+                if (wrap) wrap.style.display = "";
+                if (inp) { inp.value = ""; inp.focus(); }
+              } else if (wrap) {
+                wrap.style.display = "none";
+              }
+            });
+          }
+          var addBtn = document.getElementById("new-title-add-btn");
+          if (addBtn) addBtn.addEventListener("click", addNewTrainingTitle);
+          var cancelBtn = document.getElementById("new-title-cancel-btn");
+          if (cancelBtn) {
+            cancelBtn.addEventListener("click", function () {
+              hideInlineTitleAdd();
+              var s = document.getElementById("new-program");
+              if (s) s.value = "";
+            });
+          }
+          var nameInp = document.getElementById("new-title-name");
+          if (nameInp) {
+            nameInp.addEventListener("keydown", function (e) {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addNewTrainingTitle();
+              }
+            });
+          }
+        })();
 
         function openAddModal() {
           if (!role().canAdd) return;
@@ -10229,6 +10323,7 @@
           if (progEl) {
             progEl.disabled = false;
           }
+          hideInlineTitleAdd();
           document.getElementById("new-from-date").value = fmtDMY(todayIso());
           document.getElementById("new-to-date").value = fmtDMY(todayIso());
           document.getElementById("new-time").value = "";
@@ -10795,6 +10890,7 @@
           });
           var progLock = document.getElementById("new-program");
           if (progLock) progLock.disabled = true;
+          hideInlineTitleAdd();
           if (typeof populateTrainingTitles === "function") {
             populateTrainingTitles(ev.trainer || ev.trainer_name || "", ev.training_program || ev.topic || "");
           }
