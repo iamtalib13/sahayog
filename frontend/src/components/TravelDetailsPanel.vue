@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { RouterLink } from 'vue-router'
 import {
   formatCurrency,
@@ -7,7 +7,13 @@ import {
   formatLongRange,
   toTitleCase,
 } from '../lib/format'
-import { travelStore, type TravelRequestRow } from '../lib/travel'
+import {
+  applyTravelWorkflow,
+  refreshTravel,
+  STATES,
+  travelStore,
+  type TravelRequestRow,
+} from '../lib/travel'
 import StatusBadge from './StatusBadge.vue'
 
 const props = withDefaults(
@@ -20,7 +26,94 @@ const props = withDefaults(
   { closable: false, plain: false },
 )
 
-defineEmits<{ close: [] }>()
+const emit = defineEmits<{ close: [] }>()
+
+const remarks = ref('')
+const acting = ref(false)
+const actionError = ref('')
+
+const currentUser = computed(() => travelStore.user)
+const currentEmployee = computed(() => travelStore.employee?.name || '')
+const roles = computed(() => travelStore.roles)
+
+const availableActions = computed(() => {
+  const request = props.request
+  if (!request) return []
+  const state = request.workflow_state || STATES.draft
+  const deviation = !!request.deviation_requested
+  const actions: { label: string; action: string; tone: string }[] = []
+
+  if (state === STATES.manager) {
+    if (roles.value.includes('HR Manager')) {
+      actions.push({
+        label: 'HR approve',
+        action: deviation ? 'HR Approve with Deviation' : 'HR Approve',
+        tone: 'green',
+      })
+      actions.push({ label: 'HR reject', action: 'HR Reject', tone: 'red' })
+    } else if (roles.value.includes('Employee') && currentEmployee.value && currentEmployee.value === request.reporting_manager) {
+      if (deviation) {
+        actions.push({
+          label: 'Approve with deviation',
+          action: 'Approve with Deviation',
+          tone: 'amber',
+        })
+      } else {
+        actions.push({ label: 'Approve', action: 'Approve', tone: 'green' })
+      }
+      actions.push({ label: 'Reject', action: 'Reject', tone: 'red' })
+    }
+  } else if (state === STATES.fna && roles.value.includes('Accounts Manager')) {
+    actions.push({ label: 'Approve', action: 'Approve', tone: 'green' })
+    actions.push({ label: 'Reject', action: 'Reject', tone: 'red' })
+  } else if (state === STATES.coo && roles.value.includes('Travel Policy Approver')) {
+    actions.push({
+      label: 'Approve deviation',
+      action: 'Approve Deviation',
+      tone: 'green',
+    })
+    actions.push({ label: 'Reject deviation', action: 'Reject Deviation', tone: 'red' })
+  } else if (state === STATES.rejected && request.owner === currentUser.value) {
+    actions.push({ label: 'Resubmit', action: 'Resubmit', tone: 'blue' })
+  }
+
+  return actions
+})
+
+async function runAction(action: string) {
+  if (!props.request || acting.value) return
+  acting.value = true
+  actionError.value = ''
+  try {
+    await applyTravelWorkflow(props.request.name, action, remarks.value)
+    remarks.value = ''
+    await refreshTravel()
+    emit('close')
+  } catch (exception) {
+    actionError.value =
+      (exception as { message?: string })?.message || 'Action failed'
+  } finally {
+    acting.value = false
+  }
+}
+
+function actionTone(tone: string): string {
+  const base = ''
+  if (tone === 'green')
+    return 'border-[#227453] bg-[#EDF8F3] text-[#227453] hover:bg-[#DCEFE6]'
+  if (tone === 'amber')
+    return 'border-[#B17A1E] bg-[#FFF7E8] text-[#936416] hover:bg-[#FDEFD6]'
+  if (tone === 'red')
+    return 'border-[#B42318] bg-[#FDECEC] text-[#B42318] hover:bg-[#FAD9D9]'
+  return 'border-[#2563EB] bg-[#EFF5FF] text-[#2563EB] hover:bg-[#DCE8FF]'
+}
+watch(
+  () => props.request?.name,
+  () => {
+    remarks.value = ''
+    actionError.value = ''
+  },
+)
 
 const deskUrl = computed(() =>
   props.request ? `/app/travel-request/${props.request.name}` : '',
@@ -145,6 +238,34 @@ const deskUrl = computed(() =>
           '—'
         }}
       </p>
+
+      <div v-if="availableActions.length" class="mt-6">
+        <p class="text-[9px] font-semibold uppercase leading-[11px] tracking-[0.08em] text-[#68778D]">
+          Approval action
+        </p>
+        <textarea
+          v-model="remarks"
+          rows="2"
+          placeholder="Approver remarks (optional)"
+          class="mt-2 w-full rounded-[6px] border border-[#E5EAF1] bg-white px-3 py-2 text-[12px] leading-[16px] text-[#172B4D] placeholder:text-[#68778D] focus:border-[#2563EB] focus:outline-none"
+        />
+        <p v-if="actionError" class="mt-2 text-[11px] leading-[14px] text-[#B42318]">
+          {{ actionError }}
+        </p>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button
+            v-for="action in availableActions"
+            :key="action.action"
+            type="button"
+            :disabled="acting"
+            class="inline-flex h-[34px] items-center justify-center rounded-[6px] border px-3 text-[11px] font-medium leading-[13px] disabled:opacity-50"
+            :class="actionTone(action.tone)"
+            @click="runAction(action.action)"
+          >
+            {{ action.label }}
+          </button>
+        </div>
+      </div>
     </div>
 
     <div class="px-[22px] pb-[22px]">
