@@ -10149,7 +10149,7 @@
         /* ---------- Add training ---------- */
         var addModal = document.getElementById("addModal");
 
-        /* Training programs: full list for everyone (no division filter) */
+        /* Fallback program list (used when the Training Program master is empty/unavailable) */
         var TRAINING_PROGRAMS = [
           { name: "Audit Training Program", div: "retail branch banking" },
           { name: "Branch Business Master Class/ License to Operate", div: "retail branch banking" },
@@ -10170,27 +10170,55 @@
           { name: "JLL Refresher Training", div: "jll" },
           { name: "Retail Asset Master Class/ License to Operate", div: "jll" },
         ];
+        /* Program list is a master (Training Program DocType). The built-in
+           list above stays as a fallback so the dialog always has options. */
+        var _programsPromise = null;
+        function loadTrainingPrograms() {
+          if (_programsPromise) return _programsPromise;
+          if (typeof api !== "function") return Promise.resolve();
+          _programsPromise = api("get_training_programs", {})
+            .then(function (rows) {
+              if (!rows || !rows.length) return;
+              var seen = {}, merged = [];
+              TRAINING_PROGRAMS.concat(rows).forEach(function (p) {
+                var n = (p.name || "").trim();
+                var key = n.toLowerCase();
+                if (!n || seen[key]) return;
+                seen[key] = 1;
+                merged.push({ name: n, div: p.div || "other" });
+              });
+              TRAINING_PROGRAMS = merged;
+            })
+            .catch(function () {
+              _programsPromise = null; // keep defaults, allow a later retry
+            });
+          return _programsPromise;
+        }
+        loadTrainingPrograms();
+
         function populateTrainingTitles(trainerName, currentValue) {
-          var sel = document.getElementById("new-program");
-          if (!sel) return;
-          var list = TRAINING_PROGRAMS;
-          var cur = (currentValue || "").trim();
-          var html = '<option value="">Select program</option>';
-          list.forEach(function (p) {
-            html +=
-              '<option value="' +
-              esc(p.name) +
-              '"' +
-              (cur && cur === p.name ? " selected" : "") +
-              ">" +
-              esc(p.name) +
-              "</option>";
+          loadTrainingPrograms().then(function () {
+            var sel = document.getElementById("new-program");
+            if (!sel) return;
+            var list = TRAINING_PROGRAMS;
+            var cur = (currentValue || "").trim();
+            var html = '<option value="">Select program</option>';
+            list.forEach(function (p) {
+              html +=
+                '<option value="' +
+                esc(p.name) +
+                '"' +
+                (cur && cur === p.name ? " selected" : "") +
+                ">" +
+                esc(p.name) +
+                "</option>";
+            });
+            if (cur && !list.some(function (p) { return p.name === cur; })) {
+              html += '<option value="' + esc(cur) + '" selected>' + esc(cur) + "</option>";
+            }
+            sel.innerHTML = html;
+            if (!cur) sel.value = "";
           });
-          if (cur && !list.some(function (p) { return p.name === cur; })) {
-            html += '<option value="' + esc(cur) + '" selected>' + esc(cur) + "</option>";
-          }
-          sel.innerHTML = html;
-          if (!cur) sel.value = "";
         }
 
         function openAddModal() {
