@@ -15,7 +15,7 @@ onMounted(() => loadTravel())
 <template>
   <FrappeUIProvider>
     <div
-      class="flex min-h-screen overflow-x-hidden bg-[#F8FAFC] text-[#172B4D] antialiased"
+      class="flex min-h-screen overflow-x-clip bg-[#F8FAFC] text-[#172B4D] antialiased"
     >
       <AppSidebar :open="navOpen" @close="navOpen = false" />
 

@@ -25,6 +25,11 @@ export const router = createRouter({
       name: 'travel-request-new',
       component: () => import('./pages/TravelRequestForm.vue'),
     },
+    {
+      path: '/requests/:name/edit',
+      name: 'travel-request-edit',
+      component: () => import('./pages/TravelRequestForm.vue'),
+    },
     { path: '/:path(.*)*', component: () => import('./pages/NotFound.vue') },
   ],
   scrollBehavior: () => ({ top: 0 }),

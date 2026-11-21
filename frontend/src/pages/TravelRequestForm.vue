@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { Button, DatePicker, toast } from 'frappe-ui'
 import {
   formatCurrency,
@@ -14,14 +14,23 @@ import {
   createTravelRequest,
   errorMessage,
   getEmployee,
+  getTravelRequest,
   loadTravel,
   MODES_OF_TRAVEL,
+  refreshTravel,
+  STATES,
   submitTravelRequest,
   travelStore,
   TRAVEL_TYPES,
+  updateTravelRequest,
 } from '../lib/travel'
 
 const router = useRouter()
+const route = useRoute()
+
+const editingName = computed(() => (route.params.name as string) || '')
+const isEdit = computed(() => !!editingName.value)
+const editable = ref(true)
 
 const inputClass =
   'h-10 w-full rounded-[6px] border border-[#E5EAF1] bg-white px-3 text-[12px] leading-[15px] text-[#172B4D] placeholder:text-[#68778D] focus:border-[#2563EB] focus:outline-none'
@@ -79,7 +88,44 @@ const approvalSteps = computed(() => {
   return steps
 })
 
-onMounted(() => loadTravel())
+onMounted(async () => {
+  await loadTravel()
+  await loadDraft()
+})
+
+async function loadDraft() {
+  if (!isEdit.value) return
+  editable.value = false
+  try {
+    const doc = await getTravelRequest(editingName.value)
+    if (!doc) {
+      error.value = 'Travel request not found.'
+      return
+    }
+    if (doc.workflow_state && doc.workflow_state !== STATES.draft) {
+      error.value = 'Only draft requests can be edited.'
+      return
+    }
+    form.travel_type = doc.travel_type || 'Domestic'
+    form.purpose_of_travel = doc.purpose_of_travel || ''
+    form.from_city = doc.from_city || ''
+    form.to_city = doc.to_city || ''
+    form.departure_date = doc.departure_date || ''
+    form.return_date = doc.return_date || ''
+    form.mode_of_travel = doc.mode_of_travel || ''
+    form.estimated_travel_cost =
+      doc.estimated_travel_cost != null ? doc.estimated_travel_cost : ''
+    form.advance_required = !!doc.advance_required
+    form.advance_amount = doc.advance_amount != null ? doc.advance_amount : ''
+    form.advance_justification = doc.advance_justification || ''
+    form.deviation_requested = !!doc.deviation_requested
+    form.deviation_reason = doc.deviation_reason || ''
+    form.description = doc.description || ''
+    editable.value = true
+  } catch (exception) {
+    error.value = errorMessage(exception)
+  }
+}
 
 // The employee record arrives asynchronously, so resolve the manager's display
 // name whenever the reporting manager id becomes available.
@@ -178,18 +224,26 @@ async function save(submit: boolean) {
   submitting.value = submit
 
   try {
-    const created = await createTravelRequest(buildPayload())
+    const payload = buildPayload()
+    let name = editingName.value
+    if (isEdit.value) {
+      await updateTravelRequest(name, payload)
+    } else {
+      const created = await createTravelRequest(payload)
+      name = created.name
+    }
     if (submit) {
-      await submitTravelRequest(created.name)
+      await submitTravelRequest(name)
     }
     toast.success(
       submit ? 'Travel request submitted' : 'Draft saved',
       {
         description: submit
-          ? `${created.name} has been sent to your reporting manager for approval.`
-          : `${created.name} is saved as a draft. You can submit it from My travel requests.`,
+          ? `${name} has been sent to your reporting manager for approval.`
+          : `${name} is saved as a draft. You can submit it from My travel requests.`,
       },
     )
+    await refreshTravel()
     await router.push('/requests')
   } catch (exception) {
     error.value = errorMessage(exception)
@@ -213,10 +267,14 @@ function cancel() {
       Travel management
     </p>
     <h1 class="mt-2 text-[27px] font-semibold leading-[33px] text-[#172B4D]">
-      Create travel request
+      {{ isEdit ? 'Edit travel request' : 'Create travel request' }}
     </h1>
     <p class="mt-1 text-[13px] leading-4 text-[#68778D]">
-      Provide your trip details to get your travel approved.
+      {{
+        isEdit
+          ? 'Update your draft and submit it for approval.'
+          : 'Provide your trip details to get your travel approved.'
+      }}
     </p>
 
     <div class="mt-8 grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_322px]">
@@ -338,6 +396,7 @@ function cancel() {
                   class="mt-2 w-full"
                   size="lg"
                   variant="outline"
+                  format="DD-MM-YYYY"
                   placeholder="Choose departure date"
                 />
               </div>
@@ -350,6 +409,7 @@ function cancel() {
                   class="mt-2 w-full"
                   size="lg"
                   variant="outline"
+                  format="DD-MM-YYYY"
                   placeholder="Choose return date"
                 />
               </div>
@@ -628,7 +688,7 @@ function cancel() {
         size="lg"
         label="Save as draft"
         :loading="saving && !submitting"
-        :disabled="saving"
+        :disabled="saving || !editable"
         @click="save(false)"
       />
       <Button
@@ -638,7 +698,7 @@ function cancel() {
         label="Submit request"
         icon-right="lucide-arrow-right"
         :loading="saving && submitting"
-        :disabled="saving"
+        :disabled="saving || !editable"
         @click="save(true)"
       />
     </div>

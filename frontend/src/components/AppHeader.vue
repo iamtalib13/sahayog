@@ -23,7 +23,7 @@ const employeeRole = computed(() => {
 
 <template>
   <header
-    class="flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-[#E5EAF1] bg-white px-4 sm:px-6 lg:px-8"
+    class="sticky top-0 z-20 flex h-[72px] shrink-0 items-center justify-between gap-4 border-b border-[#E5EAF1] bg-white/95 px-4 backdrop-blur sm:px-6 lg:px-8"
   >
     <div class="flex min-w-0 items-center gap-3">
       <button

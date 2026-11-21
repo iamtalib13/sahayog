@@ -83,10 +83,7 @@ function selectEvent(event: CalendarEvent) {
 
 <template>
   <div class="mx-auto w-full max-w-[1180px] px-4 pb-10 pt-7 sm:px-6 lg:px-8">
-    <p class="text-[10px] font-semibold uppercase leading-[12px] tracking-[0.06em] text-[#68778D]">
-      Travel management
-    </p>
-    <h1 class="mt-2 text-[27px] font-semibold leading-[33px] text-[#172B4D]">
+    <h1 class="text-[27px] font-semibold leading-[33px] text-[#172B4D]">
       Travel calendar
     </h1>
     <p class="mt-1 text-[13px] leading-4 text-[#68778D]">

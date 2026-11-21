@@ -14,6 +14,7 @@ import {
   parseDate,
   toISODate,
   today,
+  toTitleCase,
   tripDays,
 } from '../lib/format'
 import {
@@ -43,9 +44,9 @@ const upcomingIn30 = computed(() =>
   upcomingRows(rows.value, toISODate(todayDate), 30),
 )
 const upcomingPreview = computed(() =>
-  upcomingRows(rows.value, toISODate(todayDate), 365).slice(0, 3),
+  upcomingRows(rows.value, toISODate(todayDate), 365).slice(0, 5),
 )
-const recentRows = computed(() => rows.value.slice(0, 3))
+const recentRows = computed(() => rows.value.slice(0, 5))
 
 const greetingName = computed(() => firstName(travelStore.employee?.employee_name))
 const longDate = formatDateLong(todayDate)
@@ -94,22 +95,26 @@ function departureDate(row: TravelRequestRow): Date | null {
         label="Total requests"
         :value="totalLabel"
         :hint="`Your requests in ${todayDate.getFullYear()}`"
+        to="/requests"
       />
       <KpiCard
         label="Pending approval"
         :value="String(pendingCount).padStart(2, '0')"
         hint="Awaiting manager review"
         dot="#D69B2B"
+        to="/requests?tab=pending"
       />
       <KpiCard
         label="Approved"
         :value="String(approvedCount).padStart(2, '0')"
         hint="Ready for business travel"
+        to="/requests?tab=approved"
       />
       <KpiCard
         label="Upcoming trips"
         :value="String(upcomingIn30.length).padStart(2, '0')"
         hint="In the next 30 days"
+        to="/requests?date=upcoming"
       />
     </div>
 
@@ -156,7 +161,10 @@ function departureDate(row: TravelRequestRow): Date | null {
             </div>
             <div class="min-w-0 flex-1">
               <p class="truncate text-[14px] font-semibold leading-[17px] text-[#172B4D]">
-                {{ trip.from_city }} → {{ trip.to_city }}
+                {{ toTitleCase(trip.employee_name) || '—' }}
+              </p>
+              <p class="mt-1 truncate text-[11px] leading-[13px] text-[#172B4D]">
+                {{ trip.from_city || '—' }} → {{ trip.to_city || '—' }}
               </p>
               <p class="mt-1 truncate text-[11px] leading-[13px] text-[#68778D]">
                 {{ trip.purpose_of_travel || 'Business travel' }}

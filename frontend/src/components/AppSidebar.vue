@@ -34,7 +34,7 @@ function isActive(item: NavItem): boolean {
   />
 
   <aside
-    class="fixed inset-y-0 left-0 z-40 flex w-[232px] shrink-0 flex-col border-r border-[#E5EAF1] bg-white transition-transform duration-200 lg:static lg:h-screen lg:translate-x-0"
+    class="fixed inset-y-0 left-0 z-40 flex w-[232px] shrink-0 flex-col border-r border-[#E5EAF1] bg-white transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:translate-x-0"
     :class="open ? 'translate-x-0' : '-translate-x-full'"
   >
     <div class="px-6 pb-4 pt-[26px]">
