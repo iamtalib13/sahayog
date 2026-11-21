@@ -211,7 +211,7 @@ function previousPage() {
       class="mt-8 rounded-[9px] border border-[#E5EAF1] bg-white shadow-[0_2px_5px_rgba(23,41,71,0.025)]"
     >
       <div class="overflow-x-auto border-b border-[#E5EAF1]">
-        <div class="flex min-w-max items-center gap-7 px-[22px]">
+        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-[22px] sm:flex-nowrap sm:min-w-max sm:gap-7">
           <button
             v-for="tab in REQUEST_TABS"
             :key="tab.key"
@@ -264,10 +264,10 @@ function previousPage() {
           />
         </div>
 
-        <div class="relative ml-auto">
+        <div class="relative w-full sm:w-auto sm:ml-auto">
           <select
             v-model="dateFilter"
-            class="h-[38px] appearance-none rounded-[6px] border border-[#E5EAF1] bg-white pl-3 pr-8 text-[12px] font-medium text-[#172B4D] focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+            class="h-[38px] w-full appearance-none rounded-[6px] border border-[#E5EAF1] bg-white pl-3 pr-8 text-[12px] font-medium text-[#172B4D] focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
             aria-label="Filter by date"
           >
             <option value="all">All dates</option>
@@ -281,10 +281,10 @@ function previousPage() {
           </span>
         </div>
 
-        <div class="relative">
+        <div class="relative w-full sm:w-auto">
           <select
             v-model="statusFilter"
-            class="h-[38px] appearance-none rounded-[6px] border border-[#E5EAF1] bg-white pl-3 pr-8 text-[12px] font-medium text-[#172B4D] focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
+            class="h-[38px] w-full appearance-none rounded-[6px] border border-[#E5EAF1] bg-white pl-3 pr-8 text-[12px] font-medium text-[#172B4D] focus:outline-none focus:ring-1 focus:ring-[#2563EB]"
             aria-label="Filter by status"
           >
             <option value="all">All statuses</option>
