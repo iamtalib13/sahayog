@@ -216,24 +216,58 @@ def get_inactive_employees_for_alert(days=3):
     return inactive_employees
 
 
+def get_employee_email(emp_record):
+    """Fetch company_email with fallback to user_id/personal_email."""
+    if not emp_record:
+        return None
+    if isinstance(emp_record, str):
+        emp_record = frappe.db.get_value(
+            "Employee",
+            emp_record,
+            ["company_email", "prefered_email", "personal_email", "user_id"],
+            as_dict=True
+        ) or {}
+    
+    return (
+        emp_record.get("company_email")
+        or emp_record.get("user_id")
+        or emp_record.get("prefered_email")
+        or emp_record.get("personal_email")
+    )
+
+
 def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, reports_to_emp_id=None):
-    """Resolve BM as 'To' and BM's Reporting Manager (AM/ZM/DH) as 'CC'."""
+    """Resolve BM as 'To' and BM's Reporting Manager (AM/ZM/DH) as 'CC' using company_email."""
     to_recipients = []
     cc_recipients = []
 
     # 1. Direct reports_to if present
     if reports_to_emp_id:
-        emp1 = frappe.db.get_value("Employee", reports_to_emp_id, ["name", "user_id", "reports_to"], as_dict=True)
-        if emp1 and emp1.get("user_id"):
-            to_recipients.append(emp1.get("user_id"))
+        emp1 = frappe.db.get_value(
+            "Employee", 
+            reports_to_emp_id, 
+            ["name", "company_email", "user_id", "reports_to"], 
+            as_dict=True
+        )
+        if emp1:
+            email1 = get_employee_email(emp1)
+            if email1:
+                to_recipients.append(email1)
             if emp1.get("reports_to"):
-                emp2 = frappe.db.get_value("Employee", emp1.get("reports_to"), ["name", "user_id", "reports_to"], as_dict=True)
-                if emp2 and emp2.get("user_id"):
-                    cc_recipients.append(emp2.get("user_id"))
+                emp2 = frappe.db.get_value(
+                    "Employee", 
+                    emp1.get("reports_to"), 
+                    ["name", "company_email", "user_id", "reports_to"], 
+                    as_dict=True
+                )
+                if emp2:
+                    email2 = get_employee_email(emp2)
+                    if email2:
+                        cc_recipients.append(email2)
                     if emp2.get("reports_to"):
-                        emp3 = frappe.db.get_value("Employee", emp2.get("reports_to"), "user_id")
-                        if emp3:
-                            cc_recipients.append(emp3)
+                        email3 = get_employee_email(emp2.get("reports_to"))
+                        if email3:
+                            cc_recipients.append(email3)
 
     # 2. Branch Manager lookup if 'To' is empty
     if not to_recipients:
@@ -246,7 +280,7 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
         if conditions:
             bm_list = frappe.db.sql(
                 f"""
-                SELECT name, employee_name, user_id, reports_to
+                SELECT name, employee_name, company_email, user_id, reports_to
                 FROM `tabEmployee`
                 WHERE status = 'Active'
                   AND ({ ' OR '.join(conditions) })
@@ -259,17 +293,26 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
             )
             if bm_list:
                 bm = bm_list[0]
-                if bm.get("user_id"):
-                    to_recipients.append(bm.get("user_id"))
+                bm_email = get_employee_email(bm)
+                if bm_email:
+                    to_recipients.append(bm_email)
+                
                 # BM's reports_to goes into CC
                 if bm.get("reports_to"):
-                    bm_mgr = frappe.db.get_value("Employee", bm.get("reports_to"), ["user_id", "reports_to"], as_dict=True)
-                    if bm_mgr and bm_mgr.get("user_id"):
-                        cc_recipients.append(bm_mgr.get("user_id"))
+                    bm_mgr = frappe.db.get_value(
+                        "Employee", 
+                        bm.get("reports_to"), 
+                        ["name", "company_email", "user_id", "reports_to"], 
+                        as_dict=True
+                    )
+                    if bm_mgr:
+                        mgr_email = get_employee_email(bm_mgr)
+                        if mgr_email:
+                            cc_recipients.append(mgr_email)
                         if bm_mgr.get("reports_to"):
-                            top_mgr = frappe.db.get_value("Employee", bm_mgr.get("reports_to"), "user_id")
-                            if top_mgr:
-                                cc_recipients.append(top_mgr)
+                            top_email = get_employee_email(bm_mgr.get("reports_to"))
+                            if top_email:
+                                cc_recipients.append(top_email)
 
     # 3. Add official Branch Email to 'To' if configured
     if sahayog_branch_code:
