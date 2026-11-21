@@ -412,6 +412,30 @@ export async function getEmployee(
   return rows?.[0] || null
 }
 
+export async function getTravelRequest(
+  name: string,
+): Promise<TravelRequestRow | null> {
+  if (!name) return null
+  const rows = await call<TravelRequestRow[]>('frappe.client.get_list', {
+    doctype: DOCTYPE,
+    filters: { name },
+    fields: LIST_FIELDS,
+    limit_page_length: 1,
+  }).catch(() => [])
+  return rows?.[0] || null
+}
+
+export async function updateTravelRequest(
+  name: string,
+  values: Record<string, unknown>,
+): Promise<TravelRequestRow> {
+  return call<TravelRequestRow>('frappe.client.set_value', {
+    doctype: DOCTYPE,
+    name,
+    fieldname: values,
+  })
+}
+
 export async function createTravelRequest(
   values: Record<string, unknown>,
 ): Promise<TravelRequestRow> {

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { RouterLink } from 'vue-router'
 import {
   formatCurrency,
   formatDuration,
@@ -147,6 +148,13 @@ const deskUrl = computed(() =>
     </div>
 
     <div class="px-[22px] pb-[22px]">
+      <RouterLink
+        v-if="request.workflow_state === 'Draft'"
+        :to="`/requests/${request.name}/edit`"
+        class="mb-2 flex h-[38px] items-center justify-center gap-2 rounded-[6px] border border-[#E5EAF1] bg-white text-[12px] font-medium leading-[15px] text-[#172B4D] hover:bg-[#F8FAFC]"
+      >
+        Edit draft <span aria-hidden="true">→</span>
+      </RouterLink>
       <a
         :href="deskUrl"
         class="flex h-[38px] items-center justify-center gap-2 rounded-[6px] bg-[#2563EB] text-[12px] font-medium leading-[15px] text-white hover:bg-[#1d4fd8]"

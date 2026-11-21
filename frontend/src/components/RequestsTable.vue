@@ -100,6 +100,13 @@ const headClass =
             >
               View details →
             </button>
+            <RouterLink
+              v-if="row.workflow_state === 'Draft'"
+              :to="`/requests/${row.name}/edit`"
+              class="mt-1 block whitespace-nowrap text-[11px] font-medium leading-[13px] text-[#68778D] hover:text-[#2563EB] hover:underline"
+            >
+              Edit draft →
+            </RouterLink>
           </td>
         </tr>
       </tbody>
