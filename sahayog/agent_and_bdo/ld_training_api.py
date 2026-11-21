@@ -441,6 +441,33 @@ def get_training_programs():
     ]
 
 
+@frappe.whitelist()
+def add_training_title(title, division=None):
+    """Create a Training Title master record from the calendar dialog (admin only)."""
+    if not _is_admin():
+        frappe.throw(_("Only L&D Admin can add training titles."), frappe.PermissionError)
+
+    title = (title or "").strip()
+    if not title:
+        frappe.throw(_("Training title is required."))
+
+    if frappe.db.sql(
+        "SELECT name FROM `tabTraining Title` WHERE LOWER(training_title) = LOWER(%s) LIMIT 1",
+        (title,),
+    ):
+        frappe.throw(_("Training title already exists."))
+
+    doc = frappe.get_doc(
+        {
+            "doctype": "Training Title",
+            "training_title": title,
+            "division": division or "other",
+            "enabled": 1,
+        }
+    ).insert(ignore_permissions=True)
+    return {"name": doc.training_title, "div": doc.division}
+
+
 def _my_employee_id():
     """Employee id linked to the current user (None if not linked)."""
     return frappe.db.get_value("Employee", {"user_id": frappe.session.user}, "name")
