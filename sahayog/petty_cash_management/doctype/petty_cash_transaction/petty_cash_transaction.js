@@ -209,6 +209,34 @@ frappe.ui.form.on('Petty Cash Transaction', {
 
     refresh: function (frm) {
 
+        // --- HOLD BRANCH TRANSACTION CHECK ---
+        // If hold_branch_transaction is enabled in Sahayog Settings AND the user
+        // is a branch-level user (not HO Manager/Admin), restrict all create/submit actions.
+        const is_ho_user = frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator';
+        if (!is_ho_user) {
+            frappe.db.get_single_value('Sahayog Settings', 'hold_branch_transaction').then(function (held) {
+                if (cint(held)) {
+                    // Show a prominent alert banner on the form
+                    frm.dashboard.clear_comment();
+                    frm.dashboard.add_comment(
+                        __('⚠️ Branch transactions are currently on hold by Head Office. You cannot create or submit transactions at this time.'),
+                        'red',
+                        true
+                    );
+
+                    // Disable Save button for new docs (prevent creation)
+                    if (frm.is_new()) {
+                        frm.disable_save();
+                    }
+
+                    // Hide the Submit button for existing draft docs
+                    frm.page.wrapper.find('[data-label="Submit"]').hide();
+                    frm.page.btn_primary && frm.page.btn_primary.hide();
+                }
+            });
+        }
+        // --- END HOLD CHECK ---
+
         // Reflect status changes made by OTHER users without a manual refresh
         frappe.realtime.off('petty_cash_status_changed');
         frappe.realtime.on('petty_cash_status_changed', function (data) {

@@ -36,12 +36,35 @@ from sahayog.petty_cash_management.permissions import get_user_allowed_branches
 
 class PettyCashTransaction(Document):
 
+    def _is_branch_user(self):
+        """Returns True if the current user is a branch-level user (not HO Manager/Admin)."""
+        ho_roles = {"HO Petty Cash Manager", "Administrator"}
+        user_roles = set(frappe.get_roles())
+        return frappe.session.user != "Administrator" and not ho_roles.intersection(user_roles)
+
+    def _check_hold_branch_transaction(self):
+        """Block branch users from creating/submitting when hold_branch_transaction is enabled."""
+        if not self._is_branch_user():
+            return  # HO Managers and Admin are never blocked
+
+        is_held = frappe.db.get_single_value(
+            "Sahayog Settings", "hold_branch_transaction")
+        if cint(is_held):
+            frappe.throw(
+                _("Branch transactions are currently on hold. "
+                  "Please contact Head Office to resume operations."),
+                title=_("Transaction Hold")
+            )
+
     def before_insert(self):
         if not self.transaction_date:
             self.transaction_date = nowdate()
 
         # Default Status
         self.approval_status = "Draft"
+
+        # Block branch users when hold is active
+        self._check_hold_branch_transaction()
 
         if "HO Petty Cash Manager" not in frappe.get_roles():
             self.transaction_type = "Expense"
@@ -481,6 +504,10 @@ class PettyCashTransaction(Document):
                 self.amount_exceeding_limit), alert=True)
 
     def on_submit(self):
+        # Block branch users from submitting when hold is active
+        if self.transaction_type == "Expense":
+            self._check_hold_branch_transaction()
+
         if self.transaction_type == "Expense":
             # 1. Validate Payment Mode
             self.validate_payment_mode_details()

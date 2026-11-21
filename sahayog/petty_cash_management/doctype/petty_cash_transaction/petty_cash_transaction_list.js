@@ -64,6 +64,22 @@ frappe.listview_settings['Petty Cash Transaction'] = {
             ask_date_range_and_download();
         });
 
+        // --- HOLD BRANCH TRANSACTION: Hide 'New' button for branch users ---
+        const is_ho_user = frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator';
+        if (!is_ho_user) {
+            frappe.db.get_single_value('Sahayog Settings', 'hold_branch_transaction').then(function (held) {
+                if (cint(held)) {
+                    listview.page.btn_primary && listview.page.btn_primary.hide();
+                    listview.page.wrapper.find('.btn-primary[data-label="New"]').hide();
+                    frappe.show_alert({
+                        message: __('Branch transactions are currently on hold by Head Office.'),
+                        indicator: 'red'
+                    }, 8);
+                }
+            });
+        }
+        // --- END HOLD CHECK ---
+
         if (
             frappe.session.user === 'Administrator' ||
             frappe.user.has_role('HO Petty Cash Manager') ||
