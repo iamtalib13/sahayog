@@ -1549,7 +1549,7 @@ class PettyCashTransaction(Document):
                            for item in self.items) if self.items else 0.0
         current_date = now_datetime().strftime("%Y-%m-%d")
         current_time = now_datetime().strftime("%H:%M:%S")
-        filename = f"Date_{current_date}_Time_{current_time}_Total_Records_{total_records}_Total_Amount{total_amount}.txt"
+        filename = f"Date_{current_date}_Time_{current_time}_Total_Records_{total_records}_Total_Amount_{total_amount}.txt"
         create_and_link_petty_cash_ttum(
             transaction_names=[self.name],
             filecontent=final_txt,
@@ -2428,8 +2428,12 @@ def create_and_link_petty_cash_ttum(transaction_names, filecontent, filename, do
     employee_name = frappe.db.get_value(
         "Employee", {"user_id": user_id}, "employee_name") or user_id
 
+    # Use the filename (without extension) as the document name
+    doc_name = filename.rsplit(".", 1)[0] if "." in filename else filename
+
     ttum_doc = frappe.get_doc({
         "doctype": "Petty Cash TTUM",
+        "name": doc_name,
         "ttum_download_date": download_date,
         "ttum_download_user_id": user_id,
         "ttum_download_user_name": employee_name
@@ -2942,7 +2946,7 @@ def download_bulk_ttum_txt_api_new():
     total_amount = flt(sum(txn_totals.values())) if txn_totals else 0.0
     current_date = now_datetime().strftime("%Y-%m-%d")
     current_time = now_datetime().strftime("%H:%M:%S")
-    bulk_filename = f"Date_{current_date}_Time_{current_time}_Total_Records_{total_records}_Total_Amount{total_amount}.txt"
+    bulk_filename = f"Date_{current_date}_Time_{current_time}_Total_Records_{total_records}_Total_Amount_{total_amount}.txt"
 
     create_and_link_petty_cash_ttum(
         transaction_names=processed_txns,
