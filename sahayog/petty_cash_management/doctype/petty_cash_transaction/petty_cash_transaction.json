@@ -160,7 +160,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval: !frappe.user_roles.includes('Branch User')",
+   "depends_on": "eval: !!doc.ttum_downloaded_date && (!frappe.user_roles.includes('Branch User') || frappe.session.user === 'Administrator')",
    "description": "Exclude this transaction from bulk TTUM (TXT) downloads.",
    "fieldname": "exclude_from_ttum",
    "fieldtype": "Check",
@@ -341,7 +341,7 @@
   },
   {
    "default": "0",
-   "depends_on": "eval: !frappe.user_roles.includes('Branch User')",
+   "depends_on": "eval: !!doc.ttum_downloaded_date && (!frappe.user_roles.includes('Branch User') || frappe.session.user === 'Administrator')",
    "description": "Exclude this transaction from bulk TTUM (TXT) downloads.",
    "fieldname": "bulk_ttum_downloaded",
    "fieldtype": "Check",
@@ -399,7 +399,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-19 15:47:29.587463",
+ "modified": "2026-11-21 10:35:53.615300",
  "modified_by": "Administrator",
  "module": "Petty Cash Management",
  "name": "Petty Cash Transaction",

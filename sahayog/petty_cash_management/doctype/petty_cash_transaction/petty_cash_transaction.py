@@ -538,6 +538,7 @@ class PettyCashTransaction(Document):
 
             if enable_integration:
                 self.createjournalentry()
+                # self.create_journal_entry()
 
             self.update_wallet()
 
@@ -1116,7 +1117,8 @@ class PettyCashTransaction(Document):
                 "verifier_action_by": frappe.session.user,
                 "rejected_by_stage": None
             },
-            error_msg=_("Document must be Approved/Checked before Verification.")
+            error_msg=_(
+                "Document must be Approved/Checked before Verification.")
         )
 
         if enable_integration:
@@ -1179,7 +1181,8 @@ class PettyCashTransaction(Document):
                 "verifier_action_by": frappe.session.user,
                 "rejected_by_stage": "Verifier"
             },
-            error_msg=_("Document must be in Approved or Checked status to reject.")
+            error_msg=_(
+                "Document must be in Approved or Checked status to reject.")
         )
 
         # Reverse the wallet deduction made during the submit/approval flow
@@ -1775,6 +1778,7 @@ class PettyCashTransaction(Document):
     #                         row.idx
     #                     )
     #                 )
+
 
     def validate_payment_mode_details(self):
         """
@@ -2494,7 +2498,7 @@ def get_workflow_stage_users(docname):
         )
         raw_uid = (emp.get("user_id") if emp else user_id) or ""
         short_uid = raw_uid.replace("@sahayog.com", "").strip()
-        
+
         full_name = None
         if emp:
             first_name = (emp.get("first_name") or "").strip()
@@ -2514,7 +2518,8 @@ def get_workflow_stage_users(docname):
     branch_user = format_emp_info(doc_vals.get("owner"))
     checker_user = format_emp_info(doc_vals.get("checker_action_by"))
     approver_user = format_emp_info(doc_vals.get("approver_action_by"))
-    verifier_user = format_emp_info(doc_vals.get("verifier_action_by") or doc_vals.get("approved_by"))
+    verifier_user = format_emp_info(doc_vals.get(
+        "verifier_action_by") or doc_vals.get("approved_by"))
 
     ttum_user = None
     if ttum_vals.get("ttum_download_user_id"):
