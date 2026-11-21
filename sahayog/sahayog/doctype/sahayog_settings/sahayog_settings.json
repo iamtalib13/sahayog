@@ -33,7 +33,7 @@
   "cash_limit_exempt_categories",
   "allowed_access_manager_designations",
   "ttum_download_date",
-  "active_branch_transaction",
+  "hold_branch_transaction",
   "hold_petty_cash_workflow",
   "pending_request_dashboard_tab",
   "pending_request_setting",
@@ -383,24 +383,24 @@
   },
   {
    "default": "0",
-   "description": "Hold Branch Level Transaction Creation Activity",
-   "fieldname": "active_branch_transaction",
-   "fieldtype": "Check",
-   "label": "Active Branch Transaction"
-  },
-  {
-   "default": "0",
    "description": "Hold Petty Cash Fully at branch level and HO Level",
    "fieldname": "hold_petty_cash_workflow",
    "fieldtype": "Check",
    "label": "Hold Petty Cash All Flow"
+  },
+  {
+   "default": "0",
+   "description": "Hold Branch Level Transaction Creation Activity",
+   "fieldname": "hold_branch_transaction",
+   "fieldtype": "Check",
+   "label": "Hold Branch Transaction"
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
  "issingle": 1,
  "links": [],
- "modified": "2026-11-21 14:12:15.399887",
+ "modified": "2026-11-21 14:13:53.365501",
  "modified_by": "Administrator",
  "module": "Sahayog",
  "name": "Sahayog Settings",
