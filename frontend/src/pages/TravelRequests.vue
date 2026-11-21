@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { Button, Dialog } from 'frappe-ui'
 import EmptyState from '../components/EmptyState.vue'
 import RequestsTable from '../components/RequestsTable.vue'
 import TravelDetailsPanel from '../components/TravelDetailsPanel.vue'
-import { addDays, parseDate, today } from '../lib/format'
+import { addDays, parseDate, toISODate, today } from '../lib/format'
 import {
   ALL_STATES,
   countForTab,
@@ -13,6 +14,7 @@ import {
   REQUEST_TABS,
   stateLabel,
   travelStore,
+  upcomingRows,
   type TravelRequestRow,
 } from '../lib/travel'
 
@@ -20,9 +22,30 @@ onMounted(() => loadTravel())
 
 const PAGE_SIZE = 6
 
-const activeTab = ref('all')
+const route = useRoute()
+const TAB_KEYS = new Set(REQUEST_TABS.map((tab) => tab.key))
+const DATE_FILTERS = new Set([
+  'all',
+  'upcoming',
+  'this-month',
+  'last-30',
+  'this-year',
+])
+
+function queryText(key: string): string {
+  const value = route.query[key]
+  return typeof value === 'string' ? value : ''
+}
+
+// Dashboard KPI cards link here with `?tab=` / `?date=` so the matching
+// filter is already applied when the list opens.
+const activeTab = ref(
+  TAB_KEYS.has(queryText('tab')) ? queryText('tab') : 'all',
+)
 const search = ref('')
-const dateFilter = ref('all')
+const dateFilter = ref(
+  DATE_FILTERS.has(queryText('date')) ? queryText('date') : 'all',
+)
 const statusFilter = ref('all')
 const page = ref(1)
 
@@ -30,6 +53,15 @@ const detailsOpen = ref(false)
 const selectedRequest = ref<TravelRequestRow | null>(null)
 
 const rows = computed(() => travelStore.requests)
+
+// Same definition as the dashboard's "Upcoming trips" KPI: future
+// departures in the next 30 days, excluding rejected requests.
+const upcomingNames = computed(
+  () =>
+    new Set(
+      upcomingRows(rows.value, toISODate(today()), 30).map((row) => row.name),
+    ),
+)
 
 const currentTab = computed(
   () => REQUEST_TABS.find((tab) => tab.key === activeTab.value) || REQUEST_TABS[0],
@@ -44,6 +76,7 @@ const tabCounts = computed(() =>
 
 function inDateRange(row: TravelRequestRow): boolean {
   if (dateFilter.value === 'all') return true
+  if (dateFilter.value === 'upcoming') return upcomingNames.value.has(row.name)
   const departure = parseDate(row.departure_date)
   if (!departure) return false
   const now = today()
@@ -117,6 +150,23 @@ watch([activeTab, search, dateFilter, statusFilter], () => {
   page.value = 1
 })
 
+// Keep the list in sync when a dashboard card (or any link) changes the query.
+watch(
+  () => route.query.tab,
+  (value) => {
+    if (typeof value === 'string' && TAB_KEYS.has(value)) activeTab.value = value
+  },
+)
+
+watch(
+  () => route.query.date,
+  (value) => {
+    if (typeof value === 'string' && DATE_FILTERS.has(value)) {
+      dateFilter.value = value
+    }
+  },
+)
+
 watch(pageCount, () => {
   if (page.value > pageCount.value) page.value = pageCount.value
 })
@@ -139,10 +189,7 @@ function previousPage() {
   <div class="mx-auto w-full max-w-[1180px] px-4 pb-10 pt-7 sm:px-6 lg:px-8">
     <div class="flex flex-wrap items-start justify-between gap-4">
       <div class="min-w-0">
-        <p class="text-[10px] font-semibold uppercase leading-[12px] tracking-[0.06em] text-[#68778D]">
-          Travel management
-        </p>
-        <h1 class="mt-2 text-[27px] font-semibold leading-[33px] text-[#172B4D]">
+        <h1 class="text-[27px] font-semibold leading-[33px] text-[#172B4D]">
           My travel requests
         </h1>
         <p class="mt-1 text-[13px] leading-4 text-[#68778D]">
@@ -224,6 +271,7 @@ function previousPage() {
             aria-label="Filter by date"
           >
             <option value="all">All dates</option>
+            <option value="upcoming">Upcoming (30 days)</option>
             <option value="this-month">This month</option>
             <option value="last-30">Last 30 days</option>
             <option value="this-year">This year</option>
