@@ -304,6 +304,12 @@ function previousPage() {
         show-employee
         @select="openDetails"
       />
+      <p
+        v-if="pageRows.length"
+        class="px-[22px] pb-2 pt-1 text-[10px] leading-[12px] text-[#68778D] sm:hidden"
+      >
+        Swipe horizontally to view all columns.
+      </p>
       <EmptyState
         v-else
         title="No requests found"
