@@ -64,13 +64,42 @@ frappe.listview_settings['Petty Cash Transaction'] = {
             ask_date_range_and_download();
         });
 
-        // --- HOLD BRANCH TRANSACTION: Hide 'New' button for branch users ---
+        // --- HOLD BRANCH TRANSACTION: Hide 'New' button + show sticky banner for branch users ---
         const is_ho_user = frappe.user.has_role('HO Petty Cash Manager') || frappe.session.user === 'Administrator';
         if (!is_ho_user) {
             frappe.db.get_single_value('Sahayog Settings', 'hold_branch_transaction').then(function (held) {
                 if (cint(held)) {
+                    // Hide New button
                     listview.page.btn_primary && listview.page.btn_primary.hide();
                     listview.page.wrapper.find('.btn-primary[data-label="New"]').hide();
+
+                    // Floating sticky banner at top of list
+                    const banner_id = 'hold-branch-txn-banner';
+                    if (!$('#' + banner_id).length) {
+                        const $banner = $(`
+                            <div id="${banner_id}" style="
+                                position: sticky;
+                                top: 0;
+                                z-index: 1050;
+                                background: #fff1f0;
+                                border: 1.5px solid #ff4d4f;
+                                border-radius: 6px;
+                                padding: 10px 18px;
+                                margin: 10px 0 6px 0;
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;
+                                font-weight: 500;
+                                color: #a8071a;
+                                font-size: 13px;
+                                box-shadow: 0 2px 8px rgba(255,77,79,0.13);
+                            ">
+                                <span style="font-size:18px;">🚫</span>
+                                <span>${__('Branch transactions are currently on hold by Head Office. You are not allowed to create or submit transactions at this time.')}</span>
+                            </div>
+                        `);
+                        listview.page.main.prepend($banner);
+                    }
                     frappe.show_alert({
                         message: __('Branch transactions are currently on hold by Head Office.'),
                         indicator: 'red'
