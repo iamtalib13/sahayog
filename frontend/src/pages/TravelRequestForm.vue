@@ -15,6 +15,7 @@ import {
   errorMessage,
   getEmployee,
   loadTravel,
+  refreshTravel,
   MODES_OF_TRAVEL,
   submitTravelRequest,
   travelStore,
@@ -190,6 +191,7 @@ async function save(submit: boolean) {
           : `${created.name} is saved as a draft. You can submit it from My travel requests.`,
       },
     )
+    await refreshTravel()
     await router.push('/requests')
   } catch (exception) {
     error.value = errorMessage(exception)
