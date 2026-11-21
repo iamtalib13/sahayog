@@ -396,6 +396,7 @@ function cancel() {
                   class="mt-2 w-full"
                   size="lg"
                   variant="outline"
+                  format="DD-MM-YYYY"
                   placeholder="Choose departure date"
                 />
               </div>
@@ -408,6 +409,7 @@ function cancel() {
                   class="mt-2 w-full"
                   size="lg"
                   variant="outline"
+                  format="DD-MM-YYYY"
                   placeholder="Choose return date"
                 />
               </div>
