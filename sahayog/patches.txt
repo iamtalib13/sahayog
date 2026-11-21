@@ -80,3 +80,4 @@ sahayog.patches.travel.create_travel_request_workflow
 sahayog.patches.travel.setup_travel_request_permissions
 sahayog.patches.travel.hide_travel_request_fields
 sahayog.patches.custom_fields.add_custom_fields_for_lead
+sahayog.patches.seed_training_titles
