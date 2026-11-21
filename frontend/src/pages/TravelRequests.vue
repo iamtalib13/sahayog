@@ -210,8 +210,8 @@ function previousPage() {
     <section
       class="mt-8 rounded-[9px] border border-[#E5EAF1] bg-white shadow-[0_2px_5px_rgba(23,41,71,0.025)]"
     >
-      <div class="overflow-x-auto border-b border-[#E5EAF1]">
-        <div class="flex flex-wrap items-center gap-x-4 gap-y-2 px-[22px] sm:flex-nowrap sm:min-w-max sm:gap-7">
+      <div class="relative overflow-x-auto border-b border-[#E5EAF1]">
+        <div class="flex min-w-max items-center gap-7 px-[22px]">
           <button
             v-for="tab in REQUEST_TABS"
             :key="tab.key"
@@ -241,7 +241,13 @@ function previousPage() {
             />
           </button>
         </div>
+        <div
+          class="pointer-events-none absolute right-0 top-0 h-full w-10 bg-gradient-to-l from-white to-transparent sm:hidden"
+        />
       </div>
+      <p class="px-[22px] pb-2 pt-1 text-[10px] leading-[12px] text-[#68778D] sm:hidden">
+        Swipe horizontally to see all tabs.
+      </p>
 
       <div class="flex flex-wrap items-center gap-3 px-[22px] py-5">
         <div class="relative w-full sm:w-[422px]">
