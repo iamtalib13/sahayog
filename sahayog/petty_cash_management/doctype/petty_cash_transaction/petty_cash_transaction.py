@@ -2837,6 +2837,7 @@ def download_bulk_ttum_txt_api_new():
 
     content = []
     processed_txns = []
+    txn_totals = {}
 
     for txn_name in transactions:
         doc = frappe.get_doc("Petty Cash Transaction", txn_name)
@@ -2921,6 +2922,7 @@ def download_bulk_ttum_txt_api_new():
 
         content.append(credit_line)
         processed_txns.append(txn_name)
+        txn_totals[txn_name] = total_debit
 
     # Mark all included transactions as bulk_ttum_downloaded and save download timestamp
     current_timestamp = now_datetime()
@@ -2936,8 +2938,11 @@ def download_bulk_ttum_txt_api_new():
         )
 
     final_txt = "\n".join(content)
-    today_str = nowdate()
-    bulk_filename = f"Bulk_TTUM_{today_str}.txt"
+    total_records = len(processed_txns) if processed_txns else 0
+    total_amount = flt(sum(txn_totals.values())) if txn_totals else 0.0
+    current_date = now_datetime().strftime("%Y-%m-%d")
+    current_time = now_datetime().strftime("%H:%M:%S")
+    bulk_filename = f"Date_{current_date}_Time_{current_time}_Total_Records_{total_records}_Total_Amount{total_amount}.txt"
 
     create_and_link_petty_cash_ttum(
         transaction_names=processed_txns,
