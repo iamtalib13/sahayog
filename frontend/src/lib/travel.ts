@@ -170,6 +170,7 @@ interface TravelStore {
   employees: EmployeeInfo[]
   /** Reporting manager id → employee name, for the details panel. */
   managerNames: Record<string, string>
+  roles: string[]
   purposeOptions: string[]
   user: string
 }
@@ -182,6 +183,7 @@ export const travelStore = reactive<TravelStore>({
   employee: null,
   employees: [],
   managerNames: {},
+  roles: [],
   purposeOptions: [],
   user: '',
 })
@@ -273,6 +275,11 @@ async function fetchTravel(): Promise<void> {
     )
     travelStore.employees = uniqueEmployees(travelStore.requests)
     travelStore.managerNames = await loadManagerNames(travelStore.requests)
+    const bootRoles =
+      typeof window !== 'undefined' && Array.isArray((window as any).roles)
+        ? ((window as any).roles as string[])
+        : null
+    travelStore.roles = bootRoles || (await loadUserRoles(user))
     travelStore.loaded = true
   } catch (error) {
     travelStore.error = errorMessage(error)
@@ -281,7 +288,7 @@ async function fetchTravel(): Promise<void> {
   }
 }
 
-/** One lookup for every reporting manager referenced by the visible rows. */
+/** Reporting manager id → employee name, for the details panel. */
 async function loadManagerNames(
   rows: TravelRequestRow[],
 ): Promise<Record<string, string>> {
@@ -304,6 +311,17 @@ async function loadManagerNames(
     if (manager.employee_name) names[manager.name] = manager.employee_name
     return names
   }, {})
+}
+
+async function loadUserRoles(user: string): Promise<string[]> {
+  if (!user) return []
+  const rows = await call<Array<{ role: string }>>('frappe.client.get_list', {
+    doctype: 'Has Role',
+    filters: { parent: user, parenttype: 'User' },
+    fields: ['role'],
+    limit_page_length: 0,
+  }).catch(() => [])
+  return (rows || []).map((row) => String(row.role))
 }
 
 export function refreshTravel(): Promise<void> {
@@ -441,6 +459,19 @@ export async function createTravelRequest(
 ): Promise<TravelRequestRow> {
   return call<TravelRequestRow>('frappe.client.insert', {
     doc: { doctype: DOCTYPE, ...values },
+  })
+}
+
+export async function applyTravelWorkflow(
+  name: string,
+  action: string,
+  remarks?: string,
+): Promise<unknown> {
+  const doc: Record<string, unknown> = { doctype: DOCTYPE, name }
+  if (remarks && remarks.trim()) doc.approver_remarks = remarks.trim()
+  return call('frappe.model.workflow.apply_workflow', {
+    doc: JSON.stringify(doc),
+    action,
   })
 }
 
