@@ -1469,7 +1469,7 @@ def _month_key(value):
 def get_branch_expense_report(months=6):
     """Branch-wise monthly expense.
 
-    monthly_expense   -> value of material ISSUED / consumed from the branch (Stock Entry: Material Issue)
+    monthly_expense   -> value of material ISSUED / transferred out from the branch (Stock Entry: Material Issue, Material Transfer)
     monthly_purchased -> value of material RECEIVED at the branch (Purchase Receipt)
     unused_requested  -> EMMR items requested by branch users that are not yet received
     """
@@ -1521,10 +1521,11 @@ def get_branch_expense_report(months=6):
         rate = row.get("rate") or 0
         purchased_map[wh][mo] += (row.get("qty") or 0) * rate
 
-    # ---------- Expense (Stock Entry: Material Issue -> branch warehouse) ----------
+    # ---------- Expense (Stock Entry: Material Issue / Material Transfer out of branch) ----------
     expense_map = defaultdict(lambda: defaultdict(float))
     se_rows = frappe.db.sql("""
         SELECT se.posting_date AS posting_date,
+               se.stock_entry_type AS stock_entry_type,
                sei.s_warehouse AS s_warehouse,
                se.from_warehouse AS from_warehouse,
                sei.item_code AS item_code,
@@ -1533,7 +1534,7 @@ def get_branch_expense_report(months=6):
         FROM `tabStock Entry` se
         JOIN `tabStock Entry Detail` sei ON sei.parent = se.name
         WHERE se.docstatus = 1
-          AND se.stock_entry_type = 'Material Issue'
+          AND se.stock_entry_type IN ('Material Issue', 'Material Transfer')
           AND se.posting_date BETWEEN %s AND %s
     """, (start_date, end_date), as_dict=True)
     for row in se_rows:
@@ -1610,14 +1611,14 @@ def get_branch_detail(sol_id):
         r["amount"] = (r.get("qty") or 0) * (r.get("rate") or 0)
         r["month"] = _month_key(r.get("posting_date"))
 
-    # ---------- Stock Entry: Material Issue (usage / expense) ----------
+    # ---------- Stock Entry: Material Issue / Material Transfer out (usage / expense) ----------
     usage = frappe.db.sql("""
         SELECT se.name AS se_name, se.posting_date, se.stock_entry_type,
-               sei.item_code, sei.qty, sei.basic_rate, sei.s_warehouse
+               sei.item_code, sei.qty, sei.basic_rate, sei.s_warehouse, se.to_warehouse
         FROM `tabStock Entry` se
         JOIN `tabStock Entry Detail` sei ON sei.parent = se.name
         WHERE se.docstatus = 1
-          AND se.stock_entry_type = 'Material Issue'
+          AND se.stock_entry_type IN ('Material Issue', 'Material Transfer')
           AND (sei.s_warehouse = %s OR se.from_warehouse = %s)
         ORDER BY se.posting_date DESC
     """, (sol_id, sol_id), as_dict=True)

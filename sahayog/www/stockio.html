@@ -8506,7 +8506,7 @@
             </div>
             <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">
               <template v-if="branchExpenseMode === 'expense'">
-                Expense = value of material issued / consumed from the branch (Stock Entry - Material Issue). Click any row for the full breakdown.
+                Expense = value of material issued / consumed / transferred out from the branch (Stock Entry - Material Issue, Material Transfer). Click any row for the full breakdown.
               </template>
               <template v-else>
                 Purchased = value of material received at the branch (Purchase Receipt). Click any row for the full breakdown.
@@ -9591,7 +9591,7 @@
           <!-- Material issued / consumed (expense) -->
           <div style="margin-bottom: 20px;">
             <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
-              Material Used / Issued (Stock Entry - Material Issue) &mdash; this is the branch expense
+              Material Used / Issued / Transferred Out (Stock Entry - Material Issue, Material Transfer) &mdash; this is the branch expense
             </div>
             <div v-if="branchDetail.usage && branchDetail.usage.length" style="overflow-x: auto;">
               <table class="items-table" style="width: 100%;">
@@ -9617,38 +9617,7 @@
                 </tbody>
               </table>
             </div>
-            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No material issued from this branch.</div>
-          </div>
-
-          <!-- Material transferred out -->
-          <div v-if="branchDetail.transfers_out && branchDetail.transfers_out.length" style="margin-bottom: 20px;">
-            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
-              Transferred Out (Material Transfer)
-            </div>
-            <div style="overflow-x: auto;">
-              <table class="items-table" style="width: 100%;">
-                <thead>
-                  <tr>
-                    <th style="padding: 8px 10px;">Month</th>
-                    <th style="padding: 8px 10px;">Stock Entry</th>
-                    <th style="padding: 8px 10px;">To Warehouse</th>
-                    <th style="padding: 8px 10px;">Item</th>
-                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
-                    <th style="padding: 8px 10px; text-align: right;">Amount</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(t, idx) in branchDetail.transfers_out" :key="'t' + idx">
-                    <td style="padding: 8px 10px;">[[ t.month ]]</td>
-                    <td style="padding: 8px 10px;">[[ t.se_name ]]</td>
-                    <td style="padding: 8px 10px;">[[ t.to_warehouse ]]</td>
-                    <td style="padding: 8px 10px;">[[ t.item_code ]]</td>
-                    <td style="padding: 8px 10px; text-align: right;">[[ t.qty ]]</td>
-                    <td style="padding: 8px 10px; text-align: right;">[[ fmtNumber(t.amount) ]]</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No material issued/transferred out from this branch.</div>
           </div>
 
           <!-- Monthly Purchase Receipt records -->
