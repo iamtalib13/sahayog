@@ -334,45 +334,72 @@ def get_branch_email(sahayog_branch):
     return frappe.db.get_value("Sahayog Branch", sahayog_branch, "email")
 
 
-def generate_crm_alert_table_html(employees):
-    """Generate HTML table formatted exactly as per requirement."""
+def generate_crm_alert_table_html(employees, to_recipients=None, cc_recipients=None, branch_title=None):
+    """Generate professional HTML email formatted cleanly like Gmail/Outlook."""
     rows = ""
     for emp in employees:
         rows += f"""
         <tr style="border-bottom: 1px solid #e2e8f0; text-align: center;">
-            <td style="padding: 8px 12px; font-weight: 600;">{emp.get('employee_code')}</td>
-            <td style="padding: 8px 12px; text-align: left;">{emp.get('employee_name')}</td>
-            <td style="padding: 8px 12px;">{emp.get('from_date')}</td>
-            <td style="padding: 8px 12px;">{emp.get('to_date')}</td>
-            <td style="padding: 8px 12px; font-weight: 600; color: #dc2626;">{emp.get('continuous_days')}</td>
-            <td style="padding: 8px 12px;">{emp.get('weekly_off')}</td>
-            <td style="padding: 8px 12px;">{emp.get('holiday')}</td>
+            <td style="padding: 10px 12px; font-weight: 600; color: #1e293b;">{emp.get('employee_code')}</td>
+            <td style="padding: 10px 12px; text-align: left; color: #0f172a;">{emp.get('employee_name')}</td>
+            <td style="padding: 10px 12px; color: #475569;">{emp.get('from_date')}</td>
+            <td style="padding: 10px 12px; color: #475569;">{emp.get('to_date')}</td>
+            <td style="padding: 10px 12px; font-weight: 700; color: #dc2626; background: #fef2f2;">{emp.get('continuous_days')}</td>
+            <td style="padding: 10px 12px; color: #475569;">{emp.get('weekly_off')}</td>
+            <td style="padding: 10px 12px; color: #475569;">{emp.get('holiday')}</td>
         </tr>
         """
 
-    html = f"""
-    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #1e293b; line-height: 1.5;">
-        <p>Respected Sir / Madam,</p>
-        <p>The following staff member(s) have not updated CRM leads for <b>3 consecutive days</b>. Kindly review and ensure timely lead updates:</p>
-        
-        <table style="width: 100%; border-collapse: collapse; margin-top: 14px; margin-bottom: 16px; border: 1px solid #cbd5e1; font-size: 12px;">
-            <thead>
-                <tr style="background-color: #f8fafc; border-bottom: 2px solid #cbd5e1; font-weight: 600; color: #475569;">
-                    <th style="padding: 8px 12px; text-align: center;">Employee Code</th>
-                    <th style="padding: 8px 12px; text-align: left;">Employee Name</th>
-                    <th style="padding: 8px 12px; text-align: center;">From Date</th>
-                    <th style="padding: 8px 12px; text-align: center;">To Date</th>
-                    <th style="padding: 8px 12px; text-align: center;">No of Continuous Not update Days</th>
-                    <th style="padding: 8px 12px; text-align: center;">Weekly Off</th>
-                    <th style="padding: 8px 12px; text-align: center;">Holiday</th>
-                </tr>
-            </thead>
-            <tbody>
-                {rows}
-            </tbody>
-        </table>
+    to_str = ", ".join(to_recipients) if to_recipients else "None"
+    cc_str = ", ".join(cc_recipients) if cc_recipients else "None"
+    branch_heading = f" - {branch_title}" if branch_title else ""
 
-        <p style="color: #64748b; font-size: 11px; margin-top: 20px;">This is an automated system-generated CRM Alert.</p>
+    html = f"""
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 13px; color: #1e293b; line-height: 1.6; max-width: 850px; margin: 0 auto; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+        
+        <!-- Email Header Section (Gmail/Outlook Style) -->
+        <div style="background-color: #f8fafc; padding: 16px 20px; border-bottom: 2px solid #e2e8f0;">
+            <div style="font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 10px;">
+                CRM Alert{branch_heading}
+            </div>
+            <table style="width: 100%; font-size: 12px; color: #475569; border-collapse: collapse;">
+                <tr>
+                    <td style="width: 45px; font-weight: 600; color: #64748b; padding: 3px 0;">To:</td>
+                    <td style="color: #0369a1; font-weight: 500; padding: 3px 0;">{to_str}</td>
+                </tr>
+                <tr>
+                    <td style="width: 45px; font-weight: 600; color: #64748b; padding: 3px 0;">Cc:</td>
+                    <td style="color: #475569; padding: 3px 0;">{cc_str}</td>
+                </tr>
+            </table>
+        </div>
+
+        <!-- Body Section -->
+        <div style="padding: 20px;">
+            <p style="margin-top: 0; color: #334155;">Respected Sir / Madam,</p>
+            <p style="color: #334155;">The following staff member(s) have not updated CRM leads for <b>3 consecutive days</b>. Kindly review and ensure timely lead updates:</p>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-top: 16px; margin-bottom: 20px; border: 1px solid #cbd5e1; font-size: 12px;">
+                <thead>
+                    <tr style="background-color: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-weight: 600; color: #334155;">
+                        <th style="padding: 10px 12px; text-align: center;">Employee Code</th>
+                        <th style="padding: 10px 12px; text-align: left;">Employee Name</th>
+                        <th style="padding: 10px 12px; text-align: center;">From Date</th>
+                        <th style="padding: 10px 12px; text-align: center;">To Date</th>
+                        <th style="padding: 10px 12px; text-align: center;">No of Continuous Not update Days</th>
+                        <th style="padding: 10px 12px; text-align: center;">Weekly Off</th>
+                        <th style="padding: 10px 12px; text-align: center;">Holiday</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows}
+                </tbody>
+            </table>
+
+            <p style="color: #64748b; font-size: 11px; margin-top: 24px; border-top: 1px solid #f1f5f9; padding-top: 12px;">
+                This is an automated system-generated CRM Alert initiated by Sahayog CRM.
+            </p>
+        </div>
     </div>
     """
     return html
@@ -400,7 +427,12 @@ def get_crm_alert_preview(days=3):
             reports_to_emp_id=sample_emp.get("reports_to")
         )
 
-        table_html = generate_crm_alert_table_html(emp_list)
+        table_html = generate_crm_alert_table_html(
+            employees=emp_list,
+            to_recipients=hierarchy.get("to", []),
+            cc_recipients=hierarchy.get("cc", []),
+            branch_title=sample_emp.get("branch") or branch_key
+        )
 
         previews.append({
             "branch": branch_key,
