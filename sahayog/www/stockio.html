@@ -8485,6 +8485,12 @@
                     ? 'padding: 6px 14px; border: none; border-radius: 6px; background: #369696; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer;'
                     : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
                 >Purchased</button>
+                <button
+                  @click="branchExpenseMode = 'transfer'"
+                  :style="branchExpenseMode === 'transfer'
+                    ? 'padding: 6px 14px; border: none; border-radius: 6px; background: #369696; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer;'
+                    : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
+                >Transfer</button>
               </div>
               <select
                 v-model="branchExpenseMonth"
@@ -8506,10 +8512,13 @@
             </div>
             <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 12px;">
               <template v-if="branchExpenseMode === 'expense'">
-                Expense = value of material issued / consumed / transferred out from the branch (Stock Entry - Material Issue, Material Transfer). Click any row for the full breakdown.
+                Expense (Used) = Material Issue + Material Transfer received into the branch. Click any row for the full breakdown.
+              </template>
+              <template v-else-if="branchExpenseMode === 'purchased'">
+                Purchased = value of material received at the branch (Purchase Receipt). Click any row for the full breakdown.
               </template>
               <template v-else>
-                Purchased = value of material received at the branch (Purchase Receipt). Click any row for the full breakdown.
+                Transfer = Material Transfer sent out from the branch to another warehouse/SOL. Click any row for the full breakdown.
               </template>
             </div>
             <div v-if="branchExpenseLoading" style="color: var(--text-muted); padding: 20px;">Loading...</div>
@@ -8520,8 +8529,8 @@
                     <th style="padding: 10px 12px;">Branch</th>
                     <th style="padding: 10px 12px;">SOL ID</th>
                     <th style="padding: 10px 12px;" v-for="m in visibleBranchExpenseMonths()" :key="m">[[ m ]]</th>
-                    <th style="padding: 10px 12px; text-align: right;">Used (Total)</th>
-                    <th style="padding: 10px 12px; text-align: right;">Purchased (Total)</th>
+                    <th style="padding: 10px 12px; text-align: right;">[[ branchExpenseMode === 'transfer' ? 'Transfer Out (Total)' : 'Used (Total)' ]]</th>
+                    <th style="padding: 10px 12px; text-align: right;" v-if="branchExpenseMode !== 'transfer'">Purchased (Total)</th>
                     <th style="padding: 10px 12px; text-align: center;">Unused Requested</th>
                     <th style="padding: 10px 12px; text-align: center;">Download</th>
                   </tr>
@@ -8532,7 +8541,7 @@
                     <td style="padding: 10px 12px;">[[ b.sol_id ]]</td>
                     <td style="padding: 10px 12px; text-align: right;" v-for="m in visibleBranchExpenseMonths()" :key="m">[[ fmtBranchExpense(b, m) ]]</td>
                     <td style="padding: 10px 12px; text-align: right; font-weight: 700;">[[ fmtBranchUsedTotal(b) ]]</td>
-                    <td style="padding: 10px 12px; text-align: right;">[[ fmtBranchPurchasedTotal(b) ]]</td>
+                    <td style="padding: 10px 12px; text-align: right;" v-if="branchExpenseMode !== 'transfer'">[[ fmtBranchPurchasedTotal(b) ]]</td>
                     <td style="padding: 10px 12px; text-align: center;">[[ b.unused_requested ]]</td>
                     <td style="padding: 10px 12px; text-align: center;">
                       <button
@@ -9519,7 +9528,7 @@
         <div style="font-size: 0.8rem; color: var(--text-main); background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 8px; padding: 8px 10px; margin-bottom: 14px;">
           <i class="fas fa-filter" style="margin-right: 6px; color: #369696;"></i>
           Showing:
-          <b>[[ branchExpenseMode === 'purchased' ? 'Purchase Receipts' : 'Expense (Material Used)' ]]</b>
+          <b>[[ branchExpenseMode === 'transfer' ? 'Transfer Out' : branchExpenseMode === 'purchased' ? 'Purchase Receipts' : 'Expense (Used)' ]]</b>
           &mdash; Month:
           <b>[[ branchExpenseMonth || 'All Months' ]]</b>
         </div>
@@ -9591,7 +9600,7 @@
           <!-- Material issued / consumed (expense) -->
           <div style="margin-bottom: 20px;">
             <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
-              Material Used / Issued / Transferred Out (Stock Entry - Material Issue, Material Transfer) &mdash; this is the branch expense
+              Expense (Used) — Material Issue + Transfer In (received)
             </div>
             <div v-if="branchDetail.usage && branchDetail.usage.length" style="overflow-x: auto;">
               <table class="items-table" style="width: 100%;">
@@ -9617,7 +9626,39 @@
                 </tbody>
               </table>
             </div>
-            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No material issued/transferred out from this branch.</div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No expense/used records for this branch.</div>
+          </div>
+
+          <!-- Transferred Out (Material Transfer) -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
+              Transferred Out (Material Transfer) — sent to another branch
+            </div>
+            <div v-if="branchDetail.transfers_out && branchDetail.transfers_out.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Month</th>
+                    <th style="padding: 8px 10px;">Stock Entry</th>
+                    <th style="padding: 8px 10px;">To Warehouse</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(t, idx) in branchDetail.transfers_out" :key="'tout' + idx">
+                    <td style="padding: 8px 10px;">[[ t.month ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.se_name ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.to_warehouse ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.item_code ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ t.qty ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ fmtNumber(t.amount) ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No material transferred out from this branch.</div>
           </div>
 
           <!-- Monthly Purchase Receipt records -->
@@ -9650,6 +9691,38 @@
               </table>
             </div>
             <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No purchase receipts for this branch.</div>
+          </div>
+
+          <!-- Transferred In (Material Transfer) -->
+          <div style="margin-bottom: 20px;">
+            <div style="font-size: 0.85rem; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">
+              Transferred In (Material Transfer) — received from another branch
+            </div>
+            <div v-if="branchDetail.transfers_in && branchDetail.transfers_in.length" style="overflow-x: auto;">
+              <table class="items-table" style="width: 100%;">
+                <thead>
+                  <tr>
+                    <th style="padding: 8px 10px;">Month</th>
+                    <th style="padding: 8px 10px;">Stock Entry</th>
+                    <th style="padding: 8px 10px;">From Warehouse</th>
+                    <th style="padding: 8px 10px;">Item</th>
+                    <th style="padding: 8px 10px; text-align: right;">Qty</th>
+                    <th style="padding: 8px 10px; text-align: right;">Amount</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr v-for="(t, idx) in branchDetail.transfers_in" :key="'tin' + idx">
+                    <td style="padding: 8px 10px;">[[ t.month ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.se_name ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.from_warehouse ]]</td>
+                    <td style="padding: 8px 10px;">[[ t.item_code ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ t.qty ]]</td>
+                    <td style="padding: 8px 10px; text-align: right;">[[ fmtNumber(t.amount) ]]</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div v-else style="color: var(--text-muted); font-size: 0.85rem;">No material transferred in to this branch.</div>
           </div>
 
           <!-- Requested items (EMMR) -->
@@ -17865,7 +17938,9 @@
         return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
       },
       fmtBranchExpense(row, month) {
-        const src = this.branchExpenseMode === "purchased" ? row.monthly_purchased : row.monthly_expense;
+        let src = row.monthly_expense;
+        if (this.branchExpenseMode === "purchased") src = row.monthly_purchased;
+        if (this.branchExpenseMode === "transfer") src = row.monthly_transfers_out;
         const val = Number((src && src[month]) || 0);
         if (!val) return "-";
         return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(val);
@@ -17898,6 +17973,12 @@
         return rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
       },
       fmtBranchUsedTotal(row) {
+        if (this.branchExpenseMode === "transfer") {
+          if (this.branchExpenseMonth) {
+            return this.fmtNumber((row.monthly_transfers_out || {})[this.branchExpenseMonth]);
+          }
+          return this.fmtNumber(row.transfers_out_total);
+        }
         if (this.branchExpenseMonth) {
           return this.fmtNumber((row.monthly_expense || {})[this.branchExpenseMonth]);
         }
@@ -17993,18 +18074,32 @@
 
           const mode = this.branchExpenseMode || "expense";
           const month = this.branchExpenseMonth || "";
+          const isTransfer = mode === "transfer";
           const isExpense = mode === "expense";
-          const title = isExpense ? "Expense (Used)" : "Purchases";
-          const headers = isExpense
+          const title = isTransfer ? "Transfer Out" : isExpense ? "Expense (Used)" : "Purchases";
+          const headers = isTransfer
+            ? ["Month", "Stock Entry", "Date", "To Warehouse", "Item", "Qty", "Rate", "Amount"]
+            : isExpense
             ? ["Month", "Stock Entry", "Date", "Item", "Qty", "Rate", "Amount"]
             : ["Month", "PR No", "Date", "Supplier", "Item", "Qty", "Rate", "Amount"];
-          const moneyCols = isExpense ? [4, 5, 6] : [5, 6, 7];
+          const moneyCols = isTransfer ? [5, 6, 7] : isExpense ? [4, 5, 6] : [5, 6, 7];
 
-          const source = isExpense ? d.usage || [] : d.monthly_records || [];
+          const source = isTransfer ? d.transfers_out || [] : isExpense ? d.usage || [] : d.monthly_records || [];
           const rows = source
             .filter((r) => (month ? r.month === month : true))
             .map((r) =>
-              isExpense
+              isTransfer
+                ? [
+                    r.month || "",
+                    r.se_name || "",
+                    r.posting_date ? String(r.posting_date).slice(0, 10) : "",
+                    r.to_warehouse || "",
+                    r.item_code || "",
+                    r.qty || 0,
+                    r.rate || 0,
+                    r.amount || 0,
+                  ]
+                : isExpense
                 ? [
                     r.month || "",
                     r.se_name || "",
@@ -18026,7 +18121,7 @@
                   ]
             );
 
-          const baseName = `Branch_${isExpense ? "Expense" : "Purchase"}_${row.sol_id}${month ? "_" + month : ""}_${new Date().toISOString().slice(0, 10)}`;
+          const baseName = `Branch_${isTransfer ? "Transfer_Out" : isExpense ? "Expense" : "Purchase"}_${row.sol_id}${month ? "_" + month : ""}_${new Date().toISOString().slice(0, 10)}`;
 
           if (format === "pdf") {
             this.printBranchExpensePdf(row, branchName, { title, headers, rows, moneyCols, month });
