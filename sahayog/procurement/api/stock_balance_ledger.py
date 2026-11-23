@@ -1506,6 +1506,7 @@ def get_branch_expense_report(months=6):
 
     # ---------- Purchases (Purchase Receipt -> branch warehouse) ----------
     purchased_map = defaultdict(lambda: defaultdict(float))
+    purchased_qty_map = defaultdict(lambda: defaultdict(float))
     pr_items = frappe.db.sql("""
         SELECT pr.set_warehouse AS warehouse, pr.posting_date, pri.qty, pri.rate
         FROM `tabPurchase Receipt` pr
@@ -1520,12 +1521,16 @@ def get_branch_expense_report(months=6):
         mo = _month_key(row.get("posting_date"))
         if not mo:
             continue
+        qty = row.get("qty") or 0
         rate = row.get("rate") or 0
-        purchased_map[wh][mo] += (row.get("qty") or 0) * rate
+        purchased_map[wh][mo] += qty * rate
+        purchased_qty_map[wh][mo] += qty
 
     # ---------- Stock Entry outflows (Material Issue / Material Transfer out of branch) ----------
     issue_map = defaultdict(lambda: defaultdict(float))
+    issue_qty_map = defaultdict(lambda: defaultdict(float))
     transfers_out_map = defaultdict(lambda: defaultdict(float))
+    transfers_out_qty_map = defaultdict(lambda: defaultdict(float))
     se_rows = frappe.db.sql("""
         SELECT se.posting_date AS posting_date,
                se.stock_entry_type AS stock_entry_type,
@@ -1547,15 +1552,19 @@ def get_branch_expense_report(months=6):
         mo = _month_key(row.get("posting_date"))
         if not mo:
             continue
+        qty = row.get("qty") or 0
         rate = _resolve_item_rate(row.get("item_code"), row.get("basic_rate"), pr_rate, val_rate)
-        amount = (row.get("qty") or 0) * rate
+        amount = qty * rate
         if row.get("stock_entry_type") == "Material Transfer":
             transfers_out_map[wh][mo] += amount
+            transfers_out_qty_map[wh][mo] += qty
         else:
             issue_map[wh][mo] += amount
+            issue_qty_map[wh][mo] += qty
 
     # ---------- Transfer In (Stock Entry: Material Transfer -> branch warehouse) ----------
     transfers_in_map = defaultdict(lambda: defaultdict(float))
+    transfers_in_qty_map = defaultdict(lambda: defaultdict(float))
     se_in_rows = frappe.db.sql("""
         SELECT se.posting_date AS posting_date,
                sei.t_warehouse AS t_warehouse,
@@ -1576,8 +1585,10 @@ def get_branch_expense_report(months=6):
         mo = _month_key(row.get("posting_date"))
         if not mo:
             continue
+        qty = row.get("qty") or 0
         rate = _resolve_item_rate(row.get("item_code"), row.get("basic_rate"), pr_rate, val_rate)
-        transfers_in_map[wh][mo] += (row.get("qty") or 0) * rate
+        transfers_in_map[wh][mo] += qty * rate
+        transfers_in_qty_map[wh][mo] += qty
 
     # ---------- Unused requested items (EMMR) ----------
     unused_map = defaultdict(int)
@@ -1603,23 +1614,36 @@ def get_branch_expense_report(months=6):
         if not sol:
             continue
         monthly_purchased = {m: round(purchased_map.get(sol, {}).get(m, 0), 2) for m in month_list}
+        monthly_purchased_qty = {m: round(purchased_qty_map.get(sol, {}).get(m, 0), 2) for m in month_list}
         monthly_transfers_in = {m: round(transfers_in_map.get(sol, {}).get(m, 0), 2) for m in month_list}
+        monthly_transfers_in_qty = {m: round(transfers_in_qty_map.get(sol, {}).get(m, 0), 2) for m in month_list}
         monthly_transfers_out = {m: round(transfers_out_map.get(sol, {}).get(m, 0), 2) for m in month_list}
+        monthly_transfers_out_qty = {m: round(transfers_out_qty_map.get(sol, {}).get(m, 0), 2) for m in month_list}
         monthly_issue = {m: round(issue_map.get(sol, {}).get(m, 0), 2) for m in month_list}
+        monthly_issue_qty = {m: round(issue_qty_map.get(sol, {}).get(m, 0), 2) for m in month_list}
         # Expense (Used) = Material Issue + Transfer In (received by branch)
         monthly_expense = {m: round(monthly_issue.get(m, 0) + monthly_transfers_in.get(m, 0), 2) for m in month_list}
+        monthly_expense_qty = {m: round(monthly_issue_qty.get(m, 0) + monthly_transfers_in_qty.get(m, 0), 2) for m in month_list}
         result.append({
             "branch": b.branch,
             "sol_id": sol,
             "branch_type": b.branch_type,
             "monthly_expense": monthly_expense,
+            "monthly_expense_qty": monthly_expense_qty,
             "monthly_purchased": monthly_purchased,
+            "monthly_purchased_qty": monthly_purchased_qty,
             "monthly_transfers_in": monthly_transfers_in,
+            "monthly_transfers_in_qty": monthly_transfers_in_qty,
             "monthly_transfers_out": monthly_transfers_out,
+            "monthly_transfers_out_qty": monthly_transfers_out_qty,
             "used_total": round(sum(monthly_expense.values()), 2),
+            "used_total_qty": round(sum(monthly_expense_qty.values()), 2),
             "purchased_total": round(sum(monthly_purchased.values()), 2),
+            "purchased_total_qty": round(sum(monthly_purchased_qty.values()), 2),
             "transfers_in_total": round(sum(monthly_transfers_in.values()), 2),
+            "transfers_in_total_qty": round(sum(monthly_transfers_in_qty.values()), 2),
             "transfers_out_total": round(sum(monthly_transfers_out.values()), 2),
+            "transfers_out_total_qty": round(sum(monthly_transfers_out_qty.values()), 2),
             "unused_requested": unused_map.get(sol, 0),
         })
 
