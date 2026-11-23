@@ -8492,6 +8492,20 @@
                     : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
                 >Transfer</button>
               </div>
+              <div style="display: flex; gap: 4px; background: var(--bg-primary); padding: 3px; border-radius: 8px; border: 1px solid var(--border-color);">
+                <button
+                  @click="branchExpenseValueMode = 'qty'"
+                  :style="branchExpenseValueMode === 'qty'
+                    ? 'padding: 6px 14px; border: none; border-radius: 6px; background: #369696; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer;'
+                    : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
+                >Qty</button>
+                <button
+                  @click="branchExpenseValueMode = 'amount'"
+                  :style="branchExpenseValueMode === 'amount'
+                    ? 'padding: 6px 14px; border: none; border-radius: 6px; background: #369696; color: #fff; font-weight: 700; font-size: 0.82rem; cursor: pointer;'
+                    : 'padding: 6px 14px; border: none; border-radius: 6px; background: transparent; color: var(--text-muted); font-weight: 600; font-size: 0.82rem; cursor: pointer;'"
+                >Amount</button>
+              </div>
               <select
                 v-model="branchExpenseMonth"
                 style="padding: 7px 10px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; background: var(--bg-primary); color: var(--text-main); min-width: 130px;"
@@ -14766,6 +14780,7 @@
       branchExpenseReport: null,
       branchExpenseLoading: false,
       branchExpenseMode: "expense",
+      branchExpenseValueMode: "qty",
       branchExpenseMonth: "",
       branchExpenseSearch: "",
       branchExpenseOnlyActive: false,
@@ -17935,15 +17950,16 @@
       fmtNumber(value) {
         const n = Number(value || 0);
         if (!n) return "-";
-        return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(n);
+        return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(n);
       },
       fmtBranchExpense(row, month) {
-        let src = row.monthly_expense;
-        if (this.branchExpenseMode === "purchased") src = row.monthly_purchased;
-        if (this.branchExpenseMode === "transfer") src = row.monthly_transfers_out;
+        const isQty = this.branchExpenseValueMode === "qty";
+        let src = isQty ? row.monthly_expense_qty : row.monthly_expense;
+        if (this.branchExpenseMode === "purchased") src = isQty ? row.monthly_purchased_qty : row.monthly_purchased;
+        if (this.branchExpenseMode === "transfer") src = isQty ? row.monthly_transfers_out_qty : row.monthly_transfers_out;
         const val = Number((src && src[month]) || 0);
         if (!val) return "-";
-        return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(val);
+        return new Intl.NumberFormat("en-IN", { maximumFractionDigits: 2 }).format(val);
       },
       filteredBranchExpenseRows() {
         const report = this.branchExpenseReport;
@@ -17973,22 +17989,24 @@
         return rows.reduce((sum, r) => sum + Number(r.amount || 0), 0);
       },
       fmtBranchUsedTotal(row) {
+        const isQty = this.branchExpenseValueMode === "qty";
         if (this.branchExpenseMode === "transfer") {
           if (this.branchExpenseMonth) {
-            return this.fmtNumber((row.monthly_transfers_out || {})[this.branchExpenseMonth]);
+            return this.fmtNumber((isQty ? row.monthly_transfers_out_qty : row.monthly_transfers_out || {})[this.branchExpenseMonth]);
           }
-          return this.fmtNumber(row.transfers_out_total);
+          return this.fmtNumber(isQty ? row.transfers_out_total_qty : row.transfers_out_total);
         }
         if (this.branchExpenseMonth) {
-          return this.fmtNumber((row.monthly_expense || {})[this.branchExpenseMonth]);
+          return this.fmtNumber((isQty ? row.monthly_expense_qty : row.monthly_expense || {})[this.branchExpenseMonth]);
         }
-        return this.fmtNumber(row.used_total);
+        return this.fmtNumber(isQty ? row.used_total_qty : row.used_total);
       },
       fmtBranchPurchasedTotal(row) {
+        const isQty = this.branchExpenseValueMode === "qty";
         if (this.branchExpenseMonth) {
-          return this.fmtNumber((row.monthly_purchased || {})[this.branchExpenseMonth]);
+          return this.fmtNumber((isQty ? row.monthly_purchased_qty : row.monthly_purchased || {})[this.branchExpenseMonth]);
         }
-        return this.fmtNumber(row.purchased_total);
+        return this.fmtNumber(isQty ? row.purchased_total_qty : row.purchased_total);
       },
       visibleBranchExpenseMonths() {
         const months = (this.branchExpenseReport && this.branchExpenseReport.months) || [];
