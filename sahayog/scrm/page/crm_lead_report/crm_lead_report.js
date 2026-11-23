@@ -2575,98 +2575,124 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
       d.show();
 
-      frappe.call({
-        method: "sahayog.scrm.api.crm_alert.get_crm_alert_preview",
-        callback: function (r) {
-          if (!r.message || !r.message.previews || !r.message.previews.length) {
-            d.fields_dict.preview_content.$wrapper.html(
-              '<div style="text-align:center;padding:30px;color:#059669;font-weight:600;">No staff members are inactive for 3 consecutive days! All CRM leads are up to date.</div>'
-            );
-            return;
-          }
-
-          let data = r.message;
-          let html = `
-            <div style="margin-bottom:15px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;font-size:12px;color:#334155;">
-              <span style="margin-right:15px;">Total Inactive Employees: <b>${data.total_inactive}</b></span>
-              <span>Total Branches Impacted: <b>${data.total_branches}</b></span>
-              <span class="badge badge-warning" style="margin-left:12px;font-size:11px;">Preview Only (No emails will be sent)</span>
-            </div>
-            <div style="max-height:550px;overflow-y:auto;padding-right:6px;">
-          `;
-
-          data.previews.forEach((p, idx) => {
-            let toList = (p.to && p.to.length) ? p.to.join(", ") : "";
-            let ccList = (p.cc && p.cc.length) ? p.cc.join(", ") : "";
-
-            html += `
-              <div class="crm-alert-branch-card" style="border:1px solid #cbd5e1;border-radius:8px;margin-bottom:16px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;" data-idx="${idx}">
-                <div style="background:#f1f5f9;padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:12px;">
-                  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                    <span style="font-weight:700;color:#0f172a;font-size:13px;">Branch: ${p.branch_name} (${p.branch}) — <span style="color:#dc2626;">${p.employee_count} Inactive Staff</span></span>
-                    <button class="btn btn-xs btn-primary btn-send-test-alert" data-idx="${idx}" style="font-weight:600;display:inline-flex;align-items:center;gap:4px;">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                      Send Test Mail
-                    </button>
-                  </div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">
-                    <div>
-                      <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">To (Editable):</label>
-                      <input type="text" class="form-control input-xs input-alert-to" data-idx="${idx}" value="${toList}" placeholder="e.g. bm@sahayog.com, branch@sahayog.com" style="height:26px;font-size:11px;" />
-                    </div>
-                    <div>
-                      <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">CC (Editable):</label>
-                      <input type="text" class="form-control input-xs input-alert-cc" data-idx="${idx}" value="${ccList}" placeholder="e.g. zm@sahayog.com, dh@sahayog.com" style="height:26px;font-size:11px;" />
-                    </div>
-                  </div>
-                </div>
-                <div style="padding:14px;" class="card-html-container">
-                  ${p.html}
-                </div>
-              </div>
-            `;
-          });
-
-          html += `</div>`;
-          d.fields_dict.preview_content.$wrapper.html(html);
-
-          // Attach Test Mail click handlers
-          d.fields_dict.preview_content.$wrapper.find('.btn-send-test-alert').on('click', function () {
-            let idx = $(this).data('idx');
-            let item = data.previews[idx];
-            let $card = d.fields_dict.preview_content.$wrapper.find(`.crm-alert-branch-card[data-idx="${idx}"]`);
-            let toVal = $card.find('.input-alert-to').val().trim();
-            let ccVal = $card.find('.input-alert-cc').val().trim();
-
-            if (!toVal) {
-              frappe.msgprint(__("Please enter at least one recipient email in 'To' field."));
+      function renderBranchPreview(selected_branch = null) {
+        frappe.call({
+          method: "sahayog.scrm.api.crm_alert.get_crm_alert_preview",
+          args: { branch: selected_branch },
+          callback: function (r) {
+            if (!r.message || !r.message.branch_options || !r.message.branch_options.length) {
+              d.fields_dict.preview_content.$wrapper.html(
+                '<div style="text-align:center;padding:30px;color:#059669;font-weight:600;">No staff members are inactive for 3 consecutive days! All CRM leads are up to date.</div>'
+              );
               return;
             }
 
-            let $btn = $(this);
-            $btn.prop('disabled', true).text(__("Sending..."));
+            let data = r.message;
+            let optionsHtml = data.branch_options
+              .map(opt => `<option value="${opt.value}" ${opt.value === data.selected_branch ? 'selected' : ''}>${opt.label}</option>`)
+              .join("");
 
-            frappe.call({
-              method: "sahayog.scrm.api.crm_alert.send_test_crm_alert_mail",
-              args: {
-                to_recipients: toVal,
-                cc_recipients: ccVal,
-                subject: item.subject,
-                html_content: item.html
-              },
-              callback: function (resp) {
-                $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
-                if (resp.message && resp.message.status === "success") {
-                  frappe.show_alert({ message: __(resp.message.message), indicator: "green" });
-                }
-              },
-              error: function () {
-                $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
-              }
+            let p = data.preview;
+            let toList = (p && p.to && p.to.length) ? p.to.join(", ") : "";
+            let ccList = (p && p.cc && p.cc.length) ? p.cc.join(", ") : "";
+
+            let cardHtml = "";
+            if (p) {
+              cardHtml = `
+                <div class="crm-alert-branch-card" style="border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;">
+                  <div style="background:#f1f5f9;padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:12px;">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                      <span style="font-weight:700;color:#0f172a;font-size:13px;">Branch: ${p.branch_name} (${p.branch}) — <span style="color:#dc2626;">${p.employee_count} Inactive Staff</span></span>
+                      <button class="btn btn-xs btn-primary btn-send-test-alert" style="font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        Send Test Mail
+                      </button>
+                    </div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">
+                      <div>
+                        <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">To (Branch Official Email - Editable):</label>
+                        <input type="text" class="form-control input-xs input-alert-to" value="${toList}" placeholder="e.g. branch@sahayog.com" style="height:28px;font-size:11px;" />
+                      </div>
+                      <div>
+                        <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">CC (BM & Skip Manager - Editable):</label>
+                        <input type="text" class="form-control input-xs input-alert-cc" value="${ccList}" placeholder="e.g. bm@sahayog.com, zm@sahayog.com" style="height:28px;font-size:11px;" />
+                      </div>
+                    </div>
+                  </div>
+                  <div style="padding:16px;">
+                    ${p.html}
+                  </div>
+                </div>
+              `;
+            } else {
+              cardHtml = '<div style="text-align:center;padding:30px;color:#64748b;">No inactive employees found for this branch.</div>';
+            }
+
+            let containerHtml = `
+              <div style="margin-bottom:14px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <label style="font-weight:600;font-size:12px;color:#1e293b;margin:0;">Select Accused Branch:</label>
+                  <select class="form-control input-xs select-accused-branch" style="min-width:320px;height:30px;font-size:12px;font-weight:600;">
+                    ${optionsHtml}
+                  </select>
+                </div>
+                <div style="font-size:12px;color:#475569;">
+                  Total Inactive: <b style="color:#dc2626;">${data.total_inactive}</b> &nbsp;|&nbsp; Impacted Branches: <b>${data.total_branches}</b>
+                </div>
+              </div>
+              <div class="branch-preview-card-wrapper" style="max-height:550px;overflow-y:auto;">
+                ${cardHtml}
+              </div>
+            `;
+
+            d.fields_dict.preview_content.$wrapper.html(containerHtml);
+
+            // Branch change event handler
+            d.fields_dict.preview_content.$wrapper.find('.select-accused-branch').on('change', function () {
+              let chosen = $(this).val();
+              d.fields_dict.preview_content.$wrapper.find('.branch-preview-card-wrapper').html(
+                '<div style="text-align:center;padding:30px;color:#64748b;">Loading branch data...</div>'
+              );
+              renderBranchPreview(chosen);
             });
-          });
-        }
-      });
+
+            // Test Mail click handler
+            d.fields_dict.preview_content.$wrapper.find('.btn-send-test-alert').on('click', function () {
+              let toVal = d.fields_dict.preview_content.$wrapper.find('.input-alert-to').val().trim();
+              let ccVal = d.fields_dict.preview_content.$wrapper.find('.input-alert-cc').val().trim();
+
+              if (!toVal) {
+                frappe.msgprint(__("Please enter at least one recipient email in 'To' field."));
+                return;
+              }
+
+              let $btn = $(this);
+              $btn.prop('disabled', true).text(__("Sending..."));
+
+              frappe.call({
+                method: "sahayog.scrm.api.crm_alert.send_test_crm_alert_mail",
+                args: {
+                  to_recipients: toVal,
+                  cc_recipients: ccVal,
+                  subject: p.subject,
+                  html_content: p.html
+                },
+                callback: function (resp) {
+                  $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
+                  if (resp.message && resp.message.status === "success") {
+                    frappe.show_alert({ message: __(resp.message.message), indicator: "green" });
+                  }
+                },
+                error: function () {
+                  $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
+                }
+              });
+            });
+          }
+        });
+      }
+
+      renderBranchPreview();
     },
 
     async fetchBMPendingCount() {
