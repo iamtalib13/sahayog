@@ -1043,29 +1043,28 @@ def delete_wh_dept_entry(name):
 @frappe.whitelist()
 def get_available_stock_batches(item_code, warehouse):
     """
-    Returns available stock entries for an item in a warehouse, grouped by valuation rate.
+    Returns available stock rates for an item in a warehouse, oldest first (FIFO).
     """
-    # Fetching actual rates from both Purchase Receipt and Stock Entry
-    stock_entries = frappe.db.sql(f"""
-        SELECT rate, SUM(qty) as qty FROM (
-            SELECT pri.valuation_rate as rate, SUM(pri.qty) as qty
+    stock_entries = frappe.db.sql("""
+        SELECT rate, SUM(qty) as qty, MIN(posting_date) as posting_date
+        FROM (
+            SELECT pri.valuation_rate as rate, pri.qty as qty, pr.posting_date as posting_date
             FROM `tabPurchase Receipt Item` pri
             JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
             WHERE pri.item_code = %(item_code)s AND pri.warehouse = %(warehouse)s AND pr.docstatus = 1
-            GROUP BY pri.valuation_rate
 
             UNION ALL
 
-            SELECT sei.valuation_rate as rate, SUM(sei.qty) as qty
+            SELECT sei.valuation_rate as rate, sei.qty as qty, se.posting_date as posting_date
             FROM `tabStock Entry Detail` sei
             JOIN `tabStock Entry` se ON se.name = sei.parent
-            WHERE sei.item_code = %(item_code)s AND (sei.t_warehouse = %(warehouse)s) AND se.docstatus = 1
-            GROUP BY sei.valuation_rate
+            WHERE sei.item_code = %(item_code)s AND sei.t_warehouse = %(warehouse)s AND se.docstatus = 1
         ) as combined_stock
         GROUP BY rate
         HAVING SUM(qty) > 0
+        ORDER BY MIN(posting_date) ASC
     """, {"item_code": item_code, "warehouse": warehouse}, as_dict=True)
-    
+
     return stock_entries
 
 @frappe.whitelist()
