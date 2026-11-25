@@ -285,15 +285,19 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
     seen_cc = set()
 
     # 1. Fetch Official Branch Email for 'To'
+    b_data = None
     if sahayog_branch_code:
         b_data = frappe.db.get_value("Sahayog Branch", sahayog_branch_code, ["email", "branch", "sol_id"], as_dict=True)
-        if b_data and b_data.get("email") and b_data.get("email").strip():
-            b_email = b_data["email"].strip()
-            detail = f"Branch Official Email - {b_data.get('branch', '')} ({b_data.get('sol_id') or sahayog_branch_code}) - {b_email}"
-            to_recipients.append({"email": b_email, "detail": detail})
-            seen_to.add(b_email.lower())
+    if not b_data and branch_name:
+        b_data = frappe.db.get_value("Sahayog Branch", {"branch": branch_name}, ["email", "branch", "sol_id"], as_dict=True)
 
-    # 2. Fetch Branch Manager (BM) for 'CC'
+    if b_data and b_data.get("email") and b_data.get("email").strip():
+        b_email = b_data["email"].strip()
+        detail = f"Branch Official Email - {b_data.get('branch', '')} ({b_data.get('sol_id') or sahayog_branch_code}) - {b_email}"
+        to_recipients.append({"email": b_email, "detail": detail})
+        seen_to.add(b_email.lower())
+
+    # 2. Fetch Branch Manager (BM) for 'CC' (Only for CC, never override TO)
     conditions = []
     if sahayog_branch_code:
         conditions.append(f"sahayog_branch = {frappe.db.escape(str(sahayog_branch_code))}")
@@ -319,7 +323,7 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
             bm_obj = get_employee_email(bm)
             if bm_obj:
                 em = bm_obj["email"].lower()
-                # If branch email was missing, BM receives 'To', else BM is placed in 'CC'
+                # If official branch email not found/branch doesn't exist, BM receives 'To', else BM goes to 'CC'
                 if not to_recipients:
                     to_recipients.append(bm_obj)
                     seen_to.add(em)
@@ -351,14 +355,17 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
                                 seen_cc.add(em)
 
     # 3. Direct reports_to fallback if BM not found
-    if not cc_recipients and reports_to_emp_id:
+    if not to_recipients and reports_to_emp_id:
         direct_obj = get_employee_email(reports_to_emp_id)
         if direct_obj:
             em = direct_obj["email"].lower()
-            if not to_recipients:
-                to_recipients.append(direct_obj)
-                seen_to.add(em)
-            elif em not in seen_to and em not in seen_cc:
+            to_recipients.append(direct_obj)
+            seen_to.add(em)
+    elif not cc_recipients and reports_to_emp_id:
+        direct_obj = get_employee_email(reports_to_emp_id)
+        if direct_obj:
+            em = direct_obj["email"].lower()
+            if em not in seen_to and em not in seen_cc:
                 cc_recipients.append(direct_obj)
                 seen_cc.add(em)
 
@@ -649,55 +656,93 @@ def send_crm_inactivity_alerts(days=3):
     if not inactive_employees:
         return {"status": "success", "sent": 0, "message": "No inactive employees found for CRM alert"}
 
-    # Group branch-wise to avoid sending duplicate/excessive emails
+    # Group strictly by Sahayog Branch (SOL ID / Master) to ensure exact branch consolidation
+    # Pre-fetch mapping for text branch to sahayog_branch if missing in employee
+    branch_map = {b["branch"].strip().lower(): b["name"] for b in frappe.db.sql("SELECT name, branch FROM `tabSahayog Branch` WHERE branch IS NOT NULL", as_dict=True)}
+
     grouped_by_branch = {}
     for emp in inactive_employees:
-        branch_key = emp.get("sahayog_branch") or emp.get("branch") or "Unknown"
+        branch_key = emp.get("sahayog_branch")
+        if not branch_key and emp.get("branch"):
+            branch_key = branch_map.get(str(emp.get("branch")).strip().lower())
+        
+        branch_key = branch_key or emp.get("branch") or "Unknown"
+
         if branch_key not in grouped_by_branch:
             grouped_by_branch[branch_key] = []
         grouped_by_branch[branch_key].append(emp)
 
     sent_count = 0
+    failed_count = 0
+    skipped_count = 0
+    success_branches = []
+    failed_branches = []
+    skipped_branches = []
+
     alert_settings = get_crm_alert_settings()
-    for branch_key, emp_list in grouped_by_branch.items():
+    total_branches = len(grouped_by_branch)
+    print(f"\n--- Starting CRM Inactivity Alerts for {total_branches} Branches ---")
+
+    for idx, (branch_key, emp_list) in enumerate(grouped_by_branch.items(), 1):
         sample_emp = emp_list[0]
         branch_name = frappe.db.get_value("Sahayog Branch", branch_key, "branch") or sample_emp.get("branch") or branch_key
 
-        hierarchy = get_reporting_hierarchy_for_branch(
-            sahayog_branch_code=sample_emp.get("sahayog_branch"),
-            branch_name=sample_emp.get("branch"),
-            reports_to_emp_id=sample_emp.get("reports_to")
-        )
+        try:
+            hierarchy = get_reporting_hierarchy_for_branch(
+                sahayog_branch_code=sample_emp.get("sahayog_branch"),
+                branch_name=sample_emp.get("branch"),
+                reports_to_emp_id=sample_emp.get("reports_to")
+            )
 
-        to_emails = [r["email"] for r in hierarchy.get("to", [])] if alert_settings["enable_to"] else []
-        cc_emails = [r["email"] for r in hierarchy.get("cc", [])] if alert_settings["enable_cc"] else []
+            to_emails = [r["email"] for r in hierarchy.get("to", [])] if alert_settings["enable_to"] else []
+            cc_emails = [r["email"] for r in hierarchy.get("cc", [])] if alert_settings["enable_cc"] else []
 
-        # If both TO and CC are disabled or empty, we cannot send
-        final_recipients = to_emails or cc_emails
-        if not final_recipients:
-            continue
+            # If both TO and CC are disabled or empty, we cannot send
+            final_recipients = to_emails or cc_emails
+            if not final_recipients:
+                skipped_count += 1
+                skipped_branches.append(f"{branch_name} ({branch_key})")
+                print(f"[{idx}/{total_branches}] [SKIPPED] {branch_name} ({branch_key}) - No recipient emails resolved")
+                continue
 
-        table_html = generate_crm_alert_table_html(
-            employees=emp_list,
-            to_recipients=to_emails,
-            cc_recipients=cc_emails,
-            branch_title=f"{branch_name} ({branch_key})"
-        )
+            table_html = generate_crm_alert_table_html(
+                employees=emp_list,
+                to_recipients=to_emails,
+                cc_recipients=cc_emails,
+                branch_title=f"{branch_name} ({branch_key})"
+            )
 
-        frappe.sendmail(
-            recipients=final_recipients,
-            cc=cc_emails if to_emails else [],
-            subject=f"CRM Alert - {branch_name}",
-            message=table_html,
-            delayed=False,
-            reference_doctype="Sahayog Branch",
-            reference_name=str(branch_key)
-        )
-        sent_count += 1
+            frappe.sendmail(
+                recipients=final_recipients,
+                cc=cc_emails if to_emails else [],
+                subject=f"CRM Alert - {branch_name}",
+                message=table_html,
+                delayed=False,
+                reference_doctype="Sahayog Branch",
+                reference_name=str(branch_key)
+            )
+            sent_count += 1
+            success_branches.append(f"{branch_name} ({branch_key})")
+            print(f"[{idx}/{total_branches}] [SUCCESS] {branch_name} ({branch_key}) -> Sent to: {', '.join(final_recipients)}")
+
+        except Exception as err:
+            failed_count += 1
+            failed_branches.append({"branch": f"{branch_name} ({branch_key})", "error": str(err)})
+            print(f"[{idx}/{total_branches}] [FAILED] {branch_name} ({branch_key}) -> Error: {err}")
+
+    summary_msg = f"\n--- CRM Alert Execution Summary ---\n" \
+                  f"Total Branches: {total_branches} | Successful: {sent_count} | Failed: {failed_count} | Skipped: {skipped_count}\n"
+    print(summary_msg)
 
     return {
-        "status": "success",
+        "status": "success" if failed_count == 0 else "partial_success",
+        "total_branches": total_branches,
         "branches_emailed": sent_count,
+        "failed_count": failed_count,
+        "skipped_count": skipped_count,
+        "success_branches": success_branches,
+        "failed_branches": failed_branches,
+        "skipped_branches": skipped_branches,
         "total_inactive": len(inactive_employees)
     }
 
