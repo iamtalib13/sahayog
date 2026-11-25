@@ -418,6 +418,61 @@ def generate_crm_alert_table_html(employees, to_recipients=None, cc_recipients=N
 
 
 @frappe.whitelist()
+def search_alert_emails(txt=""):
+    """Search email addresses from Sahayog Branch and Employee (company_email)."""
+    search_txt = f"%{(txt or '').strip()}%"
+    results = []
+    seen = set()
+
+    # 1. Search in Sahayog Branch
+    branches = frappe.db.sql(
+        """
+        SELECT email, branch, name as sol_id
+        FROM `tabSahayog Branch`
+        WHERE email IS NOT NULL AND email != ''
+          AND (email LIKE %(txt)s OR branch LIKE %(txt)s OR name LIKE %(txt)s)
+        LIMIT 10
+        """,
+        {"txt": search_txt},
+        as_dict=True
+    )
+    for b in branches:
+        em = b["email"].strip().lower()
+        if em not in seen:
+            seen.add(em)
+            results.append({
+                "value": b["email"].strip(),
+                "label": f"{b['branch']} ({b['sol_id']}) - {b['email'].strip()}",
+                "description": "Branch Email"
+            })
+
+    # 2. Search in Employee (company_email, user_id)
+    employees = frappe.db.sql(
+        """
+        SELECT company_email, employee_name, name as emp_code, designation
+        FROM `tabEmployee`
+        WHERE status = 'Active'
+          AND company_email IS NOT NULL AND company_email != ''
+          AND (company_email LIKE %(txt)s OR employee_name LIKE %(txt)s OR name LIKE %(txt)s)
+        LIMIT 15
+        """,
+        {"txt": search_txt},
+        as_dict=True
+    )
+    for e in employees:
+        em = e["company_email"].strip().lower()
+        if em not in seen:
+            seen.add(em)
+            results.append({
+                "value": e["company_email"].strip(),
+                "label": f"{e['employee_name']} ({e['emp_code']} - {e.get('designation') or ''}) - {e['company_email'].strip()}",
+                "description": "Employee Company Email"
+            })
+
+    return results
+
+
+@frappe.whitelist()
 def get_branch_list_for_filter():
     """Fast, lightweight endpoint to get list of all branches for dropdown."""
     branches = frappe.db.sql(
