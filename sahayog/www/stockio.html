@@ -11417,7 +11417,10 @@
                       "
                     >
                       <div v-if="item.available_rates && item.available_rates.length > 1">
-                          <select v-model="item.rate" :disabled="dispatchForm.transfer_old_stock_first" class="form-input" style="height: 28px; padding: 0 4px; font-size: 12px; width: 80px;">
+                          <div v-if="dispatchForm.transfer_old_stock_first" style="font-size: 12px; font-weight: 600; color: var(--text-main);">
+                              [[ item.rate !== "" && item.rate !== null && item.rate !== undefined ? formatCurrency(item.rate) : '-' ]]
+                          </div>
+                          <select v-else v-model="item.rate" class="form-input" style="height: 28px; padding: 0 4px; font-size: 12px; width: 80px;">
                               <option value="">Select</option>
                               <option v-for="r in item.available_rates" :value="r">[[ r ]]</option>
                           </select>
