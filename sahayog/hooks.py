@@ -483,9 +483,10 @@ scheduler_events = {
             "sahayog.templates.emails.notification.send_department_wise_ticket_summary",
             "sahayog.api.auto_agent_creation.auto_create_agents_from_scheduler"
         ],
-        # Run daily at 10:30 AM — Mid-morning follow-up ticket summary email
+        # Run daily at 10:30 AM — Mid-morning follow-up ticket summary email & CRM Inactivity Alerts
         "30 10 * * *": [
-            "sahayog.templates.emails.notification.send_department_wise_ticket_summary"
+            "sahayog.templates.emails.notification.send_department_wise_ticket_summary",
+            "sahayog.scrm.api.crm_alert.send_crm_inactivity_alerts"
         ],
         # "*/5 * * * *": [
         #     "sahayog.tasks.reset_auto_prepared_reports"
