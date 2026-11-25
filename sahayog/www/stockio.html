@@ -11454,8 +11454,9 @@
                     </td>
                     <td style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
                       <div v-if="item.available_batches && item.available_batches.length">
-                        <div v-for="b in (item.showAllBatches ? item.available_batches : item.available_batches.slice(0, 3))" :key="'ab-' + item.item_code + '-' + b.rate" style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">
-                          Rate [[ b.rate ]] - Qty [[ b.qty ]]
+                        <div v-for="b in (item.showAllBatches ? item.available_batches : item.available_batches.slice(0, 3))" :key="'ab-' + item.item_code + '-' + b.rate" style="display: inline-flex; align-items: center; margin: 2px 4px 2px 0; border: 1px solid var(--border-color); border-radius: 999px; overflow: hidden; font-size: 11px; white-space: nowrap;">
+                          <span style="padding: 2px 8px; background: var(--bg-card); color: var(--text-main); font-weight: 600;">Rate [[ b.rate ]]</span>
+                          <span style="padding: 2px 8px; background: #369696; color: #fff; font-weight: 700;">Qty [[ b.qty ]]</span>
                         </div>
                         <button
                           v-if="item.available_batches.length > 3"
