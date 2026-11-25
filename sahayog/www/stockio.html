@@ -11443,6 +11443,16 @@
               </table>
             </div>
           </div>
+          <div v-if="dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer; font-weight: 600;">
+              <input
+                type="checkbox"
+                v-model="dispatchForm.transfer_old_stock_first"
+                @change="() => { if (dispatchForm.transfer_old_stock_first) { dispatchForm.items.forEach(i => { if (i.available_rates && i.available_rates.length) i.rate = i.available_rates[0]; }); } }"
+              />
+              Transfer old stock first (FIFO rate)
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -14417,6 +14427,7 @@
         dispatch_location: "",
         address: "",
         mobile_number: "",
+        transfer_old_stock_first: true,
       },
 
       showBranchStockUseView: false,
@@ -19626,6 +19637,7 @@
         this.dispatchForm.dispatch_location = "";
         this.dispatchForm.address = "";
         this.dispatchForm.mobile_number = "";
+        this.dispatchForm.transfer_old_stock_first = true;
         this.showDispatchItems = false;
         this.dispatchForm.dispatchStep = 1;
         this.showDispatchModal = true;
@@ -19675,14 +19687,22 @@
                   item.available_batches = stockRes.message || [];
               }
 
-              this.dispatchForm.items = selectedItems.map((item) => ({
-                ...item,
-                dispatch_qty: item.approved_quantity || 0,
-                // If multiple batches, default to first one or force user to select
-                rate: item.available_batches.length === 1 ? item.available_batches[0].rate : (item.available_batches.length > 0 ? "" : 0),
-                available_rates: item.available_batches.map(b => b.rate),
-                selected: true,
-              }));
+              this.dispatchForm.items = selectedItems.map((item) => {
+                const availableRates = (item.available_batches || []).map(b => b.rate);
+                let rate = 0;
+                if (availableRates.length === 1) {
+                  rate = availableRates[0];
+                } else if (availableRates.length > 1) {
+                  rate = this.dispatchForm.transfer_old_stock_first ? availableRates[0] : "";
+                }
+                return {
+                  ...item,
+                  dispatch_qty: item.approved_quantity || 0,
+                  rate,
+                  available_rates: availableRates,
+                  selected: true,
+                };
+              });
             }
             this.dispatchForm.loading = false;
           },
