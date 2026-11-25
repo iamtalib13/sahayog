@@ -2568,131 +2568,150 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           {
             fieldtype: "HTML",
             fieldname: "preview_content",
-            options: '<div style="text-align:center;padding:30px;color:#64748b;">Loading CRM Inactivity Alert Data...</div>'
+            options: '<div style="text-align:center;padding:30px;color:#64748b;">Loading branches...</div>'
           }
         ]
       });
 
       d.show();
 
-      function renderBranchPreview(selected_branch = null) {
-        frappe.call({
-          method: "sahayog.scrm.api.crm_alert.get_crm_alert_preview",
-          args: { branch: selected_branch },
-          callback: function (r) {
-            if (!r.message || !r.message.branch_options || !r.message.branch_options.length) {
-              d.fields_dict.preview_content.$wrapper.html(
-                '<div style="text-align:center;padding:30px;color:#059669;font-weight:600;">No staff members are inactive for 3 consecutive days! All CRM leads are up to date.</div>'
-              );
+      // Step 1: Fetch list of branches fast (Zero lead calculation)
+      frappe.call({
+        method: "sahayog.scrm.api.crm_alert.get_branch_list_for_filter",
+        callback: function (res) {
+          let branches = res.message || [];
+          let optionsHtml = '<option value="">-- Select or Search Branch --</option>' + 
+            branches.map(b => `<option value="${b.value}">${b.label}</option>`).join("");
+
+          let containerHtml = `
+            <div style="margin-bottom:14px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <label style="font-weight:600;font-size:12px;color:#1e293b;margin:0;">Select Branch:</label>
+                <select class="form-control input-xs select-accused-branch" style="min-width:320px;height:32px;font-size:12px;font-weight:600;">
+                  ${optionsHtml}
+                </select>
+              </div>
+              <div class="branch-status-indicator" style="font-size:12px;color:#64748b;">
+                Select a branch to view inactive staff
+              </div>
+            </div>
+            <div class="branch-preview-card-wrapper" style="max-height:550px;overflow-y:auto;">
+              <div style="text-align:center;padding:45px;color:#64748b;font-size:13px;border:1px dashed #cbd5e1;border-radius:8px;background:#ffffff;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="margin-bottom:8px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <div style="font-weight:600;color:#334155;">No Branch Selected</div>
+                <div style="font-size:12px;color:#64748b;margin-top:2px;">Please select a branch from the dropdown above to load accused employees.</div>
+              </div>
+            </div>
+          `;
+
+          d.fields_dict.preview_content.$wrapper.html(containerHtml);
+
+          // Step 2: On-demand branch selection event
+          d.fields_dict.preview_content.$wrapper.find('.select-accused-branch').on('change', function () {
+            let chosen_branch = $(this).val();
+            let $cardWrapper = d.fields_dict.preview_content.$wrapper.find('.branch-preview-card-wrapper');
+            let $status = d.fields_dict.preview_content.$wrapper.find('.branch-status-indicator');
+
+            if (!chosen_branch) {
+              $status.html('Select a branch to view inactive staff');
+              $cardWrapper.html(`
+                <div style="text-align:center;padding:45px;color:#64748b;font-size:13px;border:1px dashed #cbd5e1;border-radius:8px;background:#ffffff;">
+                  <div style="font-weight:600;color:#334155;">No Branch Selected</div>
+                  <div style="font-size:12px;color:#64748b;margin-top:2px;">Please select a branch from the dropdown above to load accused employees.</div>
+                </div>
+              `);
               return;
             }
 
-            let data = r.message;
-            let optionsHtml = data.branch_options
-              .map(opt => `<option value="${opt.value}" ${opt.value === data.selected_branch ? 'selected' : ''}>${opt.label}</option>`)
-              .join("");
+            $status.html('Loading branch data...');
+            $cardWrapper.html('<div style="text-align:center;padding:35px;color:#64748b;font-weight:600;">Fetching inactive employees for branch...</div>');
 
-            let p = data.preview;
-            let toList = (p && p.to && p.to.length) ? p.to.join(", ") : "";
-            let ccList = (p && p.cc && p.cc.length) ? p.cc.join(", ") : "";
+            frappe.call({
+              method: "sahayog.scrm.api.crm_alert.get_crm_alert_preview",
+              args: { branch: chosen_branch },
+              callback: function (r) {
+                let data = r.message || {};
+                let p = data.preview;
 
-            let cardHtml = "";
-            if (p) {
-              cardHtml = `
-                <div class="crm-alert-branch-card" style="border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;">
-                  <div style="background:#f1f5f9;padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:12px;">
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                      <span style="font-weight:700;color:#0f172a;font-size:13px;">Branch: ${p.branch_name} (${p.branch}) — <span style="color:#dc2626;">${p.employee_count} Inactive Staff</span></span>
-                      <button class="btn btn-xs btn-primary btn-send-test-alert" style="font-weight:600;display:inline-flex;align-items:center;gap:4px;">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                        Send Test Mail
-                      </button>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">
-                      <div>
-                        <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">To (Branch Official Email - Editable):</label>
-                        <input type="text" class="form-control input-xs input-alert-to" value="${toList}" placeholder="e.g. branch@sahayog.com" style="height:28px;font-size:11px;" />
-                      </div>
-                      <div>
-                        <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">CC (BM & Skip Manager - Editable):</label>
-                        <input type="text" class="form-control input-xs input-alert-cc" value="${ccList}" placeholder="e.g. bm@sahayog.com, zm@sahayog.com" style="height:28px;font-size:11px;" />
-                      </div>
-                    </div>
-                  </div>
-                  <div style="padding:16px;">
-                    ${p.html}
-                  </div>
-                </div>
-              `;
-            } else {
-              cardHtml = '<div style="text-align:center;padding:30px;color:#64748b;">No inactive employees found for this branch.</div>';
-            }
-
-            let containerHtml = `
-              <div style="margin-bottom:14px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
-                <div style="display:flex;align-items:center;gap:8px;">
-                  <label style="font-weight:600;font-size:12px;color:#1e293b;margin:0;">Select Accused Branch:</label>
-                  <select class="form-control input-xs select-accused-branch" style="min-width:320px;height:30px;font-size:12px;font-weight:600;">
-                    ${optionsHtml}
-                  </select>
-                </div>
-                <div style="font-size:12px;color:#475569;">
-                  Total Inactive: <b style="color:#dc2626;">${data.total_inactive}</b> &nbsp;|&nbsp; Impacted Branches: <b>${data.total_branches}</b>
-                </div>
-              </div>
-              <div class="branch-preview-card-wrapper" style="max-height:550px;overflow-y:auto;">
-                ${cardHtml}
-              </div>
-            `;
-
-            d.fields_dict.preview_content.$wrapper.html(containerHtml);
-
-            // Branch change event handler
-            d.fields_dict.preview_content.$wrapper.find('.select-accused-branch').on('change', function () {
-              let chosen = $(this).val();
-              d.fields_dict.preview_content.$wrapper.find('.branch-preview-card-wrapper').html(
-                '<div style="text-align:center;padding:30px;color:#64748b;">Loading branch data...</div>'
-              );
-              renderBranchPreview(chosen);
-            });
-
-            // Test Mail click handler
-            d.fields_dict.preview_content.$wrapper.find('.btn-send-test-alert').on('click', function () {
-              let toVal = d.fields_dict.preview_content.$wrapper.find('.input-alert-to').val().trim();
-              let ccVal = d.fields_dict.preview_content.$wrapper.find('.input-alert-cc').val().trim();
-
-              if (!toVal) {
-                frappe.msgprint(__("Please enter at least one recipient email in 'To' field."));
-                return;
-              }
-
-              let $btn = $(this);
-              $btn.prop('disabled', true).text(__("Sending..."));
-
-              frappe.call({
-                method: "sahayog.scrm.api.crm_alert.send_test_crm_alert_mail",
-                args: {
-                  to_recipients: toVal,
-                  cc_recipients: ccVal,
-                  subject: p.subject,
-                  html_content: p.html
-                },
-                callback: function (resp) {
-                  $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
-                  if (resp.message && resp.message.status === "success") {
-                    frappe.show_alert({ message: __(resp.message.message), indicator: "green" });
-                  }
-                },
-                error: function () {
-                  $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
+                if (!p || data.total_inactive === 0) {
+                  $status.html('<span style="color:#059669;font-weight:600;">All employees active (0 inactive)</span>');
+                  $cardWrapper.html(
+                    '<div style="text-align:center;padding:35px;color:#059669;font-weight:600;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">Great news! No staff members in this branch are inactive for >= 3 days. All CRM leads are up to date.</div>'
+                  );
+                  return;
                 }
-              });
-            });
-          }
-        });
-      }
 
-      renderBranchPreview();
+                $status.html(`Total Inactive Staff: <b style="color:#dc2626;">${data.total_inactive}</b>`);
+
+                let toList = (p.to && p.to.length) ? p.to.join(", ") : "";
+                let ccList = (p.cc && p.cc.length) ? p.cc.join(", ") : "";
+
+                let cardHtml = `
+                  <div class="crm-alert-branch-card" style="border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;">
+                    <div style="background:#f1f5f9;padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:12px;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                        <span style="font-weight:700;color:#0f172a;font-size:13px;">Branch: ${p.branch_name} (${p.branch}) — <span style="color:#dc2626;">${p.employee_count} Inactive Staff (>= 3 days)</span></span>
+                        <button class="btn btn-xs btn-primary btn-send-test-alert" style="font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                          Send Test Mail
+                        </button>
+                      </div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">
+                        <div>
+                          <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">To (Branch Official Email - Editable):</label>
+                          <input type="text" class="form-control input-xs input-alert-to" value="${toList}" placeholder="e.g. branch@sahayog.com" style="height:28px;font-size:11px;" />
+                        </div>
+                        <div>
+                          <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">CC (BM & Skip Manager - Editable):</label>
+                          <input type="text" class="form-control input-xs input-alert-cc" value="${ccList}" placeholder="e.g. bm@sahayog.com, zm@sahayog.com" style="height:28px;font-size:11px;" />
+                        </div>
+                      </div>
+                    </div>
+                    <div style="padding:16px;">
+                      ${p.html}
+                    </div>
+                  </div>
+                `;
+
+                $cardWrapper.html(cardHtml);
+
+                // Attach Test Mail click handler
+                $cardWrapper.find('.btn-send-test-alert').on('click', function () {
+                  let toVal = $cardWrapper.find('.input-alert-to').val().trim();
+                  let ccVal = $cardWrapper.find('.input-alert-cc').val().trim();
+
+                  if (!toVal) {
+                    frappe.msgprint(__("Please enter at least one recipient email in 'To' field."));
+                    return;
+                  }
+
+                  let $btn = $(this);
+                  $btn.prop('disabled', true).text(__("Sending..."));
+
+                  frappe.call({
+                    method: "sahayog.scrm.api.crm_alert.send_test_crm_alert_mail",
+                    args: {
+                      to_recipients: toVal,
+                      cc_recipients: ccVal,
+                      subject: p.subject,
+                      html_content: p.html
+                    },
+                    callback: function (resp) {
+                      $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
+                      if (resp.message && resp.message.status === "success") {
+                        frappe.show_alert({ message: __(resp.message.message), indicator: "green" });
+                      }
+                    },
+                    error: function () {
+                      $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
+                    }
+                  });
+                });
+              }
+            });
+          });
+        }
+      });
     },
 
     async fetchBMPendingCount() {
