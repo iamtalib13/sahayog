@@ -447,6 +447,23 @@ def generate_crm_alert_table_html(employees, to_recipients=None, cc_recipients=N
     return html
 
 
+def get_crm_alert_settings():
+    """Fetch TO and CC enable/disable configurations from Sahayog Settings."""
+    try:
+        settings = frappe.get_cached_value(
+            "Sahayog Settings",
+            None,
+            ["enable_crm_alert_to", "enable_crm_alert_cc"],
+            as_dict=True
+        ) or {}
+        return {
+            "enable_to": bool(settings.get("enable_crm_alert_to", 1)),
+            "enable_cc": bool(settings.get("enable_crm_alert_cc", 1))
+        }
+    except Exception:
+        return {"enable_to": True, "enable_cc": True}
+
+
 @frappe.whitelist()
 def search_alert_emails(txt=""):
     """Search email addresses from Sahayog Branch and Employee (company_email)."""
@@ -550,8 +567,12 @@ def get_crm_alert_preview(branch=None, days=3):
 
     b_name = frappe.db.get_value("Sahayog Branch", branch_str, "branch") or sample_emp.get("branch") or branch_str
 
-    to_emails = [r["email"] for r in hierarchy.get("to", [])]
-    cc_emails = [r["email"] for r in hierarchy.get("cc", [])]
+    alert_settings = get_crm_alert_settings()
+    to_hierarchy = hierarchy.get("to", []) if alert_settings["enable_to"] else []
+    cc_hierarchy = hierarchy.get("cc", []) if alert_settings["enable_cc"] else []
+
+    to_emails = [r["email"] for r in to_hierarchy]
+    cc_emails = [r["email"] for r in cc_hierarchy]
 
     table_html = generate_crm_alert_table_html(
         employees=inactive_employees,
@@ -564,8 +585,8 @@ def get_crm_alert_preview(branch=None, days=3):
         "branch": branch_str,
         "branch_name": b_name,
         "subject": "CRM Alert",
-        "to": hierarchy.get("to", []),
-        "cc": hierarchy.get("cc", []),
+        "to": to_hierarchy,
+        "cc": cc_hierarchy,
         "employee_count": len(inactive_employees),
         "html": table_html
     }
@@ -574,7 +595,8 @@ def get_crm_alert_preview(branch=None, days=3):
         "selected_branch": branch_str,
         "branch_name": b_name,
         "total_inactive": len(inactive_employees),
-        "preview": preview_item
+        "preview": preview_item,
+        "settings": alert_settings
     }
 
 
@@ -636,6 +658,7 @@ def send_crm_inactivity_alerts(days=3):
         grouped_by_branch[branch_key].append(emp)
 
     sent_count = 0
+    alert_settings = get_crm_alert_settings()
     for branch_key, emp_list in grouped_by_branch.items():
         sample_emp = emp_list[0]
         branch_name = frappe.db.get_value("Sahayog Branch", branch_key, "branch") or sample_emp.get("branch") or branch_key
@@ -646,10 +669,12 @@ def send_crm_inactivity_alerts(days=3):
             reports_to_emp_id=sample_emp.get("reports_to")
         )
 
-        to_emails = [r["email"] for r in hierarchy.get("to", [])]
-        cc_emails = [r["email"] for r in hierarchy.get("cc", [])]
+        to_emails = [r["email"] for r in hierarchy.get("to", [])] if alert_settings["enable_to"] else []
+        cc_emails = [r["email"] for r in hierarchy.get("cc", [])] if alert_settings["enable_cc"] else []
 
-        if not to_emails:
+        # If both TO and CC are disabled or empty, we cannot send
+        final_recipients = to_emails or cc_emails
+        if not final_recipients:
             continue
 
         table_html = generate_crm_alert_table_html(
@@ -660,8 +685,8 @@ def send_crm_inactivity_alerts(days=3):
         )
 
         frappe.sendmail(
-            recipients=to_emails,
-            cc=cc_emails,
+            recipients=final_recipients,
+            cc=cc_emails if to_emails else [],
             subject=f"CRM Alert - {branch_name}",
             message=table_html,
             delayed=False,

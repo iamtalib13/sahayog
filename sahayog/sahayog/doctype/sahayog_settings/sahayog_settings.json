@@ -26,6 +26,10 @@
   "ld_sender_email",
   "crm_tab",
   "enable_crm_lead_report_cron",
+  "crm_inactivity_alert_section",
+  "enable_crm_alert_to",
+  "column_break_crm_alert",
+  "enable_crm_alert_cc",
   "petty_cash_management_tab",
   "enable_finacle_integration",
   "enable_unsettled_cash_flow",
@@ -139,6 +143,29 @@
    "fieldname": "enable_crm_lead_report_cron",
    "fieldtype": "Check",
    "label": "Enable CRM Daily Lead Report Cron"
+  },
+  {
+   "fieldname": "crm_inactivity_alert_section",
+   "fieldtype": "Section Break",
+   "label": "CRM Inactivity Alert Settings"
+  },
+  {
+   "default": "1",
+   "description": "When checked, TO recipients (Branch official email) are auto-fetched and can be manually edited or added. When unchecked, TO recipients are not fetched and cannot be added.",
+   "fieldname": "enable_crm_alert_to",
+   "fieldtype": "Check",
+   "label": "Enable Alert TO Recipients"
+  },
+  {
+   "fieldname": "column_break_crm_alert",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "When checked, CC recipients (Branch Manager and reporting hierarchy) are auto-fetched and can be manually edited or added. When unchecked, CC recipients are not fetched and cannot be added.",
+   "fieldname": "enable_crm_alert_cc",
+   "fieldtype": "Check",
+   "label": "Enable Alert CC Recipients"
   },
   {
    "fieldname": "petty_cash_management_tab",

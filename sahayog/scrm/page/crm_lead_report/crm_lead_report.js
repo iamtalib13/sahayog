@@ -2727,6 +2727,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
                 let initialTo = (p.to && p.to.length) ? p.to : [];
                 let initialCc = (p.cc && p.cc.length) ? p.cc : [];
+                let isToEnabled = data.settings ? Boolean(data.settings.enable_to) : true;
+                let isCcEnabled = data.settings ? Boolean(data.settings.enable_cc) : true;
 
                 let cardHtml = `
                   <div class="crm-alert-branch-card" style="border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;">
@@ -2744,10 +2746,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         <div class="email-chip-group-wrapper" data-field="to">
                           <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:3px;display:flex;justify-content:space-between;">
                             <span>To (Branch Official Email):</span>
-                            <span style="font-weight:normal;color:#94a3b8;font-size:10px;">Type to search</span>
+                            <span style="font-weight:normal;color:#94a3b8;font-size:10px;">${isToEnabled ? 'Type to search' : '<b style="color:#ef4444;">Disabled in Settings</b>'}</span>
                           </label>
-                          <div class="email-chip-box chip-box-to" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:32px;padding:3px 6px;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;position:relative;">
-                            <input type="text" class="email-search-input" placeholder="Add email..." style="border:none;outline:none;font-size:11px;flex:1;min-width:120px;padding:2px 4px;" />
+                          <div class="email-chip-box chip-box-to" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:32px;padding:3px 6px;background:${isToEnabled ? '#ffffff' : '#f8fafc'};border:1px solid #cbd5e1;border-radius:6px;position:relative;">
+                            ${isToEnabled ? '<input type="text" class="email-search-input" placeholder="Add email..." style="border:none;outline:none;font-size:11px;flex:1;min-width:120px;padding:2px 4px;" />' : '<span style="color:#94a3b8;font-size:11px;font-style:italic;">TO recipients are disabled in Sahayog Settings</span>'}
                             <div class="email-autocomplete-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);z-index:9999;max-height:180px;overflow-y:auto;"></div>
                           </div>
                         </div>
@@ -2756,10 +2758,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                         <div class="email-chip-group-wrapper" data-field="cc">
                           <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:3px;display:flex;justify-content:space-between;">
                             <span>CC (BM & Skip Manager):</span>
-                            <span style="font-weight:normal;color:#94a3b8;font-size:10px;">Type to search</span>
+                            <span style="font-weight:normal;color:#94a3b8;font-size:10px;">${isCcEnabled ? 'Type to search' : '<b style="color:#ef4444;">Disabled in Settings</b>'}</span>
                           </label>
-                          <div class="email-chip-box chip-box-cc" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:32px;padding:3px 6px;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;position:relative;">
-                            <input type="text" class="email-search-input" placeholder="Add email..." style="border:none;outline:none;font-size:11px;flex:1;min-width:120px;padding:2px 4px;" />
+                          <div class="email-chip-box chip-box-cc" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:32px;padding:3px 6px;background:${isCcEnabled ? '#ffffff' : '#f8fafc'};border:1px solid #cbd5e1;border-radius:6px;position:relative;">
+                            ${isCcEnabled ? '<input type="text" class="email-search-input" placeholder="Add email..." style="border:none;outline:none;font-size:11px;flex:1;min-width:120px;padding:2px 4px;" />' : '<span style="color:#94a3b8;font-size:11px;font-style:italic;">CC recipients are disabled in Sahayog Settings</span>'}
                             <div class="email-autocomplete-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);z-index:9999;max-height:180px;overflow-y:auto;"></div>
                           </div>
                         </div>
@@ -2774,7 +2776,13 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 $cardWrapper.html(cardHtml);
 
                 // Helper to manage email chips (Gmail / Outlook style)
-                function setupEmailChips($container, initialEmails) {
+                function setupEmailChips($container, initialEmails, isEnabled = true) {
+                  if (!isEnabled) {
+                    return {
+                      getEmails: () => []
+                    };
+                  }
+
                   // emails will store objects { email: "...", detail: "..." }
                   let emails = initialEmails.map(em => {
                     return typeof em === 'string' ? { email: em.trim().toLowerCase(), detail: em.trim() } : em;
@@ -2913,18 +2921,21 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                   };
                 }
 
-                let toManager = setupEmailChips($cardWrapper.find('.chip-box-to'), initialTo);
-                let ccManager = setupEmailChips($cardWrapper.find('.chip-box-cc'), initialCc);
+                let toManager = setupEmailChips($cardWrapper.find('.chip-box-to'), initialTo, isToEnabled);
+                let ccManager = setupEmailChips($cardWrapper.find('.chip-box-cc'), initialCc, isCcEnabled);
 
                 // Attach Test Mail click handler
                 $cardWrapper.find('.btn-send-test-alert').on('click', function () {
                   let toVal = toManager.getEmails();
                   let ccVal = ccManager.getEmails();
 
-                  if (!toVal || !toVal.length) {
-                    frappe.msgprint(__("Please enter at least one recipient email in 'To' field."));
+                  if (!toVal.length && !ccVal.length) {
+                    frappe.msgprint(__("No recipients found. Please enable TO or CC in Sahayog Settings or provide recipient emails."));
                     return;
                   }
+
+                  let sendTo = toVal.length ? toVal : ccVal;
+                  let sendCc = toVal.length ? ccVal : [];
 
                   let $btn = $(this);
                   $btn.prop('disabled', true).text(__("Sending..."));
@@ -2932,8 +2943,8 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                   frappe.call({
                     method: "sahayog.scrm.api.crm_alert.send_test_crm_alert_mail",
                     args: {
-                      to_recipients: toVal,
-                      cc_recipients: ccVal,
+                      to_recipients: sendTo,
+                      cc_recipients: sendCc,
                       subject: p.subject,
                       html_content: p.html,
                       branch: currentSelectedBranch || p.branch
