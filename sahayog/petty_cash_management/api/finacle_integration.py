@@ -36,7 +36,9 @@ def individual_finacle_fund_transfer_api(entry_name):
         # 2. Smart Date Logic
         if "smcmig" in ACTIVE_URL or "uat" in ACTIVE_URL.lower():
             # UAT Fix: Force Date to Match Server Time (Jan 26)
-            current_date = "2026-01-26T10:00:00.000"
+            # current_date = "2026-01-26T10:00:00.000"
+            current_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
+
         else:
             # Production: Use Real-Time
             current_date = datetime.now().strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3]
