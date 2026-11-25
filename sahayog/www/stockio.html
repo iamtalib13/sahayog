@@ -11454,9 +11454,16 @@
                     </td>
                     <td style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
                       <div v-if="item.available_batches && item.available_batches.length">
-                        <div v-for="b in item.available_batches" :key="'ab-' + item.item_code + '-' + b.rate" style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">
+                        <div v-for="b in (item.showAllBatches ? item.available_batches : item.available_batches.slice(0, 3))" :key="'ab-' + item.item_code + '-' + b.rate" style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">
                           Rate [[ b.rate ]] - Qty [[ b.qty ]]
                         </div>
+                        <button
+                          v-if="item.available_batches.length > 3"
+                          @click="item.showAllBatches = !item.showAllBatches"
+                          style="margin-top: 4px; padding: 2px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-card); color: var(--text-main); cursor: pointer;"
+                        >
+                          [[ item.showAllBatches ? 'Show less' : 'Show all (' + item.available_batches.length + ')' ]]
+                        </button>
                       </div>
                       <div v-else style="font-size: 11px; color: var(--text-muted);">No stock</div>
                     </td>
@@ -19723,6 +19730,7 @@
                   rate,
                   available_rates: availableRates,
                   selected: true,
+                  showAllBatches: false,
                 };
               });
             }
