@@ -2643,27 +2643,43 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
                 $status.html(`Total Inactive Staff: <b style="color:#dc2626;">${data.total_inactive}</b>`);
 
-                let toList = (p.to && p.to.length) ? p.to.join(", ") : "";
-                let ccList = (p.cc && p.cc.length) ? p.cc.join(", ") : "";
+                let initialTo = (p.to && p.to.length) ? p.to : [];
+                let initialCc = (p.cc && p.cc.length) ? p.cc : [];
 
                 let cardHtml = `
                   <div class="crm-alert-branch-card" style="border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;">
                     <div style="background:#f1f5f9;padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:12px;">
-                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                         <span style="font-weight:700;color:#0f172a;font-size:13px;">Branch: ${p.branch_name} (${p.branch}) — <span style="color:#dc2626;">${p.employee_count} Inactive Staff (>= 3 days)</span></span>
                         <button class="btn btn-xs btn-primary btn-send-test-alert" style="font-weight:600;display:inline-flex;align-items:center;gap:4px;">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                           Send Test Mail
                         </button>
                       </div>
-                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px;">
-                        <div>
-                          <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">To (Branch Official Email - Editable):</label>
-                          <input type="text" class="form-control input-xs input-alert-to" value="${toList}" placeholder="e.g. branch@sahayog.com" style="height:28px;font-size:11px;" />
+
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <!-- To Field Container -->
+                        <div class="email-chip-group-wrapper" data-field="to">
+                          <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:3px;display:flex;justify-content:space-between;">
+                            <span>To (Branch Official Email):</span>
+                            <span style="font-weight:normal;color:#94a3b8;font-size:10px;">Type to search</span>
+                          </label>
+                          <div class="email-chip-box chip-box-to" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:32px;padding:3px 6px;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;position:relative;">
+                            <input type="text" class="email-search-input" placeholder="Add email..." style="border:none;outline:none;font-size:11px;flex:1;min-width:120px;padding:2px 4px;" />
+                            <div class="email-autocomplete-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);z-index:9999;max-height:180px;overflow-y:auto;"></div>
+                          </div>
                         </div>
-                        <div>
-                          <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:2px;display:block;">CC (BM & Skip Manager - Editable):</label>
-                          <input type="text" class="form-control input-xs input-alert-cc" value="${ccList}" placeholder="e.g. bm@sahayog.com, zm@sahayog.com" style="height:28px;font-size:11px;" />
+
+                        <!-- CC Field Container -->
+                        <div class="email-chip-group-wrapper" data-field="cc">
+                          <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:3px;display:flex;justify-content:space-between;">
+                            <span>CC (BM & Skip Manager):</span>
+                            <span style="font-weight:normal;color:#94a3b8;font-size:10px;">Type to search</span>
+                          </label>
+                          <div class="email-chip-box chip-box-cc" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:32px;padding:3px 6px;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;position:relative;">
+                            <input type="text" class="email-search-input" placeholder="Add email..." style="border:none;outline:none;font-size:11px;flex:1;min-width:120px;padding:2px 4px;" />
+                            <div class="email-autocomplete-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);z-index:9999;max-height:180px;overflow-y:auto;"></div>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -2675,12 +2691,115 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
                 $cardWrapper.html(cardHtml);
 
+                // Helper to manage email chips (Gmail / Outlook style)
+                function setupEmailChips($container, initialEmails) {
+                  let emails = [...initialEmails];
+
+                  function render() {
+                    $container.find('.email-chip').remove();
+                    emails.forEach((em, idx) => {
+                      let $chip = $(`
+                        <span class="email-chip" style="display:inline-flex;align-items:center;gap:4px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;border:1px solid #bae6fd;">
+                          ${em}
+                          <span class="btn-remove-chip" data-idx="${idx}" style="cursor:pointer;font-size:13px;line-height:1;margin-left:2px;color:#0284c7;">&times;</span>
+                        </span>
+                      `);
+                      $container.find('.email-search-input').before($chip);
+                    });
+
+                    $container.find('.btn-remove-chip').off('click').on('click', function (e) {
+                      e.stopPropagation();
+                      let i = $(this).data('idx');
+                      emails.splice(i, 1);
+                      render();
+                    });
+                  }
+
+                  let $input = $container.find('.email-search-input');
+                  let $drop = $container.find('.email-autocomplete-list');
+                  let searchTimer = null;
+
+                  function addEmail(emailStr) {
+                    let clean = emailStr.trim().toLowerCase();
+                    if (clean && !emails.includes(clean)) {
+                      emails.push(clean);
+                      render();
+                    }
+                    $input.val('');
+                    $drop.hide();
+                  }
+
+                  $input.on('input', function () {
+                    let query = $(this).val().trim();
+                    if (!query) {
+                      $drop.hide();
+                      return;
+                    }
+                    clearTimeout(searchTimer);
+                    searchTimer = setTimeout(() => {
+                      frappe.call({
+                        method: "sahayog.scrm.api.crm_alert.search_alert_emails",
+                        args: { txt: query },
+                        callback: function (res) {
+                          let list = res.message || [];
+                          if (!list.length) {
+                            $drop.html('<div style="padding:8px 12px;font-size:11px;color:#94a3b8;">No matching email found (press enter to add)</div>').show();
+                            return;
+                          }
+                          let itemsHtml = list.map(item => `
+                            <div class="email-suggest-item" data-email="${item.value}" style="padding:6px 12px;font-size:11px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;">
+                              <div>
+                                <div style="font-weight:600;color:#1e293b;">${item.value}</div>
+                                <div style="font-size:10px;color:#64748b;">${item.label}</div>
+                              </div>
+                              <span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:1px 6px;border-radius:4px;">${item.description}</span>
+                            </div>
+                          `).join('');
+                          $drop.html(itemsHtml).show();
+
+                          $drop.find('.email-suggest-item').on('click', function () {
+                            addEmail($(this).data('email'));
+                          });
+                        }
+                      });
+                    }, 300);
+                  });
+
+                  $input.on('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      let typed = $(this).val().replace(',', '').trim();
+                      if (typed) addEmail(typed);
+                    }
+                    if (e.key === 'Backspace' && !$(this).val() && emails.length) {
+                      emails.pop();
+                      render();
+                    }
+                  });
+
+                  // Close drop on outside click
+                  $(document).on('click', function (e) {
+                    if (!$(e.target).closest($container).length) {
+                      $drop.hide();
+                    }
+                  });
+
+                  render();
+
+                  return {
+                    getEmails: () => emails
+                  };
+                }
+
+                let toManager = setupEmailChips($cardWrapper.find('.chip-box-to'), initialTo);
+                let ccManager = setupEmailChips($cardWrapper.find('.chip-box-cc'), initialCc);
+
                 // Attach Test Mail click handler
                 $cardWrapper.find('.btn-send-test-alert').on('click', function () {
-                  let toVal = $cardWrapper.find('.input-alert-to').val().trim();
-                  let ccVal = $cardWrapper.find('.input-alert-cc').val().trim();
+                  let toVal = toManager.getEmails();
+                  let ccVal = ccManager.getEmails();
 
-                  if (!toVal) {
+                  if (!toVal || !toVal.length) {
                     frappe.msgprint(__("Please enter at least one recipient email in 'To' field."));
                     return;
                   }
