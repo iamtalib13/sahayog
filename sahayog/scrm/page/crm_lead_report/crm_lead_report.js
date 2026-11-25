@@ -2693,17 +2693,31 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
                 // Helper to manage email chips (Gmail / Outlook style)
                 function setupEmailChips($container, initialEmails) {
-                  let emails = [...initialEmails];
+                  // emails will store objects { email: "...", detail: "..." }
+                  let emails = initialEmails.map(em => {
+                    return typeof em === 'string' ? { email: em.trim().toLowerCase(), detail: em.trim() } : em;
+                  });
 
                   function render() {
                     $container.find('.email-chip').remove();
-                    emails.forEach((em, idx) => {
+                    emails.forEach((item, idx) => {
+                      let displayEmail = item.email;
+                      let tooltipText = item.detail ? `${item.detail}` : displayEmail;
+
                       let $chip = $(`
-                        <span class="email-chip" style="display:inline-flex;align-items:center;gap:4px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;border:1px solid #bae6fd;">
-                          ${em}
-                          <span class="btn-remove-chip" data-idx="${idx}" style="cursor:pointer;font-size:13px;line-height:1;margin-left:2px;color:#0284c7;">&times;</span>
+                        <span class="email-chip" title="${tooltipText}" style="cursor:help;display:inline-flex;align-items:center;gap:4px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;border:1px solid #bae6fd;transition:all 0.15s ease;">
+                          <span>${displayEmail}</span>
+                          <span class="btn-remove-chip" data-idx="${idx}" title="Remove" style="cursor:pointer;font-size:13px;line-height:1;margin-left:2px;color:#0284c7;">&times;</span>
                         </span>
                       `);
+
+                      // Smooth hover styling
+                      $chip.on('mouseenter', function() {
+                        $(this).css({ 'background': '#bae6fd', 'border-color': '#7dd3fc' });
+                      }).on('mouseleave', function() {
+                        $(this).css({ 'background': '#e0f2fe', 'border-color': '#bae6fd' });
+                      });
+
                       $container.find('.email-search-input').before($chip);
                     });
 
@@ -2719,10 +2733,10 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                   let $drop = $container.find('.email-autocomplete-list');
                   let searchTimer = null;
 
-                  function addEmail(emailStr) {
+                  function addEmail(emailStr, detailStr = null) {
                     let clean = emailStr.trim().toLowerCase();
-                    if (clean && !emails.includes(clean)) {
-                      emails.push(clean);
+                    if (clean && !emails.some(e => e.email === clean)) {
+                      emails.push({ email: clean, detail: detailStr || clean });
                       render();
                     }
                     $input.val('');
@@ -2747,7 +2761,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                             return;
                           }
                           let itemsHtml = list.map(item => `
-                            <div class="email-suggest-item" data-email="${item.value}" style="padding:6px 12px;font-size:11px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;">
+                            <div class="email-suggest-item" data-email="${item.value}" data-detail="${item.label}" style="padding:6px 12px;font-size:11px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;">
                               <div>
                                 <div style="font-weight:600;color:#1e293b;">${item.value}</div>
                                 <div style="font-size:10px;color:#64748b;">${item.label}</div>
@@ -2758,7 +2772,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                           $drop.html(itemsHtml).show();
 
                           $drop.find('.email-suggest-item').on('click', function () {
-                            addEmail($(this).data('email'));
+                            addEmail($(this).data('email'), $(this).data('detail'));
                           });
                         }
                       });
@@ -2768,8 +2782,34 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                   $input.on('keydown', function (e) {
                     if (e.key === 'Enter' || e.key === ',') {
                       e.preventDefault();
+                      // If autocomplete list has items, select the first match's actual email
+                      let $firstMatch = $drop.find('.email-suggest-item').first();
+                      if ($drop.is(':visible') && $firstMatch.length) {
+                        addEmail($firstMatch.data('email'), $firstMatch.data('detail'));
+                        return;
+                      }
+
                       let typed = $(this).val().replace(',', '').trim();
-                      if (typed) addEmail(typed);
+                      if (typed) {
+                        // Only add if looks like an email or search first
+                        if (typed.includes('@')) {
+                          addEmail(typed);
+                        } else {
+                          // Quick check to resolve SOL ID or emp code
+                          frappe.call({
+                            method: "sahayog.scrm.api.crm_alert.search_alert_emails",
+                            args: { txt: typed },
+                            callback: function (res) {
+                              let list = res.message || [];
+                              if (list.length) {
+                                addEmail(list[0].value, list[0].label);
+                              } else {
+                                frappe.show_alert({ message: __(`No valid email found for '${typed}'`), indicator: "orange" });
+                              }
+                            }
+                          });
+                        }
+                      }
                     }
                     if (e.key === 'Backspace' && !$(this).val() && emails.length) {
                       emails.pop();
@@ -2787,7 +2827,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                   render();
 
                   return {
-                    getEmails: () => emails
+                    getEmails: () => emails.map(e => e.email)
                   };
                 }
 
