@@ -579,7 +579,7 @@ def get_crm_alert_preview(branch=None, days=3):
 
 
 @frappe.whitelist()
-def send_test_crm_alert_mail(to_recipients, cc_recipients=None, subject="CRM Alert", html_content=""):
+def send_test_crm_alert_mail(to_recipients, cc_recipients=None, subject="CRM Alert", html_content="", branch=None):
     """Whitelisted function for sending live test email with editable recipients."""
     if isinstance(to_recipients, str):
         import json
@@ -598,15 +598,122 @@ def send_test_crm_alert_mail(to_recipients, cc_recipients=None, subject="CRM Ale
     if not to_recipients:
         frappe.throw("Please specify at least one recipient in 'To'.")
 
+    branch_code = str(branch).strip() if branch else None
+
     frappe.sendmail(
         recipients=to_recipients,
         cc=cc_recipients or [],
         subject=subject or "CRM Alert",
         message=html_content,
-        delayed=False
+        delayed=False,
+        reference_doctype="Sahayog Branch" if branch_code else None,
+        reference_name=branch_code
     )
 
     return {"status": "success", "message": f"Test alert email sent to {', '.join(to_recipients)}"}
+
+
+def send_crm_inactivity_alerts(days=3):
+    """
+    Main background scheduled function:
+    1. Fetches all inactive eligible employees across branches (>= 3 days).
+    2. Groups inactive staff branch-wise into consolidated email tables.
+    3. Dispatches automated alert:
+       - To: Official Branch Email (from Sahayog Branch)
+       - CC: Branch Manager (BM) + Skip Managers (SM, DH)
+       - Subject: CRM Alert
+    """
+    inactive_employees = get_inactive_employees_for_alert(days=int(days))
+    if not inactive_employees:
+        return {"status": "success", "sent": 0, "message": "No inactive employees found for CRM alert"}
+
+    # Group branch-wise to avoid sending duplicate/excessive emails
+    grouped_by_branch = {}
+    for emp in inactive_employees:
+        branch_key = emp.get("sahayog_branch") or emp.get("branch") or "Unknown"
+        if branch_key not in grouped_by_branch:
+            grouped_by_branch[branch_key] = []
+        grouped_by_branch[branch_key].append(emp)
+
+    sent_count = 0
+    for branch_key, emp_list in grouped_by_branch.items():
+        sample_emp = emp_list[0]
+        branch_name = frappe.db.get_value("Sahayog Branch", branch_key, "branch") or sample_emp.get("branch") or branch_key
+
+        hierarchy = get_reporting_hierarchy_for_branch(
+            sahayog_branch_code=sample_emp.get("sahayog_branch"),
+            branch_name=sample_emp.get("branch"),
+            reports_to_emp_id=sample_emp.get("reports_to")
+        )
+
+        to_emails = [r["email"] for r in hierarchy.get("to", [])]
+        cc_emails = [r["email"] for r in hierarchy.get("cc", [])]
+
+        if not to_emails:
+            continue
+
+        table_html = generate_crm_alert_table_html(
+            employees=emp_list,
+            to_recipients=to_emails,
+            cc_recipients=cc_emails,
+            branch_title=f"{branch_name} ({branch_key})"
+        )
+
+        frappe.sendmail(
+            recipients=to_emails,
+            cc=cc_emails,
+            subject=f"CRM Alert - {branch_name}",
+            message=table_html,
+            delayed=False,
+            reference_doctype="Sahayog Branch",
+            reference_name=str(branch_key)
+        )
+        sent_count += 1
+
+    return {
+        "status": "success",
+        "branches_emailed": sent_count,
+        "total_inactive": len(inactive_employees)
+    }
+
+
+@frappe.whitelist()
+def get_crm_alert_email_logs(branch=None, limit=30):
+    """Fetch tracked emails strictly related to 'CRM Alert' from Email Queue."""
+    conditions = ["(eq.message LIKE %(crm_kw)s OR eq.reference_doctype = 'Sahayog Branch')"]
+    params = {"limit": int(limit), "crm_kw": "%CRM Alert%"}
+
+    if branch:
+        b_str = str(branch).strip()
+        b_name = frappe.db.get_value("Sahayog Branch", b_str, "branch") or b_str
+        conditions.append("(eq.reference_name = %(branch)s OR eq.message LIKE %(branch_search)s)")
+        params["branch"] = b_str
+        params["branch_search"] = f"%{b_name}%"
+
+    where_clause = " AND ".join(conditions)
+
+    logs = frappe.db.sql(
+        f"""
+        SELECT 
+            eq.name,
+            eq.message_id,
+            DATE_FORMAT(eq.creation, '%%d-%%m-%%Y %%H:%%i:%%s') as creation,
+            COALESCE(eqr.status, eq.status) as status,
+            eq.error,
+            COALESCE(sb.branch, eq.reference_name, 'General CRM Alert') as branch,
+            eqr.recipient
+        FROM `tabEmail Queue` eq
+        JOIN `tabEmail Queue Recipient` eqr ON eqr.parent = eq.name
+        LEFT JOIN `tabSahayog Branch` sb ON sb.name = eq.reference_name
+        WHERE {where_clause}
+        ORDER BY eq.creation DESC
+        LIMIT %(limit)s
+        """,
+        params,
+        as_dict=True
+    )
+    return logs
+
 
 
 
