@@ -248,16 +248,21 @@ def get_employee_email(emp_record):
         emp_record = frappe.db.get_value(
             "Employee",
             emp_record,
-            ["company_email", "prefered_email", "personal_email", "user_id"],
+            ["name", "employee_name", "designation", "company_email", "prefered_email", "personal_email", "user_id"],
             as_dict=True
         ) or {}
     
-    return (
+    email = (
         emp_record.get("company_email")
         or emp_record.get("user_id")
         or emp_record.get("prefered_email")
         or emp_record.get("personal_email")
     )
+    if not email:
+        return None
+
+    detail = f"{emp_record.get('employee_name', '')} ({emp_record.get('name', '')} - {emp_record.get('designation', '')}) - {email}"
+    return {"email": email.strip(), "detail": detail}
 
 
 def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, reports_to_emp_id=None):
@@ -265,15 +270,21 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
     Routing Rules:
     1. To: Official Branch Email from Sahayog Branch (Fallback: BM email).
     2. CC: Branch Manager (BM) company email + BM's Reporting Manager (Skip Manager).
+    Returns list of dicts: [{"email": "...", "detail": "..."}]
     """
     to_recipients = []
     cc_recipients = []
+    seen_to = set()
+    seen_cc = set()
 
     # 1. Fetch Official Branch Email for 'To'
     if sahayog_branch_code:
-        b_email = frappe.db.get_value("Sahayog Branch", sahayog_branch_code, "email")
-        if b_email and b_email.strip():
-            to_recipients.append(b_email.strip())
+        b_data = frappe.db.get_value("Sahayog Branch", sahayog_branch_code, ["email", "branch", "sol_id"], as_dict=True)
+        if b_data and b_data.get("email") and b_data.get("email").strip():
+            b_email = b_data["email"].strip()
+            detail = f"Branch Official Email - {b_data.get('branch', '')} ({b_data.get('sol_id') or sahayog_branch_code}) - {b_email}"
+            to_recipients.append({"email": b_email, "detail": detail})
+            seen_to.add(b_email.lower())
 
     # 2. Fetch Branch Manager (BM) for 'CC'
     conditions = []
@@ -285,7 +296,7 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
     if conditions:
         bm_list = frappe.db.sql(
             f"""
-            SELECT name, employee_name, company_email, user_id, reports_to
+            SELECT name, employee_name, designation, company_email, user_id, reports_to
             FROM `tabEmployee`
             WHERE status = 'Active'
               AND ({ ' OR '.join(conditions) })
@@ -298,43 +309,55 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
         )
         if bm_list:
             bm = bm_list[0]
-            bm_email = get_employee_email(bm)
-            if bm_email:
+            bm_obj = get_employee_email(bm)
+            if bm_obj:
+                em = bm_obj["email"].lower()
                 # If branch email was missing, BM receives 'To', else BM is placed in 'CC'
                 if not to_recipients:
-                    to_recipients.append(bm_email)
-                else:
-                    cc_recipients.append(bm_email)
+                    to_recipients.append(bm_obj)
+                    seen_to.add(em)
+                elif em not in seen_to and em not in seen_cc:
+                    cc_recipients.append(bm_obj)
+                    seen_cc.add(em)
 
             # BM's Reporting Manager (Skip Manager) in CC
             if bm.get("reports_to"):
                 bm_mgr = frappe.db.get_value(
                     "Employee", 
                     bm.get("reports_to"), 
-                    ["name", "company_email", "user_id", "reports_to"], 
+                    ["name", "employee_name", "designation", "company_email", "user_id", "reports_to"], 
                     as_dict=True
                 )
                 if bm_mgr:
-                    mgr_email = get_employee_email(bm_mgr)
-                    if mgr_email and mgr_email not in cc_recipients and mgr_email not in to_recipients:
-                        cc_recipients.append(mgr_email)
+                    mgr_obj = get_employee_email(bm_mgr)
+                    if mgr_obj:
+                        em = mgr_obj["email"].lower()
+                        if em not in seen_to and em not in seen_cc:
+                            cc_recipients.append(mgr_obj)
+                            seen_cc.add(em)
                     if bm_mgr.get("reports_to"):
-                        top_email = get_employee_email(bm_mgr.get("reports_to"))
-                        if top_email and top_email not in cc_recipients and top_email not in to_recipients:
-                            cc_recipients.append(top_email)
+                        top_obj = get_employee_email(bm_mgr.get("reports_to"))
+                        if top_obj:
+                            em = top_obj["email"].lower()
+                            if em not in seen_to and em not in seen_cc:
+                                cc_recipients.append(top_obj)
+                                seen_cc.add(em)
 
     # 3. Direct reports_to fallback if BM not found
     if not cc_recipients and reports_to_emp_id:
-        direct_mgr_email = get_employee_email(reports_to_emp_id)
-        if direct_mgr_email:
+        direct_obj = get_employee_email(reports_to_emp_id)
+        if direct_obj:
+            em = direct_obj["email"].lower()
             if not to_recipients:
-                to_recipients.append(direct_mgr_email)
-            elif direct_mgr_email not in to_recipients:
-                cc_recipients.append(direct_mgr_email)
+                to_recipients.append(direct_obj)
+                seen_to.add(em)
+            elif em not in seen_to and em not in seen_cc:
+                cc_recipients.append(direct_obj)
+                seen_cc.add(em)
 
     return {
-        "to": [r for r in to_recipients if r],
-        "cc": [r for r in cc_recipients if r and r not in to_recipients]
+        "to": to_recipients,
+        "cc": cc_recipients
     }
 
 
@@ -520,10 +543,13 @@ def get_crm_alert_preview(branch=None, days=3):
 
     b_name = frappe.db.get_value("Sahayog Branch", branch_str, "branch") or sample_emp.get("branch") or branch_str
 
+    to_emails = [r["email"] for r in hierarchy.get("to", [])]
+    cc_emails = [r["email"] for r in hierarchy.get("cc", [])]
+
     table_html = generate_crm_alert_table_html(
         employees=inactive_employees,
-        to_recipients=hierarchy.get("to", []),
-        cc_recipients=hierarchy.get("cc", []),
+        to_recipients=to_emails,
+        cc_recipients=cc_emails,
         branch_title=b_name
     )
 
