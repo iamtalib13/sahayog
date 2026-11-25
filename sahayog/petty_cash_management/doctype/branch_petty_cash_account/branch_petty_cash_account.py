@@ -397,7 +397,7 @@ def download_branch_petty_cash_account_report():
 
     if (
         frappe.session.user != "Administrator"
-        and "HO Petty Cash Manager" not in user_roles
+        and "HO Petty Cash Manager" and "HO Petty Cash Verifier" not in user_roles
     ):
         frappe.throw(
             _("Only Administrator or HO Petty Cash Manager can download this report."))
