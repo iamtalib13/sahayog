@@ -2,8 +2,8 @@ frappe.listview_settings['Branch Petty Cash Account'] = {
     onload(listview) {
         const is_admin = frappe.session.user === 'Administrator';
         const is_ho_manager = frappe.user.has_role('HO Petty Cash Manager');
-
-        if (!is_admin && !is_ho_manager) return;
+        const is_ho_verifier = frappe.user.has_role('HO Petty Cash Verifier')
+        if (!is_admin && !is_ho_manager && !is_ho_verifier) return;
 
         if (is_admin) {
             let dialog = null;
