@@ -11353,6 +11353,7 @@
                         padding: 8px 12px;
                         text-align: left;
                         color: var(--text-muted);
+                        border-left: 2px solid var(--border-color);
                       "
                     >
                       Available Stock
@@ -11451,7 +11452,7 @@
                     >
                       [[ formatCurrency((item.dispatch_qty || 0) * ((dispatchForm.transfer_old_stock_first && item.available_rates && item.available_rates.length ? item.available_rates[0] : item.rate) || 0)) ]]
                     </td>
-                    <td style="font-size: 12px; padding: 8px 12px; text-align: left;">
+                    <td style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
                       <div v-if="item.available_batches && item.available_batches.length">
                         <div v-for="b in item.available_batches" :key="'ab-' + item.item_code + '-' + b.rate" style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">
                           Rate [[ b.rate ]] - Qty [[ b.qty ]]
