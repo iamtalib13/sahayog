@@ -1043,29 +1043,51 @@ def delete_wh_dept_entry(name):
 @frappe.whitelist()
 def get_available_stock_batches(item_code, warehouse):
     """
-    Returns available stock rates for an item in a warehouse, oldest first (FIFO).
+    Returns available (not yet consumed) inward stock rates for an item in a warehouse, oldest first (FIFO).
+    Uses Stock Ledger Entry FIFO layers so consumed rates are excluded.
     """
-    stock_entries = frappe.db.sql("""
-        SELECT rate, SUM(qty) as qty, MIN(posting_date) as posting_date
-        FROM (
-            SELECT pri.valuation_rate as rate, pri.qty as qty, pr.posting_date as posting_date
-            FROM `tabPurchase Receipt Item` pri
-            JOIN `tabPurchase Receipt` pr ON pr.name = pri.parent
-            WHERE pri.item_code = %(item_code)s AND pri.warehouse = %(warehouse)s AND pr.docstatus = 1
-
-            UNION ALL
-
-            SELECT sei.valuation_rate as rate, sei.qty as qty, se.posting_date as posting_date
-            FROM `tabStock Entry Detail` sei
-            JOIN `tabStock Entry` se ON se.name = sei.parent
-            WHERE sei.item_code = %(item_code)s AND sei.t_warehouse = %(warehouse)s AND se.docstatus = 1
-        ) as combined_stock
-        GROUP BY rate
-        HAVING SUM(qty) > 0
-        ORDER BY MIN(posting_date) ASC
+    sles = frappe.db.sql("""
+        SELECT actual_qty, valuation_rate, stock_value_difference, posting_datetime
+        FROM `tabStock Ledger Entry`
+        WHERE item_code = %(item_code)s
+          AND warehouse = %(warehouse)s
+          AND is_cancelled = 0
+        ORDER BY posting_datetime ASC, creation ASC
     """, {"item_code": item_code, "warehouse": warehouse}, as_dict=True)
 
-    return stock_entries
+    fifo_layers = []  # [{rate, qty, posting_date}]
+    for sle in sles:
+        qty = float(sle.actual_qty or 0)
+        if qty > 0:
+            incoming_rate = float(sle.valuation_rate or 0)
+            if sle.stock_value_difference and qty:
+                incoming_rate = float(sle.stock_value_difference) / qty
+            fifo_layers.append({
+                "rate": incoming_rate,
+                "qty": qty,
+                "posting_date": sle.posting_datetime,
+            })
+        elif qty < 0:
+            remaining = abs(qty)
+            while remaining > 0 and fifo_layers:
+                layer = fifo_layers[0]
+                if layer["qty"] <= remaining:
+                    remaining -= layer["qty"]
+                    fifo_layers.pop(0)
+                else:
+                    layer["qty"] -= remaining
+                    remaining = 0
+
+    # Group by rate (preserve FIFO order)
+    grouped = []
+    for layer in fifo_layers:
+        rate = layer["rate"]
+        if not grouped or abs(grouped[-1]["rate"] - rate) > 0.0001:
+            grouped.append({"rate": rate, "qty": layer["qty"], "posting_date": layer["posting_date"]})
+        else:
+            grouped[-1]["qty"] += layer["qty"]
+
+    return [g for g in grouped if g["qty"] > 0]
 
 @frappe.whitelist()
 def get_warehouse_company(warehouse):
