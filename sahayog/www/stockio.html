@@ -11418,7 +11418,7 @@
                     >
                       <div v-if="item.available_rates && item.available_rates.length > 1">
                           <div v-if="dispatchForm.transfer_old_stock_first" style="font-size: 12px; font-weight: 600; color: var(--text-main);">
-                              [[ item.rate !== "" && item.rate !== null && item.rate !== undefined ? formatCurrency(item.rate) : '-' ]]
+                              [[ formatCurrency(item.rate !== "" && item.rate !== null && item.rate !== undefined ? item.rate : (item.available_rates[0] || 0)) ]]
                           </div>
                           <select v-else v-model="item.rate" class="form-input" style="height: 28px; padding: 0 4px; font-size: 12px; width: 80px;">
                               <option value="">Select</option>
@@ -11438,8 +11438,7 @@
                         font-weight: 700;
                       "
                     >
-                      [[ formatCurrency((item.dispatch_qty || 0) * (item.rate ||
-                      0)) ]]
+                      [[ formatCurrency((item.dispatch_qty || 0) * ((dispatchForm.transfer_old_stock_first && item.available_rates && item.available_rates.length ? item.available_rates[0] : item.rate) || 0)) ]]
                     </td>
                   </tr>
                 </tbody>
@@ -20001,6 +20000,13 @@
         });
       },
       async submitDispatch() {
+        if (this.dispatchForm.transfer_old_stock_first) {
+          this.dispatchForm.items.forEach((item) => {
+            if (item.available_rates && item.available_rates.length) {
+              item.rate = item.available_rates[0];
+            }
+          });
+        }
         // Quick validation
         if (
           !this.dispatchForm.source_warehouse ||
