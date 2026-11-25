@@ -146,10 +146,16 @@ def get_last_lead_activity_date(emp_id, user_id):
     return None
 
 
-def get_inactive_employees_for_alert(days=3):
-    """Identify eligible employees who have not updated CRM leads for >= N consecutive days."""
+def get_inactive_employees_for_alert(days=3, branch=None):
+    """
+    Identify eligible employees who have not updated CRM leads for >= N consecutive days.
+    Zero-JOIN, indexed, branch-scoped or global.
+    """
     today = getdate(nowdate())
     yesterday = add_days(today, -1)
+    cutoff_date = add_days(today, -int(days))
+
+    branch_clause = f"AND (sahayog_branch = {frappe.db.escape(str(branch))} OR branch = {frappe.db.escape(str(branch))})" if branch else ""
 
     eligible_employees = frappe.db.sql(
         f"""
@@ -158,6 +164,7 @@ def get_inactive_employees_for_alert(days=3):
             branch, sahayog_branch, reports_to, holiday_list, date_of_joining
         FROM `tabEmployee`
         WHERE status = 'Active'
+          {branch_clause}
           AND ({ " OR ".join([f"LOWER(designation) LIKE {frappe.db.escape(p)}" for p in TARGET_DESIGNATION_PATTERNS]) })
           AND LOWER(designation) NOT IN ('branch manager', 'branch manager jll', 'sr. branch manager')
           AND LOWER(designation) NOT LIKE '%%area manager%%'
@@ -169,33 +176,50 @@ def get_inactive_employees_for_alert(days=3):
         as_dict=True
     )
 
-    inactive_employees = []
+    if not eligible_employees:
+        return []
 
+    emp_ids = [e["name"] for e in eligible_employees]
+
+    # Find active employees in past N days without any JOIN
+    active_emp_ids = set()
+    if emp_ids:
+        active_leads = frappe.db.sql(
+            """
+            SELECT DISTINCT custom_employee_id
+            FROM `tabLead`
+            WHERE custom_employee_id IN %(emp_ids)s
+              AND (creation >= %(cutoff_date)s OR modified >= %(cutoff_date)s)
+            """,
+            {"emp_ids": tuple(emp_ids), "cutoff_date": cutoff_date},
+            as_dict=True
+        )
+        active_emp_ids = {r["custom_employee_id"] for r in active_leads if r.get("custom_employee_id")}
+
+    inactive_employees = []
     for emp in eligible_employees:
         emp_id = emp.get("name")
-        user_id = emp.get("user_id")
+        if emp_id in active_emp_ids:
+            continue
 
+        user_id = emp.get("user_id")
         last_date = get_last_lead_activity_date(emp_id, user_id)
-        
+
         if last_date:
-            # Not updated since last_date + 1
             from_date = add_days(last_date, 1)
         else:
-            # If no lead ever, count from date_of_joining or 30 days max
             doj = emp.get("date_of_joining")
             if doj and getdate(doj) <= yesterday:
                 from_date = getdate(doj)
             else:
                 from_date = add_days(yesterday, -29)
 
-        # Calculate exact inactive days up to yesterday
         if from_date <= yesterday:
             inactive_days = (yesterday - from_date).days + 1
         else:
-            inactive_days = 0
+            inactive_days = int(days)
 
-        # Only alert if inactive for >= days (e.g. 3)
-        if inactive_days >= days:
+        if inactive_days >= int(days):
             h_list = get_employee_holiday_list(emp)
             breakup = get_holiday_breakup(h_list, from_date, yesterday)
 
@@ -394,67 +418,74 @@ def generate_crm_alert_table_html(employees, to_recipients=None, cc_recipients=N
 
 
 @frappe.whitelist()
+def get_branch_list_for_filter():
+    """Fast, lightweight endpoint to get list of all branches for dropdown."""
+    branches = frappe.db.sql(
+        """
+        SELECT name as value, CONCAT(IFNULL(branch, name), ' (', name, ')') as label
+        FROM `tabSahayog Branch`
+        ORDER BY branch ASC
+        """,
+        as_dict=True
+    )
+    return branches
+
+
+@frappe.whitelist()
 def get_crm_alert_preview(branch=None, days=3):
-    """API for UI Preview: Returns branch options and preview for selected or first branch."""
-    inactive_employees = get_inactive_employees_for_alert(days=int(days))
-
-    # Group all by branch
-    grouped_by_branch = {}
-    for emp in inactive_employees:
-        branch_key = emp.get("sahayog_branch") or emp.get("branch") or "Unknown"
-        if branch_key not in grouped_by_branch:
-            grouped_by_branch[branch_key] = []
-        grouped_by_branch[branch_key].append(emp)
-
-    # Prepare branch dropdown options
-    branch_options = []
-    for b_code, emp_list in grouped_by_branch.items():
-        b_name = frappe.db.get_value("Sahayog Branch", b_code, "branch") or emp_list[0].get("branch") or b_code
-        branch_options.append({
-            "value": str(b_code),
-            "label": f"{b_name} ({b_code}) - {len(emp_list)} Inactive"
-        })
-
-    # Sort options by branch name
-    branch_options = sorted(branch_options, key=lambda x: x["label"])
-
-    # Determine which branch to display
-    selected_branch = str(branch).strip() if branch else (branch_options[0]["value"] if branch_options else None)
-
-    preview_item = None
-    if selected_branch and selected_branch in grouped_by_branch:
-        emp_list = grouped_by_branch[selected_branch]
-        sample_emp = emp_list[0]
-        hierarchy = get_reporting_hierarchy_for_branch(
-            sahayog_branch_code=sample_emp.get("sahayog_branch"),
-            branch_name=sample_emp.get("branch"),
-            reports_to_emp_id=sample_emp.get("reports_to")
-        )
-
-        b_name = frappe.db.get_value("Sahayog Branch", selected_branch, "branch") or sample_emp.get("branch") or selected_branch
-
-        table_html = generate_crm_alert_table_html(
-            employees=emp_list,
-            to_recipients=hierarchy.get("to", []),
-            cc_recipients=hierarchy.get("cc", []),
-            branch_title=b_name
-        )
-
-        preview_item = {
-            "branch": selected_branch,
-            "branch_name": b_name,
-            "subject": "CRM Alert",
-            "to": hierarchy.get("to", []),
-            "cc": hierarchy.get("cc", []),
-            "employee_count": len(emp_list),
-            "html": table_html
+    """
+    On-Demand Preview API:
+    - If branch is None: returns only status without querying leads.
+    - If branch is selected: runs targeted lightweight queries strictly for that branch.
+    """
+    if not branch:
+        return {
+            "selected_branch": None,
+            "preview": None
         }
 
+    branch_str = str(branch).strip()
+    inactive_employees = get_inactive_employees_for_alert(days=int(days), branch=branch_str)
+
+    if not inactive_employees:
+        b_name = frappe.db.get_value("Sahayog Branch", branch_str, "branch") or branch_str
+        return {
+            "selected_branch": branch_str,
+            "branch_name": b_name,
+            "total_inactive": 0,
+            "preview": None
+        }
+
+    sample_emp = inactive_employees[0]
+    hierarchy = get_reporting_hierarchy_for_branch(
+        sahayog_branch_code=sample_emp.get("sahayog_branch"),
+        branch_name=sample_emp.get("branch"),
+        reports_to_emp_id=sample_emp.get("reports_to")
+    )
+
+    b_name = frappe.db.get_value("Sahayog Branch", branch_str, "branch") or sample_emp.get("branch") or branch_str
+
+    table_html = generate_crm_alert_table_html(
+        employees=inactive_employees,
+        to_recipients=hierarchy.get("to", []),
+        cc_recipients=hierarchy.get("cc", []),
+        branch_title=b_name
+    )
+
+    preview_item = {
+        "branch": branch_str,
+        "branch_name": b_name,
+        "subject": "CRM Alert",
+        "to": hierarchy.get("to", []),
+        "cc": hierarchy.get("cc", []),
+        "employee_count": len(inactive_employees),
+        "html": table_html
+    }
+
     return {
+        "selected_branch": branch_str,
+        "branch_name": b_name,
         "total_inactive": len(inactive_employees),
-        "total_branches": len(grouped_by_branch),
-        "branch_options": branch_options,
-        "selected_branch": selected_branch,
         "preview": preview_item
     }
 
