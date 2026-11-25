@@ -2586,10 +2586,12 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           let containerHtml = `
             <div style="margin-bottom:14px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
               <div style="display:flex;align-items:center;gap:10px;">
-                <label style="font-weight:600;font-size:12px;color:#1e293b;margin:0;">Select Branch:</label>
-                <select class="form-control input-xs select-accused-branch" style="min-width:320px;height:32px;font-size:12px;font-weight:600;">
-                  ${optionsHtml}
-                </select>
+                <label style="font-weight:600;font-size:12px;color:#1e293b;margin:0;">Search Branch:</label>
+                <div style="position:relative;width:340px;">
+                  <input type="text" class="form-control input-xs input-search-branch" placeholder="Search by SOL ID (e.g. 1145) or Branch name..." style="height:32px;font-size:12px;padding-right:24px;" />
+                  <span class="btn-clear-branch-search" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:#94a3b8;font-size:14px;line-height:1;">&times;</span>
+                  <div class="branch-autocomplete-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);z-index:99999;max-height:220px;overflow-y:auto;margin-top:2px;"></div>
+                </div>
               </div>
               <div class="branch-status-indicator" style="font-size:12px;color:#64748b;">
                 Select a branch to view inactive staff
@@ -2606,9 +2608,74 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
           d.fields_dict.preview_content.$wrapper.html(containerHtml);
 
-          // Step 2: On-demand branch selection event
-          d.fields_dict.preview_content.$wrapper.find('.select-accused-branch').on('change', function () {
-            let chosen_branch = $(this).val();
+          let $searchInput = d.fields_dict.preview_content.$wrapper.find('.input-search-branch');
+          let $branchDrop = d.fields_dict.preview_content.$wrapper.find('.branch-autocomplete-dropdown');
+          let $clearBtn = d.fields_dict.preview_content.$wrapper.find('.btn-clear-branch-search');
+
+          function filterAndShowBranches(query) {
+            let q = (query || '').toLowerCase().trim();
+            let matches = branches.filter(b => {
+              let label = (b.label || '').toLowerCase();
+              let val = String(b.value || '').toLowerCase();
+              return label.includes(q) || val.includes(q);
+            });
+
+            if (!matches.length) {
+              $branchDrop.html('<div style="padding:10px 12px;font-size:12px;color:#94a3b8;text-align:center;">No matching branch found</div>').show();
+              return;
+            }
+
+            let itemsHtml = matches.slice(0, 30).map(b => `
+              <div class="branch-suggest-row" data-value="${b.value}" data-label="${b.label}" style="padding:8px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;color:#1e293b;">${b.label}</span>
+                <span style="font-size:10px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:4px;">SOL: ${b.value}</span>
+              </div>
+            `).join('');
+
+            $branchDrop.html(itemsHtml).show();
+
+            $branchDrop.find('.branch-suggest-row').on('click', function () {
+              let chosenVal = $(this).data('value');
+              let chosenLabel = $(this).data('label');
+              $searchInput.val(chosenLabel);
+              $clearBtn.show();
+              $branchDrop.hide();
+              triggerBranchLoad(chosenVal);
+            });
+          }
+
+          $searchInput.on('focus input', function () {
+            let val = $(this).val();
+            if (val) $clearBtn.show();
+            else $clearBtn.hide();
+            filterAndShowBranches(val);
+          });
+
+          $searchInput.on('keydown', function (e) {
+            if (e.key === 'Enter') {
+              let $first = $branchDrop.find('.branch-suggest-row').first();
+              if ($first.length) {
+                $searchInput.val($first.data('label'));
+                $clearBtn.show();
+                $branchDrop.hide();
+                triggerBranchLoad($first.data('value'));
+              }
+            }
+          });
+
+          $clearBtn.on('click', function () {
+            $searchInput.val('');
+            $(this).hide();
+            triggerBranchLoad(null);
+          });
+
+          $(document).on('click', function (e) {
+            if (!$(e.target).closest($searchInput).length && !$(e.target).closest($branchDrop).length) {
+              $branchDrop.hide();
+            }
+          });
+
+          function triggerBranchLoad(chosen_branch) {
             let $cardWrapper = d.fields_dict.preview_content.$wrapper.find('.branch-preview-card-wrapper');
             let $status = d.fields_dict.preview_content.$wrapper.find('.branch-status-indicator');
 
@@ -2868,7 +2935,7 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                 });
               }
             });
-          });
+          }
         }
       });
     },
