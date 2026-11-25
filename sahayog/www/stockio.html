@@ -11329,6 +11329,17 @@
                         font-size: 10px;
                         text-transform: uppercase;
                         padding: 8px 12px;
+                        text-align: left;
+                        color: var(--text-muted);
+                      "
+                    >
+                      Available Stock
+                    </th>
+                    <th
+                      style="
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
                         text-align: right;
                         color: var(--text-muted);
                       "
@@ -11409,6 +11420,14 @@
                         "
                       />
                     </td>
+                    <td style="font-size: 12px; padding: 8px 12px; text-align: left;">
+                      <div v-if="item.available_batches && item.available_batches.length">
+                        <div v-for="b in item.available_batches" :key="'ab-' + item.item_code + '-' + b.rate" style="font-size: 11px; color: var(--text-muted); white-space: nowrap;">
+                          Rate [[ b.rate ]] - Qty [[ b.qty ]]
+                        </div>
+                      </div>
+                      <div v-else style="font-size: 11px; color: var(--text-muted);">No stock</div>
+                    </td>
                     <td
                       style="
                         font-size: 12px;
@@ -11445,30 +11464,15 @@
               </table>
             </div>
           </div>
-          <div v-if="dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; display: flex; gap: 12px; align-items: flex-start;">
-            <div style="min-width: 260px; max-width: 360px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
-              <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 8px;">Available Stock by Rate</div>
-              <div v-for="item in dispatchForm.items" :key="'avail-' + item.name" style="margin-bottom: 8px;">
-                <div style="font-size: 12px; font-weight: 700; color: var(--text-main);">[[ item.item_code ]]</div>
-                <div v-if="item.available_batches && item.available_batches.length" style="font-size: 12px; color: var(--text-muted);">
-                  <div v-for="b in item.available_batches" :key="item.item_code + '-' + b.rate" style="display:flex; justify-content:space-between; gap:12px;">
-                    <span>Rate: [[ b.rate ]]</span>
-                    <span>Qty: [[ b.qty ]]</span>
-                  </div>
-                </div>
-                <div v-else style="font-size: 12px; color: var(--text-muted);">No available stock</div>
-              </div>
-            </div>
-            <div style="flex: 1; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
-              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer; font-weight: 600;">
-                <input
-                  type="checkbox"
-                  v-model="dispatchForm.transfer_old_stock_first"
-                  @change="(e) => { if (e.target.checked) { dispatchForm.transfer_old_stock_first = true; dispatchForm.items.forEach(i => { if (i.available_rates && i.available_rates.length) i.rate = i.available_rates[0]; }); } }"
-                />
-                Transfer old stock first (FIFO rate)
-              </label>
-            </div>
+          <div v-if="dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer; font-weight: 600;">
+              <input
+                type="checkbox"
+                v-model="dispatchForm.transfer_old_stock_first"
+                @change="(e) => { if (e.target.checked) { dispatchForm.transfer_old_stock_first = true; dispatchForm.items.forEach(i => { if (i.available_rates && i.available_rates.length) i.rate = i.available_rates[0]; }); } }"
+              />
+              Transfer old stock first (FIFO rate)
+            </label>
           </div>
         </div>
       </div>
