@@ -77,42 +77,49 @@ def get_employee_holiday_list(employee):
 
 
 def get_holiday_breakup(holiday_list, from_date, to_date):
-    """Return count of weekly offs and public holidays in the date range."""
-    # Calendar based fallback if no holiday list is found
-    if not holiday_list:
-        weekly_offs = 0
-        cur = getdate(from_date)
-        end = getdate(to_date)
-        while cur <= end:
-            if cur.weekday() == 6:  # Sunday
-                weekly_offs += 1
-            cur = add_days(cur, 1)
-        return {"weekly_off": weekly_offs, "holiday": 0}
+    """
+    Return count of weekly offs and public holidays:
+    - Weekly Off: Calculated through code (all Sundays in date range).
+    - Holiday: Picked from Holiday List doctype (excluding Sundays to avoid double counting).
+    """
+    f_date = getdate(from_date)
+    t_date = getdate(to_date)
 
-    holidays = frappe.db.sql(
-        """
-        SELECT weekly_off, COUNT(name) as count
-        FROM `tabHoliday`
-        WHERE parent = %(holiday_list)s
-          AND holiday_date BETWEEN %(from_date)s AND %(to_date)s
-        GROUP BY weekly_off
-        """,
-        {
-            "holiday_list": holiday_list,
-            "from_date": from_date,
-            "to_date": to_date
-        },
-        as_dict=True
-    )
+    # 1. Weekly Off Count (All Sundays via code)
+    weekly_offs = 0
+    cur = f_date
+    while cur <= t_date:
+        if cur.weekday() == 6:  # Sunday
+            weekly_offs += 1
+        cur = add_days(cur, 1)
 
-    result = {"weekly_off": 0, "holiday": 0}
-    for h in holidays:
-        if h.get("weekly_off") == 1:
-            result["weekly_off"] = h.get("count", 0)
-        else:
-            result["holiday"] = h.get("count", 0)
+    # 2. Public Holidays from Holiday List Doctype
+    public_holidays = 0
+    if holiday_list:
+        holidays = frappe.db.sql(
+            """
+            SELECT holiday_date
+            FROM `tabHoliday`
+            WHERE parent = %(holiday_list)s
+              AND holiday_date BETWEEN %(from_date)s AND %(to_date)s
+            """,
+            {
+                "holiday_list": holiday_list,
+                "from_date": f_date,
+                "to_date": t_date
+            },
+            as_dict=True
+        )
+        # Avoid counting a festival if it falls on Sunday (already counted as weekly off)
+        for h in holidays:
+            h_date = getdate(h["holiday_date"])
+            if h_date.weekday() != 6:
+                public_holidays += 1
 
-    return result
+    return {
+        "weekly_off": weekly_offs,
+        "holiday": public_holidays
+    }
 
 
 def has_lead_activity_on_date(emp_id, user_id, target_date):
