@@ -2727,15 +2727,24 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
 
                 let initialTo = (p.to && p.to.length) ? p.to : [];
                 let initialCc = (p.cc && p.cc.length) ? p.cc : [];
-                let isToEnabled = data.settings ? Boolean(data.settings.enable_to) : true;
-                let isCcEnabled = data.settings ? Boolean(data.settings.enable_cc) : true;
+                let isAlertsEnabled = data.settings ? Boolean(data.settings.enable_alerts) : true;
+                let isToEnabled = isAlertsEnabled && (data.settings ? Boolean(data.settings.enable_to) : true);
+                let isCcEnabled = isAlertsEnabled && (data.settings ? Boolean(data.settings.enable_cc) : true);
+                      
+                let bannerHtml = !isAlertsEnabled ? `
+                  <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span><b>CRM Inactivity Alerts Disabled:</b> Alert email functionalities are currently stopped via Sahayog Settings.</span>
+                  </div>
+                ` : '';
 
                 let cardHtml = `
+                  ${bannerHtml}
                   <div class="crm-alert-branch-card" style="border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;">
                     <div style="background:#f1f5f9;padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:12px;">
                       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
                         <span style="font-weight:700;color:#0f172a;font-size:13px;">Branch: ${p.branch_name} (${p.branch}) — <span style="color:#dc2626;">${p.employee_count} Inactive Staff (>= 3 days)</span></span>
-                        <button class="btn btn-xs btn-primary btn-send-test-alert" style="font-weight:600;display:inline-flex;align-items:center;gap:4px;">
+                        <button class="btn btn-xs btn-primary btn-send-test-alert" ${!isAlertsEnabled ? 'disabled' : ''} style="font-weight:600;display:inline-flex;align-items:center;gap:4px;${!isAlertsEnabled ? 'opacity:0.6;cursor:not-allowed;' : ''}">
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
                           Send Test Mail
                         </button>
