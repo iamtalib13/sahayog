@@ -490,20 +490,22 @@ def generate_crm_alert_table_html(employees, to_recipients=None, cc_recipients=N
 
 
 def get_crm_alert_settings():
-    """Fetch TO and CC enable/disable configurations from Sahayog Settings."""
+    """Fetch master alert, TO and CC enable/disable configurations from Sahayog Settings."""
     try:
         settings = frappe.get_cached_value(
             "Sahayog Settings",
             None,
-            ["enable_crm_alert_to", "enable_crm_alert_cc"],
+            ["enable_crm_inactivity_alerts", "enable_crm_alert_to", "enable_crm_alert_cc"],
             as_dict=True
         ) or {}
+        master_enabled = bool(settings.get("enable_crm_inactivity_alerts", 1))
         return {
-            "enable_to": bool(settings.get("enable_crm_alert_to", 1)),
-            "enable_cc": bool(settings.get("enable_crm_alert_cc", 1))
+            "enable_alerts": master_enabled,
+            "enable_to": master_enabled and bool(settings.get("enable_crm_alert_to", 1)),
+            "enable_cc": master_enabled and bool(settings.get("enable_crm_alert_cc", 1))
         }
     except Exception:
-        return {"enable_to": True, "enable_cc": True}
+        return {"enable_alerts": True, "enable_to": True, "enable_cc": True}
 
 
 @frappe.whitelist()
@@ -645,6 +647,10 @@ def get_crm_alert_preview(branch=None, days=3):
 @frappe.whitelist()
 def send_test_crm_alert_mail(to_recipients, cc_recipients=None, subject="CRM Alert", html_content="", branch=None):
     """Whitelisted function for sending live test email with editable recipients."""
+    alert_settings = get_crm_alert_settings()
+    if not alert_settings.get("enable_alerts"):
+        frappe.throw(__("CRM Inactivity Alerts are currently disabled in Sahayog Settings."))
+
     if isinstance(to_recipients, str):
         import json
         try:
@@ -687,6 +693,15 @@ def send_crm_inactivity_alerts(days=3):
        - CC: Branch Manager (BM) + Skip Managers (SM, DH)
        - Subject: CRM Alert
     """
+    alert_settings = get_crm_alert_settings()
+    if not alert_settings.get("enable_alerts"):
+        print("\n[STOPPED] CRM Inactivity Alert Emails are disabled in Sahayog Settings.")
+        return {
+            "status": "disabled",
+            "message": "CRM Inactivity Alert Emails are disabled in Sahayog Settings.",
+            "branches_emailed": 0
+        }
+
     inactive_employees = get_inactive_employees_for_alert(days=int(days))
     if not inactive_employees:
         return {"status": "success", "sent": 0, "message": "No inactive employees found for CRM alert"}
