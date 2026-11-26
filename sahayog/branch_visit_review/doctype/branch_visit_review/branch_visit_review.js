@@ -42,6 +42,8 @@ frappe.ui.form.on("Branch Visit Review", {
 		set_branch_head_signoff_access(frm);
 		if (frm.doc.template) {
 			render_checklist(frm, frm.doc.template);
+		} else if (frm.doc.responses && frm.doc.responses.length > 0) {
+			render_checklist(frm, "");
 		} else {
 			frappe.call({
 				method: "frappe.client.get_list",
@@ -53,6 +55,8 @@ frappe.ui.form.on("Branch Visit Review", {
 				callback: function (r) {
 					if (r.message && r.message.length === 1) {
 						frm.set_value("template", r.message[0].name);
+					} else if (frm.doc.responses && frm.doc.responses.length > 0) {
+						render_checklist(frm, "");
 					}
 				},
 			});
@@ -146,6 +150,10 @@ frappe.ui.form.on("Branch Visit Review", {
 	template(frm) {
 		if (frm.doc.template) {
 			render_checklist(frm, frm.doc.template);
+		} else if (frm.doc.responses && frm.doc.responses.length > 0) {
+			render_checklist(frm, "");
+		} else {
+			frm.fields_dict.checklist.$wrapper.empty();
 		}
 	},
 });
@@ -547,24 +555,20 @@ function open_action_item_dialog(frm, idx, item) {
 function render_checklist(frm, template) {
 	frappe.call({
 		method: "sahayog.branch_visit_review.api.get_employee_list",
-		callback: function (emp_r) {
+		callback: async function (emp_r) {
 			let employees = emp_r.message || [];
 			let employee_options = "";
 			employees.forEach(function (emp) {
 				let label = emp.employee_name ? emp.employee_name + "(" + emp.name + ")" : emp.name;
 				employee_options += "<option value='" + emp.name + "'>" + label + "</option>";
 			});
-			frappe.call({
-				method: "sahayog.branch_visit_review.api.get_template_items",
-				args: { template: template },
-				callback: async function (r) {
-					let all_items = r.message || [];
-					let tpl_meta = await frappe.db.get_value("Branch Visit Template", template, "department");
-					let tpl_dept = tpl_meta && tpl_meta.message && tpl_meta.message.department;
-					let is_admin_template = (tpl_dept === "Administration" || tpl_dept === "Admin");
-					frm._bvr_is_admin_template = is_admin_template;
-					let checklist_html = "";
-					let branch_checklist_html = "";
+
+			const render_with_items = async function (all_items, tpl_dept) {
+				let is_admin_template = (tpl_dept === "Administration" || tpl_dept === "Admin");
+				frm._bvr_is_admin_template = is_admin_template;
+				let checklist_html = "";
+				let branch_checklist_html = "";
+
 
 					let has_branch_items = all_items.some(function (row) {
 						let f = (row.for || "").toString().trim().toLowerCase();
@@ -939,7 +943,7 @@ function render_checklist(frm, template) {
 			frm.fields_dict.checklist.$wrapper.find("style").remove();
 			frm.fields_dict.checklist.$wrapper.prepend(style);
 
-			let template_items = r.message || [];
+				let template_items = all_items.slice();
 
 			let tab_map = {
 				".tab-review": ".tab-content-review",
@@ -1321,8 +1325,32 @@ function render_checklist(frm, template) {
 					bindCustomEvents(frm, $newRow, cat, $area);
 				});
 			});
-		},
-	});
+
+			};
+
+			if (template) {
+				frappe.call({
+					method: "sahayog.branch_visit_review.api.get_template_items",
+					args: { template: template },
+					callback: async function (r) {
+						let all_items = r.message || [];
+						let tpl_meta = await frappe.db.get_value("Branch Visit Template", template, "department");
+						let tpl_dept = tpl_meta && tpl_meta.message && tpl_meta.message.department;
+						await render_with_items(all_items, tpl_dept);
+					},
+				});
+			} else {
+				let all_items = (frm.doc.responses || []).map(function (resp, i) {
+					return {
+						_idx: i,
+						category: resp.category || "Responses",
+						parameter_name: resp.parameter_name || "",
+						response_type: "Text",
+						for: "",
+					};
+				});
+				await render_with_items(all_items, null);
+			}
 		},
 	});
 }
