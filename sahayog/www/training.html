@@ -8487,7 +8487,9 @@
             "\nDates: " + fmtDMY(start) + (end && end !== start ? " → " + fmtDMY(end) : "") +
             (ev.time ? "\nTime: " + ev.time : "") +
             (ev.program_duration_hours ? "\nDuration: " + ev.program_duration_hours + " hrs" : "") +
-            (typeof ev.participants !== "undefined" ? "\nParticipants: " + ev.participants : "");
+            (typeof ev.number_of_participants_attended !== "undefined"
+              ? "\nAttended: " + ev.number_of_participants_attended
+              : "");
           chip.title = tip;
           chip.innerHTML =
             '<span class="event-chip-top">' +
