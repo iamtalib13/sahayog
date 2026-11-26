@@ -535,10 +535,11 @@ scheduler_events = {
             "sahayog.scrm.api.report_access.generate_fast_lead_report"
         ],
 
-        # Run daily at 9:00 AM — L&D post-training closure mails (for yesterday's trainings)
-        "0 9 * * *": [
-            "sahayog.agent_and_bdo.ld_notifications.send_post_training_closures"
-        ],
+        # DISABLED — L&D closure mails are now sent event-driven, the moment a
+        # training is marked Completed (see update_training_status).
+        # "0 9 * * *": [
+        #     "sahayog.agent_and_bdo.ld_notifications.send_post_training_closures"
+        # ],
 
         # Run daily at 8:45 AM — Bulk Update of Agent Commission JSON for all agents
         "45 8 * * *": [
