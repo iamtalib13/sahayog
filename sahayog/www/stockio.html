@@ -3274,6 +3274,7 @@
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 80px;">Qty <span class="form-required">*</span></th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 100px;">Rate <span class="form-required">*</span></th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 80px;">GST</th>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 120px;">Amount</th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; width: 60px;">Action</th>
                     </tr>
                   </thead>
@@ -3406,6 +3407,9 @@
                         </div>
                       </td>
                       <td style="padding: 10px; text-align: center; font-size: 0.9rem; color: var(--text-main);">18%</td>
+                      <td style="padding: 10px; text-align: center; font-size: 0.9rem; color: var(--text-main); font-weight: 600;">
+                        [[ formatCurrency(((item.rate || 0) + ((item.rate || 0) * (18 * 0.5 / 100))) * (item.qty || 0)) ]]
+                      </td>
                       <td style="padding: 10px; text-align: center;">
                         <button class="btn-action" @click="removeInwardItem(index)" title="Remove">
                           <i class="fas fa-trash-alt"></i>
