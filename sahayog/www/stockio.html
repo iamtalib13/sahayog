@@ -11045,7 +11045,7 @@
     v-if="showDispatchModal"
     @click.self="showDispatchModal = false"
   >
-    <div class="profile-modal">
+    <div class="profile-modal" style="max-width: 100%; width: 1300px;">
       <div class="profile-modal-header">
         <h3>
           [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]
@@ -11346,6 +11346,18 @@
                     >
                       Total
                     </th>
+                    <th
+                      style="
+                        font-size: 10px;
+                        text-transform: uppercase;
+                        padding: 8px 12px;
+                        text-align: left;
+                        color: var(--text-muted);
+                        border-left: 2px solid var(--border-color);
+                      "
+                    >
+                      Available Stock
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -11417,7 +11429,10 @@
                       "
                     >
                       <div v-if="item.available_rates && item.available_rates.length > 1">
-                          <select v-model="item.rate" class="form-input" style="height: 28px; padding: 0 4px; font-size: 12px; width: 80px;">
+                          <div v-if="dispatchForm.transfer_old_stock_first" style="font-size: 12px; font-weight: 600; color: var(--text-main);">
+                              [[ formatCurrency((item.available_rates && item.available_rates.length ? item.available_rates[0] : item.rate) || 0) ]]
+                          </div>
+                          <select v-else v-model="item.rate" class="form-input" style="height: 28px; padding: 0 4px; font-size: 12px; width: 80px;">
                               <option value="">Select</option>
                               <option v-for="r in item.available_rates" :value="r">[[ r ]]</option>
                           </select>
@@ -11435,13 +11450,38 @@
                         font-weight: 700;
                       "
                     >
-                      [[ formatCurrency((item.dispatch_qty || 0) * (item.rate ||
-                      0)) ]]
+                      [[ formatCurrency((item.dispatch_qty || 0) * ((dispatchForm.transfer_old_stock_first && item.available_rates && item.available_rates.length ? item.available_rates[0] : item.rate) || 0)) ]]
+                    </td>
+                    <td style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
+                      <div v-if="item.available_batches && item.available_batches.length">
+                        <div v-for="b in (item.showAllBatches ? item.available_batches : item.available_batches.slice(0, 3))" :key="'ab-' + item.item_code + '-' + b.rate" style="display: inline-flex; align-items: center; margin: 2px 4px 2px 0; border: 1px solid var(--border-color); border-radius: 999px; overflow: hidden; font-size: 11px; white-space: nowrap;">
+                          <span style="padding: 2px 8px; background: var(--bg-card); color: var(--text-main); font-weight: 600;">Rate [[ b.rate ]]</span>
+                          <span style="padding: 2px 8px; background: #369696; color: #fff; font-weight: 700;">Qty [[ b.qty ]]</span>
+                        </div>
+                        <button
+                          v-if="item.available_batches.length > 3"
+                          @click="item.showAllBatches = !item.showAllBatches"
+                          style="margin-top: 4px; padding: 2px 8px; font-size: 11px; border: 1px solid var(--border-color); border-radius: 4px; background: var(--bg-card); color: var(--text-main); cursor: pointer;"
+                        >
+                          [[ item.showAllBatches ? 'Show less' : 'Show all (' + item.available_batches.length + ')' ]]
+                        </button>
+                      </div>
+                      <div v-else style="font-size: 11px; color: var(--text-muted);">No stock</div>
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
+          </div>
+          <div v-if="dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer; font-weight: 600;">
+              <input
+                type="checkbox"
+                v-model="dispatchForm.transfer_old_stock_first"
+                @change="(e) => { if (e.target.checked) { dispatchForm.transfer_old_stock_first = true; dispatchForm.items.forEach(i => { if (i.available_rates && i.available_rates.length) i.rate = i.available_rates[0]; }); } }"
+              />
+              Transfer old stock first (FIFO rate)
+            </label>
           </div>
         </div>
       </div>
@@ -14417,6 +14457,7 @@
         dispatch_location: "",
         address: "",
         mobile_number: "",
+        transfer_old_stock_first: true,
       },
 
       showBranchStockUseView: false,
@@ -19626,6 +19667,7 @@
         this.dispatchForm.dispatch_location = "";
         this.dispatchForm.address = "";
         this.dispatchForm.mobile_number = "";
+        this.dispatchForm.transfer_old_stock_first = true;
         this.showDispatchItems = false;
         this.dispatchForm.dispatchStep = 1;
         this.showDispatchModal = true;
@@ -19675,14 +19717,23 @@
                   item.available_batches = stockRes.message || [];
               }
 
-              this.dispatchForm.items = selectedItems.map((item) => ({
-                ...item,
-                dispatch_qty: item.approved_quantity || 0,
-                // If multiple batches, default to first one or force user to select
-                rate: item.available_batches.length === 1 ? item.available_batches[0].rate : (item.available_batches.length > 0 ? "" : 0),
-                available_rates: item.available_batches.map(b => b.rate),
-                selected: true,
-              }));
+              this.dispatchForm.items = selectedItems.map((item) => {
+                const availableRates = (item.available_batches || []).map(b => b.rate);
+                let rate = 0;
+                if (availableRates.length === 1) {
+                  rate = availableRates[0];
+                } else if (availableRates.length > 1) {
+                  rate = this.dispatchForm.transfer_old_stock_first ? availableRates[0] : "";
+                }
+                return {
+                  ...item,
+                  dispatch_qty: item.approved_quantity || 0,
+                  rate,
+                  available_rates: availableRates,
+                  selected: true,
+                  showAllBatches: false,
+                };
+              });
             }
             this.dispatchForm.loading = false;
           },
@@ -19978,6 +20029,13 @@
         });
       },
       async submitDispatch() {
+        if (this.dispatchForm.transfer_old_stock_first) {
+          this.dispatchForm.items.forEach((item) => {
+            if (item.available_rates && item.available_rates.length) {
+              item.rate = item.available_rates[0];
+            }
+          });
+        }
         // Quick validation
         if (
           !this.dispatchForm.source_warehouse ||

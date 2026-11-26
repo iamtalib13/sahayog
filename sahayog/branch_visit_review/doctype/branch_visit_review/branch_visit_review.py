@@ -67,6 +67,16 @@ class BranchVisitReview(Document):
 		self.validate_visitor_signoff()
 		self.validate_branch_head_signoff()
 
+	def before_submit(self):
+		self.validate_responses()
+
+	def validate_responses(self):
+		if not self.responses:
+			frappe.throw(_("At least one Review Response row is required before submission."))
+
+		if not any((row.response or "").strip() for row in self.responses):
+			frappe.throw(_("At least one Review Response row must have a Response filled before submission."))
+
 	def format_numbered_fields(self):
 		if self.key_strengths:
 			self.key_strengths = self._number_lines(self.key_strengths)
