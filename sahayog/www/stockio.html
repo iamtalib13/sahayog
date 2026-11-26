@@ -3406,9 +3406,17 @@
                           />
                         </div>
                       </td>
-                      <td style="padding: 10px; text-align: center; font-size: 0.9rem; color: var(--text-main);">18%</td>
+                      <td style="padding: 10px; text-align: center;">
+                        <input
+                          type="number"
+                          class="form-input"
+                          style="width: 80px; text-align: center; padding: 10px 8px !important; min-width: 70px; font-size: 0.9rem;"
+                          v-model.number="item.gst"
+                          placeholder="18"
+                        />
+                      </td>
                       <td style="padding: 10px; text-align: center; font-size: 0.9rem; color: var(--text-main); font-weight: 600;">
-                        [[ formatCurrency(((item.rate || 0) + ((item.rate || 0) * (18 * 0.5 / 100))) * (item.qty || 0)) ]]
+                        [[ formatCurrency(((item.rate || 0) + ((item.rate || 0) * (((item.gst ?? 18) * 0.5) / 100))) * (item.qty || 0)) ]]
                       </td>
                       <td style="padding: 10px; text-align: center;">
                         <button class="btn-action" @click="removeInwardItem(index)" title="Remove">
@@ -16950,6 +16958,7 @@
               description: "",
               qty: 1,
               rate: 0,
+              gst: 18,
               warehouse: "",
             },
           ];
@@ -20377,6 +20386,7 @@
           description: "",
           qty: 1,
           rate: 0,
+          gst: 18,
           warehouse: "",
         });
       },      removeInwardItem(index) {
