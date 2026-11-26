@@ -836,8 +836,8 @@ def send_email_for_review(case_id=None, approvers=None):
 # ---------------------------------------------------------
 @frappe.whitelist()
 def check_employee_email(employee):
-    emp = frappe.get_doc("Employee", employee)
-    return emp.company_email if emp.company_email else None
+    from sahayog.hrms.doctype.disciplinary_case.disciplinary_case import get_employee_email
+    return get_employee_email(employee)
 
 
 # ---------------------------------------------------------

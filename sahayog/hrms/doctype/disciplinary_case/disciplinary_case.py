@@ -225,10 +225,45 @@ def get_case_stage_counts(case_id):
 # check if employee has company email
 @frappe.whitelist()
 def check_employee_email(employee):
+    return get_employee_email(employee)
+
+
+def get_employee_email(employee):
+    """Resolve an employee's email, falling back to linked Disciplinary Case emails."""
     if not employee:
         return None
-    emp = frappe.get_doc("Employee", employee)
-    return emp.company_email if emp.company_email else None
+    try:
+        emp = frappe.get_doc("Employee", employee)
+    except Exception:
+        emp = None
+
+    if emp and emp.company_email:
+        return emp.company_email
+    if emp and getattr(emp, "personal_email", None):
+        return emp.personal_email
+
+    # Fallback: email stored on the latest Disciplinary Case for this employee
+    try:
+        dc_email = frappe.db.get_value(
+            "Disciplinary Case",
+            {"employee_id": employee, "employee_email": ["not in", ["", None]]},
+            "employee_email",
+            order_by="modified desc",
+        )
+        if dc_email:
+            return dc_email
+        dc_personal = frappe.db.get_value(
+            "Disciplinary Case",
+            {"employee_id": employee, "personal_email": ["not in", ["", None]]},
+            "personal_email",
+            order_by="modified desc",
+        )
+        if dc_personal:
+            return dc_personal
+    except Exception:
+        pass
+
+    return None
 
 # save email and send SCN email
 @frappe.whitelist()
