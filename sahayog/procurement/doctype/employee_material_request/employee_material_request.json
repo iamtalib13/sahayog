@@ -97,7 +97,7 @@
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Status",
-   "options": "Draft\nPending Reporting Person\nPending HO Approval\nSelf Approved\nApproved\nCompleted\nRejected\nCancelled",
+   "options": "Draft\nPending Reporting Person\nPending HO Approval\nSelf Approved\nApproved\nDispatch\nReceived\nCompleted\nRejected\nCancelled",
    "read_only": 1,
    "reqd": 1
   },
