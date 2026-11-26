@@ -2986,50 +2986,106 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
             });
             logDialog.show();
 
-            frappe.call({
-              method: "sahayog.scrm.api.crm_alert.get_crm_alert_email_logs",
-              args: { branch: currentSelectedBranch },
-              callback: function (res) {
-                let logs = res.message || [];
-                if (!logs.length) {
-                  logDialog.fields_dict.logs_html.$wrapper.html(
-                    '<div style="text-align:center;padding:30px;color:#64748b;">No CRM Alert emails found in queue.</div>'
-                  );
-                  return;
-                }
+            let selectedLogDate = "";
 
-                let rows = logs.map(l => {
-                  let statusColor = l.status === "Sent" ? "#166534;background:#dcfce7;" : (l.status === "Error" ? "#991b1b;background:#fee2e2;" : "#854d0e;background:#fef9c3;");
-                  return `
-                    <tr style="border-bottom:1px solid #e2e8f0;font-size:12px;">
-                      <td style="padding:8px 10px;font-weight:600;color:#0f172a;">${l.branch || 'N/A'}</td>
-                      <td style="padding:8px 10px;color:#0369a1;">${l.recipient}</td>
-                      <td style="padding:8px 10px;"><span style="padding:2px 8px;border-radius:12px;font-weight:700;font-size:10px;color:${statusColor}">${l.status}</span></td>
-                      <td style="padding:8px 10px;color:#64748b;font-size:11px;">${l.creation}</td>
-                    </tr>
+            function loadLogs() {
+              logDialog.fields_dict.logs_html.$wrapper.find('.logs-table-container').html(
+                '<div style="text-align:center;padding:30px;color:#64748b;">Loading email logs...</div>'
+              );
+
+              frappe.call({
+                method: "sahayog.scrm.api.crm_alert.get_crm_alert_email_logs",
+                args: { 
+                  branch: currentSelectedBranch,
+                  date: selectedLogDate || null,
+                  limit: 200
+                },
+                callback: function (res) {
+                  let logs = res.message || [];
+                  if (!logs.length) {
+                    let msg = selectedLogDate 
+                      ? `No CRM Alert emails found for date: <b>${selectedLogDate}</b>` 
+                      : 'No CRM Alert emails found in queue.';
+                    logDialog.fields_dict.logs_html.$wrapper.find('.logs-table-container').html(
+                      `<div style="text-align:center;padding:35px;color:#64748b;">${msg}</div>`
+                    );
+                    return;
+                  }
+
+                  let rows = logs.map(l => {
+                    let statusColor = l.status === "Sent" ? "#166534;background:#dcfce7;" : (l.status === "Error" ? "#991b1b;background:#fee2e2;" : "#854d0e;background:#fef9c3;");
+                    return `
+                      <tr style="border-bottom:1px solid #e2e8f0;font-size:12px;">
+                        <td style="padding:8px 10px;font-weight:600;color:#0f172a;">${l.branch || 'N/A'}</td>
+                        <td style="padding:8px 10px;color:#0369a1;">${l.recipient}</td>
+                        <td style="padding:8px 10px;"><span style="padding:2px 8px;border-radius:12px;font-weight:700;font-size:10px;color:${statusColor}">${l.status}</span></td>
+                        <td style="padding:8px 10px;color:#64748b;font-size:11px;">${l.creation}</td>
+                      </tr>
+                    `;
+                  }).join('');
+
+                  let tableHtml = `
+                    <div style="max-height:420px;overflow-y:auto;">
+                      <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;">
+                        <thead>
+                          <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;font-size:11px;color:#475569;text-align:left;">
+                            <th style="padding:8px 10px;">Branch</th>
+                            <th style="padding:8px 10px;">Recipient</th>
+                            <th style="padding:8px 10px;">Status</th>
+                            <th style="padding:8px 10px;">Timestamp</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${rows}
+                        </tbody>
+                      </table>
+                    </div>
                   `;
-                }).join('');
+                  logDialog.fields_dict.logs_html.$wrapper.find('.logs-table-container').html(tableHtml);
+                }
+              });
+            }
 
-                let tableHtml = `
-                  <div style="max-height:420px;overflow-y:auto;">
-                    <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;">
-                      <thead>
-                        <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;font-size:11px;color:#475569;text-align:left;">
-                          <th style="padding:8px 10px;">Branch</th>
-                          <th style="padding:8px 10px;">Recipient</th>
-                          <th style="padding:8px 10px;">Status</th>
-                          <th style="padding:8px 10px;">Timestamp</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${rows}
-                      </tbody>
-                    </table>
+            // Shell container with header date filter
+            let shellHtml = `
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;border-radius:6px 6px 0 0;margin-bottom:10px;">
+                  <span style="font-size:12px;color:#475569;font-weight:600;">Filter Email History:</span>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-size:11px;color:#64748b;margin:0;">Date:</label>
+                    <input type="date" class="log-filter-date" style="font-size:11px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:4px;background:#ffffff;outline:none;" />
+                    <button type="button" class="btn btn-xs btn-default btn-clear-log-date" style="display:none;font-size:10px;padding:2px 6px;">Clear</button>
                   </div>
-                `;
-                logDialog.fields_dict.logs_html.$wrapper.html(tableHtml);
+                </div>
+                <div class="logs-table-container">
+                  <div style="text-align:center;padding:25px;color:#64748b;">Loading CRM Alert email logs...</div>
+                </div>
+              </div>
+            `;
+            logDialog.fields_dict.logs_html.$wrapper.html(shellHtml);
+
+            // Bind date filter actions
+            let $dateInput = logDialog.fields_dict.logs_html.$wrapper.find('.log-filter-date');
+            let $clearDateBtn = logDialog.fields_dict.logs_html.$wrapper.find('.btn-clear-log-date');
+
+            $dateInput.on('change', function () {
+              selectedLogDate = $(this).val();
+              if (selectedLogDate) {
+                $clearDateBtn.show();
+              } else {
+                $clearDateBtn.hide();
               }
+              loadLogs();
             });
+
+            $clearDateBtn.on('click', function () {
+              selectedLogDate = "";
+              $dateInput.val('');
+              $(this).hide();
+              loadLogs();
+            });
+
+            loadLogs();
           });
         }
       });

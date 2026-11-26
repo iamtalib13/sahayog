@@ -782,10 +782,14 @@ def send_crm_inactivity_alerts(days=3):
 
 
 @frappe.whitelist()
-def get_crm_alert_email_logs(branch=None, limit=30):
-    """Fetch tracked emails strictly related to 'CRM Alert' from Email Queue."""
+def get_crm_alert_email_logs(branch=None, date=None, limit=100):
+    """Fetch tracked emails strictly related to 'CRM Alert' from Email Queue, with optional date filtering."""
     conditions = ["(eq.message LIKE %(crm_kw)s OR eq.reference_doctype = 'Sahayog Branch')"]
     params = {"limit": int(limit), "crm_kw": "%CRM Alert%"}
+
+    if date:
+        conditions.append("DATE(eq.creation) = %(filter_date)s")
+        params["filter_date"] = str(date).strip()
 
     if branch:
         b_str = str(branch).strip()
