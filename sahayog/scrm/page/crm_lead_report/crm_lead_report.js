@@ -1079,6 +1079,9 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                                 BM Verification
                                 <span v-if="bm_pending_count > 0" class="badge badge-danger ml-1">{{ bm_pending_count }}</span>
                             </button>
+                            <button v-if="frappe.user_roles.includes('System Manager') || frappe.session.user === 'Administrator'" class="btn btn-xs btn-default border font-weight-bold" style="background:#fef3c7; color:#92400e;" @click="openCRMAlertPreviewDialog">
+                                CRM Alert Preview
+                            </button>
                             <button v-if="totalLeadsInReport > 0" class="btn btn-xs btn-dark font-weight-bold" @click="openDownloadDialog" :disabled="loading">
                                 Export
                             </button>
@@ -2554,6 +2557,546 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
           current_start = 0;
           loadVerificationData();
         }, 500);
+      });
+    },
+
+    openCRMAlertPreviewDialog() {
+      let currentSelectedBranch = null;
+      let d = new frappe.ui.Dialog({
+        title: __("CRM Inactivity Alert Preview (Inspection Mode)"),
+        size: "extra-large",
+        fields: [
+          {
+            fieldtype: "HTML",
+            fieldname: "preview_content",
+            options: '<div style="text-align:center;padding:30px;color:#64748b;">Loading branches...</div>'
+          }
+        ]
+      });
+
+      d.show();
+
+      // Step 1: Fetch list of branches fast (Zero lead calculation)
+      frappe.call({
+        method: "sahayog.scrm.api.crm_alert.get_branch_list_for_filter",
+        callback: function (res) {
+          let branches = res.message || [];
+          let optionsHtml = '<option value="">-- Select or Search Branch --</option>' + 
+            branches.map(b => `<option value="${b.value}">${b.label}</option>`).join("");
+
+          let containerHtml = `
+            <div style="margin-bottom:14px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <label style="font-weight:600;font-size:12px;color:#1e293b;margin:0;">Search Branch:</label>
+                <div style="position:relative;width:340px;">
+                  <input type="text" class="form-control input-xs input-search-branch" placeholder="Search by SOL ID (e.g. 1145) or Branch name..." style="height:32px;font-size:12px;padding-right:24px;" />
+                  <span class="btn-clear-branch-search" style="display:none;position:absolute;right:8px;top:50%;transform:translateY(-50%);cursor:pointer;color:#94a3b8;font-size:14px;line-height:1;">&times;</span>
+                  <div class="branch-autocomplete-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 10px 15px -3px rgba(0,0,0,0.1);z-index:99999;max-height:220px;overflow-y:auto;margin-top:2px;"></div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;">
+                <div class="branch-status-indicator" style="font-size:12px;color:#64748b;">
+                  Select a branch to view inactive staff
+                </div>
+                <button type="button" class="btn btn-xs btn-default btn-view-alert-email-logs" style="font-size:11px;font-weight:600;display:inline-flex;align-items:center;gap:4px;border:1px solid #cbd5e1;background:#ffffff;cursor:pointer;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                  Track CRM Alert Emails
+                </button>
+              </div>
+            </div>
+            <div class="branch-preview-card-wrapper" style="max-height:550px;overflow-y:auto;">
+              <div style="text-align:center;padding:45px;color:#64748b;font-size:13px;border:1px dashed #cbd5e1;border-radius:8px;background:#ffffff;">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" style="margin-bottom:8px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <div style="font-weight:600;color:#334155;">No Branch Selected</div>
+                <div style="font-size:12px;color:#64748b;margin-top:2px;">Please select a branch from the dropdown above to load accused employees.</div>
+              </div>
+            </div>
+          `;
+
+          d.fields_dict.preview_content.$wrapper.html(containerHtml);
+
+          let $searchInput = d.fields_dict.preview_content.$wrapper.find('.input-search-branch');
+          let $branchDrop = d.fields_dict.preview_content.$wrapper.find('.branch-autocomplete-dropdown');
+          let $clearBtn = d.fields_dict.preview_content.$wrapper.find('.btn-clear-branch-search');
+
+          function filterAndShowBranches(query) {
+            let q = (query || '').toLowerCase().trim();
+            let matches = branches.filter(b => {
+              let label = (b.label || '').toLowerCase();
+              let val = String(b.value || '').toLowerCase();
+              return label.includes(q) || val.includes(q);
+            });
+
+            if (!matches.length) {
+              $branchDrop.html('<div style="padding:10px 12px;font-size:12px;color:#94a3b8;text-align:center;">No matching branch found</div>').show();
+              return;
+            }
+
+            let itemsHtml = matches.slice(0, 30).map(b => `
+              <div class="branch-suggest-row" data-value="${b.value}" data-label="${b.label}" style="padding:8px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;color:#1e293b;">${b.label}</span>
+                <span style="font-size:10px;background:#f1f5f9;color:#64748b;padding:2px 6px;border-radius:4px;">SOL: ${b.value}</span>
+              </div>
+            `).join('');
+
+            $branchDrop.html(itemsHtml).show();
+
+            $branchDrop.find('.branch-suggest-row').on('click', function () {
+              let chosenVal = $(this).data('value');
+              let chosenLabel = $(this).data('label');
+              currentSelectedBranch = chosenVal;
+              $searchInput.val(chosenLabel);
+              $clearBtn.show();
+              $branchDrop.hide();
+              triggerBranchLoad(chosenVal);
+            });
+          }
+
+          $searchInput.on('focus input', function () {
+            let val = $(this).val();
+            if (val) $clearBtn.show();
+            else $clearBtn.hide();
+            filterAndShowBranches(val);
+          });
+
+          $searchInput.on('keydown', function (e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              e.stopPropagation();
+              let $first = $branchDrop.find('.branch-suggest-row').first();
+              if ($first.length) {
+                let chosenVal = $first.data('value');
+                let chosenLabel = $first.data('label');
+                currentSelectedBranch = chosenVal;
+                $searchInput.val(chosenLabel);
+                $clearBtn.show();
+                $branchDrop.hide();
+                triggerBranchLoad(chosenVal);
+              }
+              return false;
+            }
+          });
+
+          $clearBtn.on('click', function () {
+            currentSelectedBranch = null;
+            $searchInput.val('');
+            $(this).hide();
+            triggerBranchLoad(null);
+          });
+
+          $(document).on('click', function (e) {
+            if (!$(e.target).closest($searchInput).length && !$(e.target).closest($branchDrop).length) {
+              $branchDrop.hide();
+            }
+          });
+
+          function triggerBranchLoad(chosen_branch) {
+            let $cardWrapper = d.fields_dict.preview_content.$wrapper.find('.branch-preview-card-wrapper');
+            let $status = d.fields_dict.preview_content.$wrapper.find('.branch-status-indicator');
+
+            if (!chosen_branch) {
+              $status.html('Select a branch to view inactive staff');
+              $cardWrapper.html(`
+                <div style="text-align:center;padding:45px;color:#64748b;font-size:13px;border:1px dashed #cbd5e1;border-radius:8px;background:#ffffff;">
+                  <div style="font-weight:600;color:#334155;">No Branch Selected</div>
+                  <div style="font-size:12px;color:#64748b;margin-top:2px;">Please select a branch from the dropdown above to load accused employees.</div>
+                </div>
+              `);
+              return;
+            }
+
+            $status.html('Loading branch data...');
+            $cardWrapper.html('<div style="text-align:center;padding:35px;color:#64748b;font-weight:600;">Fetching inactive employees for branch...</div>');
+
+            frappe.call({
+              method: "sahayog.scrm.api.crm_alert.get_crm_alert_preview",
+              args: { branch: chosen_branch },
+              callback: function (r) {
+                let data = r.message || {};
+                let p = data.preview;
+
+                if (!p || data.total_inactive === 0) {
+                  $status.html('<span style="color:#059669;font-weight:600;">All employees active (0 inactive)</span>');
+                  $cardWrapper.html(
+                    '<div style="text-align:center;padding:35px;color:#059669;font-weight:600;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;">Great news! No staff members in this branch are inactive for >= 3 days. All CRM leads are up to date.</div>'
+                  );
+                  return;
+                }
+
+                $status.html(`Total Inactive Staff: <b style="color:#dc2626;">${data.total_inactive}</b>`);
+
+                let initialTo = (p.to && p.to.length) ? p.to : [];
+                let initialCc = (p.cc && p.cc.length) ? p.cc : [];
+                let isAlertsEnabled = data.settings ? Boolean(data.settings.enable_alerts) : true;
+                let isToEnabled = isAlertsEnabled && (data.settings ? Boolean(data.settings.enable_to) : true);
+                let isCcEnabled = isAlertsEnabled && (data.settings ? Boolean(data.settings.enable_cc) : true);
+                      
+                let bannerHtml = !isAlertsEnabled ? `
+                  <div style="background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;padding:10px 14px;border-radius:6px;font-size:12px;margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    <span><b>CRM Inactivity Alerts Disabled:</b> Alert email functionalities are currently stopped via Sahayog Settings.</span>
+                  </div>
+                ` : '';
+
+                let cardHtml = `
+                  ${bannerHtml}
+                  <div class="crm-alert-branch-card" style="border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;box-shadow:0 1px 3px rgba(0,0,0,0.05);overflow:hidden;">
+                    <div style="background:#f1f5f9;padding:12px 16px;border-bottom:1px solid #e2e8f0;font-size:12px;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+                        <span style="font-weight:700;color:#0f172a;font-size:13px;">Branch: ${p.branch_name} (${p.branch}) — <span style="color:#dc2626;">${p.employee_count} Inactive Staff (>= 3 days)</span></span>
+                        <button class="btn btn-xs btn-primary btn-send-test-alert" ${!isAlertsEnabled ? 'disabled' : ''} style="font-weight:600;display:inline-flex;align-items:center;gap:4px;${!isAlertsEnabled ? 'opacity:0.6;cursor:not-allowed;' : ''}">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                          Send Test Mail
+                        </button>
+                      </div>
+
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                        <!-- To Field Container -->
+                        <div class="email-chip-group-wrapper" data-field="to">
+                          <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:3px;display:flex;justify-content:space-between;">
+                            <span>To (Branch Official Email):</span>
+                            <span style="font-weight:normal;color:#94a3b8;font-size:10px;">${isToEnabled ? 'Type to search' : '<b style="color:#ef4444;">Disabled in Settings</b>'}</span>
+                          </label>
+                          <div class="email-chip-box chip-box-to" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:32px;padding:3px 6px;background:${isToEnabled ? '#ffffff' : '#f8fafc'};border:1px solid #cbd5e1;border-radius:6px;position:relative;">
+                            ${isToEnabled ? '<input type="text" class="email-search-input" placeholder="Add email..." style="border:none;outline:none;font-size:11px;flex:1;min-width:120px;padding:2px 4px;" />' : '<span style="color:#94a3b8;font-size:11px;font-style:italic;">TO recipients are disabled in Sahayog Settings</span>'}
+                            <div class="email-autocomplete-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);z-index:9999;max-height:180px;overflow-y:auto;"></div>
+                          </div>
+                        </div>
+
+                        <!-- CC Field Container -->
+                        <div class="email-chip-group-wrapper" data-field="cc">
+                          <label style="font-weight:600;font-size:11px;color:#475569;margin-bottom:3px;display:flex;justify-content:space-between;">
+                            <span>CC (BM & Skip Manager):</span>
+                            <span style="font-weight:normal;color:#94a3b8;font-size:10px;">${isCcEnabled ? 'Type to search' : '<b style="color:#ef4444;">Disabled in Settings</b>'}</span>
+                          </label>
+                          <div class="email-chip-box chip-box-cc" style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;min-height:32px;padding:3px 6px;background:${isCcEnabled ? '#ffffff' : '#f8fafc'};border:1px solid #cbd5e1;border-radius:6px;position:relative;">
+                            ${isCcEnabled ? '<input type="text" class="email-search-input" placeholder="Add email..." style="border:none;outline:none;font-size:11px;flex:1;min-width:120px;padding:2px 4px;" />' : '<span style="color:#94a3b8;font-size:11px;font-style:italic;">CC recipients are disabled in Sahayog Settings</span>'}
+                            <div class="email-autocomplete-list" style="display:none;position:absolute;top:100%;left:0;right:0;background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);z-index:9999;max-height:180px;overflow-y:auto;"></div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div style="padding:16px;">
+                      ${p.html}
+                    </div>
+                  </div>
+                `;
+
+                $cardWrapper.html(cardHtml);
+
+                // Helper to manage email chips (Gmail / Outlook style)
+                function setupEmailChips($container, initialEmails, isEnabled = true) {
+                  if (!isEnabled) {
+                    return {
+                      getEmails: () => []
+                    };
+                  }
+
+                  // emails will store objects { email: "...", detail: "..." }
+                  let emails = initialEmails.map(em => {
+                    return typeof em === 'string' ? { email: em.trim().toLowerCase(), detail: em.trim() } : em;
+                  });
+
+                  function render() {
+                    $container.find('.email-chip').remove();
+                    emails.forEach((item, idx) => {
+                      let displayEmail = item.email;
+                      let tooltipText = item.detail ? `${item.detail}` : displayEmail;
+
+                      let $chip = $(`
+                        <span class="email-chip" title="${tooltipText}" style="cursor:help;display:inline-flex;align-items:center;gap:4px;background:#e0f2fe;color:#0369a1;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:600;border:1px solid #bae6fd;transition:all 0.15s ease;">
+                          <span>${displayEmail}</span>
+                          <span class="btn-remove-chip" data-idx="${idx}" title="Remove" style="cursor:pointer;font-size:13px;line-height:1;margin-left:2px;color:#0284c7;">&times;</span>
+                        </span>
+                      `);
+
+                      // Smooth hover styling
+                      $chip.on('mouseenter', function() {
+                        $(this).css({ 'background': '#bae6fd', 'border-color': '#7dd3fc' });
+                      }).on('mouseleave', function() {
+                        $(this).css({ 'background': '#e0f2fe', 'border-color': '#bae6fd' });
+                      });
+
+                      $container.find('.email-search-input').before($chip);
+                    });
+
+                    $container.find('.btn-remove-chip').off('click').on('click', function (e) {
+                      e.stopPropagation();
+                      let i = $(this).data('idx');
+                      emails.splice(i, 1);
+                      render();
+                    });
+                  }
+
+                  let $input = $container.find('.email-search-input');
+                  let $drop = $container.find('.email-autocomplete-list');
+                  let searchTimer = null;
+
+                  function addEmail(emailStr, detailStr = null) {
+                    let clean = emailStr.trim().toLowerCase();
+                    if (clean && !emails.some(e => e.email === clean)) {
+                      emails.push({ email: clean, detail: detailStr || clean });
+                      render();
+                    }
+                    $input.val('');
+                    $drop.hide();
+                  }
+
+                  $input.on('input', function () {
+                    let query = $(this).val().trim();
+                    if (!query) {
+                      $drop.hide();
+                      return;
+                    }
+                    clearTimeout(searchTimer);
+                    searchTimer = setTimeout(() => {
+                      frappe.call({
+                        method: "sahayog.scrm.api.crm_alert.search_alert_emails",
+                        args: { txt: query },
+                        callback: function (res) {
+                          let list = res.message || [];
+                          if (!list.length) {
+                            $drop.html('<div style="padding:8px 12px;font-size:11px;color:#94a3b8;">No matching email found (press enter to add)</div>').show();
+                            return;
+                          }
+                          let itemsHtml = list.map(item => `
+                            <div class="email-suggest-item" data-email="${item.value}" data-detail="${item.label}" style="padding:6px 12px;font-size:11px;cursor:pointer;border-bottom:1px solid #f1f5f9;display:flex;justify-content:space-between;align-items:center;">
+                              <div>
+                                <div style="font-weight:600;color:#1e293b;">${item.value}</div>
+                                <div style="font-size:10px;color:#64748b;">${item.label}</div>
+                              </div>
+                              <span style="font-size:9px;background:#f1f5f9;color:#64748b;padding:1px 6px;border-radius:4px;">${item.description}</span>
+                            </div>
+                          `).join('');
+                          $drop.html(itemsHtml).show();
+
+                          $drop.find('.email-suggest-item').on('click', function () {
+                            addEmail($(this).data('email'), $(this).data('detail'));
+                          });
+                        }
+                      });
+                    }, 300);
+                  });
+
+                  $input.on('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ',') {
+                      e.preventDefault();
+                      // If autocomplete list has items, select the first match's actual email
+                      let $firstMatch = $drop.find('.email-suggest-item').first();
+                      if ($drop.is(':visible') && $firstMatch.length) {
+                        addEmail($firstMatch.data('email'), $firstMatch.data('detail'));
+                        return;
+                      }
+
+                      let typed = $(this).val().replace(',', '').trim();
+                      if (typed) {
+                        // Only add if looks like an email or search first
+                        if (typed.includes('@')) {
+                          addEmail(typed);
+                        } else {
+                          // Quick check to resolve SOL ID or emp code
+                          frappe.call({
+                            method: "sahayog.scrm.api.crm_alert.search_alert_emails",
+                            args: { txt: typed },
+                            callback: function (res) {
+                              let list = res.message || [];
+                              if (list.length) {
+                                addEmail(list[0].value, list[0].label);
+                              } else {
+                                frappe.show_alert({ message: __(`No valid email found for '${typed}'`), indicator: "orange" });
+                              }
+                            }
+                          });
+                        }
+                      }
+                    }
+                    if (e.key === 'Backspace' && !$(this).val() && emails.length) {
+                      emails.pop();
+                      render();
+                    }
+                  });
+
+                  // Close drop on outside click
+                  $(document).on('click', function (e) {
+                    if (!$(e.target).closest($container).length) {
+                      $drop.hide();
+                    }
+                  });
+
+                  render();
+
+                  return {
+                    getEmails: () => emails.map(e => e.email)
+                  };
+                }
+
+                let toManager = setupEmailChips($cardWrapper.find('.chip-box-to'), initialTo, isToEnabled);
+                let ccManager = setupEmailChips($cardWrapper.find('.chip-box-cc'), initialCc, isCcEnabled);
+
+                // Attach Test Mail click handler
+                $cardWrapper.find('.btn-send-test-alert').on('click', function () {
+                  let toVal = toManager.getEmails();
+                  let ccVal = ccManager.getEmails();
+
+                  if (!toVal.length && !ccVal.length) {
+                    frappe.msgprint(__("No recipients found. Please enable TO or CC in Sahayog Settings or provide recipient emails."));
+                    return;
+                  }
+
+                  let sendTo = toVal.length ? toVal : ccVal;
+                  let sendCc = toVal.length ? ccVal : [];
+
+                  let $btn = $(this);
+                  $btn.prop('disabled', true).text(__("Sending..."));
+
+                  frappe.call({
+                    method: "sahayog.scrm.api.crm_alert.send_test_crm_alert_mail",
+                    args: {
+                      to_recipients: sendTo,
+                      cc_recipients: sendCc,
+                      subject: p.subject,
+                      html_content: p.html,
+                      branch: currentSelectedBranch || p.branch
+                    },
+                    callback: function (resp) {
+                      $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
+                      if (resp.message && resp.message.status === "success") {
+                        frappe.show_alert({ message: __(resp.message.message), indicator: "green" });
+                      }
+                    },
+                    error: function () {
+                      $btn.prop('disabled', false).html('<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg> Send Test Mail');
+                    }
+                  });
+                });
+              }
+            });
+          }
+
+          // Step 3: Track Sent Emails Modal Handler (Only on button click)
+          d.fields_dict.preview_content.$wrapper.find('.btn-view-alert-email-logs').on('click', function (e) {
+            e.preventDefault();
+            e.stopPropagation();
+
+            let logTitle = currentSelectedBranch 
+              ? `${__("Tracked CRM Alert Emails")} - ${$searchInput.val() || currentSelectedBranch}`
+              : __("Tracked CRM Alert Emails (All Branches)");
+
+            let logDialog = new frappe.ui.Dialog({
+              title: logTitle,
+              size: "large",
+              fields: [
+                {
+                  fieldtype: "HTML",
+                  fieldname: "logs_html",
+                  options: '<div style="text-align:center;padding:25px;color:#64748b;">Loading CRM Alert email logs...</div>'
+                }
+              ]
+            });
+            logDialog.show();
+
+            let selectedLogDate = "";
+
+            function loadLogs() {
+              logDialog.fields_dict.logs_html.$wrapper.find('.logs-table-container').html(
+                '<div style="text-align:center;padding:30px;color:#64748b;">Loading email logs...</div>'
+              );
+
+              frappe.call({
+                method: "sahayog.scrm.api.crm_alert.get_crm_alert_email_logs",
+                args: { 
+                  branch: currentSelectedBranch,
+                  date: selectedLogDate || null,
+                  limit: 200
+                },
+                callback: function (res) {
+                  let logs = res.message || [];
+                  if (!logs.length) {
+                    let msg = selectedLogDate 
+                      ? `No CRM Alert emails found for date: <b>${selectedLogDate}</b>` 
+                      : 'No CRM Alert emails found in queue.';
+                    logDialog.fields_dict.logs_html.$wrapper.find('.logs-table-container').html(
+                      `<div style="text-align:center;padding:35px;color:#64748b;">${msg}</div>`
+                    );
+                    return;
+                  }
+
+                  let rows = logs.map(l => {
+                    let statusColor = l.status === "Sent" ? "#166534;background:#dcfce7;" : (l.status === "Error" ? "#991b1b;background:#fee2e2;" : "#854d0e;background:#fef9c3;");
+                    return `
+                      <tr style="border-bottom:1px solid #e2e8f0;font-size:12px;">
+                        <td style="padding:8px 10px;font-weight:600;color:#0f172a;">${l.branch || 'N/A'}</td>
+                        <td style="padding:8px 10px;color:#0369a1;">${l.recipient}</td>
+                        <td style="padding:8px 10px;"><span style="padding:2px 8px;border-radius:12px;font-weight:700;font-size:10px;color:${statusColor}">${l.status}</span></td>
+                        <td style="padding:8px 10px;color:#64748b;font-size:11px;">${l.creation}</td>
+                      </tr>
+                    `;
+                  }).join('');
+
+                  let tableHtml = `
+                    <div style="max-height:420px;overflow-y:auto;">
+                      <table style="width:100%;border-collapse:collapse;border:1px solid #e2e8f0;">
+                        <thead>
+                          <tr style="background:#f8fafc;border-bottom:2px solid #e2e8f0;font-size:11px;color:#475569;text-align:left;">
+                            <th style="padding:8px 10px;">Branch</th>
+                            <th style="padding:8px 10px;">Recipient</th>
+                            <th style="padding:8px 10px;">Status</th>
+                            <th style="padding:8px 10px;">Timestamp</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          ${rows}
+                        </tbody>
+                      </table>
+                    </div>
+                  `;
+                  logDialog.fields_dict.logs_html.$wrapper.find('.logs-table-container').html(tableHtml);
+                }
+              });
+            }
+
+            // Shell container with header date filter
+            let shellHtml = `
+              <div>
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:#f8fafc;border-bottom:1px solid #e2e8f0;border-radius:6px 6px 0 0;margin-bottom:10px;">
+                  <span style="font-size:12px;color:#475569;font-weight:600;">Filter Email History:</span>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <label style="font-size:11px;color:#64748b;margin:0;">Date:</label>
+                    <input type="date" class="log-filter-date" style="font-size:11px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:4px;background:#ffffff;outline:none;" />
+                    <button type="button" class="btn btn-xs btn-default btn-clear-log-date" style="display:none;font-size:10px;padding:2px 6px;">Clear</button>
+                  </div>
+                </div>
+                <div class="logs-table-container">
+                  <div style="text-align:center;padding:25px;color:#64748b;">Loading CRM Alert email logs...</div>
+                </div>
+              </div>
+            `;
+            logDialog.fields_dict.logs_html.$wrapper.html(shellHtml);
+
+            // Bind date filter actions
+            let $dateInput = logDialog.fields_dict.logs_html.$wrapper.find('.log-filter-date');
+            let $clearDateBtn = logDialog.fields_dict.logs_html.$wrapper.find('.btn-clear-log-date');
+
+            $dateInput.on('change', function () {
+              selectedLogDate = $(this).val();
+              if (selectedLogDate) {
+                $clearDateBtn.show();
+              } else {
+                $clearDateBtn.hide();
+              }
+              loadLogs();
+            });
+
+            $clearDateBtn.on('click', function () {
+              selectedLogDate = "";
+              $dateInput.val('');
+              $(this).hide();
+              loadLogs();
+            });
+
+            loadLogs();
+          });
+        }
       });
     },
 
