@@ -272,6 +272,45 @@ def get_employee_email(emp_record):
     return {"email": email.strip(), "detail": detail}
 
 
+def find_sahayog_branch(sahayog_branch_code=None, branch_name=None):
+    """Smart lookup for Sahayog Branch record by SOL ID, exact name, or normalized name."""
+    if sahayog_branch_code:
+        b = frappe.db.get_value("Sahayog Branch", sahayog_branch_code, ["email", "branch", "sol_id", "name"], as_dict=True)
+        if b:
+            return b
+
+    if branch_name:
+        b_name = str(branch_name).strip()
+        # 1. Exact match
+        b = frappe.db.get_value("Sahayog Branch", {"branch": b_name}, ["email", "branch", "sol_id", "name"], as_dict=True)
+        if b:
+            return b
+
+        # 2. Case-insensitive / LIKE match
+        # Try matching with or without 'BRANCH' keyword (e.g., 'Saoner' -> 'SAONER BRANCH')
+        clean_name = b_name.lower().replace("branch", "").strip()
+        matched = frappe.db.sql(
+            """
+            SELECT email, branch, sol_id, name
+            FROM `tabSahayog Branch`
+            WHERE LOWER(branch) = %(raw)s 
+               OR LOWER(branch) LIKE %(clean)s
+               OR LOWER(branch) LIKE %(like_clean)s
+            LIMIT 1
+            """,
+            {
+                "raw": b_name.lower(),
+                "clean": f"{clean_name} branch%",
+                "like_clean": f"%{clean_name}%"
+            },
+            as_dict=True
+        )
+        if matched:
+            return matched[0]
+
+    return None
+
+
 def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, reports_to_emp_id=None):
     """
     Routing Rules:
@@ -284,12 +323,8 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
     seen_to = set()
     seen_cc = set()
 
-    # 1. Fetch Official Branch Email for 'To'
-    b_data = None
-    if sahayog_branch_code:
-        b_data = frappe.db.get_value("Sahayog Branch", sahayog_branch_code, ["email", "branch", "sol_id"], as_dict=True)
-    if not b_data and branch_name:
-        b_data = frappe.db.get_value("Sahayog Branch", {"branch": branch_name}, ["email", "branch", "sol_id"], as_dict=True)
+    # 1. Fetch Official Branch Email for 'To' (Smart Normalized Lookup)
+    b_data = find_sahayog_branch(sahayog_branch_code, branch_name)
 
     if b_data and b_data.get("email") and b_data.get("email").strip():
         b_email = b_data["email"].strip()
@@ -657,14 +692,13 @@ def send_crm_inactivity_alerts(days=3):
         return {"status": "success", "sent": 0, "message": "No inactive employees found for CRM alert"}
 
     # Group strictly by Sahayog Branch (SOL ID / Master) to ensure exact branch consolidation
-    # Pre-fetch mapping for text branch to sahayog_branch if missing in employee
-    branch_map = {b["branch"].strip().lower(): b["name"] for b in frappe.db.sql("SELECT name, branch FROM `tabSahayog Branch` WHERE branch IS NOT NULL", as_dict=True)}
-
     grouped_by_branch = {}
     for emp in inactive_employees:
         branch_key = emp.get("sahayog_branch")
         if not branch_key and emp.get("branch"):
-            branch_key = branch_map.get(str(emp.get("branch")).strip().lower())
+            b_found = find_sahayog_branch(branch_name=emp.get("branch"))
+            if b_found:
+                branch_key = b_found["name"]
         
         branch_key = branch_key or emp.get("branch") or "Unknown"
 
