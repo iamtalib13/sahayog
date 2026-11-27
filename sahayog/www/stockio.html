@@ -6500,9 +6500,27 @@
                       </tbody>
                     </table>
                   </div>
-                  <div style="padding: 12px 20px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 24px; font-size: 13px; font-weight: 700;">
-                    <div style="color: var(--text-muted)">Total Amount:</div>
-                    <div style="font-size: 1.1rem; color: #f59e0b" v-html="frappe.format(detailRecord.grand_total, {fieldtype: 'Currency'})"></div>
+                  <div style="padding: 12px 20px; background: var(--bg-card); border-top: 1px solid var(--border-color); font-size: 13px; font-weight: 700;">
+                    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+                      <div style="display: flex; justify-content: flex-end; gap: 16px; align-items: center;">
+                        <span style="color: var(--text-muted); font-weight: 600;">Stationery Stock GL:</span>
+                        <span style="min-width: 160px; color: var(--text-main);">[[ detailRecord.custom_stationery_stock_gl || '-' ]]</span>
+                        <span style="color: var(--text-muted); font-weight: 600;">Amount:</span>
+                        <span style="min-width: 120px; text-align: right;" v-html="frappe.format(detailRecord.custom_stationery_stock_amount || 0, {fieldtype: 'Currency'})"></span>
+                      </div>
+                      <div style="display: flex; justify-content: flex-end; gap: 16px; align-items: center;">
+                        <span style="color: var(--text-muted); font-weight: 600;">Input GST MH GL:</span>
+                        <span style="min-width: 160px; color: var(--text-main);">[[ detailRecord.custom_input_gst_mh_gl || '-' ]]</span>
+                        <span style="color: var(--text-muted); font-weight: 600;">Amount:</span>
+                        <span style="min-width: 120px; text-align: right;" v-html="frappe.format(detailRecord.custom_input_gst_amount || 0, {fieldtype: 'Currency'})"></span>
+                      </div>
+                      <div style="display: flex; justify-content: flex-end; gap: 16px; align-items: center; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <span style="color: var(--text-muted); font-weight: 600;">Vendor Control GL:</span>
+                        <span style="min-width: 160px; color: var(--text-main);">[[ detailRecord.custom_vendor_control_gl || '-' ]]</span>
+                        <span style="color: var(--text-muted); font-weight: 600;">Total Amount:</span>
+                        <span style="min-width: 120px; text-align: right; font-size: 1.1rem; color: #f59e0b;" v-html="frappe.format(detailRecord.grand_total || 0, {fieldtype: 'Currency'})"></span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
