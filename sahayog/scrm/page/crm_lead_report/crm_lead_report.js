@@ -2939,7 +2939,11 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                   let ccVal = ccManager.getEmails();
 
                   if (!toVal.length && !ccVal.length) {
-                    frappe.msgprint(__("No recipients found. Please enable TO or CC in Sahayog Settings or provide recipient emails."));
+                    if (!isToEnabled && !isCcEnabled) {
+                      frappe.msgprint(__("CRM Alert TO and CC recipients are disabled in Sahayog Settings. Please enable them to send emails."));
+                    } else {
+                      frappe.msgprint(__("No recipient email found for this branch or Branch Manager. Please add at least one recipient email address in TO or CC to send test mail."));
+                    }
                     return;
                   }
 
