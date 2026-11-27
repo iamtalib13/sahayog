@@ -2022,7 +2022,47 @@
               >
                 [[ detailRecord.ho_officer_status === 'Rejected' ? 'Rejected' : (detailRecord.ho_officer_status === 'Skip' ? 'Skipped' : (detailRecord.status === 'Pending HO Approval' ? 'Pending' : (detailRecord.ho_officer_status === 'Approved' ? 'Approved' : 'Waiting'))) ]]
               </span>
-            </div>        </h1>
+            </div>
+
+            <template v-if="['Approved', 'Dispatch', 'Dispatched', 'Partially Dispatched', 'Received', 'Completed'].includes(detailRecord.status)">
+              <div class="inline-flow-connector">
+                <i class="fas fa-chevron-right"></i>
+              </div>
+
+              <div class="inline-flow-step">
+                <div class="inline-step-num">3</div>
+                <div class="inline-step-info">
+                  <span class="inline-step-role">Store</span>
+                  <span class="inline-step-name">Dispatch</span>
+                </div>
+                <span
+                  class="inline-step-status badge"
+                  :class="['Dispatch', 'Dispatched', 'Partially Dispatched', 'Received', 'Completed'].includes(detailRecord.status) ? 'status-done' : (detailRecord.status === 'Approved' ? 'status-pending' : 'status-waiting')"
+                >
+                  [[ ['Dispatch', 'Dispatched', 'Partially Dispatched', 'Received', 'Completed'].includes(detailRecord.status) ? 'Done' : (detailRecord.status === 'Approved' ? 'Pending' : 'Waiting') ]]
+                </span>
+              </div>
+
+              <div class="inline-flow-connector">
+                <i class="fas fa-chevron-right"></i>
+              </div>
+
+              <div class="inline-flow-step">
+                <div class="inline-step-num">4</div>
+                <div class="inline-step-info">
+                  <span class="inline-step-role">Branch</span>
+                  <span class="inline-step-name">Received</span>
+                </div>
+                <span
+                  class="inline-step-status badge"
+                  :class="['Received', 'Completed'].includes(detailRecord.status) ? 'status-done' : (['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status) ? 'status-pending' : 'status-waiting')"
+                >
+                  [[ ['Received', 'Completed'].includes(detailRecord.status) ? 'Received' : (['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status) ? 'Pending' : 'Waiting') ]]
+                </span>
+              </div>
+            </template>
+          </div>
+        </h1>
       </div>
       <div class="header-right">
         <div v-if="activeItem === 'Serial No' && !showDetailView" style="display: flex; background: #e2e8f0; border-radius: 6px; padding: 2px; margin-right: 15px;">
@@ -3273,6 +3313,8 @@
                       <th style="padding: 12px 16px; font-size: 0.8rem; min-width: 200px;" v-if="inwardItems.some(i => i.custom_item_department && i.custom_item_department.toUpperCase() === 'IT')">Serial and Batch Bundle</th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 80px;">Qty <span class="form-required">*</span></th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 100px;">Rate <span class="form-required">*</span></th>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 80px;">GST</th>
+                      <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; min-width: 120px;">Amount</th>
                       <th style="padding: 12px 16px; font-size: 0.8rem; text-align: center; width: 60px;">Action</th>
                     </tr>
                   </thead>
@@ -3403,6 +3445,18 @@
                             placeholder="0.00"
                           />
                         </div>
+                      </td>
+                      <td style="padding: 10px; text-align: center;">
+                        <input
+                          type="number"
+                          class="form-input"
+                          style="width: 80px; text-align: center; padding: 10px 8px !important; min-width: 70px; font-size: 0.9rem;"
+                          v-model.number="item.gst"
+                          placeholder="18"
+                        />
+                      </td>
+                      <td style="padding: 10px; text-align: center; font-size: 0.9rem; color: var(--text-main); font-weight: 600;">
+                        [[ formatCurrency(((item.rate || 0) + ((item.rate || 0) * (((item.gst ?? 18) * 0.5) / 100))) * (item.qty || 0)) ]]
                       </td>
                       <td style="padding: 10px; text-align: center;">
                         <button class="btn-action" @click="removeInwardItem(index)" title="Remove">
@@ -16944,6 +16998,7 @@
               description: "",
               qty: 1,
               rate: 0,
+              gst: 18,
               warehouse: "",
             },
           ];
@@ -20371,6 +20426,7 @@
           description: "",
           qty: 1,
           rate: 0,
+          gst: 18,
           warehouse: "",
         });
       },      removeInwardItem(index) {
