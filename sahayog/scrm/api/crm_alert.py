@@ -205,14 +205,32 @@ def get_inactive_employees_for_alert(days=3, branch=None):
         )
         active_emp_ids = {r["custom_employee_id"] for r in active_leads if r.get("custom_employee_id")}
 
-    inactive_employees = []
-    for emp in eligible_employees:
-        emp_id = emp.get("name")
-        if emp_id in active_emp_ids:
-            continue
+    inactive_candidates = [e for e in eligible_employees if e["name"] not in active_emp_ids]
+    if not inactive_candidates:
+        return []
 
-        user_id = emp.get("user_id")
-        last_date = get_last_lead_activity_date(emp_id, user_id)
+    # Batch query last activity dates in a single fast indexed query instead of N individual queries
+    candidate_emp_ids = tuple(e["name"] for e in inactive_candidates)
+    last_activity_map = {}
+    if candidate_emp_ids:
+        activity_records = frappe.db.sql(
+            """
+            SELECT custom_employee_id, GREATEST(COALESCE(MAX(creation), '2000-01-01'), COALESCE(MAX(modified), '2000-01-01')) as last_active
+            FROM `tabLead`
+            WHERE custom_employee_id IN %(emp_ids)s
+            GROUP BY custom_employee_id
+            """,
+            {"emp_ids": candidate_emp_ids},
+            as_dict=True
+        )
+        for r in activity_records:
+            if r.get("last_active") and str(r.get("last_active")) > '2000-01-01':
+                last_activity_map[r["custom_employee_id"]] = getdate(r["last_active"])
+
+    inactive_employees = []
+    for emp in inactive_candidates:
+        emp_id = emp.get("name")
+        last_date = last_activity_map.get(emp_id)
 
         if last_date:
             from_date = add_days(last_date, 1)
@@ -716,16 +734,20 @@ def send_crm_inactivity_alerts(days=3):
     """
     alert_settings = get_crm_alert_settings()
     if not alert_settings.get("enable_alerts"):
-        print("\n[STOPPED] CRM Inactivity Alert Emails are disabled in Sahayog Settings.")
+        print("\n[STOPPED] CRM Inactivity Alert Emails are disabled in Sahayog Settings.", flush=True)
         return {
             "status": "disabled",
             "message": "CRM Inactivity Alert Emails are disabled in Sahayog Settings.",
             "branches_emailed": 0
         }
 
+    print("\nScanning inactive eligible employees...", flush=True)
     inactive_employees = get_inactive_employees_for_alert(days=int(days))
     if not inactive_employees:
+        print("No inactive employees found.", flush=True)
         return {"status": "success", "sent": 0, "message": "No inactive employees found for CRM alert"}
+
+    print(f"Found {len(inactive_employees)} inactive employees. Grouping by branch...", flush=True)
 
     # Group strictly by Sahayog Branch (SOL ID / Master) to ensure exact branch consolidation
     grouped_by_branch = {}
@@ -792,7 +814,7 @@ def send_crm_inactivity_alerts(days=3):
             )
             sent_count += 1
             success_branches.append(f"{branch_name} ({branch_key})")
-            print(f"[{idx}/{total_branches}] [SUCCESS] {branch_name} ({branch_key}) -> Sent to: {', '.join(final_recipients)}")
+            print(f"[{idx}/{total_branches}] [SUCCESS] {branch_name} ({branch_key}) -> Sent to: {', '.join(to_emails)}")
 
         except Exception as err:
             failed_count += 1
