@@ -2024,7 +2024,7 @@
               </span>
             </div>
 
-            <template v-if="['Approved', 'Dispatch', 'Dispatched', 'Partially Dispatched', 'Received', 'Completed'].includes(detailRecord.status)">
+            <div v-if="['Approved', 'Dispatch', 'Dispatched', 'Partially Dispatched', 'Received', 'Completed'].includes(detailRecord.status)" style="display: contents;">
               <div class="inline-flow-connector">
                 <i class="fas fa-chevron-right"></i>
               </div>
@@ -2064,7 +2064,7 @@
                   [[ ['Received', 'Completed'].includes(detailRecord.status) ? 'Received' : (['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status) ? 'Pending' : 'Waiting') ]]
                 </span>
               </div>
-            </template>
+            </div>
           </div>
         </h1>
       </div>
@@ -6445,6 +6445,7 @@
                           <th v-if="detailRecord.items && detailRecord.items.some(i => i.serial_and_batch_bundle)">Serial Bundle</th>
                           <th style="text-align: right">Qty</th>
                           <th style="text-align: right">Rate</th>
+                          <th style="text-align: right">GST %</th>
                           <th style="text-align: right">Amount</th>
                           <th v-if="isEditing" style="text-align: center">Action</th>
                         </tr>
@@ -6484,8 +6485,11 @@
                             <input v-if="isEditing" type="number" v-model.number="item.rate" style="width: 80px; text-align: right; padding: 2px 4px;">
                             <span v-else v-html="frappe.format(item.rate, {fieldtype: 'Currency'})"></span>
                           </td>
+                          <td style="text-align: right">
+                            <span>[[ item.custom_gst != null ? item.custom_gst : 18 ]]%</span>
+                          </td>
                           <td style="text-align: right; font-weight: 700; color: var(--text-main);">
-                            INR [[ (item.qty * item.rate).toFixed(2) ]]
+                            INR [[ Number(item.custom_calculated_amount || item.amount || (item.qty * item.rate)).toFixed(2) ]]
                           </td>
                           <td v-if="isEditing" style="text-align: center">
                             <button class="btn-create-inline" style="background: #ef4444 !important; color: white !important; border: none; padding: 4px 8px;" @click="detailRecord.items.splice(idx, 1)">
@@ -11157,19 +11161,19 @@
     <div class="profile-modal" style="max-width: 100%; width: 1300px;">
       <div class="profile-modal-header">
         <h3>
-          <template v-if="dispatchForm.mode === 'receive'">Receive Request - [[ dispatchForm.stock_entry ]]</template>
-          <template v-else>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]</template>
+          <span v-if="dispatchForm.mode === 'receive'">Receive Request - [[ dispatchForm.stock_entry ]]</span>
+          <span v-if="dispatchForm.mode !== 'receive'">[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]</span>
         </h3>
         <div class="profile-modal-header-right">
-          <template v-if="dispatchForm.mode === 'receive'">
+          <div v-if="dispatchForm.mode === 'receive'" style="display:contents">
             <button class="btn-create-inline" @click="submitReceive()">
               <span>Submit</span>
             </button>
             <button class="profile-close" style="width:auto; padding:0 12px; font-size:13px;" @click="showDispatchModal = false">
               Cancel
             </button>
-          </template>
-          <template v-else>
+          </div>
+          <div v-if="dispatchForm.mode !== 'receive'" style="display:contents">
             <button
               v-if="dispatchForm.dispatchStep === 1"
               class="btn-create-inline"
@@ -11190,7 +11194,7 @@
             <button class="profile-close" @click="showDispatchModal = false">
               &times;
             </button>
-          </template>
+          </div>
         </div>
       </div>
 
@@ -11467,7 +11471,7 @@
                       Total
                     </th>
                     <th
-                      v-if="dispatchForm.mode !== 'receive'"
+                      v-show="dispatchForm.mode !== 'receive'"
                       style="
                         font-size: 10px;
                         text-transform: uppercase;
@@ -11573,7 +11577,7 @@
                     >
                       [[ formatCurrency((item.dispatch_qty || 0) * ((dispatchForm.transfer_old_stock_first && item.available_rates && item.available_rates.length ? item.available_rates[0] : item.rate) || 0)) ]]
                     </td>
-                    <td v-if="dispatchForm.mode !== 'receive'" style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
+                    <td v-show="dispatchForm.mode !== 'receive'" style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
                       <div v-if="item.available_batches && item.available_batches.length">
                         <div v-for="b in (item.showAllBatches ? item.available_batches : item.available_batches.slice(0, 3))" :key="'ab-' + item.item_code + '-' + b.rate" style="display: inline-flex; align-items: center; margin: 2px 4px 2px 0; border: 1px solid var(--border-color); border-radius: 999px; overflow: hidden; font-size: 11px; white-space: nowrap;">
                           <span style="padding: 2px 8px; background: var(--bg-card); color: var(--text-main); font-weight: 600;">Rate [[ b.rate ]]</span>
@@ -11594,7 +11598,7 @@
               </table>
             </div>
           </div>
-          <div v-if="dispatchForm.mode !== 'receive' && dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
+          <div v-show="dispatchForm.mode !== 'receive' && dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
             <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer; font-weight: 600;">
               <input
                 type="checkbox"
