@@ -20191,13 +20191,8 @@
         });
 
         if (res.message) {
-          // Submit the Stock Entry
+          // Keep Stock Entry in Draft; update EMR and child item statuses to Dispatch
           try {
-            await frappe.call({
-              method: "frappe.client.submit",
-              args: { doc: res.message },
-            });
-
             const ddRes = await frappe.call({
               method: "frappe.client.insert",
               args: {
@@ -20241,12 +20236,12 @@
             });
 
             frappe.show_alert({
-              message: `Stock Entry ${res.message.name} created, submitted, and EMR items updated!`,
+              message: `Stock Entry ${res.message.name} created in Draft and EMR items updated to Dispatch!`,
               indicator: "green",
             });
           } catch (e) {
             frappe.show_alert({
-              message: `Stock Entry ${res.message.name} created, but submission or status update failed.`,
+              message: `Stock Entry ${res.message.name} created, but Dispatch Detail or EMR status update failed.`,
               indicator: "orange",
             });
           }
