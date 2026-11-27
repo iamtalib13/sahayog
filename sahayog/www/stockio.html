@@ -11467,6 +11467,7 @@
                       Total
                     </th>
                     <th
+                      v-if="dispatchForm.mode !== 'receive'"
                       style="
                         font-size: 10px;
                         text-transform: uppercase;
@@ -11572,7 +11573,7 @@
                     >
                       [[ formatCurrency((item.dispatch_qty || 0) * ((dispatchForm.transfer_old_stock_first && item.available_rates && item.available_rates.length ? item.available_rates[0] : item.rate) || 0)) ]]
                     </td>
-                    <td style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
+                    <td v-if="dispatchForm.mode !== 'receive'" style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
                       <div v-if="item.available_batches && item.available_batches.length">
                         <div v-for="b in (item.showAllBatches ? item.available_batches : item.available_batches.slice(0, 3))" :key="'ab-' + item.item_code + '-' + b.rate" style="display: inline-flex; align-items: center; margin: 2px 4px 2px 0; border: 1px solid var(--border-color); border-radius: 999px; overflow: hidden; font-size: 11px; white-space: nowrap;">
                           <span style="padding: 2px 8px; background: var(--bg-card); color: var(--text-main); font-weight: 600;">Rate [[ b.rate ]]</span>
@@ -11593,7 +11594,7 @@
               </table>
             </div>
           </div>
-          <div v-if="dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
+          <div v-if="dispatchForm.mode !== 'receive' && dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
             <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer; font-weight: 600;">
               <input
                 type="checkbox"
