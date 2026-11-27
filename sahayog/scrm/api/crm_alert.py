@@ -765,12 +765,11 @@ def send_crm_inactivity_alerts(days=3):
             to_emails = [r["email"] for r in hierarchy.get("to", [])] if alert_settings["enable_to"] else []
             cc_emails = [r["email"] for r in hierarchy.get("cc", [])] if alert_settings["enable_cc"] else []
 
-            # If both TO and CC are disabled or empty, we cannot send
-            final_recipients = to_emails or cc_emails
-            if not final_recipients:
+            # Sending strictly requires at least one primary TO recipient
+            if not to_emails:
                 skipped_count += 1
                 skipped_branches.append(f"{branch_name} ({branch_key})")
-                print(f"[{idx}/{total_branches}] [SKIPPED] {branch_name} ({branch_key}) - No recipient emails resolved")
+                print(f"[{idx}/{total_branches}] [SKIPPED] {branch_name} ({branch_key}) - TO recipient missing (cannot send with only CC)")
                 continue
 
             table_html = generate_crm_alert_table_html(
@@ -781,8 +780,8 @@ def send_crm_inactivity_alerts(days=3):
             )
 
             frappe.sendmail(
-                recipients=final_recipients,
-                cc=cc_emails if to_emails else [],
+                recipients=to_emails,
+                cc=cc_emails,
                 subject=f"CRM Alert - {branch_name}",
                 message=table_html,
                 delayed=False,
