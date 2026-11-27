@@ -2047,7 +2047,11 @@
                 <i class="fas fa-chevron-right"></i>
               </div>
 
-              <div class="inline-flow-step">
+              <div
+                class="inline-flow-step"
+                :style="['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status) ? 'cursor:pointer;' : ''"
+                @click="['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status) && openReceivePopup()"
+              >
                 <div class="inline-step-num">4</div>
                 <div class="inline-step-info">
                   <span class="inline-step-role">Branch</span>
@@ -11102,29 +11106,40 @@
     <div class="profile-modal" style="max-width: 100%; width: 1300px;">
       <div class="profile-modal-header">
         <h3>
-          [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]
+          <template v-if="dispatchForm.mode === 'receive'">Receive Request - [[ dispatchForm.stock_entry ]]</template>
+          <template v-else>[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]</template>
         </h3>
         <div class="profile-modal-header-right">
-          <button
-            v-if="dispatchForm.dispatchStep === 1"
-            class="btn-create-inline"
-            @click="dispatchForm.dispatchStep = 2"
-          >
-            <span>Next</span>
-          </button>
-          <button
-            v-if="dispatchForm.dispatchStep === 2"
-            class="btn-create-inline"
-            @click="submitDispatch()"
-          >
-            <span
-              >[[ dispatchForm.items.some(i => i.item_category === 'Asset') ?
-              'Proceed Movement' : 'Proceed Dispatch' ]]</span
+          <template v-if="dispatchForm.mode === 'receive'">
+            <button class="btn-create-inline" @click="submitReceive()">
+              <span>Submit</span>
+            </button>
+            <button class="profile-close" style="width:auto; padding:0 12px; font-size:13px;" @click="showDispatchModal = false">
+              Cancel
+            </button>
+          </template>
+          <template v-else>
+            <button
+              v-if="dispatchForm.dispatchStep === 1"
+              class="btn-create-inline"
+              @click="dispatchForm.dispatchStep = 2"
             >
-          </button>
-          <button class="profile-close" @click="showDispatchModal = false">
-            &times;
-          </button>
+              <span>Next</span>
+            </button>
+            <button
+              v-if="dispatchForm.dispatchStep === 2"
+              class="btn-create-inline"
+              @click="submitDispatch()"
+            >
+              <span
+                >[[ dispatchForm.items.some(i => i.item_category === 'Asset') ?
+                'Proceed Movement' : 'Proceed Dispatch' ]]</span
+              >
+            </button>
+            <button class="profile-close" @click="showDispatchModal = false">
+              &times;
+            </button>
+          </template>
         </div>
       </div>
 
@@ -14512,6 +14527,8 @@
         address: "",
         mobile_number: "",
         transfer_old_stock_first: true,
+        mode: "dispatch",
+        stock_entry: "",
       },
 
       showBranchStockUseView: false,
@@ -19723,6 +19740,8 @@
         this.dispatchForm.address = "";
         this.dispatchForm.mobile_number = "";
         this.dispatchForm.transfer_old_stock_first = true;
+        this.dispatchForm.mode = "dispatch";
+        this.dispatchForm.stock_entry = "";
         this.showDispatchItems = false;
         this.dispatchForm.dispatchStep = 1;
         this.showDispatchModal = true;
@@ -20082,6 +20101,91 @@
             this.loading = false;
           }
         });
+      },
+      async openReceivePopup() {
+        const emr = this.detailRecord;
+        if (!emr || !emr.name) return;
+        this.dispatchForm.loading = true;
+        this.dispatchForm.mode = "receive";
+        this.dispatchForm.name = emr.name;
+        this.dispatchForm.department = emr.department || "";
+        this.dispatchForm.source_warehouse = emr.source_warehouse || "";
+        this.dispatchForm.target_warehouse = emr.target_warehouse || "";
+        this.dispatchForm.dispatchStep = 1;
+        this.dispatchForm.items = [];
+        this.dispatchForm.stock_entry = "";
+        this.showDispatchModal = true;
+        try {
+          const seRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Stock Entry",
+              filters: { custom_material_request: emr.name, docstatus: 0 },
+              fields: ["name"],
+              order_by: "creation desc",
+              limit_page_length: 1,
+            },
+          });
+          const seName = seRes.message && seRes.message[0] ? seRes.message[0].name : "";
+          if (!seName) {
+            frappe.msgprint("No draft Stock Entry found for this request.");
+            this.showDispatchModal = false;
+            return;
+          }
+          this.dispatchForm.stock_entry = seName;
+          const docRes = await frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Stock Entry", name: seName },
+          });
+          const seDoc = docRes.message;
+          this.dispatchForm.items = (seDoc.items || []).map((it) => ({
+            name: it.name,
+            item_code: it.item_code,
+            item_name: it.item_name || it.item_code,
+            uom: it.uom || it.stock_uom,
+            approved_quantity: it.qty,
+            dispatch_qty: it.qty,
+            rate: it.basic_rate || it.valuation_rate || 0,
+            available_rates: [it.basic_rate || it.valuation_rate || 0],
+            available_batches: [],
+            selected: true,
+            showAllBatches: false,
+          }));
+        } catch (e) {
+          console.error("openReceivePopup error", e);
+          frappe.msgprint(e.message || "Error loading Stock Entry details");
+          this.showDispatchModal = false;
+        } finally {
+          this.dispatchForm.loading = false;
+        }
+      },
+      async submitReceive() {
+        if (!this.dispatchForm.stock_entry) return;
+        try {
+          const seRes = await frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Stock Entry", name: this.dispatchForm.stock_entry },
+          });
+          await frappe.call({
+            method: "frappe.client.submit",
+            args: { doc: seRes.message },
+          });
+          await frappe.call({
+            method: "frappe.client.set_value",
+            args: {
+              doctype: "Employee Material Request",
+              name: this.dispatchForm.name,
+              fieldname: "status",
+              value: "Received",
+            },
+          });
+          frappe.show_alert({ message: "Stock Entry submitted and EMR marked as Received", indicator: "green" });
+          this.showDispatchModal = false;
+          await this.fetchData(this.currentView.doctype);
+        } catch (e) {
+          console.error("submitReceive error", e);
+          frappe.msgprint(e.message || "Error submitting Stock Entry");
+        }
       },
       async submitDispatch() {
         if (this.dispatchForm.transfer_old_stock_first) {
