@@ -2938,17 +2938,17 @@ frappe.pages["crm-lead-report"].on_page_load = async function (wrapper) {
                   let toVal = toManager.getEmails();
                   let ccVal = ccManager.getEmails();
 
-                  if (!toVal.length && !ccVal.length) {
-                    if (!isToEnabled && !isCcEnabled) {
-                      frappe.msgprint(__("CRM Alert TO and CC recipients are disabled in Sahayog Settings. Please enable them to send emails."));
+                  if (!toVal.length) {
+                    if (!isToEnabled) {
+                      frappe.msgprint(__("CRM Alert TO recipients are disabled in Sahayog Settings. Please enable TO in settings to send emails."));
                     } else {
-                      frappe.msgprint(__("No recipient email found for this branch or Branch Manager. Please add at least one recipient email address in TO or CC to send test mail."));
+                      frappe.msgprint(__("Please enter at least one recipient email in 'TO' field. Email cannot be sent without a primary TO recipient."));
                     }
                     return;
                   }
 
-                  let sendTo = toVal.length ? toVal : ccVal;
-                  let sendCc = toVal.length ? ccVal : [];
+                  let sendTo = toVal;
+                  let sendCc = ccVal || [];
 
                   let $btn = $(this);
                   $btn.prop('disabled', true).text(__("Sending..."));

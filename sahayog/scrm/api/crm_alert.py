@@ -42,12 +42,13 @@ def get_eligible_employees():
         FROM `tabEmployee`
         WHERE status = 'Active'
           AND ({like_conditions})
-          AND LOWER(designation) NOT IN ('branch manager', 'branch manager jll', 'sr. branch manager')
+          AND LOWER(designation) NOT IN ('branch manager', 'sr. branch manager')
           AND LOWER(designation) NOT LIKE '%%area manager%%'
           AND LOWER(designation) NOT LIKE '%%regional%%'
           AND LOWER(designation) NOT LIKE '%%zonal%%'
           AND LOWER(designation) NOT LIKE '%%cluster%%'
           AND LOWER(designation) NOT LIKE '%%head%%'
+          AND LOWER(designation) NOT LIKE '%%jll%%'
     """
     return frappe.db.sql(sql, as_dict=True)
 
@@ -173,12 +174,13 @@ def get_inactive_employees_for_alert(days=3, branch=None):
         WHERE status = 'Active'
           {branch_clause}
           AND ({ " OR ".join([f"LOWER(designation) LIKE {frappe.db.escape(p)}" for p in TARGET_DESIGNATION_PATTERNS]) })
-          AND LOWER(designation) NOT IN ('branch manager', 'branch manager jll', 'sr. branch manager')
+          AND LOWER(designation) NOT IN ('branch manager', 'sr. branch manager')
           AND LOWER(designation) NOT LIKE '%%area manager%%'
           AND LOWER(designation) NOT LIKE '%%regional%%'
           AND LOWER(designation) NOT LIKE '%%zonal%%'
           AND LOWER(designation) NOT LIKE '%%cluster%%'
           AND LOWER(designation) NOT LIKE '%%head%%'
+          AND LOWER(designation) NOT LIKE '%%jll%%'
         """,
         as_dict=True
     )
@@ -765,12 +767,11 @@ def send_crm_inactivity_alerts(days=3):
             to_emails = [r["email"] for r in hierarchy.get("to", [])] if alert_settings["enable_to"] else []
             cc_emails = [r["email"] for r in hierarchy.get("cc", [])] if alert_settings["enable_cc"] else []
 
-            # If both TO and CC are disabled or empty, we cannot send
-            final_recipients = to_emails or cc_emails
-            if not final_recipients:
+            # Sending strictly requires at least one primary TO recipient
+            if not to_emails:
                 skipped_count += 1
                 skipped_branches.append(f"{branch_name} ({branch_key})")
-                print(f"[{idx}/{total_branches}] [SKIPPED] {branch_name} ({branch_key}) - No recipient emails resolved")
+                print(f"[{idx}/{total_branches}] [SKIPPED] {branch_name} ({branch_key}) - TO recipient missing (cannot send with only CC)")
                 continue
 
             table_html = generate_crm_alert_table_html(
@@ -781,8 +782,8 @@ def send_crm_inactivity_alerts(days=3):
             )
 
             frappe.sendmail(
-                recipients=final_recipients,
-                cc=cc_emails if to_emails else [],
+                recipients=to_emails,
+                cc=cc_emails,
                 subject=f"CRM Alert - {branch_name}",
                 message=table_html,
                 delayed=False,
