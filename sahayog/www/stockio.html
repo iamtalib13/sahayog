@@ -6279,6 +6279,25 @@
                       <i class="fas fa-truck-fast"></i>
                       <span>Dispatch Selected</span>
                     </button>
+                    <button
+                      v-if="['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status)"
+                      class="btn-create-inline"
+                      style="
+                        padding: 8px 16px !important;
+                        font-weight: 700;
+                        border-radius: 12px;
+                        background: #2e7d32;
+                        color: white;
+                        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                      "
+                      @click="openReceivePopup()"
+                    >
+                      <i class="fas fa-check-circle"></i>
+                      <span>Received</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -8056,6 +8075,26 @@
                         Selected Items' : 'Dispatch Selected Items' ]]</span
                       >
                     </button>
+                    <button
+                      v-if="['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status)"
+                      class="btn-create-inline"
+                      style="
+                        padding: 10px 24px !important;
+                        font-size: 0.85rem !important;
+                        font-weight: 700;
+                        border-radius: 20px;
+                        background: #2e7d32;
+                        color: white;
+                        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                      "
+                      @click="openReceivePopup()"
+                    >
+                      <i class="fas fa-check-circle"></i>
+                      <span>Received</span>
+                    </button>
                   </div>
                 </div>
                 <div
@@ -9264,6 +9303,18 @@
                     >
                       [[ (row.items && row.items.some(i => i.item_category ===
                       'Asset')) ? 'Movement' : 'Dispatch' ]]
+                    </button>
+                    <button
+                      class="btn-create-inline"
+                      style="
+                        background: #2e7d32;
+                        border-color: #2e7d32;
+                        margin-right: 4px;
+                      "
+                      @click.stop="openReceivePopup(row)"
+                      v-if="activeItem === 'Requests' && ['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(row.status)"
+                    >
+                      Received
                     </button>
                     <button
                       class="btn-create-inline"
@@ -20102,8 +20153,8 @@
           }
         });
       },
-      async openReceivePopup() {
-        const emr = this.detailRecord;
+      async openReceivePopup(row = null) {
+        const emr = row || this.detailRecord;
         if (!emr || !emr.name) return;
         this.dispatchForm.loading = true;
         this.dispatchForm.mode = "receive";
