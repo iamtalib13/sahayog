@@ -27,3 +27,32 @@ def validate_store_incharge(doc, method):
 
     if doc.custom_sahayog_status == "Received" and not doc.custom_store_incharge:
         frappe.throw("Store Incharge is mandatory.")
+
+
+def set_gst_amounts(doc, method=None):
+    """Set GST-calculated amount on Purchase Receipt items and totals."""
+    has_gst = False
+    for item in doc.get("items", []):
+        gst = item.get("custom_gst")
+        if gst is None:
+            continue
+        has_gst = True
+        rate = item.get("rate") or 0
+        qty = item.get("qty") or 0
+        calc = (rate + (rate * ((float(gst) * 0.5) / 100))) * qty
+        item.custom_calculated_amount = calc
+        item.amount = calc
+        item.net_amount = calc
+        item.base_amount = calc * (doc.conversion_rate or 1)
+        item.base_net_amount = calc * (doc.conversion_rate or 1)
+
+    if has_gst:
+        total = sum((item.get("amount") or 0) for item in doc.get("items", []))
+        doc.total = total
+        doc.net_total = total
+        doc.grand_total = total
+        doc.rounded_total = round(total)
+        doc.base_total = total * (doc.conversion_rate or 1)
+        doc.base_net_total = total * (doc.conversion_rate or 1)
+        doc.base_grand_total = total * (doc.conversion_rate or 1)
+        doc.base_rounded_total = round(total * (doc.conversion_rate or 1))
