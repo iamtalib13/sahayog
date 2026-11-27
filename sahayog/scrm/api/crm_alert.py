@@ -42,12 +42,13 @@ def get_eligible_employees():
         FROM `tabEmployee`
         WHERE status = 'Active'
           AND ({like_conditions})
-          AND LOWER(designation) NOT IN ('branch manager', 'branch manager jll', 'sr. branch manager')
+          AND LOWER(designation) NOT IN ('branch manager', 'sr. branch manager')
           AND LOWER(designation) NOT LIKE '%%area manager%%'
           AND LOWER(designation) NOT LIKE '%%regional%%'
           AND LOWER(designation) NOT LIKE '%%zonal%%'
           AND LOWER(designation) NOT LIKE '%%cluster%%'
           AND LOWER(designation) NOT LIKE '%%head%%'
+          AND LOWER(designation) NOT LIKE '%%jll%%'
     """
     return frappe.db.sql(sql, as_dict=True)
 
@@ -173,12 +174,13 @@ def get_inactive_employees_for_alert(days=3, branch=None):
         WHERE status = 'Active'
           {branch_clause}
           AND ({ " OR ".join([f"LOWER(designation) LIKE {frappe.db.escape(p)}" for p in TARGET_DESIGNATION_PATTERNS]) })
-          AND LOWER(designation) NOT IN ('branch manager', 'branch manager jll', 'sr. branch manager')
+          AND LOWER(designation) NOT IN ('branch manager', 'sr. branch manager')
           AND LOWER(designation) NOT LIKE '%%area manager%%'
           AND LOWER(designation) NOT LIKE '%%regional%%'
           AND LOWER(designation) NOT LIKE '%%zonal%%'
           AND LOWER(designation) NOT LIKE '%%cluster%%'
           AND LOWER(designation) NOT LIKE '%%head%%'
+          AND LOWER(designation) NOT LIKE '%%jll%%'
         """,
         as_dict=True
     )
