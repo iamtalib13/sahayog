@@ -247,8 +247,24 @@ def get_inactive_employees_for_alert(days=3, branch=None):
     return inactive_employees
 
 
+def is_valid_working_email(email_str):
+    """Validate that email is not empty and not a dummy user_id like <1234>@sahayog.com."""
+    if not email_str:
+        return False
+    em = str(email_str).strip().lower()
+    if not em or "@" not in em:
+        return False
+    
+    # Filter out dummy ERP user IDs like 10902@sahayog.com, 13712@sahayog.com
+    prefix, domain = em.split("@", 1)
+    if domain in ["sahayog.com", "sahayog.co.in"] and prefix.isdigit():
+        return False
+        
+    return True
+
+
 def get_employee_email(emp_record):
-    """Fetch company_email with fallback to user_id/personal_email."""
+    """Fetch valid company_email/personal_email. Strictly ignores dummy 1234@sahayog.com user_ids."""
     if not emp_record:
         return None
     if isinstance(emp_record, str):
@@ -259,17 +275,25 @@ def get_employee_email(emp_record):
             as_dict=True
         ) or {}
     
-    email = (
-        emp_record.get("company_email")
-        or emp_record.get("user_id")
-        or emp_record.get("prefered_email")
-        or emp_record.get("personal_email")
-    )
-    if not email:
+    # Priority: company_email -> prefered_email -> personal_email -> user_id (only if valid working email)
+    candidates = [
+        emp_record.get("company_email"),
+        emp_record.get("prefered_email"),
+        emp_record.get("personal_email"),
+        emp_record.get("user_id")
+    ]
+    
+    valid_email = None
+    for cand in candidates:
+        if cand and is_valid_working_email(cand):
+            valid_email = cand.strip()
+            break
+            
+    if not valid_email:
         return None
 
-    detail = f"{emp_record.get('employee_name', '')} ({emp_record.get('name', '')} - {emp_record.get('designation', '')}) - {email}"
-    return {"email": email.strip(), "detail": detail}
+    detail = f"{emp_record.get('employee_name', '')} ({emp_record.get('name', '')} - {emp_record.get('designation', '')}) - {valid_email}"
+    return {"email": valid_email, "detail": detail}
 
 
 def find_sahayog_branch(sahayog_branch_code=None, branch_name=None):
@@ -389,14 +413,9 @@ def get_reporting_hierarchy_for_branch(sahayog_branch_code, branch_name=None, re
                                 cc_recipients.append(top_obj)
                                 seen_cc.add(em)
 
-    # 3. Direct reports_to fallback if BM not found
-    if not to_recipients and reports_to_emp_id:
-        direct_obj = get_employee_email(reports_to_emp_id)
-        if direct_obj:
-            em = direct_obj["email"].lower()
-            to_recipients.append(direct_obj)
-            seen_to.add(em)
-    elif not cc_recipients and reports_to_emp_id:
+    # 3. If official branch email and BM email are both missing, do not guess direct reports_to for TO.
+    # Leave to_recipients empty so the branch is safely SKIPPED for admin manual review.
+    if not cc_recipients and reports_to_emp_id:
         direct_obj = get_employee_email(reports_to_emp_id)
         if direct_obj:
             em = direct_obj["email"].lower()
