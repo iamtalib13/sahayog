@@ -20923,15 +20923,23 @@
             remarks: this.inwardForm.remarks,
             items: this.inwardItems
               .filter((i) => i.item_code)
-              .map((i) => ({
-                item_code: i.item_code,
-                description: i.description,
-                qty: i.qty || 1,
-                uom: i.uom,
-                warehouse: i.warehouse || this.inwardForm.set_warehouse,
-                rate: i.rate || 0,
-                serial_and_batch_bundle: i.serial_and_batch_bundle || null,
-              })),
+              .map((i) => {
+                const rate = i.rate || 0;
+                const qty = i.qty || 1;
+                const gst = i.gst ?? 18;
+                const calculatedAmount = (rate + (rate * ((gst * 0.5) / 100))) * qty;
+                return {
+                  item_code: i.item_code,
+                  description: i.description,
+                  qty,
+                  uom: i.uom,
+                  warehouse: i.warehouse || this.inwardForm.set_warehouse,
+                  rate,
+                  custom_gst: gst,
+                  custom_calculated_amount: calculatedAmount,
+                  serial_and_batch_bundle: i.serial_and_batch_bundle || null,
+                };
+              }),
           };
 
           const res = await frappe.call({
