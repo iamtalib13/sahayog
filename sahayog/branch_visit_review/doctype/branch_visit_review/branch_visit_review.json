@@ -59,7 +59,7 @@
    "reqd": 1
   },
   {
-   "fetch_from": "branch.sol_id",
+   "fetch_from": "branch.branch",
    "fieldname": "branch_code",
    "fieldtype": "Data",
    "label": "Branch Code"
@@ -251,7 +251,7 @@
  "index_web_pages_for_search": 1,
  "is_submittable": 1,
  "links": [],
- "modified": "2026-11-12 11:40:05.315400",
+ "modified": "2026-11-28 15:29:47.571322",
  "modified_by": "Administrator",
  "module": "Branch Visit Review",
  "name": "Branch Visit Review",
