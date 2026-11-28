@@ -4328,7 +4328,7 @@
               <div style="display:flex; flex-direction:column; gap:14px;">
                 <div>
                   <label style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">Full Name <span style="color:#dc2626;">*</span></label>
-                  <input id="ecr_name" class="member-select" placeholder="e.g. Ramesh Kumar" style="width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; box-sizing:border-box;" />
+                  <input id="ecr_name" class="member-select" placeholder="e.g. Ramesh Kumar" required style="width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; box-sizing:border-box;" />
                 </div>
 
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
@@ -4387,15 +4387,103 @@
         document.body.appendChild(modal);
       }
 
+      function validateEcForm() {
+        const name = document.getElementById("ecr_name");
+        const gender = document.getElementById("ecr_gender");
+        const dob = document.getElementById("ecr_dob");
+        const doj = document.getElementById("ecr_doj");
+        const contact = document.getElementById("ecr_contact");
+
+        // reset borders
+        [name, gender, dob, doj, contact].forEach((el) => {
+          if (el) el.style.borderColor = "#e2e8f0";
+        });
+
+        const nameVal = name.value.trim();
+        if (!nameVal) {
+          name.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Full Name is required." };
+        }
+        if (nameVal.length < 2) {
+          name.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Full Name must be at least 2 characters." };
+        }
+        if (!/^[A-Za-z][A-Za-z .'-]*$/.test(nameVal)) {
+          name.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Full Name can contain only letters, spaces, dots, apostrophes and hyphens." };
+        }
+
+        if (!gender.value) {
+          gender.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Gender is required." };
+        }
+
+        if (!dob.value) {
+          dob.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Date of Birth is required." };
+        }
+        const dobDate = new Date(dob.value);
+        if (isNaN(dobDate.getTime())) {
+          dob.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Invalid Date of Birth." };
+        }
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (dobDate > today) {
+          dob.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Date of Birth cannot be in the future." };
+        }
+        const age = (today - dobDate) / (365.25 * 24 * 60 * 60 * 1000);
+        if (age < 18) {
+          dob.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Employee must be at least 18 years old." };
+        }
+        if (age > 70) {
+          dob.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Please check Date of Birth (age exceeds 70)." };
+        }
+
+        if (!doj.value) {
+          doj.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Date of Joining is required." };
+        }
+        const dojDate = new Date(doj.value);
+        if (isNaN(dojDate.getTime())) {
+          doj.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Invalid Date of Joining." };
+        }
+        if (dojDate < dobDate) {
+          doj.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Date of Joining cannot be before Date of Birth." };
+        }
+        const maxFuture = new Date(today);
+        maxFuture.setFullYear(maxFuture.getFullYear() + 1);
+        if (dojDate > maxFuture) {
+          doj.style.borderColor = "#dc2626";
+          return { ok: false, msg: "Date of Joining cannot be more than 1 year in the future." };
+        }
+
+        const contactVal = contact.value.trim();
+        if (contactVal) {
+          if (!/^[0-9]{10}$/.test(contactVal)) {
+            contact.style.borderColor = "#dc2626";
+            return { ok: false, msg: "Contact Number must be 10 digits." };
+          }
+        }
+
+        return { ok: true, msg: "" };
+      }
+
       async function submitEmployeeCreationRequest() {
+        const v = validateEcForm();
+        if (!v.ok) {
+          showToast(v.msg);
+          return;
+        }
         const name = document.getElementById("ecr_name").value.trim();
         const gender = document.getElementById("ecr_gender").value;
         const dob = document.getElementById("ecr_dob").value;
         const doj = document.getElementById("ecr_doj").value;
-        if (!name || !gender || !dob || !doj) {
-          showToast("Name, Gender, Date of Birth and Date of Joining are required");
-          return;
-        }
         const btn = document.getElementById("btnSubmitEcr");
         btn.disabled = true;
         btn.textContent = "Submitting...";
@@ -5102,6 +5190,13 @@
           "tabCorrApproval",
           corr && corr.pending ? corr.pending.length : 0,
         );
+        if (isHR()) {
+          const ec = await callAPI("get_pending_requests", {}, "employee_creation");
+          setPendingBadge(
+            "tabEmpCreation",
+            Array.isArray(ec) ? ec.length : 0,
+          );
+        }
       }
 
       // ── TAB PERSISTENCE (stay on same tab after refresh) ──
@@ -9735,6 +9830,7 @@
         if (res) {
           showToast((res.message || action) + (res.employee ? " — " + res.employee : ""));
           loadEmpCreationRequestsTab();
+          updatePendingBadges();
         }
       }
 
