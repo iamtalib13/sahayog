@@ -67,9 +67,10 @@
   {
    "fetch_from": "branch.district",
    "fieldname": "district",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "District"
+   "label": "District",
+   "options": "District"
   },
   {
    "fieldname": "column_break_visit",
@@ -206,16 +207,18 @@
   {
    "fetch_from": "branch.zone",
    "fieldname": "zone",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "Zone"
+   "label": "Zone",
+   "options": "Zone"
   },
   {
    "fetch_from": "branch.region",
    "fieldname": "region",
-   "fieldtype": "Data",
+   "fieldtype": "Link",
    "in_standard_filter": 1,
-   "label": "Region"
+   "label": "Region",
+   "options": "Region"
   },
   {
    "fieldname": "section_break_gdxo",
