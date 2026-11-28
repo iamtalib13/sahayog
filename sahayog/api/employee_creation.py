@@ -75,6 +75,35 @@ def create_request(
             _("Name, Gender, Date of Birth and Date of Joining are required.")
         )
 
+    # Date validations
+    from frappe.utils import getdate, nowdate
+    try:
+        dob_d = getdate(date_of_birth)
+        doj_d = getdate(date_of_joining)
+    except Exception:
+        frappe.throw(_("Invalid date format."))
+    today = getdate(nowdate())
+    if dob_d > today:
+        frappe.throw(_("Date of Birth cannot be in the future."))
+    age_years = (today - dob_d).days / 365.25
+    if age_years < 18:
+        frappe.throw(_("Employee must be at least 18 years old."))
+    if age_years > 70:
+        frappe.throw(_("Please check Date of Birth (age exceeds 70)."))
+    if doj_d < dob_d:
+        frappe.throw(_("Date of Joining cannot be before Date of Birth."))
+    max_future = today.replace(year=today.year + 1)
+    if doj_d > max_future:
+        frappe.throw(_("Date of Joining cannot be more than 1 year in the future."))
+
+    if contact_number:
+        import re
+        if not re.fullmatch(r"[0-9]{10}", str(contact_number).strip()):
+            frappe.throw(_("Contact Number must be 10 digits."))
+
+    if designation and designation not in ("Peon", "Office Boy"):
+        frappe.throw(_("Invalid designation."))
+
     user_emp = frappe.db.get_value(
         "Employee",
         {"user_id": frappe.session.user},
