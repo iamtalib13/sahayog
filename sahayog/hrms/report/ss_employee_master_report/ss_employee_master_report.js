@@ -14,7 +14,7 @@ frappe.query_reports["SS Employee Master Report"] = {
 			"fieldname": "branch",
 			"label": __("Branch"),
 			"fieldtype": "Link",
-			"options": "Branch"
+			"options": "Sahayog Branch"
 		},
 		{
 			"fieldname": "department",
