@@ -403,7 +403,7 @@ function open_action_item_dialog(frm, idx, item) {
 	} else {
 		modal_html += "<div class='bvr-modal-field'><label>Target Date (TAT)</label><input type='text' class='form-control bvr-modal-input' data-field='tat' placeholder='dd/mm/yyyy' value='" + bvr_escape(fmt_disp(tat_value)) + "'></div>";
 	}
-	modal_html += "<div class='bvr-modal-field'><label>Status</label><select class='form-control bvr-modal-input' data-field='status'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select></div>";
+	modal_html += "<div class='bvr-modal-field'><label>Status</label><div style='position:relative;'><select class='form-control bvr-modal-input' data-field='status' style='appearance:auto; padding-right:28px;'>" + select_options(["Open", "In Progress", "Resolved"], item.status || "Open") + "</select><i class='fa fa-caret-down' style='position:absolute; right:10px; top:50%; transform:translateY(-50%); pointer-events:none; color:#6c757d;'></i></div></div>";
 	modal_html += "</div>";
 	modal_html += "<div class='bvr-modal-field'><label>Resolution Notes</label><textarea class='form-control bvr-modal-input' data-field='resolution_notes' rows='3' placeholder='Enter notes'>" + bvr_escape(item.resolution_notes) + "</textarea></div>";
 	if (is_admin_template) {
