@@ -2024,7 +2024,7 @@
               </span>
             </div>
 
-            <template v-if="['Approved', 'Dispatch', 'Dispatched', 'Partially Dispatched', 'Received', 'Completed'].includes(detailRecord.status)">
+            <div v-if="['Approved', 'Dispatch', 'Dispatched', 'Partially Dispatched', 'Received', 'Completed'].includes(detailRecord.status)" style="display: contents;">
               <div class="inline-flow-connector">
                 <i class="fas fa-chevron-right"></i>
               </div>
@@ -2047,7 +2047,11 @@
                 <i class="fas fa-chevron-right"></i>
               </div>
 
-              <div class="inline-flow-step">
+              <div
+                class="inline-flow-step"
+                :style="['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status) ? 'cursor:pointer;' : ''"
+                @click="['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status) && openReceivePopup()"
+              >
                 <div class="inline-step-num">4</div>
                 <div class="inline-step-info">
                   <span class="inline-step-role">Branch</span>
@@ -2060,7 +2064,7 @@
                   [[ ['Received', 'Completed'].includes(detailRecord.status) ? 'Received' : (['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status) ? 'Pending' : 'Waiting') ]]
                 </span>
               </div>
-            </template>
+            </div>
           </div>
         </h1>
       </div>
@@ -6275,6 +6279,25 @@
                       <i class="fas fa-truck-fast"></i>
                       <span>Dispatch Selected</span>
                     </button>
+                    <button
+                      v-if="['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status)"
+                      class="btn-create-inline"
+                      style="
+                        padding: 8px 16px !important;
+                        font-weight: 700;
+                        border-radius: 12px;
+                        background: #2e7d32;
+                        color: white;
+                        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                      "
+                      @click="openReceivePopup()"
+                    >
+                      <i class="fas fa-check-circle"></i>
+                      <span>Received</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -6422,6 +6445,7 @@
                           <th v-if="detailRecord.items && detailRecord.items.some(i => i.serial_and_batch_bundle)">Serial Bundle</th>
                           <th style="text-align: right">Qty</th>
                           <th style="text-align: right">Rate</th>
+                          <th style="text-align: right">GST %</th>
                           <th style="text-align: right">Amount</th>
                           <th v-if="isEditing" style="text-align: center">Action</th>
                         </tr>
@@ -6461,8 +6485,11 @@
                             <input v-if="isEditing" type="number" v-model.number="item.rate" style="width: 80px; text-align: right; padding: 2px 4px;">
                             <span v-else v-html="frappe.format(item.rate, {fieldtype: 'Currency'})"></span>
                           </td>
+                          <td style="text-align: right">
+                            <span>[[ item.custom_gst != null ? item.custom_gst : 18 ]]%</span>
+                          </td>
                           <td style="text-align: right; font-weight: 700; color: var(--text-main);">
-                            INR [[ (item.qty * item.rate).toFixed(2) ]]
+                            INR [[ Number(item.custom_calculated_amount || item.amount || (item.qty * item.rate)).toFixed(2) ]]
                           </td>
                           <td v-if="isEditing" style="text-align: center">
                             <button class="btn-create-inline" style="background: #ef4444 !important; color: white !important; border: none; padding: 4px 8px;" @click="detailRecord.items.splice(idx, 1)">
@@ -6473,9 +6500,27 @@
                       </tbody>
                     </table>
                   </div>
-                  <div style="padding: 12px 20px; background: var(--bg-card); border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; align-items: center; gap: 24px; font-size: 13px; font-weight: 700;">
-                    <div style="color: var(--text-muted)">Total Amount:</div>
-                    <div style="font-size: 1.1rem; color: #f59e0b" v-html="frappe.format(detailRecord.grand_total, {fieldtype: 'Currency'})"></div>
+                  <div style="padding: 12px 20px; background: var(--bg-card); border-top: 1px solid var(--border-color); font-size: 13px; font-weight: 700;">
+                    <div style="display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px;">
+                      <div style="display: flex; justify-content: flex-end; gap: 16px; align-items: center;">
+                        <span style="color: var(--text-muted); font-weight: 600;">Stationery Stock GL:</span>
+                        <span style="min-width: 160px; color: var(--text-main);">[[ detailRecord.custom_stationery_stock_gl || '-' ]]</span>
+                        <span style="color: var(--text-muted); font-weight: 600;">Amount:</span>
+                        <span style="min-width: 120px; text-align: right;" v-html="frappe.format(detailRecord.custom_stationery_stock_amount || 0, {fieldtype: 'Currency'})"></span>
+                      </div>
+                      <div style="display: flex; justify-content: flex-end; gap: 16px; align-items: center;">
+                        <span style="color: var(--text-muted); font-weight: 600;">Input GST MH GL:</span>
+                        <span style="min-width: 160px; color: var(--text-main);">[[ detailRecord.custom_input_gst_mh_gl || '-' ]]</span>
+                        <span style="color: var(--text-muted); font-weight: 600;">Amount:</span>
+                        <span style="min-width: 120px; text-align: right;" v-html="frappe.format(detailRecord.custom_input_gst_amount || 0, {fieldtype: 'Currency'})"></span>
+                      </div>
+                      <div style="display: flex; justify-content: flex-end; gap: 16px; align-items: center; border-top: 1px solid var(--border-color); padding-top: 10px;">
+                        <span style="color: var(--text-muted); font-weight: 600;">Vendor Control GL:</span>
+                        <span style="min-width: 160px; color: var(--text-main);">[[ detailRecord.custom_vendor_control_gl || '-' ]]</span>
+                        <span style="color: var(--text-muted); font-weight: 600;">Total Amount:</span>
+                        <span style="min-width: 120px; text-align: right; font-size: 1.1rem; color: #f59e0b;" v-html="frappe.format(detailRecord.grand_total || 0, {fieldtype: 'Currency'})"></span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -8052,6 +8097,26 @@
                         Selected Items' : 'Dispatch Selected Items' ]]</span
                       >
                     </button>
+                    <button
+                      v-if="['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(detailRecord.status)"
+                      class="btn-create-inline"
+                      style="
+                        padding: 10px 24px !important;
+                        font-size: 0.85rem !important;
+                        font-weight: 700;
+                        border-radius: 20px;
+                        background: #2e7d32;
+                        color: white;
+                        box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                      "
+                      @click="openReceivePopup()"
+                    >
+                      <i class="fas fa-check-circle"></i>
+                      <span>Received</span>
+                    </button>
                   </div>
                 </div>
                 <div
@@ -9260,6 +9325,18 @@
                     >
                       [[ (row.items && row.items.some(i => i.item_category ===
                       'Asset')) ? 'Movement' : 'Dispatch' ]]
+                    </button>
+                    <button
+                      class="btn-create-inline"
+                      style="
+                        background: #2e7d32;
+                        border-color: #2e7d32;
+                        margin-right: 4px;
+                      "
+                      @click.stop="openReceivePopup(row)"
+                      v-if="activeItem === 'Requests' && ['Dispatch', 'Dispatched', 'Partially Dispatched'].includes(row.status)"
+                    >
+                      Received
                     </button>
                     <button
                       class="btn-create-inline"
@@ -11102,29 +11179,40 @@
     <div class="profile-modal" style="max-width: 100%; width: 1300px;">
       <div class="profile-modal-header">
         <h3>
-          [[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]
+          <span v-if="dispatchForm.mode === 'receive'">Receive Request - [[ dispatchForm.stock_entry ]]</span>
+          <span v-if="dispatchForm.mode !== 'receive'">[[ dispatchForm.items.some(i => i.item_category === 'Asset') ? 'Asset Movement' : 'Dispatch Request' ]] - Step [[ dispatchForm.dispatchStep ]]</span>
         </h3>
         <div class="profile-modal-header-right">
-          <button
-            v-if="dispatchForm.dispatchStep === 1"
-            class="btn-create-inline"
-            @click="dispatchForm.dispatchStep = 2"
-          >
-            <span>Next</span>
-          </button>
-          <button
-            v-if="dispatchForm.dispatchStep === 2"
-            class="btn-create-inline"
-            @click="submitDispatch()"
-          >
-            <span
-              >[[ dispatchForm.items.some(i => i.item_category === 'Asset') ?
-              'Proceed Movement' : 'Proceed Dispatch' ]]</span
+          <div v-if="dispatchForm.mode === 'receive'" style="display:contents">
+            <button class="btn-create-inline" @click="submitReceive()">
+              <span>Submit</span>
+            </button>
+            <button class="profile-close" style="width:auto; padding:0 12px; font-size:13px;" @click="showDispatchModal = false">
+              Cancel
+            </button>
+          </div>
+          <div v-if="dispatchForm.mode !== 'receive'" style="display:contents">
+            <button
+              v-if="dispatchForm.dispatchStep === 1"
+              class="btn-create-inline"
+              @click="dispatchForm.dispatchStep = 2"
             >
-          </button>
-          <button class="profile-close" @click="showDispatchModal = false">
-            &times;
-          </button>
+              <span>Next</span>
+            </button>
+            <button
+              v-if="dispatchForm.dispatchStep === 2"
+              class="btn-create-inline"
+              @click="submitDispatch()"
+            >
+              <span
+                >[[ dispatchForm.items.some(i => i.item_category === 'Asset') ?
+                'Proceed Movement' : 'Proceed Dispatch' ]]</span
+              >
+            </button>
+            <button class="profile-close" @click="showDispatchModal = false">
+              &times;
+            </button>
+          </div>
         </div>
       </div>
 
@@ -11401,6 +11489,7 @@
                       Total
                     </th>
                     <th
+                      v-show="dispatchForm.mode !== 'receive'"
                       style="
                         font-size: 10px;
                         text-transform: uppercase;
@@ -11506,7 +11595,7 @@
                     >
                       [[ formatCurrency((item.dispatch_qty || 0) * ((dispatchForm.transfer_old_stock_first && item.available_rates && item.available_rates.length ? item.available_rates[0] : item.rate) || 0)) ]]
                     </td>
-                    <td style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
+                    <td v-show="dispatchForm.mode !== 'receive'" style="font-size: 12px; padding: 8px 12px; text-align: left; border-left: 2px solid var(--border-color);">
                       <div v-if="item.available_batches && item.available_batches.length">
                         <div v-for="b in (item.showAllBatches ? item.available_batches : item.available_batches.slice(0, 3))" :key="'ab-' + item.item_code + '-' + b.rate" style="display: inline-flex; align-items: center; margin: 2px 4px 2px 0; border: 1px solid var(--border-color); border-radius: 999px; overflow: hidden; font-size: 11px; white-space: nowrap;">
                           <span style="padding: 2px 8px; background: var(--bg-card); color: var(--text-main); font-weight: 600;">Rate [[ b.rate ]]</span>
@@ -11527,7 +11616,7 @@
               </table>
             </div>
           </div>
-          <div v-if="dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
+          <div v-show="dispatchForm.mode !== 'receive' && dispatchForm.dispatchStep === 1 && dispatchForm.items.length > 0" style="margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--bg-card);">
             <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-main); cursor: pointer; font-weight: 600;">
               <input
                 type="checkbox"
@@ -14512,6 +14601,8 @@
         address: "",
         mobile_number: "",
         transfer_old_stock_first: true,
+        mode: "dispatch",
+        stock_entry: "",
       },
 
       showBranchStockUseView: false,
@@ -19723,6 +19814,8 @@
         this.dispatchForm.address = "";
         this.dispatchForm.mobile_number = "";
         this.dispatchForm.transfer_old_stock_first = true;
+        this.dispatchForm.mode = "dispatch";
+        this.dispatchForm.stock_entry = "";
         this.showDispatchItems = false;
         this.dispatchForm.dispatchStep = 1;
         this.showDispatchModal = true;
@@ -20083,6 +20176,91 @@
           }
         });
       },
+      async openReceivePopup(row = null) {
+        const emr = row || this.detailRecord;
+        if (!emr || !emr.name) return;
+        this.dispatchForm.loading = true;
+        this.dispatchForm.mode = "receive";
+        this.dispatchForm.name = emr.name;
+        this.dispatchForm.department = emr.department || "";
+        this.dispatchForm.source_warehouse = emr.source_warehouse || "";
+        this.dispatchForm.target_warehouse = emr.target_warehouse || "";
+        this.dispatchForm.dispatchStep = 1;
+        this.dispatchForm.items = [];
+        this.dispatchForm.stock_entry = "";
+        this.showDispatchModal = true;
+        try {
+          const seRes = await frappe.call({
+            method: "frappe.client.get_list",
+            args: {
+              doctype: "Stock Entry",
+              filters: { custom_material_request: emr.name, docstatus: 0 },
+              fields: ["name"],
+              order_by: "creation desc",
+              limit_page_length: 1,
+            },
+          });
+          const seName = seRes.message && seRes.message[0] ? seRes.message[0].name : "";
+          if (!seName) {
+            frappe.msgprint("No draft Stock Entry found for this request.");
+            this.showDispatchModal = false;
+            return;
+          }
+          this.dispatchForm.stock_entry = seName;
+          const docRes = await frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Stock Entry", name: seName },
+          });
+          const seDoc = docRes.message;
+          this.dispatchForm.items = (seDoc.items || []).map((it) => ({
+            name: it.name,
+            item_code: it.item_code,
+            item_name: it.item_name || it.item_code,
+            uom: it.uom || it.stock_uom,
+            approved_quantity: it.qty,
+            dispatch_qty: it.qty,
+            rate: it.basic_rate || it.valuation_rate || 0,
+            available_rates: [it.basic_rate || it.valuation_rate || 0],
+            available_batches: [],
+            selected: true,
+            showAllBatches: false,
+          }));
+        } catch (e) {
+          console.error("openReceivePopup error", e);
+          frappe.msgprint(e.message || "Error loading Stock Entry details");
+          this.showDispatchModal = false;
+        } finally {
+          this.dispatchForm.loading = false;
+        }
+      },
+      async submitReceive() {
+        if (!this.dispatchForm.stock_entry) return;
+        try {
+          const seRes = await frappe.call({
+            method: "frappe.client.get",
+            args: { doctype: "Stock Entry", name: this.dispatchForm.stock_entry },
+          });
+          await frappe.call({
+            method: "frappe.client.submit",
+            args: { doc: seRes.message },
+          });
+          await frappe.call({
+            method: "frappe.client.set_value",
+            args: {
+              doctype: "Employee Material Request",
+              name: this.dispatchForm.name,
+              fieldname: "status",
+              value: "Received",
+            },
+          });
+          frappe.show_alert({ message: "Stock Entry submitted and EMR marked as Received", indicator: "green" });
+          this.showDispatchModal = false;
+          await this.fetchData(this.currentView.doctype);
+        } catch (e) {
+          console.error("submitReceive error", e);
+          frappe.msgprint(e.message || "Error submitting Stock Entry");
+        }
+      },
       async submitDispatch() {
         if (this.dispatchForm.transfer_old_stock_first) {
           this.dispatchForm.items.forEach((item) => {
@@ -20191,13 +20369,8 @@
         });
 
         if (res.message) {
-          // Submit the Stock Entry
+          // Keep Stock Entry in Draft; update EMR and child item statuses to Dispatch
           try {
-            await frappe.call({
-              method: "frappe.client.submit",
-              args: { doc: res.message },
-            });
-
             const ddRes = await frappe.call({
               method: "frappe.client.insert",
               args: {
@@ -20241,12 +20414,12 @@
             });
 
             frappe.show_alert({
-              message: `Stock Entry ${res.message.name} created, submitted, and EMR items updated!`,
+              message: `Stock Entry ${res.message.name} created in Draft and EMR items updated to Dispatch!`,
               indicator: "green",
             });
           } catch (e) {
             frappe.show_alert({
-              message: `Stock Entry ${res.message.name} created, but submission or status update failed.`,
+              message: `Stock Entry ${res.message.name} created, but Dispatch Detail or EMR status update failed.`,
               indicator: "orange",
             });
           }
@@ -20772,15 +20945,24 @@
             remarks: this.inwardForm.remarks,
             items: this.inwardItems
               .filter((i) => i.item_code)
-              .map((i) => ({
-                item_code: i.item_code,
-                description: i.description,
-                qty: i.qty || 1,
-                uom: i.uom,
-                warehouse: i.warehouse || this.inwardForm.set_warehouse,
-                rate: i.rate || 0,
-                serial_and_batch_bundle: i.serial_and_batch_bundle || null,
-              })),
+              .map((i) => {
+                const rate = i.rate || 0;
+                const qty = i.qty || 1;
+                const gst = i.gst ?? 18;
+                const calculatedAmount = (rate + (rate * ((gst * 0.5) / 100))) * qty;
+                return {
+                  item_code: i.item_code,
+                  description: i.description,
+                  qty,
+                  uom: i.uom,
+                  warehouse: i.warehouse || this.inwardForm.set_warehouse,
+                  rate,
+                  custom_gst: gst,
+                  custom_calculated_amount: calculatedAmount,
+                  amount: calculatedAmount,
+                  serial_and_batch_bundle: i.serial_and_batch_bundle || null,
+                };
+              }),
           };
 
           const res = await frappe.call({

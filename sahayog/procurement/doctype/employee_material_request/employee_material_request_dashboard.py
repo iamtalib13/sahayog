@@ -16,7 +16,7 @@ def get_data():
                     {
                         "label": _("Create Stock Entry"),
                         # Set custom link field to current EMR name
-                        "action": "frappe.new_doc('Stock Entry', { 'custom_material_request': Employee Material Request, 'employee_material_request': doc.name })",
+                        "action": "frappe.new_doc('Stock Entry', { 'custom_material_request_doctype': 'Employee Material Request', 'custom_material_request': doc.name })",
                     }
                 ],
             },
