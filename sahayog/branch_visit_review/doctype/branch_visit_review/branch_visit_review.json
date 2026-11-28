@@ -68,6 +68,7 @@
    "fetch_from": "branch.district",
    "fieldname": "district",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "District"
   },
   {
@@ -206,12 +207,14 @@
    "fetch_from": "branch.zone",
    "fieldname": "zone",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Zone"
   },
   {
    "fetch_from": "branch.region",
    "fieldname": "region",
    "fieldtype": "Data",
+   "in_standard_filter": 1,
    "label": "Region"
   },
   {
