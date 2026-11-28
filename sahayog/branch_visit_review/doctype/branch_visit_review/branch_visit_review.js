@@ -377,9 +377,9 @@ function open_action_item_dialog(frm, idx, item) {
 	let tat3_value = item.stage_3_tat || "";
 	let tat4_value = item.stage_4_tat || "";
 	if (is_admin_template && is_add) {
-		if (!tat2_value) tat2_value = frappe.datetime.add_days(tat_value, 4);
-		if (!tat3_value) tat3_value = frappe.datetime.add_days(tat2_value, 4);
-		if (!tat4_value) tat4_value = frappe.datetime.add_days(tat3_value, 4);
+		if (!tat2_value) tat2_value = frappe.datetime.add_days(tat_value, 15);
+		if (!tat3_value) tat3_value = frappe.datetime.add_days(tat2_value, 7);
+		if (!tat4_value) tat4_value = frappe.datetime.add_days(tat3_value, 7);
 	}
 
 	let modal_html = "";
