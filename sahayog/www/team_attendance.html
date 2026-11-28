@@ -1556,6 +1556,14 @@
       >
         💰 Payroll
       </button>
+      <button
+        class="nav-tab"
+        id="tabEmpCreation"
+        style="display: none"
+        onclick="switchTab('emp_creation', this)"
+      >
+        🧾 Employee Creation
+      </button>
     </div>
 
     <!-- APPROVAL SUB-TABS -->
@@ -1764,7 +1772,7 @@
                     font-size: 11px;
                     font-weight: 700;
                   "
-                  onclick="openCreateEmployeeModal()"
+                  onclick="openCreateEmployeeAction()"
                 >
                   + Create Employee
                 </button>
@@ -4278,6 +4286,156 @@
           "none";
       }
 
+      function openCreateEmployeeAction() {
+        if (isHR()) {
+          openCreateEmployeeModal();
+        } else {
+          openEmployeeCreationRequestModal();
+        }
+      }
+
+      async function openEmployeeCreationRequestModal() {
+        const old = document.getElementById("ecrModal");
+        if (old) old.remove();
+
+        let branchLabel = "your branch";
+        try {
+          const info = await callAPI("get_my_branch", {}, "employee_creation");
+          if (info && info.branch) branchLabel = info.branch + " (" + (info.name || "") + ")";
+        } catch (e) {}
+
+        const modal = document.createElement("div");
+        modal.id = "ecrModal";
+        modal.style.cssText =
+          "position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:10000; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);";
+        modal.onclick = () => modal.remove();
+        modal.innerHTML = `
+          <div onclick="event.stopPropagation()" style="background:#fff; border-radius:22px; width:95%; max-width:560px; max-height:90vh; overflow-y:auto; box-shadow:0 25px 60px rgba(0,0,0,0.3);" class="custom-scroll">
+            <div style="background:linear-gradient(135deg, var(--brand) 0%, #3b82f6 100%); padding:20px 24px; border-radius:22px 22px 0 0; display:flex; justify-content:space-between; align-items:center;">
+              <div>
+                <h3 style="font-family:'Syne',sans-serif; color:#fff; margin:0; font-size:18px; font-weight:700;">🧾 New Employee Request</h3>
+                <p style="color:rgba(255,255,255,0.85); margin:4px 0 0; font-size:12px;">Branch Manager → HR approval workflow</p>
+              </div>
+              <button onclick="document.getElementById('ecrModal').remove()" style="background:rgba(255,255,255,0.2); border:none; width:36px; height:36px; border-radius:50%; cursor:pointer; color:#fff; font-size:16px; line-height:1;">✕</button>
+            </div>
+
+            <div style="padding:20px 24px;">
+              <div style="font-size:11px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:10px; padding:10px 14px; margin-bottom:16px; color:#1e40af; display:flex; align-items:center; gap:8px;">
+                <span style="font-size:16px;">ℹ️</span>
+                <span>Branch &amp; Department auto-fill honge. Employee code (P-series) HR approval ke baad generate hoga.</span>
+              </div>
+
+              <div style="display:flex; flex-direction:column; gap:14px;">
+                <div>
+                  <label style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">Full Name <span style="color:#dc2626;">*</span></label>
+                  <input id="ecr_name" class="member-select" placeholder="e.g. Ramesh Kumar" style="width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; box-sizing:border-box;" />
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                  <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">Gender <span style="color:#dc2626;">*</span></label>
+                    <select id="ecr_gender" class="member-select" style="width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; box-sizing:border-box;">
+                      <option value="">Select Gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">Designation</label>
+                    <select id="ecr_designation" class="member-select" style="width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; box-sizing:border-box;">
+                      <option value="">Select Designation</option>
+                      <option value="Peon">Peon</option>
+                      <option value="Office Boy">Office Boy</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:14px;">
+                  <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">Date of Birth <span style="color:#dc2626;">*</span></label>
+                    <input id="ecr_dob" type="date" class="member-select" style="width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; box-sizing:border-box;" />
+                  </div>
+                  <div>
+                    <label style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">Date of Joining <span style="color:#dc2626;">*</span></label>
+                    <input id="ecr_doj" type="date" class="member-select" style="width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; box-sizing:border-box;" />
+                  </div>
+                </div>
+
+                <div>
+                  <label style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">Contact Number</label>
+                  <input id="ecr_contact" class="member-select" placeholder="e.g. 9876543210" style="width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; box-sizing:border-box;" />
+                </div>
+
+                <div>
+                  <label style="font-size:12px; font-weight:700; color:var(--text); margin-bottom:4px; display:block;">Remarks (optional)</label>
+                  <textarea id="ecr_remarks" class="member-select" rows="2" placeholder="Any additional notes for HR..." style="width:100%; padding:10px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:13px; box-sizing:border-box; resize:vertical;"></textarea>
+                </div>
+
+                <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                  <span style="font-size:11px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:6px 12px; color:#15803d; font-weight:600;">🏢 Branch: ${branchLabel}</span>
+                  <span style="font-size:11px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:8px; padding:6px 12px; color:#15803d; font-weight:600;">📁 Department: Housekeeping</span>
+                </div>
+              </div>
+
+              <button onclick="submitEmployeeCreationRequest()" id="btnSubmitEcr" class="btn-in" style="width:100%; padding:12px; font-weight:700; font-size:14px; border-radius:12px; margin-top:18px; background:linear-gradient(135deg, var(--brand) 0%, #3b82f6 100%); border:none; color:#fff; cursor:pointer; box-shadow:0 4px 12px rgba(59,130,246,0.3);">
+                Submit for HR Approval
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(modal);
+      }
+
+      async function submitEmployeeCreationRequest() {
+        const name = document.getElementById("ecr_name").value.trim();
+        const gender = document.getElementById("ecr_gender").value;
+        const dob = document.getElementById("ecr_dob").value;
+        const doj = document.getElementById("ecr_doj").value;
+        if (!name || !gender || !dob || !doj) {
+          showToast("Name, Gender, Date of Birth and Date of Joining are required");
+          return;
+        }
+        const btn = document.getElementById("btnSubmitEcr");
+        btn.disabled = true;
+        btn.textContent = "Submitting...";
+        let res = null;
+        try {
+          res = await callAPI(
+            "create_request",
+            {
+              employee_name: name,
+              gender,
+              date_of_birth: dob,
+              date_of_joining: doj,
+              designation:
+                document.getElementById("ecr_designation").value || null,
+              department: "Housekeeping",
+              contact_number:
+                document.getElementById("ecr_contact").value.trim() || null,
+              remarks:
+                document.getElementById("ecr_remarks").value.trim() || null,
+            },
+            "employee_creation",
+          );
+        } catch (e) {
+          showToast(String(e));
+        }
+        btn.disabled = false;
+        btn.textContent = "Submit for HR Approval";
+        if (res && res.success) {
+          showToast(res.message || "Request submitted");
+          document.getElementById("ecrModal").remove();
+        }
+      }
+
+      function fmtDateDMY(s) {
+        if (!s) return "-";
+        const parts = String(s).split("-");
+        if (parts.length !== 3) return s;
+        return parts[2] + "-" + parts[1] + "-" + parts[0];
+      }
+
       function openCreateEmployeeModal() {
         document.getElementById("createEmployeeModal").style.display = "flex";
         populateEmployeeFormOptions();
@@ -4954,6 +5112,7 @@
         corrections: "tabCorrApproval",
         reports: "tabReports",
         payroll: "tabPayroll",
+        emp_creation: "tabEmpCreation",
       };
       function restoreLastTab() {
         let saved = null;
@@ -4961,7 +5120,15 @@
           saved = localStorage.getItem("ss_active_tab");
         } catch (e) {}
         const allowed = isHR()
-          ? ["attendance", "hr_dashboard", "leave", "corrections", "reports", "payroll"]
+          ? [
+              "attendance",
+              "hr_dashboard",
+              "leave",
+              "corrections",
+              "reports",
+              "payroll",
+              "emp_creation",
+            ]
           : isBranchManager()
             ? ["attendance", "leave", "corrections"]
             : ["attendance"];
@@ -4980,6 +5147,10 @@
           return;
         }
         if (tab === "hr_dashboard" && !isHR()) {
+          showToast("You are not authorized to access this tab.");
+          return;
+        }
+        if (tab === "emp_creation" && !isHR()) {
           showToast("You are not authorized to access this tab.");
           return;
         }
@@ -5023,7 +5194,7 @@
         if (dirCardHead) dirCardHead.style.display = "none";
 
         // Calendar Visibility Logic for HR
-        if (isHR()) {
+        if (isHR() || isBranchManager()) {
           if (btnCreateEmployee)
             btnCreateEmployee.style.display =
               tab === "attendance" ? "inline-block" : "none";
@@ -5139,6 +5310,13 @@
           if (empList) empList.style.display = "none";
           if (hrDash) hrDash.style.display = "block";
           loadPayrollDashboard();
+        } else if (tab === "emp_creation") {
+          if (controls) controls.style.display = "none";
+          if (bulkBar) bulkBar.classList.remove("visible");
+          if (searchWrap) searchWrap.style.display = "none";
+          if (empList) empList.style.display = "none";
+          if (hrDash) hrDash.style.display = "block";
+          loadEmpCreationRequestsTab();
         }
         fitMainGridHeight();
       }
@@ -5583,6 +5761,8 @@
           if (reportsTab) reportsTab.style.display = "flex";
           const payrollTab = document.getElementById("tabPayroll");
           if (payrollTab) payrollTab.style.display = "flex";
+          const empCreationTab = document.getElementById("tabEmpCreation");
+          if (empCreationTab) empCreationTab.style.display = "flex";
           if (bulkBar && !allowHrToMarkAttendance)
             bulkBar.style.setProperty("display", "none", "important");
 
@@ -5604,6 +5784,9 @@
           isFirstLoad = false;
           if (attendanceTab) attendanceTab.textContent = "👥 Staff Directory";
           if (btnApplyLeave) btnApplyLeave.style.display = "inline-block";
+          if (btnCreateEmployee)
+            btnCreateEmployee.style.display =
+              currentTab === "attendance" ? "inline-block" : "none";
           if (leaveTab) {
             leaveTab.style.display = "flex";
             leaveTab.textContent = "📝 Leave Requests";
@@ -9398,6 +9581,161 @@
         div.innerHTML = html;
         if ((res.failed || 0) === 0) showToast(`Salary sheet updated: ${res.updated} records`);
         loadPayrollDashboard();
+      }
+
+      let _ecAllRows = [];
+
+      function _fmtDateDMY(s) { return fmtDateDMY(s); }
+
+      function _ecTableHTML(rows) {
+        if (!rows.length) {
+          return `
+            <div style="text-align:center;padding:50px 20px;">
+              <div style="font-size:40px;margin-bottom:10px;">🔍</div>
+              <div style="font-size:14px;font-weight:700;color:var(--muted);">No matching requests</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:4px;">Try a different search term.</div>
+            </div>
+          `;
+        }
+        return `
+          <div style="background:#fff; border-radius:16px; overflow:hidden; box-shadow:0 4px 20px rgba(0,0,0,0.06); border:1px solid #f1f5f9;">
+            <div style="overflow-x:auto;">
+              <table style="width:100%; border-collapse:collapse; font-size:12px; min-width:900px;">
+                <thead>
+                  <tr style="background:linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%); text-align:left; font-size:11px; text-transform:uppercase; color:var(--muted); letter-spacing:0.5px;">
+                    <th style="padding:14px 12px; font-weight:700;">Employee</th>
+                    <th style="padding:14px 12px; font-weight:700;">Gender</th>
+                    <th style="padding:14px 12px; font-weight:700;">Date of Birth</th>
+                    <th style="padding:14px 12px; font-weight:700;">Date of Joining</th>
+                    <th style="padding:14px 12px; font-weight:700;">Designation</th>
+                    <th style="padding:14px 12px; font-weight:700;">Branch</th>
+                    <th style="padding:14px 12px; font-weight:700;">Requested By</th>
+                    <th style="padding:14px 12px; font-weight:700; text-align:center;">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${rows
+                    .map(
+                      (r) => `
+                    <tr style="border-bottom:1px solid #f1f5f9; transition:background 0.15s;" onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='#fff'">
+                      <td style="padding:12px;">
+                        <div style="font-weight:700; color:var(--text); font-size:13px;">${r.employee_name || "-"}</div>
+                        <div style="font-size:10px; color:var(--muted); margin-top:2px;">${r.name || ""}</div>
+                      </td>
+                      <td style="padding:12px;">
+                        <span style="font-size:11px; background:#f1f5f9; border-radius:6px; padding:3px 8px; color:var(--text); font-weight:600;">${r.gender || "-"}</span>
+                      </td>
+                      <td style="padding:12px; color:var(--text);">${fmtDateDMY(r.date_of_birth)}</td>
+                      <td style="padding:12px; color:var(--text);">${fmtDateDMY(r.date_of_joining)}</td>
+                      <td style="padding:12px;">
+                        <span style="font-size:11px; background:#fef3c7; border-radius:6px; padding:3px 8px; color:#92400e; font-weight:600;">${r.designation || "-"}</span>
+                      </td>
+                      <td style="padding:12px;">
+                        <div style="font-weight:600; color:var(--text); font-size:12px;">${r.branch_name || r.branch || "-"}</div>
+                        <div style="font-size:10px; color:var(--muted); margin-top:2px;">${r.branch || ""}</div>
+                      </td>
+                      <td style="padding:12px;">
+                        <div style="font-weight:600; color:var(--text); font-size:12px;">${r.requested_by_name || r.requested_by || "-"}</div>
+                        <div style="font-size:10px; color:var(--muted); margin-top:2px;">${r.requested_by_code || ""}</div>
+                      </td>
+                      <td style="padding:12px; text-align:center; white-space:nowrap;">
+                        <button class="btn-in" style="font-size:11px; padding:6px 12px; background:linear-gradient(135deg,#16a34a,#22c55e); border:none; color:#fff; border-radius:8px; cursor:pointer; font-weight:600; box-shadow:0 2px 6px rgba(22,163,74,0.3);" onclick="processEmpCreationRequest('${r.name}','Approved')">✓ Approve</button>
+                        <button class="btn-clear" style="font-size:11px; padding:6px 12px; margin-left:6px; color:#dc2626; border:1.5px solid #fecaca; background:#fef2f2; border-radius:8px; cursor:pointer; font-weight:600;" onclick="processEmpCreationRequest('${r.name}','Rejected')">✕ Reject</button>
+                      </td>
+                    </tr>
+                  `,
+                    )
+                    .join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `;
+      }
+
+      function filterEcRequests(q) {
+        const wrap = document.getElementById("ecTableWrap");
+        if (!wrap) return;
+        const term = (q || "").toLowerCase().trim();
+        const filtered = term
+          ? _ecAllRows.filter((r) => {
+              const name = (r.employee_name || "").toLowerCase();
+              const id = (r.name || "").toLowerCase();
+              const reqName = (r.requested_by_name || "").toLowerCase();
+              const reqCode = (r.requested_by_code || "").toLowerCase();
+              return (
+                name.includes(term) ||
+                id.includes(term) ||
+                reqName.includes(term) ||
+                reqCode.includes(term)
+              );
+            })
+          : _ecAllRows;
+        wrap.innerHTML = _ecTableHTML(filtered);
+      }
+
+      async function loadEmpCreationRequestsTab() {
+        const container = document.getElementById("hrDashboardContent");
+        if (!container) return;
+        container.innerHTML =
+          '<div style="text-align:center;padding:50px;color:var(--muted);"><div class="spinner" style="margin:0 auto 12px;"></div>Loading requests...</div>';
+
+        let rows = [];
+        try {
+          rows =
+            (await callAPI(
+              "get_pending_requests",
+              {},
+              "employee_creation",
+            )) || [];
+        } catch (e) {
+          container.innerHTML = `<div style="color:#dc2626;font-size:12px;padding:20px;">${e}</div>`;
+          return;
+        }
+
+        _ecAllRows = rows;
+        const badgeText =
+          rows.length + " Pending Request" + (rows.length > 1 ? "s" : "");
+
+        if (!rows.length) {
+          container.innerHTML = `
+            <div style="text-align:center;padding:60px 20px;">
+              <div style="font-size:48px;margin-bottom:12px;">🎉</div>
+              <div style="font-size:16px;font-weight:700;color:#15803d;">No pending requests</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:6px;">All employee creation requests have been processed.</div>
+            </div>
+          `;
+          return;
+        }
+
+        container.innerHTML = `
+          <div style="display:flex; align-items:center; justify-content:space-between; margin:0 0 16px 0; flex-wrap:wrap; gap:10px;">
+            <h3 style="font-family:'Syne',sans-serif; color:var(--brand); margin:0; font-size:18px; font-weight:700;">🧾 Employee Creation Approval</h3>
+            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+              <input id="ecSearch" type="text" placeholder="Search by name or ID..." oninput="filterEcRequests(this.value)" style="padding:8px 12px; border:1.5px solid #e2e8f0; border-radius:10px; font-size:12px; width:220px; box-sizing:border-box;" />
+              <span style="font-size:12px; background:#eff6ff; border:1px solid #bfdbfe; border-radius:20px; padding:4px 12px; color:#1e40af; font-weight:600;">${badgeText}</span>
+            </div>
+          </div>
+          <div id="ecTableWrap">${_ecTableHTML(rows)}</div>
+        `;
+      }
+
+      async function processEmpCreationRequest(name, action) {
+        let res = null;
+        try {
+          res = await callAPI(
+            "process_request",
+            { name, action, remark: "" },
+            "employee_creation",
+          );
+        } catch (e) {
+          showToast(String(e));
+          return;
+        }
+        if (res) {
+          showToast((res.message || action) + (res.employee ? " — " + res.employee : ""));
+          loadEmpCreationRequestsTab();
+        }
       }
 
       async function openLoanManager() {
