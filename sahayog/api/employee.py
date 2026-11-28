@@ -1208,7 +1208,14 @@ def get_shifts():
 
 @frappe.whitelist()
 def get_sahayog_branches():
-    return frappe.get_all("Sahayog Branch", fields=["name", "branch"], order_by="branch")
+    from sahayog.api.employee_creation import format_branch_display
+
+    branches = frappe.get_all(
+        "Sahayog Branch", fields=["name", "branch"], order_by="branch"
+    )
+    for b in branches:
+        b["branch"] = format_branch_display(b.get("name"), b.get("branch"))
+    return branches
 
 
 @frappe.whitelist()

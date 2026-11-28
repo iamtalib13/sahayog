@@ -31,7 +31,7 @@ frappe.query_reports["SS Attendance Regularization and In Out Report"] = {
 			"fieldname": "branch",
 			"label": __("Branch"),
 			"fieldtype": "Link",
-			"options": "Branch"
+			"options": "Sahayog Branch"
 		},
 		{
 			"fieldname": "department",

@@ -32,7 +32,7 @@ def execute(filters=None):
     conditions = ""
     
     if filters.get("branch"):
-        conditions += " AND e.branch = %(branch)s"
+        conditions += " AND e.sahayog_branch = %(branch)s"
     
     if filters.get("zone"):
         conditions += " AND e.custom_zone = %(zone)s"
@@ -42,8 +42,9 @@ def execute(filters=None):
 
     data = frappe.db.sql(f"""
         SELECT
-            e.branch,
-            e.custom_zone as zone,
+            sb.name as _sol_id,
+            sb.branch as branch,
+            sb.zone as zone,
             e.custom_region as region,
             COUNT(DISTINCT e.name) AS total_staff,
             SUM(CASE WHEN a.status = 'Present' THEN 1 ELSE 0 END) AS present,
@@ -55,6 +56,7 @@ def execute(filters=None):
                 / NULLIF(COUNT(a.name), 0), 1
             ) AS attendance_pct
         FROM `tabEmployee` e
+        LEFT JOIN `tabSahayog Branch` sb ON sb.name = e.sahayog_branch
         LEFT JOIN `tabAttendance` a
             ON a.employee = e.name
             AND a.attendance_date BETWEEN %(from_date)s AND %(to_date)s
@@ -62,8 +64,17 @@ def execute(filters=None):
         WHERE e.custom_is_support_staff = 1
             AND e.status = 'Active'
             {conditions}
-        GROUP BY e.branch, e.custom_zone, e.custom_region
-        ORDER BY e.custom_zone, e.custom_region, e.branch
+        GROUP BY e.sahayog_branch, sb.zone, sb.region
+        ORDER BY sb.zone, sb.region, sb.branch
     """, filters, as_dict=1)
+
+
+    from sahayog.api.employee_creation import format_branch_display
+    for row in data:
+        if row.get("branch") is not None:
+            row["branch"] = format_branch_display(row.get("_sol_id"), row.get("branch"))
+
+    for row in data:
+        row.pop("_sol_id", None)
 
     return columns, data

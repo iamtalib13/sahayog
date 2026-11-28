@@ -86,13 +86,14 @@ def execute(filters=None):
     data = frappe.db.sql(f"""
         SELECT
             sr.employee, sr.employee_name,
-            sr.branch, e.branch as branch_name,
+            sr.branch, sb.branch as branch_name_raw,
             sr.designation, sr.payroll_month,
             sr.gross_salary, sr.medical_deduction, sr.staff_loan_emi,
             sr.other_deduction, sr.total_deductions, sr.net_salary,
             sr.bank_name, sr.bank_account_no
         FROM `tabSalary Register` sr
         LEFT JOIN `tabEmployee` e ON e.name = sr.employee
+        LEFT JOIN `tabSahayog Branch` sb ON sb.name = sr.branch
         {conditions}
         ORDER BY CAST(REGEXP_REPLACE(sr.employee, '[^0-9]', '') AS UNSIGNED), sr.employee
     """, {
@@ -100,5 +101,14 @@ def execute(filters=None):
         "to_date": to_date,
         "branch": filters.get("branch"),
     }, as_dict=1)
+
+    from sahayog.api.employee_creation import format_branch_display
+    for row in data:
+        if row.get("branch_name_raw") is not None:
+            row["branch_name"] = format_branch_display(row.get("branch"), row.get("branch_name_raw"))
+        elif "branch_name_raw" in row:
+            row["branch_name"] = row.get("branch_name_raw")
+        if "branch_name_raw" in row:
+            del row["branch_name_raw"]
 
     return columns, data

@@ -123,7 +123,7 @@ def execute(filters=None):
     if filters.get("employee"):
         emp_conditions += " AND e.name = %(employee)s"
     if filters.get("branch"):
-        emp_conditions += " AND e.branch = %(branch)s"
+        emp_conditions += " AND e.sahayog_branch = %(branch)s"
     if filters.get("department"):
         emp_conditions += " AND e.department = %(department)s"
 
@@ -137,15 +137,20 @@ def execute(filters=None):
     _state_select = ", e.custom_state" if "custom_state" in {r[0] for r in frappe.db.sql("SHOW COLUMNS FROM `tabEmployee`")} else ""
 
     employees = frappe.db.sql(f"""
-        SELECT e.name, e.employee_name, e.branch, e.department, e.designation,
+        SELECT e.name, e.employee_name, sb.branch as branch, e.department, e.designation,
                e.date_of_joining, e.relieving_date, e.custom_zone, e.custom_region, e.custom_district,
                e.sahayog_branch, e.reports_to, e.default_shift, e.custom_division,
                e.holiday_list
                {_state_select}
         FROM `tabEmployee` e
+        LEFT JOIN `tabSahayog Branch` sb ON sb.name = e.sahayog_branch
         WHERE e.custom_is_support_staff = 1 {emp_conditions}
         ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name
     """, {**filters, "from_date": from_date}, as_dict=True)
+
+    from sahayog.api.employee_creation import format_branch_display
+    for emp in employees:
+        emp.branch = format_branch_display(emp.sahayog_branch, emp.branch)
 
     if not employees:
         return columns, []

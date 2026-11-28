@@ -839,7 +839,9 @@ def _get_employee_holiday_dates(employee, from_date, to_date):
         state = ""
         if branch and frappe.db.exists("Sahayog Branch", branch):
             state = (frappe.db.get_value("Sahayog Branch", branch, "state") or "").strip()
-        year = str(to_date.year)
+        from frappe.utils import getdate
+        _to = getdate(to_date) if not hasattr(to_date, "year") else to_date
+        year = str(_to.year)
         all_lists = frappe.get_all("Holiday List", pluck="name")
         hl_by_state = {}
         for hl_name in all_lists:

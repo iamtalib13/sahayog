@@ -21,7 +21,7 @@ def execute(filters=None):
     if filters.get("employee"):
         conditions += " AND la.employee = %(employee)s"
     if filters.get("branch"):
-        conditions += " AND e.branch = %(branch)s"
+        conditions += " AND e.sahayog_branch = %(branch)s"
     if filters.get("leave_type"):
         conditions += " AND la.leave_type = %(leave_type)s"
 
@@ -29,7 +29,8 @@ def execute(filters=None):
         SELECT
             la.employee,
             e.employee_name,
-            e.branch,
+            sb.name as _sol_id,
+            sb.branch as branch,
             e.department,
             la.leave_type,
             la.carry_forwarded_leaves_count,
@@ -60,6 +61,7 @@ def execute(filters=None):
             ), 0) AS unused_leaves
         FROM `tabLeave Allocation` la
         INNER JOIN `tabEmployee` e ON e.name = la.employee
+        LEFT JOIN `tabSahayog Branch` sb ON sb.name = e.sahayog_branch
         WHERE la.docstatus = 1
             AND %(today)s BETWEEN la.from_date AND la.to_date
             {conditions}
@@ -70,5 +72,14 @@ def execute(filters=None):
         row["used_leaves"] = round(
             flt(row["total_leaves_allocated"]) - flt(row["unused_leaves"]), 2
         )
+
+
+    from sahayog.api.employee_creation import format_branch_display
+    for row in data:
+        if row.get("branch") is not None:
+            row["branch"] = format_branch_display(row.get("_sol_id"), row.get("branch"))
+
+    for row in data:
+        row.pop("_sol_id", None)
 
     return columns, data
