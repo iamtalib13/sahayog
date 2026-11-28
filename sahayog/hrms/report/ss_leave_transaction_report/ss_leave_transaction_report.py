@@ -39,7 +39,7 @@ def execute(filters=None):
     if filters.get("employee"):
         emp_conditions += " AND lle.employee = %(employee)s"
     if filters.get("branch"):
-        emp_conditions += " AND e.branch = %(branch)s"
+        emp_conditions += " AND e.sahayog_branch = %(branch)s"
     if filters.get("department"):
         emp_conditions += " AND e.department = %(department)s"
     if filters.get("leave_type"):
@@ -50,7 +50,8 @@ def execute(filters=None):
         SELECT
             lle.employee,
             e.employee_name,
-            e.branch,
+            sb.name as _sol_id,
+            sb.branch as branch,
             e.department,
             lle.leave_type,
             lle.from_date,
@@ -64,6 +65,7 @@ def execute(filters=None):
             lle.creation AS transaction_date
         FROM `tabLeave Ledger Entry` lle
         INNER JOIN `tabEmployee` e ON e.name = lle.employee
+        LEFT JOIN `tabSahayog Branch` sb ON sb.name = e.sahayog_branch
         WHERE lle.docstatus = 1
           AND e.custom_is_support_staff = 1
           AND (
@@ -114,5 +116,12 @@ def execute(filters=None):
         row["leaves"] = leaves
         row["closing_balance"] = cb
         running[key] = cb
+
+
+    from sahayog.api.employee_creation import format_branch_display
+    for row in data:
+        if row.get("branch") is not None:
+            row["branch"] = format_branch_display(row.get("_sol_id"), row.get("branch"))
+        row.pop("_sol_id", None)
 
     return columns, data
