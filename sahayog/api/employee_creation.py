@@ -5,6 +5,25 @@ HR_ROLES = ("HR Manager", "HR User", "Administrator")
 REQUEST_ROLES = ("Branch Manager", "HR Manager", "HR User", "Administrator")
 
 
+def format_branch_display(sol_id, branch_name):
+    """Return a cleaned display name for a branch without changing the stored sol_id.
+
+    Rules:
+      - sol_id == "1001" -> "GONDIA"
+      - otherwise trim spaces, then strip a trailing " BRANCH" (case-insensitive)
+      - keep all other names unchanged
+    Never modifies the original value; safe for None/empty.
+    """
+    if not branch_name:
+        return branch_name
+    name = str(branch_name).strip()
+    if sol_id == "1001":
+        return "GONDIA"
+    if name.upper().endswith(" BRANCH"):
+        name = name[:-7].strip()
+    return name
+
+
 def _is_hr():
     roles = frappe.get_roles(frappe.session.user)
     return any(r in roles for r in HR_ROLES)
@@ -35,7 +54,9 @@ def get_my_branch():
     )
     return {
         "name": user_emp.sahayog_branch,
-        "branch": branch_name or user_emp.sahayog_branch,
+        "branch": format_branch_display(
+            user_emp.sahayog_branch, branch_name or user_emp.sahayog_branch
+        ),
     }
 
 
@@ -181,9 +202,14 @@ def get_pending_requests():
         )
         row["requested_by_code"] = emp.name if emp else ""
         row["requested_by_name"] = emp.employee_name if emp else row["requested_by"]
-        row["branch_name"] = (
+        raw_branch_name = (
             frappe.db.get_value("Sahayog Branch", row["branch"], "branch")
             if row.get("branch")
+            else None
+        )
+        row["branch_name"] = (
+            format_branch_display(row.get("branch"), raw_branch_name)
+            if raw_branch_name
             else ""
         )
 
