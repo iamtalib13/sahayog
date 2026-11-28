@@ -589,7 +589,7 @@ function render_checklist(frm, template) {
 						Object.keys(grouped).forEach(function (cat) {
 							let safe_cat = cat.replace(/[^a-zA-Z0-9]/g, "_");
 							html += "<div class='category-header'><h5>" + cat + "</h5><button class='bvr-btn-add add-category-row' data-category='" + safe_cat + "' title='Add new row'>+</button></div>";
-							let thead = "<thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th>";
+							let thead = "<thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:180px;'>BM Input</th>";
 							if (is_branch_tab) {
 								thead += "<th style='width:100px;'>QTY</th><th style='width:140px;'>Condition</th>";
 							}
@@ -633,7 +633,12 @@ function render_checklist(frm, template) {
 								} else {
 									review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + i + '" title="Add review">+</button>';
 								}
-								html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td>";
+								let is_admin_user = (frappe.session.user === "Administrator") || frappe.user.has_role("System Manager") || is_admin_template;
+								let saved_admin_input = saved ? (saved.admin_input || "") : "";
+								let admin_input_html = is_admin_user
+									? '<input type="text" class="form-control admin-input" data-parameter="' + i + '" placeholder="Enter BM input" value="' + bvr_escape(saved_admin_input) + '">'
+									: '<span class="admin-input-readonly">' + bvr_escape(saved_admin_input || "-") + '</span>';
+								html += "<tr><td>" + sr + "</td><td>" + (row.parameter_name || "") + "</td><td>" + response_html + "</td><td>" + admin_input_html + "</td>";
 								if (is_branch_tab) {
 									let saved_qty = saved ? (saved.qty || "") : "";
 									let saved_cond = saved ? (saved.condition || "") : "";
@@ -682,7 +687,7 @@ function render_checklist(frm, template) {
 						// append additional/custom items to visitor checklist
 						let sr = visitor_items.length + 1;
 						checklist_html += "<div class='category-header'><h5>Additional Items</h5></div>";
-						checklist_html += "<table><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
+						checklist_html += "<table><thead><tr><th style='width:50px;'>Sr</th><th>Evaluation Parameter / Question</th><th style='width:240px;'>Response Type</th><th style='width:180px;'>BM Input</th><th style='width:200px; text-align:center;'>Review</th><th style='width:36px;'></th></tr></thead><tbody>";
 						custom_items.forEach(function (resp) {
 							let custom_i = all_items.length;
 							let response_html = '<input type="text" class="form-control observation-input" data-parameter="' + custom_i + '" placeholder="Enter the text" value="' + (resp.response || "") + '">';
@@ -693,7 +698,12 @@ function render_checklist(frm, template) {
 							} else {
 								review_cell_html = '<button type="button" class="bvr-btn-add-review" data-parameter="' + custom_i + '" title="Add review">+</button>';
 							}
-							checklist_html += "<tr><td>" + sr + "</td><td>" + (resp.parameter_name || "") + "</td><td>" + response_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
+							let is_admin_user = (frappe.session.user === "Administrator") || frappe.user.has_role("System Manager") || (frm._bvr_is_admin_template);
+							let saved_admin_input = resp.admin_input || "";
+							let admin_input_html = is_admin_user
+								? '<input type="text" class="form-control admin-input" data-parameter="' + custom_i + '" placeholder="Enter BM input" value="' + bvr_escape(saved_admin_input) + '">'
+								: '<span class="admin-input-readonly">' + bvr_escape(saved_admin_input || "-") + '</span>';
+							checklist_html += "<tr><td>" + sr + "</td><td>" + (resp.parameter_name || "") + "</td><td>" + response_html + "</td><td>" + admin_input_html + "</td><td class='review-cell' style='text-align:center;width:200px;'>" + review_cell_html + "</td><td style='width:36px;'></td></tr>";
 							sr++;
 							all_items.push(resp);
 						});
@@ -1257,6 +1267,27 @@ function render_checklist(frm, template) {
 					if (!val) {
 						$this.closest(".review-cell").html('<button type="button" class="bvr-btn-add-review" data-parameter="' + param_idx + '" title="Add review">+</button>');
 					}
+				}
+			});
+
+			frm.fields_dict.checklist.$wrapper.off("blur.bvr-admin-input", ".admin-input").on("blur.bvr-admin-input", ".admin-input", function () {
+				let $this = $(this);
+				let param_idx = $this.data("parameter");
+				let val = $this.val();
+				let item = template_items[param_idx] || all_items[param_idx];
+				if (item) {
+					let param_name = item.parameter_name || "";
+					let existing = frm.doc.responses ? frm.doc.responses.find(function (r) { return r.parameter_name === param_name; }) : null;
+					if (existing) {
+						existing.admin_input = val;
+					} else {
+						frm.add_child("responses", {
+							category: item.category,
+							parameter_name: param_name,
+							admin_input: val,
+						});
+					}
+					frm.refresh_field("responses");
 				}
 			});
 

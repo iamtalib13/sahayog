@@ -9,6 +9,7 @@
   "category",
   "parameter_name",
   "response",
+  "admin_input",
   "observation",
   "rating_score",
   "attachment",
@@ -37,6 +38,13 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Response"
+  },
+  {
+   "columns": 2,
+   "fieldname": "admin_input",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "BM Input"
   },
   {
    "columns": 3,
