@@ -54,7 +54,7 @@ frappe.query_reports["SS Monthly Attendance Report"] = {
 			"fieldname": "branch",
 			"label": __("Branch"),
 			"fieldtype": "Link",
-			"options": "Branch"
+			"options": "Sahayog Branch"
 		},
 		{
 			"fieldname": "department",
