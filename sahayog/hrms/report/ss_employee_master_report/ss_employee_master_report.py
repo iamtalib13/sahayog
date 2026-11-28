@@ -45,7 +45,7 @@ def execute(filters=None):
 
     # Branch filter
     if filters.get("branch"):
-        conditions += " AND e.branch = %(branch)s"
+        conditions += " AND e.sahayog_branch = %(branch)s"
 
     # Department filter
     if filters.get("department"):
@@ -95,9 +95,9 @@ def execute(filters=None):
             e.employee_number, e.employee_name, e.gender, e.date_of_birth, e.date_of_joining,
             e.final_confirmation_date, e.department, e.designation,
             e.employment_type, e.custom_division, e.ctc,
-            sb.state,
+            sb.state, sb.branch,
             e.custom_zone, e.custom_region, e.custom_district,
-            e.branch, e.sahayog_branch, e.sol_id,
+            e.sahayog_branch, e.sol_id,
             e.cell_number, {_pan_select}, {_aadhaar_select}, {_uhid_select},
             e.bank_name, e.bank_ac_no, e.reports_to,
             CASE WHEN e.status = 'Left' THEN 'Resigned' ELSE e.status END AS status,
@@ -108,5 +108,11 @@ def execute(filters=None):
         ORDER BY CAST(REGEXP_REPLACE(IFNULL(e.employee_number, e.name), '[^0-9]', '') AS UNSIGNED),
                  IFNULL(e.employee_number, e.name)
     """, filters, as_dict=1)
+
+
+    from sahayog.api.employee_creation import format_branch_display
+    for row in data:
+        if row.get("branch") is not None:
+            row["branch"] = format_branch_display(row.get("sahayog_branch"), row.get("branch"))
 
     return columns, data
