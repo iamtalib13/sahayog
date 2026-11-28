@@ -39,19 +39,26 @@ def execute(filters=None):
     if filters.get("employee"):
         conditions += " AND e.name = %(employee)s"
     if filters.get("branch"):
-        conditions += " AND e.branch = %(branch)s"
+        conditions += " AND e.sahayog_branch = %(branch)s"
     if filters.get("department"):
         conditions += " AND e.department = %(department)s"
 
     employees = frappe.db.sql(f"""
-        SELECT e.name, e.employee_name, e.branch, e.department, e.default_shift
+        SELECT e.name, e.employee_name, sb.name as _sol_id, sb.branch as branch, e.department, e.default_shift
         FROM `tabEmployee` e
+        LEFT JOIN `tabSahayog Branch` sb ON sb.name = e.sahayog_branch
         WHERE e.custom_is_support_staff = 1 {conditions}
         ORDER BY CAST(REGEXP_REPLACE(e.name, '[^0-9]', '') AS UNSIGNED), e.name
     """, filters, as_dict=True)
 
     if not employees:
         return columns, []
+
+    from sahayog.api.employee_creation import format_branch_display
+    for e in employees:
+        if e.get("branch") is not None:
+            e["branch"] = format_branch_display(e.get("_sol_id"), e.get("branch"))
+        e.pop("_sol_id", None)
 
     emp_names = [e.name for e in employees]
 
