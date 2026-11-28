@@ -21,7 +21,7 @@ frappe.query_reports["SS Branch-wise Attendance Report"] = {
 			"fieldname": "branch",
 			"label": __("Branch"),
 			"fieldtype": "Link",
-			"options": "Branch"
+			"options": "Sahayog Branch"
 		},
 		{
 			"fieldname": "zone",
